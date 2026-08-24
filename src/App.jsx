@@ -66,11 +66,13 @@ export default function App() {
 
       <video
         ref={videoRef}
-        src="/video.mp4"
         autoPlay loop muted playsInline
         crossOrigin="anonymous"
         style={{ display: 'none' }}
-      />
+      >
+        <source src="/video.webm" type="video/webm" />
+        <source src="/video.mp4" type="video/mp4" />
+      </video>
 
       <Canvas
         orthographic
@@ -88,10 +90,8 @@ export default function App() {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'left',
         pointerEvents: 'none', // Para não bloquear os cliques no canvas
         justifyContent: 'center',
-        pointerEvents: 'none', // O container não bloqueia clique, mas o botão sim
         gap: '1rem',
       }}>
         
