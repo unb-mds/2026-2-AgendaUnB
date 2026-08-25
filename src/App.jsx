@@ -90,19 +90,24 @@ const globalCSS = `
   }
   .feat-icon {
     width:44px; height:44px; border-radius:10px;
-    background:rgba(0,139,255,0.1); display:grid; place-items:center;
-    font-size:1.3rem; margin-bottom:16px;
+    background:rgba(0,139,255,0.1); border:1px solid rgba(0,139,255,0.25);
+    display:grid; place-items:center;
+    color:rgb(0,139,255); margin-bottom:16px;
+  }
+  .feat-icon .material-symbols-outlined {
+    font-size:1.4rem;
   }
   .feat h3 { font-size:1.05rem; font-weight:600; margin-bottom:8px; }
   .feat p { color:rgba(255,255,255,0.55); font-size:0.88rem; line-height:1.6; }
 
   /* ── Team ── */
-  .team-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1.25rem; }
+  .team-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1.25rem; }
   .team-card {
     background:linear-gradient(175deg,rgba(12,16,28,0.92),rgba(6,8,16,0.96));
     border:1px solid rgba(0,139,255,0.18); border-radius:14px;
-    padding:32px 18px 24px; text-align:center; position:relative;
+    padding:28px 20px 24px; text-align:center; position:relative;
     transition:transform .3s, border-color .3s;
+    display:flex; flex-direction:column; align-items:center;
   }
   .team-card:hover {
     transform:translateY(-4px);
@@ -110,18 +115,34 @@ const globalCSS = `
     box-shadow:0 8px 28px rgba(0,139,255,0.1);
   }
   .team-pic-ring {
-    width:82px; height:82px; border-radius:50%; margin:0 auto 18px;
+    width:82px; height:82px; border-radius:50%; margin:0 auto 16px;
     padding:3px;
     background:linear-gradient(135deg,rgb(0,139,255),rgba(0,90,180,0.25));
   }
   .team-pic {
     width:100%; height:100%; border-radius:50%;
     background:#111; display:flex; align-items:center; justify-content:center;
-    font-size:1.6rem; font-weight:700; color:rgba(0,139,255,0.7);
+    font-size:1.4rem; font-weight:700; color:rgba(0,139,255,0.85);
+    overflow:hidden;
   }
-  .team-name { font-weight:700; font-size:1.05rem; margin-bottom:3px; }
-  .team-role { color:rgb(0,139,255); font-size:0.8rem; font-weight:600; margin-bottom:14px; }
-  .team-desc { color:rgba(255,255,255,0.4); font-size:0.78rem; line-height:1.45; }
+  .team-name { font-weight:700; font-size:1.02rem; margin-bottom:4px; line-height:1.3; }
+  .team-role {
+    color:rgb(0,139,255); font-size:0.75rem; font-weight:700;
+    text-transform:uppercase; letter-spacing:0.1em;
+    background:rgba(0,139,255,0.1); padding:3px 10px; border-radius:999px;
+    border:1px solid rgba(0,139,255,0.25);
+    margin-bottom:14px;
+  }
+  .team-links {
+    display:flex; flex-direction:column; gap:6px; margin-top:auto;
+    width:100%; padding-top:12px; border-top:1px solid rgba(255,255,255,0.06);
+  }
+  .team-link-item {
+    display:flex; align-items:center; justify-content:center; gap:6px;
+    font-size:0.75rem; color:rgba(255,255,255,0.55);
+    text-decoration:none; transition:color .2s;
+  }
+  .team-link-item:hover { color:rgb(0,139,255); }
 
   /* ── Divider ── */
   .divider {
@@ -147,17 +168,51 @@ const globalCSS = `
 `
 
 // ============================================================
-// Dados da equipe
+// Dados da equipe (6 participantes)
 // ============================================================
 const teamMembers = [
-  { initials:'AF', name:'Arthur Fernandes',  role:'Fundador', desc:'Qualidade, testes e modelagem de dados' },
-  { initials:'AR', name:'Arthur Ramalho',    role:'Fundador', desc:'Design, documentação e planejamento' },
-  { initials:'EA', name:'Erick Alves',       role:'Fundador', desc:'Frontend e condução do Scrum' },
-  { initials:'FP', name:'Felipe Pedroza',    role:'Fundador', desc:'Banco de dados, ciência de dados e backend' },
-  { initials:'GG', name:'Guilherme Gusmão',  role:'Fundador', desc:'Interfaces e identidade visual do produto' },
-  { initials:'GC', name:'Gustavo Choueiri',  role:'Fundador', desc:'IA, automações e pipelines de dados' },
-  { initials:'VP', name:'Vinícius Pereira',  role:'Fundador', desc:'Frontend e renderização do fluxograma' },
-  { initials:'VM', name:'Vitor Marconi',     role:'Fundador', desc:'Fullstack, arquitetura visual e manutenção' },
+  {
+    initials: 'TA',
+    name: 'Thomas Araujo',
+    role: 'Frontend',
+    github: 'thomas4ugust0',
+    email: 'thomasgusto12@gmail.com',
+  },
+  {
+    initials: 'HM',
+    name: 'Heitor Monteiro',
+    role: 'Backend',
+    github: 'heitormontt',
+    email: 'heitormont.unb@gmail.com',
+  },
+  {
+    initials: 'LP',
+    name: 'Luis Davi',
+    role: 'Banco de Dados',
+    github: 'pontesluis',
+    email: 'pontesluis1912@gmail.com',
+  },
+  {
+    initials: 'FD',
+    name: 'Felipe Duque',
+    role: 'Banco de Dados',
+    github: 'felipecduque7',
+    email: 'felipecoutoduque07@gmail.com',
+  },
+  {
+    initials: 'GL',
+    name: 'Gabriel Escramin',
+    role: 'Frontend',
+    github: 'Bielziin07',
+    email: 'escramingabriel@gmail.com',
+  },
+  {
+    initials: 'TM',
+    name: 'Thomaz Marra',
+    role: 'Backend',
+    github: 'marrathomaz',
+    email: 'marrathomaz05@gmail.com',
+  },
 ]
 
 // ============================================================
@@ -330,32 +385,32 @@ export default function App() {
 
             <div className="feat-grid">
               <div className="feat">
-                <div className="feat-icon">📅</div>
+                <div className="feat-icon"><span className="material-symbols-outlined">calendar_month</span></div>
                 <h3>Agenda Unificada</h3>
                 <p>Visualize todos os eventos do campus em um único calendário inteligente, filtrável por categoria, data e instituto.</p>
               </div>
               <div className="feat">
-                <div className="feat-icon">✏️</div>
+                <div className="feat-icon"><span className="material-symbols-outlined">edit_calendar</span></div>
                 <h3>Submissão de Eventos</h3>
                 <p>Usuários logados podem submeter novos eventos para o campus. Um fluxo simples que vai do rascunho à publicação.</p>
               </div>
               <div className="feat">
-                <div className="feat-icon">🛡️</div>
+                <div className="feat-icon"><span className="material-symbols-outlined">admin_panel_settings</span></div>
                 <h3>Moderação</h3>
                 <p>Administradores aprovam ou rejeitam submissões antes da publicação, garantindo a qualidade do conteúdo na agenda.</p>
               </div>
               <div className="feat">
-                <div className="feat-icon">🔗</div>
+                <div className="feat-icon"><span className="material-symbols-outlined">sync</span></div>
                 <h3>Importação Automática</h3>
                 <p>Busca e importa eventos de fontes externas como perfis do Instagram, feeds RSS e sites das faculdades.</p>
               </div>
               <div className="feat">
-                <div className="feat-icon">🎟️</div>
+                <div className="feat-icon"><span className="material-symbols-outlined">how_to_reg</span></div>
                 <h3>Inscrição Direta</h3>
                 <p>Inscreva-se em eventos diretamente pela plataforma com apenas um clique, sem redirecionamentos externos.</p>
               </div>
               <div className="feat">
-                <div className="feat-icon">✨</div>
+                <div className="feat-icon"><span className="material-symbols-outlined">auto_awesome</span></div>
                 <h3>Recomendações por IA</h3>
                 <p>Receba sugestões personalizadas com base nas suas preferências e no seu histórico de navegação e participação.</p>
               </div>
@@ -372,22 +427,22 @@ export default function App() {
 
             <div className="feat-grid">
               <div className="feat">
-                <div className="feat-icon">📄</div>
+                <div className="feat-icon"><span className="material-symbols-outlined">upload_file</span></div>
                 <h3>Upload de Planos</h3>
                 <p>Envie múltiplos planos de ensino nos formatos PDF ou DOCX e deixe o sistema processar automaticamente.</p>
               </div>
               <div className="feat">
-                <div className="feat-icon">🧠</div>
+                <div className="feat-icon"><span className="material-symbols-outlined">psychology</span></div>
                 <h3>Extração NLP</h3>
                 <p>Algoritmo de processamento de linguagem natural identifica datas, tipos de avaliação e pesos com 85%+ de precisão.</p>
               </div>
               <div className="feat">
-                <div className="feat-icon">🗓️</div>
+                <div className="feat-icon"><span className="material-symbols-outlined">event_repeat</span></div>
                 <h3>Calendário Pessoal</h3>
                 <p>Todas as datas extraídas são alocadas em um calendário privado do aluno, pronto para revisar e editar.</p>
               </div>
               <div className="feat">
-                <div className="feat-icon">🔔</div>
+                <div className="feat-icon"><span className="material-symbols-outlined">notifications_active</span></div>
                 <h3>Lembretes Inteligentes</h3>
                 <p>Configure alertas personalizados — 1 semana, 3 dias ou 1 dia antes de cada avaliação. Nunca mais perca um prazo.</p>
               </div>
@@ -410,7 +465,30 @@ export default function App() {
                   </div>
                   <div className="team-name">{m.name}</div>
                   <div className="team-role">{m.role}</div>
-                  <div className="team-desc">{m.desc}</div>
+                  
+                  <div className="team-links">
+                    <a
+                      href={`https://github.com/${m.github}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="team-link-item"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+                      </svg>
+                      @{m.github}
+                    </a>
+                    <a
+                      href={`mailto:${m.email}`}
+                      className="team-link-item"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                        <polyline points="22,6 12,13 2,6"/>
+                      </svg>
+                      {m.email}
+                    </a>
+                  </div>
                 </div>
               ))}
             </div>
