@@ -172,47 +172,49 @@ const globalCSS = `
 // ============================================================
 const teamMembers = [
   {
-    initials: 'TA',
+    // Removi o initials e coloquei a foto
     name: 'Thomas Araujo',
     role: 'Frontend',
     github: 'thomas4ugust0',
     email: 'thomasgusto12@gmail.com',
+    foto: 'https://github.com/thomas4ugust0.png'
   },
   {
-    initials: 'HM',
     name: 'Heitor Monteiro',
     role: 'Backend',
     github: 'heitormontt',
     email: 'heitormont.unb@gmail.com',
+    foto: 'https://github.com/heitormontt.png'
   },
   {
-    initials: 'LP',
     name: 'Luis Davi',
     role: 'Banco de Dados',
     github: 'pontesluis',
     email: 'pontesluis1912@gmail.com',
+    foto: 'https://github.com/pontesluis.png'
   },
-  {
-    initials: 'FD',
-    name: 'Felipe Duque',
-    role: 'Banco de Dados',
-    github: 'felipecduque7',
-    email: 'felipecoutoduque07@gmail.com',
-  },
-  {
-    initials: 'GL',
+    {
     name: 'Gabriel Escramin',
     role: 'Frontend',
-    github: 'Bielziin07',
+    github: 'Bielziin07', 
     email: 'escramingabriel@gmail.com',
+    foto: 'https://github.com/Bielziin07.png'
   },
   {
-    initials: 'TM',
     name: 'Thomaz Marra',
     role: 'Backend',
     github: 'marrathomaz',
     email: 'marrathomaz05@gmail.com',
+    foto: 'https://github.com/marrathomaz.png'
   },
+  {
+    name: 'Felipe Duque',
+    role: 'Banco de Dados',
+    github: 'felipecduque7',
+    email: 'felipecoutoduque07@gmail.com',
+    foto: 'https://github.com/felipecduque7.png'
+  },
+
 ]
 
 // ============================================================
@@ -461,7 +463,12 @@ export default function App() {
               {teamMembers.map((m, i) => (
                 <div className="team-card" key={i}>
                   <div className="team-pic-ring">
-                    <div className="team-pic">{m.initials}</div>
+                    <img 
+                        src={m.foto} 
+                        alt={m.name} 
+                        className="team-pic" 
+                        style={{ objectFit: 'cover', width: '100%', height: '100%', borderRadius: '50%' }}
+  />
                   </div>
                   <div className="team-name">{m.name}</div>
                   <div className="team-role">{m.role}</div>
@@ -497,7 +504,7 @@ export default function App() {
           {/* ── Footer ── */}
           <footer className="footer">
             <img src="/Marca-UnB.png" alt="Logo UnB" style={{ width:'70px', marginBottom:'1rem', opacity:0.5 }}/>
-            <p>Agenda UnB — Universidade de Brasília © 2025</p>
+            <p>Agenda UnB — Universidade de Brasília © 2026</p>
           </footer>
 
         </div>
