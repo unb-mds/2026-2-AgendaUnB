@@ -7,12 +7,12 @@ import VideoPlane from './components/VideoPlane.jsx'
 // ⚙️ CONFIGURAÇÃO DO EFEITO — altere os valores aqui!
 // ============================================================
 const settings = {
-  gridSize: 6,
-  dotSize: 0.45,
+  gridSize: 7,
+  dotSize: 0.18,
   contrast: 1.4,
-  brightness: 0.0,
-  effectStrength: 1.0,
-  color: [0.4, 0.2, 0.8],
+  brightness: -0.1,
+  effectStrength: 1.5,
+  color: [0, 0.547, 1],
 }
 
 export default function App() {
@@ -100,11 +100,11 @@ export default function App() {
           fontFamily: "'Orbitron', sans-serif",
           fontWeight: 200,
           fontSize: "1.2rem",
-          color: "#7b38ff",
+          color: "#ffffff",
             textShadow: `
-                0 0 4px #262424,
-                0 0 10px rgba(138, 92, 246, 0.39),
-                0 0 25px rgba(124, 58, 237, 0.14)
+                0 0 4px #818080,
+                0 0 10px rgba(131, 131, 131, 0.39),
+                0 0 25px rgba(42, 42, 42, 0.14)
               `,
 
           margin: 0,
@@ -125,11 +125,12 @@ export default function App() {
               letterSpacing: "0.12em",
               lineHeight: 1,
               textTransform: "uppercase",
+              color: "#ffffff",
 
               textShadow: `
-                0 0 4px #5500ff,
-                0 0 10px rgba(138, 92, 246, 0.39),
-                0 0 25px rgba(124, 58, 237, 0.14)
+                0 0 4px #0b0b0b,
+                0 0 10px rgba(206, 205, 205, 0.76),
+                0 0 25px rgba(70, 70, 70, 0.4)
               `,
 
               transform: "scaleX(0.95)",
@@ -182,6 +183,21 @@ export default function App() {
           Continuar com o Google
         </button>
       </div>
+      <img 
+  src="/Marca-UnB.png" 
+  alt="Logo UnB" 
+  style={{
+    position: 'absolute',
+    bottom: '40px', 
+    left: '50%',
+    transform: 'translateX(-50%)', 
+    width: '90px', 
+    height: 'auto',
+    zIndex: 100, 
+    pointerEvents: 'none'
+  }} 
+/>
     </div>
   )
 }
+
