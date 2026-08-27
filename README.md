@@ -30,11 +30,19 @@ O objetivo do projeto é criar uma plataforma centralizada para a comunidade da 
 ## 🔛Início
 
 ### 💾Execução
+Para instalar, basta executar no seu terminal:
+`git clone https://github.com/unb-mds/G8-2026-2.git`
+
+Para executar, primeiro é necessário instalar o node.js em [Node.js download](https://nodejs.org/pt-br), após isso, basta entrar na pasta com `cd G8-2026-2` e executar `npm install` para baixar as dependências.
+Para rodar o servidor de desenvolvimento localmente, basta executar `npm run dev` para que a página seja aberta em `http://localhost:5173`
+
 ### 💻Requisitos
 ### ✅Backend
 ### 📥Frontend
 
 ## 📚Documentação
 
+
 ## 📎Extras
+Veja o que estamos fazendo no [Miro](https://miro.com/welcomeonboard/b0lMYXFqaEFMTnNpejdUOE1tLy8rOGNHdk5QVndFOUN0ZTFtc1kvWC9UUWdCbUJXVkpFU2JKRXhqUHpRZEYxekt6NUNFZXNzOXkxVDRxRmk0TjI1akdVY0Q5QW0vUENuMVpvYWRaZzdVNFZOd3RuM2RYU0wySUdxdk9jSm9OV3ZzVXVvMm53MW9OWFg5bkJoVXZxdFhRPT0hdjE=?share_link_id=945222608724)!
 
