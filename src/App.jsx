@@ -3,9 +3,6 @@ import { useRef, useState, useEffect } from 'react'
 import * as THREE from 'three'
 import VideoPlane from './components/VideoPlane.jsx'
 
-// ============================================================
-// ⚙️ CONFIGURAÇÃO DO EFEITO — altere os valores aqui!
-// ============================================================
 const settings = {
   gridSize: 7,
   dotSize: 0.18,
@@ -15,9 +12,9 @@ const settings = {
   color: [0, 0.547, 1],
 }
 
-// ============================================================
-// 🎨 CSS
-// ============================================================
+// ............................
+//  CSS
+// ............................
 const globalCSS = `
   * { margin:0; padding:0; box-sizing:border-box; }
   html { scroll-behavior:smooth; }
@@ -165,14 +162,105 @@ const globalCSS = `
     text-align:center; padding:3rem 1.5rem 2rem; color:rgba(255,255,255,0.25);
     font-size:0.75rem; position:relative; z-index:2;
   }
+
+  /* ── Modal ── */
+  .modal-overlay {
+    position: fixed; inset: 0; top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(2, 6, 16, 0.85);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    z-index: 99999; display: flex; justify-content: center; align-items: center;
+    padding: 20px; animation: fadeIn 0.25s ease-out;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.97); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  .modal-box {
+    background: linear-gradient(180deg, rgba(10, 18, 36, 0.95) 0%, rgba(5, 9, 20, 0.98) 100%);
+    border: 1px solid rgba(0, 139, 255, 0.35);
+    border-radius: 20px;
+    width: 100%; max-width: 520px;
+    padding: 44px 36px 36px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 35px rgba(0, 139, 255, 0.2);
+    position: relative; color: #fff;
+  }
+  .modal-close {
+    position: absolute; top: 18px; right: 18px;
+    width: 34px; height: 34px; border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.7); display: flex; justify-content: center; align-items: center;
+    cursor: pointer; transition: all 0.2s; font-size: 14px;
+  }
+  .modal-close:hover {
+    background: rgba(0, 139, 255, 0.2); border-color: rgba(0, 139, 255, 0.5); color: #fff;
+  }
+  .modal-input-group { margin-bottom: 18px; text-align: left; }
+  .modal-label {
+    display: block; font-size: 0.78rem; font-weight: 600;
+    color: rgba(255, 255, 255, 0.8); text-transform: uppercase; letter-spacing: 0.05em;
+    margin-bottom: 6px;
+  }
+  .modal-input {
+    width: 100%; padding: 13px 16px; border-radius: 10px;
+    border: 1px solid rgba(0, 139, 255, 0.25);
+    background: rgba(0, 15, 35, 0.6); color: #fff;
+    font-size: 0.92rem; font-family: 'Inter', sans-serif; outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .modal-input::placeholder { color: rgba(255, 255, 255, 0.35); }
+  .modal-input:focus {
+    border-color: rgba(0, 139, 255, 0.8);
+    box-shadow: 0 0 12px rgba(0, 139, 255, 0.3);
+  }
+  .modal-btn-primary {
+    width: 100%; padding: 14px; margin-top: 8px; margin-bottom: 16px;
+    background: linear-gradient(135deg, rgb(0, 139, 255), rgba(0, 95, 210, 1));
+    color: #fff; border: none; border-radius: 10px;
+    font-weight: 600; font-size: 0.95rem; font-family: 'Inter', sans-serif;
+    cursor: pointer; box-shadow: 0 4px 20px rgba(0, 139, 255, 0.35);
+    transition: all 0.25s ease;
+  }
+  .modal-btn-primary:hover {
+    background: linear-gradient(135deg, rgb(30, 155, 255), rgb(0, 120, 240));
+    box-shadow: 0 6px 25px rgba(0, 139, 255, 0.5);
+    transform: translateY(-1px);
+  }
+  .modal-divider {
+    display: flex; align-items: center; gap: 12px;
+    color: rgba(255, 255, 255, 0.35); font-size: 0.78rem; text-transform: uppercase;
+    letter-spacing: 0.08em; margin: 16px 0;
+  }
+  .modal-divider::before, .modal-divider::after {
+    content: ''; flex: 1; height: 1px; background: rgba(255, 255, 255, 0.1);
+  }
+  .modal-btn-google {
+    width: 100%; padding: 12px; background: rgba(255, 255, 255, 0.05);
+    color: #fff; border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 10px;
+    font-weight: 500; font-size: 0.9rem; font-family: 'Inter', sans-serif;
+    cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 10px;
+    transition: all 0.25s ease; backdrop-filter: blur(8px);
+  }
+  .modal-btn-google:hover {
+    background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.3);
+  }
+  .nav-btn-account {
+    cursor: pointer; background: rgba(0, 139, 255, 0.15);
+    border: 1px solid rgba(0, 139, 255, 0.4); color: #fff;
+    padding: 7px 18px; border-radius: 999px; font-weight: 600; font-size: 0.82rem;
+    font-family: 'Inter', sans-serif; transition: all 0.25s ease;
+    box-shadow: 0 0 12px rgba(0, 139, 255, 0.2);
+  }
+  .nav-btn-account:hover {
+    background: rgba(0, 139, 255, 0.35); border-color: rgba(0, 139, 255, 0.7);
+    box-shadow: 0 0 20px rgba(0, 139, 255, 0.4); transform: translateY(-1px);
+  }
 `
 
-// ============================================================
-// Dados da equipe (6 participantes)
-// ============================================================
+// ............................
+// Dados da equipe
+// ............................
 const teamMembers = [
   {
-    // Removi o initials e coloquei a foto
     name: 'Thomas Araujo',
     role: 'Frontend',
     github: 'thomas4ugust0',
@@ -217,14 +305,13 @@ const teamMembers = [
 
 ]
 
-// ============================================================
+// ............................
 // Componente principal
-// ============================================================
+// ............................
 export default function App() {
   const videoRef = useRef(null)
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [texture, setTexture] = useState(null)
-
-  // ── Cria a textura quando o vídeo estiver pronto (NÃO ALTERE) ──
   useEffect(() => {
     const video = videoRef.current
     if (!video) return
@@ -234,7 +321,7 @@ export default function App() {
     const createTexture = () => {
       if (created) return
       created = true
-      console.log('✅ Criando VideoTexture')
+      console.log('Criando VideoTexture')
       const tex = new THREE.VideoTexture(video)
       tex.minFilter = THREE.LinearFilter
       tex.magFilter = THREE.LinearFilter
@@ -246,10 +333,7 @@ export default function App() {
     video.play().then(() => {
       video.playbackRate = 0.03
       createTexture()
-    }).catch(() => {
-      console.log('⚠️ Autoplay bloqueado — clique na tela para iniciar')
     })
-
     return () => video.removeEventListener('playing', createTexture)
   }, [])
 
@@ -258,9 +342,9 @@ export default function App() {
     if (video && video.paused) video.play()
   }
 
-  // ────────────────────────────────────────────
+  // ............................
   // RENDER
-  // ────────────────────────────────────────────
+  // ............................
   return (
     <>
       <style>{globalCSS}</style>
@@ -273,8 +357,6 @@ export default function App() {
         <source src="/video.webm" type="video/webm" />
         <source src="/video.mp4" type="video/mp4" />
       </video>
-
-      {/* ═══ CANVAS FIXO — fundo halftone ═══ */}
       <div style={{ position:'fixed', inset:0, zIndex:0 }} onClick={handleClick}>
         <Canvas
           orthographic
@@ -285,8 +367,6 @@ export default function App() {
           {texture && <VideoPlane videoTexture={texture} settings={settings} />}
         </Canvas>
       </div>
-
-      {/* ═══ CONTEÚDO SCROLLÁVEL ═══ */}
       <div style={{ position:'relative', zIndex:1 }}>
 
         {/* Navbar */}
@@ -302,11 +382,95 @@ export default function App() {
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
               <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
             </svg>
-            <div className="nav-avatar">TA</div>
+            
+            {/* Criar conta*/}
+            <button 
+              className="nav-btn-account"
+              onClick={() => setIsMenuOpen(true)}
+            >
+              Criar Conta
+            </button>
           </div>
         </nav>
 
-        {/* ══════ HERO ══════ */}
+        {/*MODAL CRIAR CONTA*/}
+        {isMenuOpen && (
+          <div className="modal-overlay" onClick={() => setIsMenuOpen(false)}>
+            <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+              
+              {/* Botão Fechar */}
+              <button 
+                className="modal-close"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                ✕
+              </button>
+
+              <h2 style={{
+                textAlign: 'center',
+                fontFamily: "'Orbitron', sans-serif",
+                color: '#ffffff',
+                fontSize: '1.65rem',
+                fontWeight: 700,
+                letterSpacing: '0.04em',
+                marginBottom: '6px',
+                textShadow: '0 0 20px rgba(0, 139, 255, 0.45)'
+              }}>
+                Criar Conta
+              </h2>
+
+              <p style={{
+                textAlign: 'center',
+                color: 'rgba(255, 255, 255, 0.55)',
+                fontSize: '0.85rem',
+                marginBottom: '26px'
+              }}>
+                Crie sua conta para acessar o portal da Agenda UnB
+              </p>
+
+              {/* Campos do Formulário */}
+              <div className="modal-input-group">
+                <label className="modal-label">Nome Completo <span style={{color: 'rgb(0, 139, 255)'}}>*</span></label>
+                <input type="text" placeholder="Seu nome completo" className="modal-input" />
+              </div>
+
+              <div className="modal-input-group">
+                <label className="modal-label">Email <span style={{color: 'rgb(0, 139, 255)'}}>*</span></label>
+                <input type="email" placeholder="seu@email.com" className="modal-input" />
+              </div>
+
+              <div className="modal-input-group">
+                <label className="modal-label">Senha <span style={{color: 'rgb(0, 139, 255)'}}>*</span></label>
+                <input type="password" placeholder="Mínimo 8 caracteres" className="modal-input" />
+              </div>
+
+              <div className="modal-input-group">
+                <label className="modal-label">Confirmar Senha <span style={{color: 'rgb(0, 139, 255)'}}>*</span></label>
+                <input type="password" placeholder="Mínimo 8 caracteres" className="modal-input" />
+              </div>
+
+
+              <button className="modal-btn-primary">
+                Criar Conta
+              </button>
+
+              <div className="modal-divider">ou</div>
+
+              <button className="modal-btn-google">
+                <svg width="18" height="18" viewBox="0 0 48 48">
+                  <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.7 17.74 9.5 24 9.5z"/>
+                  <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                  <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                  <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                </svg>
+                Cadastrar com Google
+              </button>
+
+            </div>
+          </div>
+        )}
+          </div>
+        {/* HERO */}
         <section style={{
           minHeight:'100vh', display:'flex', flexDirection:'column',
           alignItems:'center', justifyContent:'center', position:'relative',
@@ -368,18 +532,14 @@ export default function App() {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
           </div>
         </section>
-
-        {/* Gradiente de transição Hero → seções opacas */}
         <div style={{
           height:'140px',
           background:'linear-gradient(to bottom, transparent 0%, #050508 100%)',
           position:'relative', zIndex:2, marginTop:'-140px',
         }}/>
-
-        {/* ── Fundo opaco para seções abaixo ── */}
         <div style={{ background:'#050508', position:'relative', zIndex:2 }}>
 
-          {/* ══════ MÓDULO A ══════ */}
+          {/* MÓDULO A */}
           <section id="eventos" className="section">
             <div className="section-label">Módulo A</div>
             <h2 className="section-h2">Campus Hub</h2>
@@ -421,7 +581,7 @@ export default function App() {
 
           <div className="divider"/>
 
-          {/* ══════ MÓDULO B ══════ */}
+          {/* MÓDULO B */}
           <section id="organizer" className="section">
             <div className="section-label">Módulo B</div>
             <h2 className="section-h2">Smart Organizer</h2>
@@ -453,7 +613,7 @@ export default function App() {
 
           <div className="divider"/>
 
-          {/* ══════ EQUIPE ══════ */}
+          {/* EQUIPE */}
           <section id="equipe" className="section">
             <div className="section-label">Quem somos</div>
             <h2 className="section-h2">A Equipe</h2>
@@ -501,14 +661,13 @@ export default function App() {
             </div>
           </section>
 
-          {/* ── Footer ── */}
+          {/* Footer */}
           <footer className="footer">
             <img src="/Marca-UnB.png" alt="Logo UnB" style={{ width:'70px', marginBottom:'1rem', opacity:0.5 }}/>
             <p>Agenda UnB — Universidade de Brasília © 2026</p>
           </footer>
 
         </div>
-      </div>
-    </>
+    </> 
   )
 }
