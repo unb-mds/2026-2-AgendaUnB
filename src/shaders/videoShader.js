@@ -17,6 +17,7 @@ export const fragmentShader = /* glsl */ `
   uniform float uBrightness;
   uniform float uEffectStrength;
   uniform vec3 uColor;
+  uniform vec3 uBgColor;
   uniform float uTime;
   uniform vec2 uResolution;
 
@@ -38,9 +39,9 @@ export const fragmentShader = /* glsl */ `
     vec2  cell   = fract(vUv / pixelSize) - 0.5;
     float dotM   = smoothstep(radius + 0.02, radius - 0.02, length(cell));
 
-    // 4. Mix original ↔ efeito
-    vec3 effect    = color * uColor * dotM;
-    vec3 finalColor = mix(videoColor, effect, uEffectStrength);
+    // 4. Mix: dots coloridos sobre o fundo (uBgColor)
+    vec3 dotColor   = color * uColor * dotM;
+    vec3 finalColor = mix(uBgColor, dotColor + uBgColor * (1.0 - dotM), dotM);
 
     gl_FragColor = vec4(finalColor, 1.0);
   }

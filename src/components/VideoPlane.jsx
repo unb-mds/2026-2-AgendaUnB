@@ -17,6 +17,7 @@ export default function VideoPlane({ videoTexture, settings }) {
     mat.uniforms.uBrightness.value      = settings.brightness
     mat.uniforms.uEffectStrength.value  = settings.effectStrength
     mat.uniforms.uColor.value.set(...settings.color)
+    mat.uniforms.uBgColor.value.set(...settings.bgColor)
     mat.uniforms.uTime.value           += delta
     mat.uniforms.uResolution.value.set(size.width, size.height)
   })
@@ -38,6 +39,7 @@ export default function VideoPlane({ videoTexture, settings }) {
           uBrightness:    { value: settings.brightness },
           uEffectStrength:{ value: settings.effectStrength },
           uColor:         { value: new THREE.Color(...settings.color) },
+          uBgColor:       { value: new THREE.Color(...settings.bgColor) },
           uTime:          { value: 0.0 },
           uResolution:    { value: new THREE.Vector2(size.width, size.height) },
         }}
