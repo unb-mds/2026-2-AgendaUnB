@@ -3,14 +3,15 @@ import { useRef, useState, useEffect } from 'react'
 import * as THREE from 'three'
 import VideoPlane from './components/VideoPlane.jsx'
 
-const settings = {
+const getSettings = (theme) => ({
   gridSize: 7,
   dotSize: 0.18,
-  contrast: 1.4,
-  brightness: -0.1,
+  contrast: theme === 'dark' ? 1.4 : 800,
+  brightness: theme === 'dark' ? -0.1 : 1,
   effectStrength: 1.5,
-  color: [0, 0.547, 1],
-}
+  color: theme === 'dark' ? [0, 0.547, 1] : [0, 0.547, 1],
+  bgColor: theme === 'dark' ? [0.02, 0.02, 0.03] : [1, 1, 1],
+})
 
 // ............................
 //  CSS
@@ -70,11 +71,12 @@ const globalCSS = `
     font-family:'Orbitron',sans-serif; font-size:clamp(1.6rem,3.5vw,2.2rem);
     font-weight:700; margin-bottom:0.6rem; letter-spacing:0.03em;
   }
-  .section-sub { color:rgba(255,255,255,0.55); font-size:0.95rem; max-width:540px; line-height:1.65; margin-bottom:3rem; }
+  .section-sub { color:rgba(255,255,255,0.55); font-size:0.95rem; max-width:570px; line-height:1.65; margin-bottom:3rem; }
 
   /* ── Feature cards ── */
   .feat-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:1.25rem; }
   .feat {
+    text-align: justify;
     background:rgba(8,12,22,0.65); border:1px solid rgba(0,139,255,0.12);
     border-radius:14px; padding:28px 22px;
     backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
@@ -254,6 +256,111 @@ const globalCSS = `
     background: rgba(0, 139, 255, 0.35); border-color: rgba(0, 139, 255, 0.7);
     box-shadow: 0 0 20px rgba(0, 139, 255, 0.4); transform: translateY(-1px);
   }
+
+  /* ── Theme Toggle ── */
+  .theme-toggle {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.7); display: grid; place-items: center;
+    cursor: pointer; transition: all 0.25s; font-size: 1.1rem;
+  }
+  .theme-toggle:hover {
+    background: rgba(0, 139, 255, 0.2); border-color: rgba(0, 139, 255, 0.5); color: #fff;
+  }
+
+  /* ── Light Theme ── */
+  body.light, body.light #root {
+    background: #f5f6fa; color: #1a1a2e;
+  }
+  body.light ::-webkit-scrollbar-thumb { background: rgba(0, 139, 255, 0.5); }
+
+  body.light .nav {
+    background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(14px);
+    border-color: rgba(0, 139, 255, 0.2);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  }
+  body.light .nav-items a { color: rgba(26, 26, 46, 0.6); }
+  body.light .nav-items a:hover { color: rgb(0, 139, 255); }
+  body.light .nav-bell { color: rgba(26, 26, 46, 0.5); }
+  body.light .nav-bell:hover { color: #1a1a2e; }
+  body.light .nav-avatar { background: rgb(0, 139, 255); color: #fff; }
+  body.light .nav-btn-account {
+    background: rgba(0, 139, 255, 0.1); border-color: rgba(0, 139, 255, 0.35); color: #1a1a2e;
+  }
+  body.light .nav-btn-account:hover {
+    background: rgba(0, 139, 255, 0.25); border-color: rgba(0, 139, 255, 0.6);
+  }
+  body.light .theme-toggle {
+    background: rgba(0, 0, 0, 0.06); border-color: rgba(0, 0, 0, 0.12); color: #555;
+  }
+  body.light .theme-toggle:hover {
+    background: rgba(0, 139, 255, 0.15); border-color: rgba(0, 139, 255, 0.4); color: rgb(0, 139, 255);
+  }
+
+  body.light .section-label { color: rgb(0, 139, 255); border-color: rgba(0, 139, 255, 0.35); }
+  body.light .section-h2 { color: #1a1a2e; }
+  body.light .section-sub { color: rgba(26, 26, 46, 0.6); }
+
+  body.light .feat {
+    background: rgba(255, 255, 255, 0.85); border-color: rgba(0, 139, 255, 0.15);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  }
+  body.light .feat:hover {
+    border-color: rgba(0, 139, 255, 0.5);
+    box-shadow: 0 8px 32px rgba(0, 139, 255, 0.1);
+  }
+  body.light .feat h3 { color: #1a1a2e; }
+  body.light .feat p { color: rgba(26, 26, 46, 0.6); }
+
+  body.light .team-card {
+    background: linear-gradient(175deg, rgba(255, 255, 255, 0.95), rgba(245, 246, 250, 0.98));
+    border-color: rgba(0, 139, 255, 0.18);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  }
+  body.light .team-card:hover {
+    border-color: rgba(0, 139, 255, 0.6);
+    box-shadow: 0 8px 28px rgba(0, 139, 255, 0.1);
+  }
+  body.light .team-pic { background: #e8eaef; color: rgba(0, 139, 255, 0.85); }
+  body.light .team-name { color: #1a1a2e; }
+  body.light .team-links { border-top-color: rgba(0, 0, 0, 0.08); }
+  body.light .team-link-item { color: rgba(26, 26, 46, 0.55); }
+  body.light .team-link-item:hover { color: rgb(0, 139, 255); }
+
+  body.light .divider { background: linear-gradient(90deg, transparent, rgba(0, 139, 255, 0.25), transparent); }
+  body.light .footer { color: rgba(26, 26, 46, 0.35); }
+
+  body.light .scroll-hint { color: #1a1a2e; }
+  body.light .scroll-hint svg { stroke: #1a1a2e; }
+
+  body.light .modal-overlay { background: rgba(245, 246, 250, 0.85); }
+  body.light .modal-box {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(245, 246, 250, 0.99));
+    border-color: rgba(0, 139, 255, 0.3); color: #1a1a2e;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15), 0 0 35px rgba(0, 139, 255, 0.1);
+  }
+  body.light .modal-close {
+    background: rgba(0, 0, 0, 0.05); border-color: rgba(0, 0, 0, 0.1); color: rgba(0, 0, 0, 0.6);
+  }
+  body.light .modal-close:hover {
+    background: rgba(0, 139, 255, 0.15); border-color: rgba(0, 139, 255, 0.4); color: rgb(0, 139, 255);
+  }
+  body.light .modal-label { color: rgba(26, 26, 46, 0.75); }
+  body.light .modal-input {
+    background: rgba(0, 0, 0, 0.03); border-color: rgba(0, 139, 255, 0.2); color: #1a1a2e;
+  }
+  body.light .modal-input::placeholder { color: rgba(26, 26, 46, 0.35); }
+  body.light .modal-input:focus {
+    border-color: rgba(0, 139, 255, 0.7); box-shadow: 0 0 12px rgba(0, 139, 255, 0.2);
+  }
+  body.light .modal-divider { color: rgba(26, 26, 46, 0.3); }
+  body.light .modal-divider::before, body.light .modal-divider::after { background: rgba(0, 0, 0, 0.1); }
+  body.light .modal-btn-google {
+    background: rgba(0, 0, 0, 0.04); border-color: rgba(0, 0, 0, 0.15); color: #1a1a2e;
+  }
+  body.light .modal-btn-google:hover {
+    background: rgba(0, 0, 0, 0.08); border-color: rgba(0, 0, 0, 0.25);
+  }
 `
 
 // ............................
@@ -312,6 +419,17 @@ export default function App() {
   const videoRef = useRef(null)
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [texture, setTexture] = useState(null)
+  const [theme, setTheme] = useState('dark')
+
+  const settings = getSettings(theme)
+
+  // Sincroniza a classe do body com o tema
+  useEffect(() => {
+    document.body.classList.remove('light', 'dark')
+    document.body.classList.add(theme)
+  }, [theme])
+
+  const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark')
   useEffect(() => {
     const video = videoRef.current
     if (!video) return
@@ -378,6 +496,11 @@ export default function App() {
             <a href="#equipe">Equipe</a>
           </div>
           <div className="nav-right">
+            <button className="theme-toggle" onClick={toggleTheme} title={theme === 'dark' ? 'Tema claro' : 'Tema escuro'}>
+              <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>
+                {theme === 'dark' ? 'brightness_7' : 'bedtime'}
+              </span>
+            </button>
             <svg className="nav-bell" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
               <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
@@ -409,19 +532,19 @@ export default function App() {
               <h2 style={{
                 textAlign: 'center',
                 fontFamily: "'Orbitron', sans-serif",
-                color: '#ffffff',
+                color: theme === 'dark' ? '#ffffff' : '#1a1a2e',
                 fontSize: '1.65rem',
                 fontWeight: 700,
                 letterSpacing: '0.04em',
                 marginBottom: '6px',
-                textShadow: '0 0 20px rgba(0, 139, 255, 0.45)'
+                textShadow: theme === 'dark' ? '0 0 20px rgba(0, 139, 255, 0.45)' : 'none'
               }}>
                 Criar Conta
               </h2>
 
               <p style={{
                 textAlign: 'center',
-                color: 'rgba(255, 255, 255, 0.55)',
+                color: theme === 'dark' ? 'rgba(255, 255, 255, 0.55)' : 'rgba(26, 26, 46, 0.6)',
                 fontSize: '0.85rem',
                 marginBottom: '26px'
               }}>
@@ -479,7 +602,7 @@ export default function App() {
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left', width: 'fit-content', maxWidth: '100%', marginBottom: '2.5rem' }}>
             <p style={{
               fontFamily:"'Orbitron',sans-serif", fontWeight:300, fontSize:'0.95rem',
-              color:'rgb(255, 255, 255)', letterSpacing:'0.2em', textTransform:'uppercase',
+              color: theme === 'dark' ? 'rgb(255, 255, 255)' : '#1a1a2e', letterSpacing:'0.2em', textTransform:'uppercase',
               marginBottom:'0.6rem',
             }}>
               Sejam bem vindos à
@@ -489,7 +612,10 @@ export default function App() {
               fontFamily:"'Orbitron',sans-serif", fontSize:'clamp(2.8rem,8vw,6.5rem)',
               fontWeight:800, letterSpacing:'0.1em', lineHeight:1,
               textTransform:'uppercase',
-              textShadow:'0 0 30px rgba(0,139,255,0.45), 0 0 80px rgba(0,139,255,0.15)',
+              color: theme === 'dark' ? '#fff' : '#1a1a2e',
+              textShadow: theme === 'dark'
+                ? '0 0 30px rgba(0,139,255,0.45), 0 0 80px rgba(0,139,255,0.15)'
+                : '0 0 30px rgba(0,139,255,0.25)',
               margin:0,
             }}>
               AGENDA UNB
@@ -502,19 +628,21 @@ export default function App() {
               cursor:'pointer', display:'flex', alignItems:'center', gap:'12px',
               padding:'13px 30px', borderRadius:'999px',
               border:'1px solid rgba(0,139,255,0.35)',
-              background:'rgba(0,20,50,0.4)', backdropFilter:'blur(14px)',
+              background: theme === 'dark' ? 'rgba(0,20,50,0.4)' : 'rgba(255,255,255,0.85)',
+              backdropFilter:'blur(14px)',
               WebkitBackdropFilter:'blur(14px)',
-              color:'#fff', fontFamily:"'Inter',sans-serif", fontWeight:500,
+              color: theme === 'dark' ? '#fff' : '#1a1a2e',
+              fontFamily:"'Inter',sans-serif", fontWeight:500,
               fontSize:'1rem', transition:'all .3s ease',
-              boxShadow:'0 4px 24px rgba(0,139,255,0.15)',
+              boxShadow: theme === 'dark' ? '0 4px 24px rgba(0,139,255,0.15)' : '0 4px 24px rgba(0,0,0,0.08)',
             }}
             onMouseOver={e => {
-              e.currentTarget.style.background='rgba(0,60,120,0.55)'
+              e.currentTarget.style.background = theme === 'dark' ? 'rgba(0,60,120,0.55)' : 'rgba(0,139,255,0.1)'
               e.currentTarget.style.borderColor='rgba(0,139,255,0.6)'
               e.currentTarget.style.transform='translateY(-2px)'
             }}
             onMouseOut={e => {
-              e.currentTarget.style.background='rgba(0,20,50,0.4)'
+              e.currentTarget.style.background = theme === 'dark' ? 'rgba(0,20,50,0.4)' : 'rgba(255,255,255,0.85)'
               e.currentTarget.style.borderColor='rgba(0,139,255,0.35)'
               e.currentTarget.style.transform='translateY(0)'
             }}
@@ -534,16 +662,18 @@ export default function App() {
         </section>
         <div style={{
           height:'140px',
-          background:'linear-gradient(to bottom, transparent 0%, #050508 100%)',
+          background: theme === 'dark'
+            ? 'linear-gradient(to bottom, transparent 0%, #050508 100%)'
+            : 'linear-gradient(to bottom, transparent 0%, #f5f6fa 100%)',
           position:'relative', zIndex:2, marginTop:'-140px',
         }}/>
-        <div style={{ background:'#050508', position:'relative', zIndex:2 }}>
+        <div style={{ background: theme === 'dark' ? '#050508' : '#f5f6fa', position:'relative', zIndex:2 }}>
 
-          {/* MÓDULO A */}
+          {/* Funcionalidades */}
           <section id="eventos" className="section">
-            <div className="section-label">Módulo A</div>
-            <h2 className="section-h2">Campus Hub</h2>
-            <p className="section-sub">Todos os eventos da universidade em uma agenda unificada — institutos, CAs, DCE, esportes e cultura.</p>
+            <div className="section-label">Funcionalidades</div>
+            <h2 className="section-h2">Organize seus estudos</h2>
+            <p className="section-sub">No Agenda UnB você pode visualizar desde datas acadêmicas importantes para você até os eventos mais recentes da UnB.</p>
 
             <div className="feat-grid">
               <div className="feat">
@@ -554,7 +684,12 @@ export default function App() {
               <div className="feat">
                 <div className="feat-icon"><span className="material-symbols-outlined">edit_calendar</span></div>
                 <h3>Submissão de Eventos</h3>
-                <p>Usuários logados podem submeter novos eventos para o campus. Um fluxo simples que vai do rascunho à publicação.</p>
+                <p>Usuários logados podem submeter novos eventos. Aqui você pode deixar todo mundo sabendo sobre eles.</p>
+              </div>
+              <div className="feat">
+                <div className="feat-icon"><span className="material-symbols-outlined">upload_file</span></div>
+                <h3>Upload de Planos de Ensino</h3>
+                <p>Envie múltiplos planos de ensino nos formatos PDF ou em texto bruto e deixe o sistema processar automaticamente.</p>
               </div>
               <div className="feat">
                 <div className="feat-icon"><span className="material-symbols-outlined">admin_panel_settings</span></div>
@@ -564,50 +699,32 @@ export default function App() {
               <div className="feat">
                 <div className="feat-icon"><span className="material-symbols-outlined">sync</span></div>
                 <h3>Importação Automática</h3>
-                <p>Busca e importa eventos de fontes externas como perfis do Instagram, feeds RSS e sites das faculdades.</p>
+                <p>Busca e importa eventos de fontes externas como perfis do Instagram, feeds e sites da universidade.</p>
               </div>
               <div className="feat">
                 <div className="feat-icon"><span className="material-symbols-outlined">how_to_reg</span></div>
                 <h3>Inscrição Direta</h3>
                 <p>Inscreva-se em eventos diretamente pela plataforma com apenas um clique, sem redirecionamentos externos.</p>
               </div>
-              <div className="feat">
-                <div className="feat-icon"><span className="material-symbols-outlined">auto_awesome</span></div>
-                <h3>Recomendações por IA</h3>
-                <p>Receba sugestões personalizadas com base nas suas preferências e no seu histórico de navegação e participação.</p>
               </div>
-            </div>
           </section>
 
           <div className="divider"/>
 
-          {/* MÓDULO B */}
+          {/* Sobre */}
           <section id="organizer" className="section">
-            <div className="section-label">Módulo B</div>
-            <h2 className="section-h2">Smart Organizer</h2>
-            <p className="section-sub">Faça upload dos seus planos de ensino e deixe a IA organizar suas datas de provas, trabalhos e entregas.</p>
+            <div className="section-label">Sobre o projeto</div>
+            <h2 className="section-h2">Tudo o que acontece no campus</h2>
+            <p className="section-sub">Uma solução que criamos do zero para organizar eventos relevantes pra você.</p>
 
             <div className="feat-grid">
               <div className="feat">
-                <div className="feat-icon"><span className="material-symbols-outlined">upload_file</span></div>
-                <h3>Upload de Planos</h3>
-                <p>Envie múltiplos planos de ensino nos formatos PDF ou DOCX e deixe o sistema processar automaticamente.</p>
-              </div>
-              <div className="feat">
-                <div className="feat-icon"><span className="material-symbols-outlined">psychology</span></div>
-                <h3>Extração NLP</h3>
-                <p>Algoritmo de processamento de linguagem natural identifica datas, tipos de avaliação e pesos com 85%+ de precisão.</p>
-              </div>
-              <div className="feat">
-                <div className="feat-icon"><span className="material-symbols-outlined">event_repeat</span></div>
-                <h3>Calendário Pessoal</h3>
-                <p>Todas as datas extraídas são alocadas em um calendário privado do aluno, pronto para revisar e editar.</p>
-              </div>
-              <div className="feat">
-                <div className="feat-icon"><span className="material-symbols-outlined">notifications_active</span></div>
-                <h3>Lembretes Inteligentes</h3>
-                <p>Configure alertas personalizados — 1 semana, 3 dias ou 1 dia antes de cada avaliação. Nunca mais perca um prazo.</p>
-              </div>
+                <h3>O que é o Agenda UnB?</h3>
+                <p>O Agenda UnB é um projeto desenvolvido na matéria de Métodos de Desenvolvimento de Software da Universidade de Brasília, feito para centralizar todos os eventos dos campi da universidade em um único lugar, facilitando a organização e o acesso a informações importantes.</p>
+                  <br></br>
+                <p>Fizemos um sistema que visa ir além de um calendário colaborativo, mas que também se integra com um organizador acadêmico inteligente. Assim, a plataforma permite que os estudantes façam o upload de seus planos de ensino, extraindo automaticamente as datas de provas,
+                   trabalhos e seminários. Essas informações são alocadas em um calendário privado e editável, que melhora a experiência do aluno ao se organizar para suas atividades acadêmicas. Desse modo, nossa aplicação une a vida social do campus e a gestão da rotina de estudos em um único lugar.</p>             
+               </div>
             </div>
           </section>
 
