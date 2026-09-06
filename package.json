@@ -10,13 +10,10 @@
   },
   "dependencies": {
     "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "three": "^0.172.0",
-    "@react-three/fiber": "^9.1.2"
+    "react-dom": "^19.1.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.5.2",
     "vite": "^6.3.5"
   }
 }
-

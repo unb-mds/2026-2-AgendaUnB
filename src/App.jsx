@@ -1,17 +1,4 @@
-import { Canvas } from '@react-three/fiber'
-import { useRef, useState, useEffect } from 'react'
-import * as THREE from 'three'
-import VideoPlane from './components/VideoPlane.jsx'
-
-const getSettings = (theme) => ({
-  gridSize: 7,
-  dotSize: 0.18,
-  contrast: theme === 'dark' ? 1.4 : 800,
-  brightness: theme === 'dark' ? -0.1 : 1,
-  effectStrength: 1.5,
-  color: theme === 'dark' ? [0, 0.547, 1] : [0, 0.547, 1],
-  bgColor: theme === 'dark' ? [0.02, 0.02, 0.03] : [1, 1, 1],
-})
+import { useState, useEffect, useRef } from 'react'
 
 // ............................
 //  CSS
@@ -416,12 +403,11 @@ const teamMembers = [
 // Componente principal
 // ............................
 export default function App() {
-  const videoRef = useRef(null)
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [texture, setTexture] = useState(null)
   const [theme, setTheme] = useState('dark')
 
-  const settings = getSettings(theme)
+  const heroRef = useRef(null)
+  const videoRef = useRef(null)
 
   // Sincroniza a classe do body com o tema
   useEffect(() => {
@@ -430,35 +416,30 @@ export default function App() {
   }, [theme])
 
   const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark')
+
+  // Quando sair da tela, o video para
   useEffect(() => {
-    const video = videoRef.current
-    if (!video) return
+    const video = videoRef.current;
+    const hero = heroRef.current;
+    
+    if (!video || !hero) return;
 
-    let created = false
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        video.play().catch(() => {}); // Retoma se estiver na tela
+      } else {
+        video.pause(); // Pausa quando some
+      }
+    }, { 
+      // 0 significa que quando 1 pixel entrar na tela ele dispara,
+      // e assim que 100% sumir, dispara também.
+      threshold: 0 
+    });
 
-    const createTexture = () => {
-      if (created) return
-      created = true
-      console.log('Criando VideoTexture')
-      const tex = new THREE.VideoTexture(video)
-      tex.minFilter = THREE.LinearFilter
-      tex.magFilter = THREE.LinearFilter
-      setTexture(tex)
-    }
+    observer.observe(hero);
 
-    video.addEventListener('playing', createTexture)
-
-    video.play().then(() => {
-      video.playbackRate = 0.03
-      createTexture()
-    })
-    return () => video.removeEventListener('playing', createTexture)
-  }, [])
-
-  const handleClick = () => {
-    const video = videoRef.current
-    if (video && video.paused) video.play()
-  }
+    return () => observer.disconnect();
+  }, [theme]); // Depende do theme pois a tag de vídeo é recriada na troca de tema
 
   // ............................
   // RENDER
@@ -466,25 +447,17 @@ export default function App() {
   return (
     <>
       <style>{globalCSS}</style>
-      <video
-        ref={videoRef}
-        autoPlay loop muted playsInline
-        crossOrigin="anonymous"
-        style={{ display: 'none' }}
-      >
-        <source src="/video.webm" type="video/webm" />
-        <source src="/video.mp4" type="video/mp4" />
-      </video>
-      <div style={{ position:'fixed', inset:0, zIndex:0 }} onClick={handleClick}>
-        <Canvas
-          orthographic
-          camera={{ position: [0, 0, 1] }}
-          gl={{ antialias: false, alpha: false }}
-          style={{ width:'100%', height:'100%', display:'block' }}
+      <div style={{ position:'fixed', inset:0, zIndex:0 }}>
+        <video
+          ref={videoRef}
+          key={theme} /* Fazer o react a remontar a tag quando o tema mudar, pra recarregar a source certa */
+          autoPlay loop muted playsInline
+          style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }}
         >
-          {texture && <VideoPlane videoTexture={texture} settings={settings} />}
-        </Canvas>
+          <source src={`/shadernovo-${theme}.webm`} type="video/webm" />
+        </video>
       </div>
+
       <div style={{ position:'relative', zIndex:1 }}>
 
         {/* Navbar */}
@@ -594,7 +567,9 @@ export default function App() {
         )}
           </div>
         {/* HERO */}
-        <section style={{
+        <section 
+          ref={heroRef}
+          style={{
           minHeight:'100vh', display:'flex', flexDirection:'column',
           alignItems:'center', justifyContent:'center', position:'relative',
           textAlign:'center', padding:'0 1.5rem',
