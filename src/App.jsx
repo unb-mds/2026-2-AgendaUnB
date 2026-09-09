@@ -203,14 +203,49 @@ const globalCSS = `
   }
   .modal-btn-primary {
     width: 100%; padding: 14px; margin-top: 8px; margin-bottom: 16px;
-    background: linear-gradient(135deg, rgb(0, 139, 255), rgba(0, 95, 210, 1));
+    background: linear-gradient(135deg, rgba(0, 95, 210, 1));
     color: #fff; border: none; border-radius: 10px;
     font-weight: 600; font-size: 0.95rem; font-family: 'Inter', sans-serif;
     cursor: pointer; box-shadow: 0 4px 20px rgba(0, 139, 255, 0.35);
     transition: all 0.25s ease;
   }
+  .role-selector {
+    display: flex;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 6px;
+    margin-bottom: 24px;
+    gap: 4px;
+  }
+  .modal-btn-secondary-on, .modal-btn-secondary-off {
+    flex: 1;
+    padding: 12px;
+    margin: 0;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+  }
+  .modal-btn-secondary-on {
+    background: linear-gradient(rgba(0, 95, 210, 1));
+    color: #ffffff;
+    box-shadow: 0 4px 15px rgba(0, 139, 255, 0.35);
+  }
+  .modal-btn-secondary-off {
+    background: transparent;
+    color: rgba(255, 255, 255, 0.55);
+  }
+  .modal-btn-secondary-off:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.05);
+  }
   .modal-btn-primary:hover {
-    background: linear-gradient(135deg, rgb(30, 155, 255), rgb(0, 120, 240));
+    background: linear-gradient(135deg, rgb(30, 155, 255));
     box-shadow: 0 6px 25px rgba(0, 139, 255, 0.5);
     transform: translateY(-1px);
   }
@@ -236,7 +271,8 @@ const globalCSS = `
     cursor: pointer; background: rgba(0, 139, 255, 0.15);
     border: 1px solid rgba(0, 139, 255, 0.4); color: #fff;
     padding: 7px 18px; border-radius: 999px; font-weight: 600; font-size: 0.82rem;
-    font-family: 'Inter', sans-serif; transition: all 0.25s ease;
+    font-family: 'Orbitron', sans-serif; font-size: 0.8rem; font-weight: 600;
+    transition: all 0.25s ease;
     box-shadow: 0 0 12px rgba(0, 139, 255, 0.2);
   }
   .nav-btn-account:hover {
@@ -333,6 +369,20 @@ const globalCSS = `
     background: rgba(0, 139, 255, 0.15); border-color: rgba(0, 139, 255, 0.4); color: rgb(0, 139, 255);
   }
   body.light .modal-label { color: rgba(26, 26, 46, 0.75); }
+  
+  /* Role Selector Light Theme */
+  body.light .role-selector {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.1);
+  }
+  body.light .modal-btn-secondary-off {
+    color: rgba(26, 26, 46, 0.6);
+  }
+  body.light .modal-btn-secondary-off:hover {
+    color: #1a1a2e;
+    background: rgba(0, 0, 0, 0.05);
+  }
+  
   body.light .modal-input {
     background: rgba(0, 0, 0, 0.03); border-color: rgba(0, 139, 255, 0.2); color: #1a1a2e;
   }
@@ -405,7 +455,7 @@ const teamMembers = [
 export default function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [theme, setTheme] = useState('dark')
-
+  const [role, setRole] = useState('estudante')
   const heroRef = useRef(null)
   const videoRef = useRef(null)
 
@@ -464,8 +514,8 @@ export default function App() {
         <nav className="nav">
           <div></div>
           <div className="nav-items">
-            <a href="#eventos">Eventos</a>
-            <a href="#organizer">Smart Organizer</a>
+            <a href="#eventos">Funcionalidades</a>
+            <a href="#organizer">Sobre</a>
             <a href="#equipe">Equipe</a>
           </div>
           <div className="nav-right">
@@ -484,7 +534,7 @@ export default function App() {
               className="nav-btn-account"
               onClick={() => setIsMenuOpen(true)}
             >
-              Criar Conta
+              Criar conta
             </button>
           </div>
         </nav>
@@ -501,7 +551,6 @@ export default function App() {
               >
                 ✕
               </button>
-
               <h2 style={{
                 textAlign: 'center',
                 fontFamily: "'Orbitron', sans-serif",
@@ -514,7 +563,6 @@ export default function App() {
               }}>
                 Criar Conta
               </h2>
-
               <p style={{
                 textAlign: 'center',
                 color: theme === 'dark' ? 'rgba(255, 255, 255, 0.55)' : 'rgba(26, 26, 46, 0.6)',
@@ -523,6 +571,20 @@ export default function App() {
               }}>
                 Crie sua conta para acessar o portal da Agenda UnB
               </p>
+              <container className="role-selector">
+                <button 
+                  onClick={() => setRole('estudante')}
+                  className={role === 'estudante' ? "modal-btn-secondary-on" : "modal-btn-secondary-off"}
+                >
+                  Estudante
+                </button>
+                <button 
+                  onClick={() => setRole('professor')}
+                  className={role === 'professor' ? "modal-btn-secondary-on" : "modal-btn-secondary-off"}
+                >
+                  Professor
+                </button>
+              </container>
 
               {/* Campos do Formulário */}
               <div className="modal-input-group">
@@ -532,7 +594,11 @@ export default function App() {
 
               <div className="modal-input-group">
                 <label className="modal-label">Email <span style={{color: 'rgb(0, 139, 255)'}}>*</span></label>
-                <input type="email" placeholder="seu@email.com" className="modal-input" />
+                <input 
+                  type="email" 
+                  placeholder={role === 'professor' ? "nome.sobrenome@unb.br" : "seu@email.com"} 
+                  className="modal-input" 
+                />
               </div>
 
               <div className="modal-input-group">
@@ -669,7 +735,7 @@ export default function App() {
               <div className="feat">
                 <div className="feat-icon"><span className="material-symbols-outlined">admin_panel_settings</span></div>
                 <h3>Moderação</h3>
-                <p>Administradores aprovam ou rejeitam submissões antes da publicação, garantindo a qualidade do conteúdo na agenda.</p>
+                <p>Administradores controlam as submissões antes da publicação, garantindo a qualidade do conteúdo na agenda.</p>
               </div>
               <div className="feat">
                 <div className="feat-icon"><span className="material-symbols-outlined">sync</span></div>
