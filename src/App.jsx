@@ -504,7 +504,7 @@ export default function App() {
           autoPlay loop muted playsInline
           style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }}
         >
-          <source src={`/shadernovo-${theme}.webm`} type="video/webm" />
+          <source src={`/shaderopt-${theme}.webm`} type="video/webm" />
         </video>
       </div>
 
