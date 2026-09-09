@@ -1,2 +1,26 @@
-node_modules
-dist
+﻿# Dependências
+node_modules/
+
+# Build
+dist/
+dist-ssr/
+*.local
+
+# Credenciais — NUNCA versionar
+.env
+.env.*
+!.env.example
+
+# Supabase (chaves e estado local)
+.supabase/
+supabase/.temp/
+supabase/.branches/
+
+# Editor / SO
+.DS_Store
+Thumbs.db
+*.swp
+
+# Logs
+npm-debug.log*
+yarn-error.log*
