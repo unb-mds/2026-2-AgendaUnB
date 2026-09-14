@@ -36,7 +36,7 @@ Para instalar, basta executar no seu terminal:
 Para executar, primeiro é necessário instalar o node.js em [Node.js download](https://nodejs.org/pt-br), após isso, basta entrar na pasta com `cd G8-2026-2` e executar `npm install` para baixar as dependências.
 Para rodar o servidor de desenvolvimento localmente, basta executar `npm run dev` para que a página seja aberta em `http://localhost:5173`
 
-### 💻Requisitos
+
 ### ✅Backend
 ### 📥Frontend
 
