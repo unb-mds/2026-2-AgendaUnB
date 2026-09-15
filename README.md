@@ -36,18 +36,13 @@ Para instalar, basta executar no seu terminal:
 Para executar, primeiro é necessário instalar o node.js em [Node.js download](https://nodejs.org/pt-br), após isso, basta entrar na pasta com `cd G8-2026-2` e executar `npm install` para baixar as dependências.
 Para rodar o servidor de desenvolvimento localmente, basta executar `npm run dev` para que a página seja aberta em `http://localhost:5173`
 
-<<<<<<< HEAD
-### 💻Requisitos
-Consulte a lista completa de requisitos funcionais e não funcionais em [Especificação de Requisitos](requisitos.md).
-=======
->>>>>>> 4726d241fadd2cfde40e82516e49d72dc195d0e0
 
+### 💻Requisitos
 ### ✅Backend
 ### 📥Frontend
 
 ## 📚Documentação
-- [Guia de Padrões e Convenções](padrao.md)
-- [Especificação de Requisitos de Software](requisitos.md)
+Para acessar as documentações clique [aqui](https://unb-mds.github.io/G8-2026-2/)
 
 
 ## 📎Extras
