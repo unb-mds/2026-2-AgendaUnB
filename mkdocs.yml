@@ -1,0 +1,65 @@
+site_name: Agenda UnB Docs
+site_description: Documentação oficial do projeto Agenda UnB — Métodos de Desenvolvimento de Software (MDS) 2026/2
+repo_name: unb-mds/G8-2026-2
+repo_url: https://github.com/unb-mds/G8-2026-2
+
+nav:
+  - Início: index.md
+  - Arquitetura: Architecture.md
+  - Requisitos: requisitos.md
+  - Padrões de Projeto: padroes.md
+  - Sprints:
+    - Sprint 0: sprints/sprint-0.md
+    - Sprint 1: sprints/sprint-1.md
+  - Como Contribuir: CONTRIBUTING.md
+
+theme:
+  name: material
+  language: pt-BR
+  palette:
+    # Modo automático conforme sistema operacional
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Modo automático
+
+    # Tema claro
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Mudar para modo escuro
+
+    # Tema escuro
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Mudar para modo claro
+
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.path
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - tables
