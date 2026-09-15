@@ -18,14 +18,14 @@ O objetivo do projeto é criar uma plataforma centralizada para a comunidade da 
  
 
 ## 👥Equipe
-| Nome                           |                           GitHub                           |
-| :----------------------------- | :--------------------------------------------------------: |
-| Felipe Couto Duque             |       [@felipecduque7](https://github.com/felipecduque7)   |
-| Gabriel Escramin Lourenço      |       [@Bielzinn07](https://github.com/Bielziin07)         |
-| Heitor Gomes Monteiro          |       [@heitormontt](https://github.com/heitormontt)       |
-| Luis Davi Pontes da Silva      |       [@pontesluis](https://github.com/pontesluis)         |
-| Thomas Augusto Amorim de Araujo|       [@thomas4ugust0](https://github.com/thomas4ugust0)   |
-| Thomaz Marra Martins           |       [@marrathomaz](https://github.com/marrathomaz)       |
+| Nome                           |                           GitHub                           |          Papel          |
+| :----------------------------- | :--------------------------------------------------------: |  :-------------------:  |
+| Felipe Couto Duque             |       [@felipecduque7](https://github.com/felipecduque7)   |      Banco de Dados     |
+| Gabriel Escramin Lourenço      |       [@Bielzinn07](https://github.com/Bielziin07)         |      Front-end          |
+| Heitor Gomes Monteiro          |       [@heitormontt](https://github.com/heitormontt)       |      Back-end           |
+| Luis Davi Pontes da Silva      |       [@pontesluis](https://github.com/pontesluis)         |      Banco de Dados     |
+| Thomas Augusto Amorim de Araujo|       [@thomas4ugust0](https://github.com/thomas4ugust0)   |      Front-end          |
+| Thomaz Marra Martins           |       [@marrathomaz](https://github.com/marrathomaz)       |      Back-end           |
 
 ## 🔛Início
 
@@ -36,8 +36,11 @@ Para instalar, basta executar no seu terminal:
 Para executar, primeiro é necessário instalar o node.js em [Node.js download](https://nodejs.org/pt-br), após isso, basta entrar na pasta com `cd G8-2026-2` e executar `npm install` para baixar as dependências.
 Para rodar o servidor de desenvolvimento localmente, basta executar `npm run dev` para que a página seja aberta em `http://localhost:5173`
 
+<<<<<<< HEAD
 ### 💻Requisitos
 Consulte a lista completa de requisitos funcionais e não funcionais em [Especificação de Requisitos](requisitos.md).
+=======
+>>>>>>> 4726d241fadd2cfde40e82516e49d72dc195d0e0
 
 ### ✅Backend
 ### 📥Frontend

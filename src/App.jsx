@@ -821,7 +821,7 @@ export default function App() {
 
           {/* Footer */}
           <footer className="footer">
-            <img src="/Marca-UnB.png" alt="Logo UnB" style={{ width:'70px', marginBottom:'1rem', opacity:0.5 }}/>
+            <img src="/Marca-UnB.png" alt="Logo UnB" style={{ width:'70px', marginBottom:'1rem', opacity:0.5, filter: theme === 'light' ? 'invert(1)' : 'none' }}/>
             <p>Agenda UnB — Universidade de Brasília © 2026</p>
           </footer>
 
