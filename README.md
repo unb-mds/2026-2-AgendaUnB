@@ -37,10 +37,14 @@ Para executar, primeiro é necessário instalar o node.js em [Node.js download](
 Para rodar o servidor de desenvolvimento localmente, basta executar `npm run dev` para que a página seja aberta em `http://localhost:5173`
 
 ### 💻Requisitos
+Consulte a lista completa de requisitos funcionais e não funcionais em [Especificação de Requisitos](requisitos.md).
+
 ### ✅Backend
 ### 📥Frontend
 
 ## 📚Documentação
+- [Guia de Padrões e Convenções](padrao.md)
+- [Especificação de Requisitos de Software](requisitos.md)
 
 
 ## 📎Extras
