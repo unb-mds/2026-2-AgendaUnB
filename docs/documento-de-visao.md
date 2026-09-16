@@ -126,7 +126,7 @@ O detalhamento está em `docs/requisitos.md`.
 
 **De front-end** — SPA em Vite + React, conforme já implementado no repositório. Uma mudança de framework a esta altura representaria retrabalho significativo e precisaria ser justificada em ADR.
 
-**Não definidas** — a arquitetura de back-end, o banco de dados e a plataforma de hospedagem ainda não estão registrados em nenhum documento oficial do projeto até o momento. O `docs/Architecture.md` está em branco por enquanto, para fins de decisão em grupo.
+**Não definidas** — a arquitetura de back-end, o banco de dados e a plataforma de hospedagem ainda não estão registrados nos documentos oficiais do projeto até o momento. O `docs/Architecture.md` está em branco por enquanto, para fins de decisão em grupo.
 
 ---
 
@@ -136,7 +136,6 @@ O detalhamento está em `docs/requisitos.md`.
 |---|---|
 | Legibilidade dos planos de ensino | Se os PDFs forem imagens escaneadas, a extração automática exige OCR (Reconhecimento Óptico de Caracteres) e muda de custo |
 | Escopo x prazo | 21 requisitos funcionais aprovados. Priorização explícita ainda não feita |
-| Conflito no acesso | `docs/requisitos.md` (RF01) admite e-mail pessoal, o que é incompatível com uma agenda restrita à comunidade UnB. É necessário decidir qual prevalece |
 
 ---
 
