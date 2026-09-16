@@ -1,5 +1,5 @@
 # G8-2026-2
-Grupo G8 - Metodos de Desenvolvimento de Software 2026/2
+Agenda UnB - Metodos de Desenvolvimento de Software 2026/2
 
 ## 📅Agenda Unb
 O objetivo do projeto é criar uma plataforma centralizada para a comunidade da Universidade de Brasília (UnB), reunindo em um só lugar informações sobre eventos sociais e culturais do campus e um organizador pessoal de datas acadêmicas. Esse organizador será alimentado automaticamente a partir do processamento dos planos de ensino dos professores, identificando datas de provas, trabalhos e outras atividades importantes. Assim, a plataforma busca facilitar a organização da rotina dos estudantes e o acesso às principais atividades da universidade.
@@ -42,7 +42,7 @@ Para rodar o servidor de desenvolvimento localmente, basta executar `npm run dev
 ### 📥Frontend
 
 ## 📚Documentação
-Para acessar as documentações clique [aqui](https://unb-mds.github.io/G8-2026-2/).
+Para acessar as documentações clique [aqui](https://unb-mds.github.io/2026-2-AgendaUnB/).
 
 
 ## 📎Extras
