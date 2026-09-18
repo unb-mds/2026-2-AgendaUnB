@@ -7,7 +7,7 @@ nav:
   - Início: index.md
   - Arquitetura: Architecture.md
   - Requisitos: requisitos.md
-  - Padrões de Projeto: padrao.md
+  - Padrões de Projeto: padroes.md
   - Sprints:
     - Sprint 0: sprints/sprint-0.md
     - Sprint 1: sprints/sprint-1.md
