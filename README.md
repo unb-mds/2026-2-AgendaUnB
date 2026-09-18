@@ -31,9 +31,9 @@ O objetivo do projeto é criar uma plataforma centralizada para a comunidade da 
 
 ### 💾Execução
 Para instalar, basta executar no seu terminal:
-`git clone https://github.com/unb-mds/G8-2026-2.git`
+`git clone https://github.com/unb-mds/2026-2-AgendaUnB.git`
 
-Para executar, primeiro é necessário instalar o node.js em [Node.js download](https://nodejs.org/pt-br), após isso, basta entrar na pasta com `cd G8-2026-2` e executar `npm install` para baixar as dependências.
+Para executar, primeiro é necessário instalar o node.js em [Node.js download](https://nodejs.org/pt-br), após isso, basta entrar na pasta com `cd 2026-2-AgendaUnB` e executar `npm install` para baixar as dependências.
 Para rodar o servidor de desenvolvimento localmente, basta executar `npm run dev` para que a página seja aberta em `http://localhost:5173`
 
 
