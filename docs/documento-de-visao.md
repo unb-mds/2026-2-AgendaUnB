@@ -1,7 +1,7 @@
 # Documento de Visão — Agenda UnB
 
 **Versão:** 0.1 (rascunho para revisão da equipe)
-**Equipe:** G8 — Métodos de Desenvolvimento de Software, 2026/2
+**Equipe:** Agenda UnB — Métodos de Desenvolvimento de Software, 2026/2
 
 > Itens marcados com **[?]** são suposições a confirmar em reunião.
 
