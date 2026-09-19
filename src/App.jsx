@@ -57,7 +57,7 @@ export default function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [theme, setTheme] = useState('dark')
-
+  const [role, setRole] = useState('estudante')
   const heroRef = useRef(null)
   const videoRef = useRef(null)
 
@@ -122,7 +122,7 @@ export default function App() {
           autoPlay loop muted playsInline
           style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }}
         >
-          <source src={`/shadernovo-${theme}.webm`} type="video/webm" />
+          <source src={`/shaderopt-${theme}.webm`} type="video/webm" />
         </video>
       </div>
 
@@ -130,8 +130,8 @@ export default function App() {
       <nav className="nav">
           <div></div>
           <div className="nav-items">
-            <a href="#eventos">Eventos</a>
-            <a href="#organizer">Smart Organizer</a>
+            <a href="#eventos">Funcionalidades</a>
+            <a href="#organizer">Sobre</a>
             <a href="#equipe">Equipe</a>
           </div>
           <div className="nav-right">
@@ -173,7 +173,6 @@ export default function App() {
               >
                 ✕
               </button>
-
               <h2 style={{
                 textAlign: 'center',
                 fontFamily: "'Orbitron', sans-serif",
@@ -186,7 +185,6 @@ export default function App() {
               }}>
                 Criar Conta
               </h2>
-
               <p style={{
                 textAlign: 'center',
                 color: theme === 'dark' ? 'rgba(255, 255, 255, 0.55)' : 'rgba(26, 26, 46, 0.6)',
@@ -195,6 +193,20 @@ export default function App() {
               }}>
                 Crie sua conta para acessar o portal da Agenda UnB
               </p>
+              <container className="role-selector">
+                <button 
+                  onClick={() => setRole('estudante')}
+                  className={role === 'estudante' ? "modal-btn-secondary-on" : "modal-btn-secondary-off"}
+                >
+                  Estudante
+                </button>
+                <button 
+                  onClick={() => setRole('professor')}
+                  className={role === 'professor' ? "modal-btn-secondary-on" : "modal-btn-secondary-off"}
+                >
+                  Professor
+                </button>
+              </container>
 
               {/* Campos do Formulário */}
               <div className="modal-input-group">
@@ -204,7 +216,11 @@ export default function App() {
 
               <div className="modal-input-group">
                 <label className="modal-label">Email <span style={{color: 'rgb(0, 139, 255)'}}>*</span></label>
-                <input type="email" placeholder="seu@email.com" className="modal-input" />
+                <input 
+                  type="email" 
+                  placeholder={role === 'professor' ? "nome.sobrenome@unb.br" : "seu@email.com"} 
+                  className="modal-input" 
+                />
               </div>
 
               <div className="modal-input-group">
@@ -403,7 +419,7 @@ export default function App() {
               <div className="feat">
                 <div className="feat-icon"><span className="material-symbols-outlined">admin_panel_settings</span></div>
                 <h3>Moderação</h3>
-                <p>Administradores aprovam ou rejeitam submissões antes da publicação, garantindo a qualidade do conteúdo na agenda.</p>
+                <p>Administradores controlam as submissões antes da publicação, garantindo a qualidade do conteúdo na agenda.</p>
               </div>
               <div className="feat">
                 <div className="feat-icon"><span className="material-symbols-outlined">sync</span></div>
@@ -489,8 +505,7 @@ export default function App() {
 
           {/* Footer */}
           <footer className="footer">
-            <img src="/Marca-UnB.png" alt="Logo UnB" 
-            style={{ width:'70px', marginBottom:'1rem', opacity:0.5 }}/>
+            <img src="/Marca-UnB.png" alt="Logo UnB" style={{ width:'70px', marginBottom:'1rem', opacity:0.5, filter: theme === 'light' ? 'invert(1)' : 'none' }}/>
             <p>Agenda UnB — Universidade de Brasília © 2026</p>
           </footer>
 
