@@ -1,7 +1,7 @@
 site_name: Agenda UnB Docs
 site_description: Documentação oficial do projeto Agenda UnB — Métodos de Desenvolvimento de Software (MDS) 2026/2
 repo_name: unb-mds/G8-2026-2
-repo_url: https://github.com/unb-mds/G8-2026-2
+repo_url: https://github.com/unb-mds/2026-2-AgendaUnB
 
 nav:
   - Início: index.md

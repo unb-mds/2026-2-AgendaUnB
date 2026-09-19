@@ -1,404 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-
-// ............................
-//  CSS
-// ............................
-const globalCSS = `
-  * { margin:0; padding:0; box-sizing:border-box; }
-  html { scroll-behavior:smooth; }
-  body, #root { width:100%; min-height:100%; background:#050508; font-family:'Inter',sans-serif; color:#fff; }
-
-  ::-webkit-scrollbar { width:6px; }
-  ::-webkit-scrollbar-track { background:transparent; }
-  ::-webkit-scrollbar-thumb { background:rgba(0,139,255,0.35); border-radius:3px; }
-
-  /* ── Navbar ── */
-  .nav {
-    position:fixed; top:18px; left:50%; transform:translateX(-50%);
-    width:92%; max-width:1100px; height:56px;
-    background:rgba(5,5,12,0.82); backdrop-filter:blur(14px);
-    -webkit-backdrop-filter:blur(14px);
-    border:1px solid rgba(0,139,255,0.15); border-radius:999px;
-    display:flex; align-items:center; justify-content:space-between;
-    padding:0 28px; z-index:900;
-    box-shadow:0 4px 30px rgba(0,0,0,0.55);
-  }
-  .nav-brand {
-    font-family:'Orbitron',sans-serif; font-weight:800;
-    font-size:1.1rem; letter-spacing:0.04em; font-style:italic;
-  }
-  .nav-brand em { font-style:italic; color:rgb(0,139,255); }
-  .nav-items { display:flex; gap:28px; }
-  @media(max-width:768px){ .nav-items{display:none;} }
-  .nav-items a {
-    color:rgba(255,255,255,0.6); font-size:0.72rem; font-weight:600;
-    text-transform:uppercase; letter-spacing:0.12em; cursor:pointer;
-    text-decoration:none; transition:color .25s;
-  }
-  .nav-items a:hover { color:rgb(0,139,255); }
-  .nav-right { display:flex; align-items:center; gap:18px; }
-  .nav-bell { color:rgba(255,255,255,0.55); cursor:pointer; transition:color .25s; }
-  .nav-bell:hover { color:#fff; }
-  .nav-avatar {
-    width:32px; height:32px; border-radius:50%;
-    background:rgb(0,139,255); display:grid; place-items:center;
-    font-weight:700; font-size:0.85rem;
-    box-shadow:0 0 12px rgba(0,139,255,0.45);
-  }
-
-  /* ── Section ── */
-  .section { padding:5rem 1.5rem; max-width:1120px; margin:0 auto; position:relative; z-index:2; }
-  .section-label {
-    display:inline-block; font-size:0.7rem; font-weight:700;
-    text-transform:uppercase; letter-spacing:0.18em;
-    color:rgb(0,139,255); border:1px solid rgba(0,139,255,0.35);
-    padding:5px 14px; border-radius:999px; margin-bottom:1rem;
-  }
-  .section-h2 {
-    font-family:'Orbitron',sans-serif; font-size:clamp(1.6rem,3.5vw,2.2rem);
-    font-weight:700; margin-bottom:0.6rem; letter-spacing:0.03em;
-  }
-  .section-sub { color:rgba(255,255,255,0.55); font-size:0.95rem; max-width:570px; line-height:1.65; margin-bottom:3rem; }
-
-  /* ── Feature cards ── */
-  .feat-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:1.25rem; }
-  .feat {
-    text-align: justify;
-    background:rgba(8,12,22,0.65); border:1px solid rgba(0,139,255,0.12);
-    border-radius:14px; padding:28px 22px;
-    backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
-    transition:transform .3s, border-color .3s, box-shadow .3s;
-  }
-  .feat:hover {
-    transform:translateY(-4px);
-    border-color:rgba(0,139,255,0.5);
-    box-shadow:0 8px 32px rgba(0,139,255,0.12);
-  }
-  .feat-icon {
-    width:44px; height:44px; border-radius:10px;
-    background:rgba(0,139,255,0.1); border:1px solid rgba(0,139,255,0.25);
-    display:grid; place-items:center;
-    color:rgb(0,139,255); margin-bottom:16px;
-  }
-  .feat-icon .material-symbols-outlined {
-    font-size:1.4rem;
-  }
-  .feat h3 { font-size:1.05rem; font-weight:600; margin-bottom:8px; }
-  .feat p { color:rgba(255,255,255,0.55); font-size:0.88rem; line-height:1.6; }
-
-  /* ── Team ── */
-  .team-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1.25rem; }
-  .team-card {
-    background:linear-gradient(175deg,rgba(12,16,28,0.92),rgba(6,8,16,0.96));
-    border:1px solid rgba(0,139,255,0.18); border-radius:14px;
-    padding:28px 20px 24px; text-align:center; position:relative;
-    transition:transform .3s, border-color .3s;
-    display:flex; flex-direction:column; align-items:center;
-  }
-  .team-card:hover {
-    transform:translateY(-4px);
-    border-color:rgba(0,139,255,0.6);
-    box-shadow:0 8px 28px rgba(0,139,255,0.1);
-  }
-  .team-pic-ring {
-    width:82px; height:82px; border-radius:50%; margin:0 auto 16px;
-    padding:3px;
-    background:linear-gradient(135deg,rgb(0,139,255),rgba(0,90,180,0.25));
-  }
-  .team-pic {
-    width:100%; height:100%; border-radius:50%;
-    background:#111; display:flex; align-items:center; justify-content:center;
-    font-size:1.4rem; font-weight:700; color:rgba(0,139,255,0.85);
-    overflow:hidden;
-  }
-  .team-name { font-weight:700; font-size:1.02rem; margin-bottom:4px; line-height:1.3; }
-  .team-role {
-    color:rgb(0,139,255); font-size:0.75rem; font-weight:700;
-    text-transform:uppercase; letter-spacing:0.1em;
-    background:rgba(0,139,255,0.1); padding:3px 10px; border-radius:999px;
-    border:1px solid rgba(0,139,255,0.25);
-    margin-bottom:14px;
-  }
-  .team-links {
-    display:flex; flex-direction:column; gap:6px; margin-top:auto;
-    width:100%; padding-top:12px; border-top:1px solid rgba(255,255,255,0.06);
-  }
-  .team-link-item {
-    display:flex; align-items:center; justify-content:center; gap:6px;
-    font-size:0.75rem; color:rgba(255,255,255,0.55);
-    text-decoration:none; transition:color .2s;
-  }
-  .team-link-item:hover { color:rgb(0,139,255); }
-
-  /* ── Divider ── */
-  .divider {
-    width:100%; max-width:1120px; margin:0 auto;
-    height:1px; background:linear-gradient(90deg,transparent,rgba(0,139,255,0.2),transparent);
-  }
-
-  /* ── Scroll hint ── */
-  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(8px)} }
-  .scroll-hint {
-    position:absolute; bottom:2.5rem; left:50%; transform:translateX(-50%);
-    display:flex; flex-direction:column; align-items:center; gap:6px;
-    color:#ffffff; font-size:0.7rem; letter-spacing:0.15em;
-    text-transform:uppercase; pointer-events:none;
-  }
-  .scroll-hint svg { stroke:#ffffff; animation:float 2.5s ease-in-out infinite; }
-
-  /* ── Footer ── */
-  .footer {
-    text-align:center; padding:3rem 1.5rem 2rem; color:rgba(255,255,255,0.25);
-    font-size:0.75rem; position:relative; z-index:2;
-  }
-
-  /* ── Modal ── */
-  .modal-overlay {
-    position: fixed; inset: 0; top: 0; left: 0; width: 100vw; height: 100vh;
-    background: rgba(2, 6, 16, 0.85);
-    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-    z-index: 99999; display: flex; justify-content: center; align-items: center;
-    padding: 20px; animation: fadeIn 0.25s ease-out;
-  }
-  @keyframes fadeIn {
-    from { opacity: 0; transform: scale(0.97); }
-    to { opacity: 1; transform: scale(1); }
-  }
-  .modal-box {
-    background: linear-gradient(180deg, rgba(10, 18, 36, 0.95) 0%, rgba(5, 9, 20, 0.98) 100%);
-    border: 1px solid rgba(0, 139, 255, 0.35);
-    border-radius: 20px;
-    width: 100%; max-width: 520px;
-    padding: 44px 36px 36px;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 35px rgba(0, 139, 255, 0.2);
-    position: relative; color: #fff;
-  }
-  .modal-close {
-    position: absolute; top: 18px; right: 18px;
-    width: 34px; height: 34px; border-radius: 50%;
-    background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12);
-    color: rgba(255, 255, 255, 0.7); display: flex; justify-content: center; align-items: center;
-    cursor: pointer; transition: all 0.2s; font-size: 14px;
-  }
-  .modal-close:hover {
-    background: rgba(0, 139, 255, 0.2); border-color: rgba(0, 139, 255, 0.5); color: #fff;
-  }
-  .modal-input-group { margin-bottom: 18px; text-align: left; }
-  .modal-label {
-    display: block; font-size: 0.78rem; font-weight: 600;
-    color: rgba(255, 255, 255, 0.8); text-transform: uppercase; letter-spacing: 0.05em;
-    margin-bottom: 6px;
-  }
-  .modal-input {
-    width: 100%; padding: 13px 16px; border-radius: 10px;
-    border: 1px solid rgba(0, 139, 255, 0.25);
-    background: rgba(0, 15, 35, 0.6); color: #fff;
-    font-size: 0.92rem; font-family: 'Inter', sans-serif; outline: none;
-    transition: border-color 0.2s, box-shadow 0.2s;
-  }
-  .modal-input::placeholder { color: rgba(255, 255, 255, 0.35); }
-  .modal-input:focus {
-    border-color: rgba(0, 139, 255, 0.8);
-    box-shadow: 0 0 12px rgba(0, 139, 255, 0.3);
-  }
-  .modal-btn-primary {
-    width: 100%; padding: 14px; margin-top: 8px; margin-bottom: 16px;
-    background: linear-gradient(135deg, rgba(0, 95, 210, 1));
-    color: #fff; border: none; border-radius: 10px;
-    font-weight: 600; font-size: 0.95rem; font-family: 'Inter', sans-serif;
-    cursor: pointer; box-shadow: 0 4px 20px rgba(0, 139, 255, 0.35);
-    transition: all 0.25s ease;
-  }
-  .role-selector {
-    display: flex;
-    background: rgba(0, 0, 0, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    padding: 6px;
-    margin-bottom: 24px;
-    gap: 4px;
-  }
-  .modal-btn-secondary-on, .modal-btn-secondary-off {
-    flex: 1;
-    padding: 12px;
-    margin: 0;
-    border: none;
-    border-radius: 8px;
-    font-weight: 600;
-    font-size: 0.9rem;
-    font-family: 'Inter', sans-serif;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-align: center;
-  }
-  .modal-btn-secondary-on {
-    background: linear-gradient(rgba(0, 95, 210, 1));
-    color: #ffffff;
-    box-shadow: 0 4px 15px rgba(0, 139, 255, 0.35);
-  }
-  .modal-btn-secondary-off {
-    background: transparent;
-    color: rgba(255, 255, 255, 0.55);
-  }
-  .modal-btn-secondary-off:hover {
-    color: #ffffff;
-    background: rgba(255, 255, 255, 0.05);
-  }
-  .modal-btn-primary:hover {
-    background: linear-gradient(135deg, rgb(30, 155, 255));
-    box-shadow: 0 6px 25px rgba(0, 139, 255, 0.5);
-    transform: translateY(-1px);
-  }
-  .modal-divider {
-    display: flex; align-items: center; gap: 12px;
-    color: rgba(255, 255, 255, 0.35); font-size: 0.78rem; text-transform: uppercase;
-    letter-spacing: 0.08em; margin: 16px 0;
-  }
-  .modal-divider::before, .modal-divider::after {
-    content: ''; flex: 1; height: 1px; background: rgba(255, 255, 255, 0.1);
-  }
-  .modal-btn-google {
-    width: 100%; padding: 12px; background: rgba(255, 255, 255, 0.05);
-    color: #fff; border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 10px;
-    font-weight: 500; font-size: 0.9rem; font-family: 'Inter', sans-serif;
-    cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 10px;
-    transition: all 0.25s ease; backdrop-filter: blur(8px);
-  }
-  .modal-btn-google:hover {
-    background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.3);
-  }
-  .nav-btn-account {
-    cursor: pointer; background: rgba(0, 139, 255, 0.15);
-    border: 1px solid rgba(0, 139, 255, 0.4); color: #fff;
-    padding: 7px 18px; border-radius: 999px; font-weight: 600; font-size: 0.82rem;
-    font-family: 'Orbitron', sans-serif; font-size: 0.8rem; font-weight: 600;
-    transition: all 0.25s ease;
-    box-shadow: 0 0 12px rgba(0, 139, 255, 0.2);
-  }
-  .nav-btn-account:hover {
-    background: rgba(0, 139, 255, 0.35); border-color: rgba(0, 139, 255, 0.7);
-    box-shadow: 0 0 20px rgba(0, 139, 255, 0.4); transform: translateY(-1px);
-  }
-
-  /* ── Theme Toggle ── */
-  .theme-toggle {
-    width: 36px; height: 36px; border-radius: 50%;
-    background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15);
-    color: rgba(255, 255, 255, 0.7); display: grid; place-items: center;
-    cursor: pointer; transition: all 0.25s; font-size: 1.1rem;
-  }
-  .theme-toggle:hover {
-    background: rgba(0, 139, 255, 0.2); border-color: rgba(0, 139, 255, 0.5); color: #fff;
-  }
-
-  /* ── Light Theme ── */
-  body.light, body.light #root {
-    background: #f5f6fa; color: #1a1a2e;
-  }
-  body.light ::-webkit-scrollbar-thumb { background: rgba(0, 139, 255, 0.5); }
-
-  body.light .nav {
-    background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(14px);
-    border-color: rgba(0, 139, 255, 0.2);
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-  }
-  body.light .nav-items a { color: rgba(26, 26, 46, 0.6); }
-  body.light .nav-items a:hover { color: rgb(0, 139, 255); }
-  body.light .nav-bell { color: rgba(26, 26, 46, 0.5); }
-  body.light .nav-bell:hover { color: #1a1a2e; }
-  body.light .nav-avatar { background: rgb(0, 139, 255); color: #fff; }
-  body.light .nav-btn-account {
-    background: rgba(0, 139, 255, 0.1); border-color: rgba(0, 139, 255, 0.35); color: #1a1a2e;
-  }
-  body.light .nav-btn-account:hover {
-    background: rgba(0, 139, 255, 0.25); border-color: rgba(0, 139, 255, 0.6);
-  }
-  body.light .theme-toggle {
-    background: rgba(0, 0, 0, 0.06); border-color: rgba(0, 0, 0, 0.12); color: #555;
-  }
-  body.light .theme-toggle:hover {
-    background: rgba(0, 139, 255, 0.15); border-color: rgba(0, 139, 255, 0.4); color: rgb(0, 139, 255);
-  }
-
-  body.light .section-label { color: rgb(0, 139, 255); border-color: rgba(0, 139, 255, 0.35); }
-  body.light .section-h2 { color: #1a1a2e; }
-  body.light .section-sub { color: rgba(26, 26, 46, 0.6); }
-
-  body.light .feat {
-    background: rgba(255, 255, 255, 0.85); border-color: rgba(0, 139, 255, 0.15);
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-  }
-  body.light .feat:hover {
-    border-color: rgba(0, 139, 255, 0.5);
-    box-shadow: 0 8px 32px rgba(0, 139, 255, 0.1);
-  }
-  body.light .feat h3 { color: #1a1a2e; }
-  body.light .feat p { color: rgba(26, 26, 46, 0.6); }
-
-  body.light .team-card {
-    background: linear-gradient(175deg, rgba(255, 255, 255, 0.95), rgba(245, 246, 250, 0.98));
-    border-color: rgba(0, 139, 255, 0.18);
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-  }
-  body.light .team-card:hover {
-    border-color: rgba(0, 139, 255, 0.6);
-    box-shadow: 0 8px 28px rgba(0, 139, 255, 0.1);
-  }
-  body.light .team-pic { background: #e8eaef; color: rgba(0, 139, 255, 0.85); }
-  body.light .team-name { color: #1a1a2e; }
-  body.light .team-links { border-top-color: rgba(0, 0, 0, 0.08); }
-  body.light .team-link-item { color: rgba(26, 26, 46, 0.55); }
-  body.light .team-link-item:hover { color: rgb(0, 139, 255); }
-
-  body.light .divider { background: linear-gradient(90deg, transparent, rgba(0, 139, 255, 0.25), transparent); }
-  body.light .footer { color: rgba(26, 26, 46, 0.35); }
-
-  body.light .scroll-hint { color: #1a1a2e; }
-  body.light .scroll-hint svg { stroke: #1a1a2e; }
-
-  body.light .modal-overlay { background: rgba(245, 246, 250, 0.85); }
-  body.light .modal-box {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(245, 246, 250, 0.99));
-    border-color: rgba(0, 139, 255, 0.3); color: #1a1a2e;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15), 0 0 35px rgba(0, 139, 255, 0.1);
-  }
-  body.light .modal-close {
-    background: rgba(0, 0, 0, 0.05); border-color: rgba(0, 0, 0, 0.1); color: rgba(0, 0, 0, 0.6);
-  }
-  body.light .modal-close:hover {
-    background: rgba(0, 139, 255, 0.15); border-color: rgba(0, 139, 255, 0.4); color: rgb(0, 139, 255);
-  }
-  body.light .modal-label { color: rgba(26, 26, 46, 0.75); }
-  
-  /* Role Selector Light Theme */
-  body.light .role-selector {
-    background: rgba(0, 0, 0, 0.04);
-    border-color: rgba(0, 0, 0, 0.1);
-  }
-  body.light .modal-btn-secondary-off {
-    color: rgba(26, 26, 46, 0.6);
-  }
-  body.light .modal-btn-secondary-off:hover {
-    color: #1a1a2e;
-    background: rgba(0, 0, 0, 0.05);
-  }
-  
-  body.light .modal-input {
-    background: rgba(0, 0, 0, 0.03); border-color: rgba(0, 139, 255, 0.2); color: #1a1a2e;
-  }
-  body.light .modal-input::placeholder { color: rgba(26, 26, 46, 0.35); }
-  body.light .modal-input:focus {
-    border-color: rgba(0, 139, 255, 0.7); box-shadow: 0 0 12px rgba(0, 139, 255, 0.2);
-  }
-  body.light .modal-divider { color: rgba(26, 26, 46, 0.3); }
-  body.light .modal-divider::before, body.light .modal-divider::after { background: rgba(0, 0, 0, 0.1); }
-  body.light .modal-btn-google {
-    background: rgba(0, 0, 0, 0.04); border-color: rgba(0, 0, 0, 0.15); color: #1a1a2e;
-  }
-  body.light .modal-btn-google:hover {
-    background: rgba(0, 0, 0, 0.08); border-color: rgba(0, 0, 0, 0.25);
-  }
-`
+import './styles/global.css'
 
 // ............................
 // Dados da equipe
@@ -454,6 +55,7 @@ const teamMembers = [
 // ............................
 export default function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [theme, setTheme] = useState('dark')
   const [role, setRole] = useState('estudante')
   const heroRef = useRef(null)
@@ -466,6 +68,23 @@ export default function App() {
   }, [theme])
 
   const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark')
+  // Para fechar o modal com ESC
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setIsMenuOpen(false);
+        setIsLoginOpen(false);
+      }
+    };
+
+    if (isMenuOpen || isLoginOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isMenuOpen, isLoginOpen]);
 
   // Quando sair da tela, o video para
   useEffect(() => {
@@ -496,7 +115,6 @@ export default function App() {
   // ............................
   return (
     <>
-      <style>{globalCSS}</style>
       <div style={{ position:'fixed', inset:0, zIndex:0 }}>
         <video
           ref={videoRef}
@@ -508,10 +126,8 @@ export default function App() {
         </video>
       </div>
 
-      <div style={{ position:'relative', zIndex:1 }}>
-
-        {/* Navbar */}
-        <nav className="nav">
+      {/* Navbar */}
+      <nav className="nav">
           <div></div>
           <div className="nav-items">
             <a href="#eventos">Funcionalidades</a>
@@ -535,6 +151,12 @@ export default function App() {
               onClick={() => setIsMenuOpen(true)}
             >
               Criar conta
+            </button>
+            <button 
+              className="nav-btn-account-login"
+              onClick={() => setIsLoginOpen(true)}
+            >
+              Entrar
             </button>
           </div>
         </nav>
@@ -631,7 +253,71 @@ export default function App() {
             </div>
           </div>
         )}
+
+        {/*MODAL LOGIN*/}
+        {isLoginOpen && (
+          <div className="modal-overlay" onClick={() => setIsLoginOpen(false)}>
+            <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+              
+              {/* Botão Fechar */}
+              <button 
+                className="modal-close"
+                onClick={() => setIsLoginOpen(false)}
+              >
+                ✕
+              </button>
+              <h2 style={{
+                textAlign: 'center',
+                fontFamily: "'Orbitron', sans-serif",
+                color: theme === 'dark' ? '#ffffff' : '#1a1a2e',
+                fontSize: '1.65rem',
+                fontWeight: 700,
+                letterSpacing: '0.04em',
+                marginBottom: '6px',
+                textShadow: theme === 'dark' ? '0 0 20px rgba(0, 139, 255, 0.45)' : 'none'
+              }}>
+                Entrar
+              </h2>
+              <p style={{
+                textAlign: 'center',
+                color: theme === 'dark' ? 'rgba(255, 255, 255, 0.55)' : 'rgba(26, 26, 46, 0.6)',
+                fontSize: '0.85rem',
+                marginBottom: '26px'
+              }}>
+                Acesse sua conta do portal Agenda UnB
+              </p>
+
+              {/* Campos do Formulário */}
+              <div className="modal-input-group">
+                <label className="modal-label">Email <span style={{color: 'rgb(0, 139, 255)'}}>*</span></label>
+                <input type="email" placeholder="seu@email.com" className="modal-input" />
+              </div>
+
+              <div className="modal-input-group">
+                <label className="modal-label">Senha <span style={{color: 'rgb(0, 139, 255)'}}>*</span></label>
+                <input type="password" placeholder="Sua senha" className="modal-input" />
+              </div>
+
+              <button className="modal-btn-primary">
+                Entrar
+              </button>
+
+              <div className="modal-divider">ou</div>
+
+              <button className="modal-btn-google">
+                <svg width="18" height="18" viewBox="0 0 48 48">
+                  <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.7 17.74 9.5 24 9.5z"/>
+                  <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                  <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                  <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                </svg>
+                Entrar com Google
+              </button>
+
+            </div>
           </div>
+        )}
+
         {/* HERO */}
         <section 
           ref={heroRef}
@@ -646,7 +332,7 @@ export default function App() {
               color: theme === 'dark' ? 'rgb(255, 255, 255)' : '#1a1a2e', letterSpacing:'0.2em', textTransform:'uppercase',
               marginBottom:'0.6rem',
             }}>
-              Sejam bem vindos à
+              Sejam bem-vindos ao
             </p>
 
             <h1 style={{
@@ -688,13 +374,11 @@ export default function App() {
               e.currentTarget.style.transform='translateY(0)'
             }}
           >
-            <svg width="22" height="22" viewBox="0 0 48 48">
-              <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.7 17.74 9.5 24 9.5z"/>
-              <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-              <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-              <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
             </svg>
-            Entrar com Google
+            Entrar como convidado
           </button>
 
           <div className="scroll-hint">
