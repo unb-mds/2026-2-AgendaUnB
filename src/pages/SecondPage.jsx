@@ -1,6 +1,15 @@
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 
-export default function SegundaPagina({ theme = 'dark', toggleTheme }) {
+export default function SegundaPagina({ theme: propTheme, toggleTheme: propToggleTheme }) {
+  const [internalTheme, setInternalTheme] = useState('dark')
+  const theme = propTheme || internalTheme
+  const toggleTheme = propToggleTheme || (() => setInternalTheme(t => t === 'dark' ? 'light' : 'dark'))
+
+  useEffect(() => {
+    document.body.classList.remove('light', 'dark')
+    document.body.classList.add(theme)
+  }, [theme])
   return (
     <div style={{
       minHeight: '100vh',
