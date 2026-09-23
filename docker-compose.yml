@@ -1,0 +1,14 @@
+services:
+  frontend:
+    build: .
+    ports:
+      - "5173:5173"
+    volumes:
+      # Permite que alterações no código mudem automaticamente na tela para fazer Hot Reload
+      - .:/app
+      # Evita que o node_modules local do Windows sobrescreva o do Linux (container)
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+
