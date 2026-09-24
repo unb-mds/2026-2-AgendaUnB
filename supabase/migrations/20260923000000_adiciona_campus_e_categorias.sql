@@ -12,9 +12,7 @@ CREATE TABLE categories (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-ALTER TABLE eventos_pessoais 
-ADD COLUMN campus_id UUID REFERENCES campus(id),
-ADD COLUMN category_id UUID REFERENCES categories(id);
+
 
 ALTER TABLE campus ENABLE ROW LEVEL SECURITY;
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
