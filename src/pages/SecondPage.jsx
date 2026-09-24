@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 const CustomSelect = ({ value, onChange, options, placeholder, dropUp = false, className, wrapperWidth }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -241,9 +242,9 @@ const CustomTimePicker = ({ value, onChange, placeholder, dropUp = false, classN
             padding: '14px 16px', borderBottom: '1px solid var(--border-color)',
             background: 'rgba(0, 139, 255, 0.06)'
           }}>
-            <span className="material-symbols-outlined" style={{ fontSize: '1.1rem', color: 'var(--accent-color)' }}>schedule</span>
-            <span style={{ fontWeight: 700, fontSize: '0.85rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--accent-color)' }}>
-              Selecionar Horário
+            <span className="material-symbols-outlined" style={{ fontSize: '1.1rem', color: 'var(--white)' }}>schedule</span>
+            <span style={{ fontWeight: 700, fontSize: '0.85rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--white)' }}>
+              Selecione o horário
             </span>
           </div>
 
@@ -322,6 +323,7 @@ const CustomTimePicker = ({ value, onChange, placeholder, dropUp = false, classN
 };
 
 export default function SegundaPagina() {
+  const { user, profile, signOut } = useAuth();
   // --- GERENCIAMENTO DE TEMA LOCAL ---
   const [theme, setTheme] = useState(() => document.body.classList.contains('light') ? 'light' : 'dark');
   
@@ -335,8 +337,8 @@ export default function SegundaPagina() {
 
   // --- ESTADOS DA APLICAÇÃO ---
   const [eventos, setEventos] = useState([
-    { id: 1, titulo: 'Semana Universitária - Abertura', data: '2026-09-25', horario: '09:00', campus: 'Darcy Ribeiro', local: 'Centro Comunitário', area: 'Acadêmico', descricao: 'Cerimônia de abertura da Semuni.', visibilidade: 'Público', criadoPorMim: false },
-    { id: 2, titulo: 'Semana da África', data: '2026-09-26', horario: '18:30', campus: 'FCTE', local: 'Restaurante Universitário', area: 'Cultura', descricao: 'Treino aberto para todos os alunos.', visibilidade: 'Público', criadoPorMim: false }
+    { id: 1, titulo: 'Abertura da Semana Universitária', data: '2026-09-21', horario: '14:00', campus: 'Darcy Ribeiro', local: 'Beijódromo', area: 'Acadêmico', descricao: 'Cerimônia de abertura da Semuni.', visibilidade: 'Público', criadoPorMim: false },
+    { id: 2, titulo: 'Curso de Professores de Futmanobol', data: '2026-09-26', horario: '18:30', campus: 'FCTE', local: 'Restaurante Universitário', area: 'Cultura', descricao: 'Treino aberto para todos os alunos.', visibilidade: 'Público', criadoPorMim: false }
   ]);
 
   const [visaoEventos, setVisaoEventos] = useState('Públicos');
@@ -350,7 +352,7 @@ export default function SegundaPagina() {
   const [local, setLocal] = useState('');
   const [area, setArea] = useState('');
   const [descricao, setDescricao] = useState('');
-  const [visibilidade, setVisibilidade] = useState('Público');
+  const [visibilidade, setVisibilidade] = useState('');
 
   // Estados dos Filtros
   const [searchQuery, setSearchQuery] = useState('');
@@ -487,9 +489,20 @@ export default function SegundaPagina() {
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
             <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
           </svg>
-          <div className="nav-avatar" title="Perfil do Usuário" style={{ cursor: 'pointer', background: accentColor, color: '#fff', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
-            U
-          </div>
+          {user && (
+            <div 
+              className="nav-avatar" 
+              title="Sair" 
+              onClick={signOut}
+              style={{ cursor: 'pointer', background: accentColor, color: '#fff', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', overflow: 'hidden' }}
+            >
+              {user.user_metadata?.avatar_url ? (
+                 <img src={user.user_metadata.avatar_url} alt="Avatar" style={{width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover'}} />
+              ) : (
+                 profile?.nome_completo?.[0]?.toUpperCase() || 'U'
+              )}
+            </div>
+          )}
         </div>
       </nav>
 
@@ -504,10 +517,10 @@ export default function SegundaPagina() {
               Eventos Públicos
             </button>
             <button 
-              onClick={() => setVisaoEventos('Meus')}
-              className={`btn-toggle-item ${visaoEventos === 'Meus' ? 'active' : ''}`}
+              onClick={() => setVisaoEventos('MEUS')}
+              className={`btn-toggle-item ${visaoEventos === 'MEUS' ? 'active' : ''}`}
             >
-              Meus Eventos
+            Meus Eventos
             </button>
           </div>
         </div>
@@ -528,9 +541,9 @@ export default function SegundaPagina() {
             <button
               onClick={() => setIsModalOpen(true)}
               style={{
-                padding: '0 24px', borderRadius: '24px', background: 'linear-gradient(135deg, rgb(0, 95, 210), rgb(0, 139, 255))',
+                padding: '0 24px', borderRadius: '26px', background: accentColor,
                 color: '#fff', border: 'none', fontWeight: 600, fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
-                boxShadow: '0 4px 15px rgba(0, 139, 255, 0.4)', height: '56px'
+                boxShadow: '0 4px 15px rgba(0, 140, 255, 0.19)', height: '56px'
               }}
             >
               <span className="material-symbols-outlined">add</span>
@@ -566,7 +579,7 @@ export default function SegundaPagina() {
         </div>
 
         <h2 style={{ fontFamily: "'Orbitron', sans-serif", fontSize: '1.4rem', marginBottom: '1.5rem', color: isDark ? '#fff' : '#1a1a2e', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {visaoEventos === 'Meus' ? 'SEUS EVENTOS' : 'EVENTOS PÚBLICOS'}
+          {visaoEventos === 'MEUS' ? 'MEUS EVENTOS' : 'EVENTOS PÚBLICOS'}
           <span className="material-symbols-outlined" style={{ color: accentColor, fontSize: '1.4rem' }}>event</span>
         </h2>
 
@@ -641,17 +654,17 @@ export default function SegundaPagina() {
             </button>
             <h2 className="modal-title">
               <span className="material-symbols-outlined">event_note</span>
-              Adicionar Novo Evento
+              Novo Evento
             </h2>
             <form onSubmit={handleAdicionarEvento} className="modal-form">
               
               <div>
                 <label className="modal-label">TÍTULO DO EVENTO *</label>
-                <input type="text" required value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder="Ex: Roda de Conversa..." className="custom-input" />
+                <input type="text" required value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder="Dê um título breve para o seu evento..." className="custom-input" />
               </div>
               <div>
                 <label className="modal-label">DESCRIÇÃO</label>
-                <textarea value={descricao} onChange={(e) => setDescricao(e.target.value)} placeholder="Forneça detalhes..." className="custom-input" style={{ resize: 'vertical', minHeight: '80px', fontFamily: 'inherit' }} />
+                <textarea value={descricao} onChange={(e) => setDescricao(e.target.value)} placeholder="Forneça mais detalhes..." className="custom-input" style={{ resize: 'vertical', minHeight: '80px', fontFamily: 'inherit' }} />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
