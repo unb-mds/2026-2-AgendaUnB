@@ -6,7 +6,7 @@ create policy "perfis visiveis para todos"
   using (true);
 
 -- =============================================================
--- TABELA DE EVENTOS (Agenda)
+-- TABELA DE EVENTOS (Agenda Pública)
 -- =============================================================
 create table public.eventos (
   id             uuid primary key default gen_random_uuid(),
@@ -16,12 +16,14 @@ create table public.eventos (
   data_evento    timestamptz not null, -- Cobre data e hora do RF14
   localizacao    text,
   link_externo   text, -- Campo adicionado para o RF14
+  campus_id      uuid references public.campus(id),     -- Ligação com a tabela de Campus
+  category_id    uuid references public.categories(id), -- Ligação com a tabela de Categorias
   status         text not null default 'pendente' 
                  check (status in ('pendente', 'aprovado', 'rejeitado')),
   criado_em      timestamptz not null default now()
 );
 
-comment on table public.eventos is 'Eventos propostos por professores ou verificados pela IA.';
+comment on table public.eventos is 'Eventos propostos por professores ou verificados pela IA, associados a campus e categoria.';
 
 -- =============================================================
 -- TABELA DE PLANOS DE ENSINO

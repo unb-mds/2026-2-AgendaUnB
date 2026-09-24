@@ -1,27 +1,31 @@
-CREATE TABLE eventos_pessoais (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  titulo TEXT NOT NULL,
-  descricao TEXT,
-  data_hora TIMESTAMP WITH TIME ZONE NOT NULL,
-  user_id UUID NOT NULL REFERENCES auth.users(id) DEFAULT auth.uid(),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+create table public.eventos_pessoais (
+  id             uuid primary key default gen_random_uuid(),
+  user_id        uuid not null references auth.users(id) default auth.uid(),
+  titulo         text not null check (char_length(trim(titulo)) >= 3),
+  descricao      text,
+  data_hora      timestamptz not null,
+  campus_id      uuid references public.campus(id),
+  category_id    uuid references public.categories(id),
+  criado_em      timestamptz not null default now()
 );
 
-ALTER TABLE eventos_pessoais ENABLE ROW LEVEL SECURITY;
+comment on table public.eventos_pessoais is 'Eventos privados criados por cada utilizador, associados a campus e categoria.';
 
-CREATE POLICY "Usuários podem ver seus próprios eventos"
-ON eventos_pessoais FOR SELECT
-USING (auth.uid() = user_id);
+alter table public.eventos_pessoais enable row level security;
 
-CREATE POLICY "Usuários podem criar eventos"
-ON eventos_pessoais FOR INSERT
-WITH CHECK (auth.uid() = user_id);
+create policy "utilizadores podem ver os seus proprios eventos"
+  on public.eventos_pessoais for select
+  using (auth.uid() = user_id);
 
-CREATE POLICY "Usuários podem atualizar seus próprios eventos"
-ON eventos_pessoais FOR UPDATE
-USING (auth.uid() = user_id)
-WITH CHECK (auth.uid() = user_id);
+create policy "utilizadores podem criar eventos"
+  on public.eventos_pessoais for insert
+  with check (auth.uid() = user_id);
 
-CREATE POLICY "Usuários podem deletar seus próprios eventos"
-ON eventos_pessoais FOR DELETE
-USING (auth.uid() = user_id);
+create policy "utilizadores podem atualizar os seus proprios eventos"
+  on public.eventos_pessoais for update
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+create policy "utilizadores podem deletar os seus proprios eventos"
+  on public.eventos_pessoais for delete
+  using (auth.uid() = user_id);
