@@ -455,7 +455,7 @@ export default function SegundaPagina() {
         borderColor: isDark ? 'rgba(0, 139, 255, 0.15)' : 'rgba(0, 139, 255, 0.2)'
       }}>
         {/* Espaço à esquerda vazio para manter a estrutura flex */}
-        <div></div>
+    <div> </div>
 
         {/* Itens perfeitamente centralizados no meio via posicionamento absoluto */}
         <div className="nav-items" style={{ 
