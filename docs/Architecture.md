@@ -19,7 +19,7 @@ flowchart LR
     WEB --> API[API REST<br/>Python + FastAPI]
     API --> DB[(PostgreSQL)]
     API --> FILES[Armazenamento privado<br/>dos planos de ensino]
-    API --> GOOGLE[Google OAuth<br/>se adotado pela equipe]
+    API --> GOOGLE[Google OAuth]
     API --> EMAIL[Serviço de e-mail<br/>lembretes e notificações]
     COLLECTOR[Coleta de fontes públicas<br/>de eventos] --> API
 ```
