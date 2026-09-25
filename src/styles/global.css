@@ -462,7 +462,10 @@ body.light .event-tag { background: rgba(0, 0, 0, 0.05); }
   background: var(--card-bg); border-radius: 20px; overflow: hidden;
   border: 1px solid var(--border-color); box-shadow: var(--shadow-dark);
   position: relative; display: flex; flex-direction: column; transition: transform 0.2s, border-color 0.2s;
-  min-height: 260px;
+  min-height: 210px;
+  isolation: isolate;
+  will-change: transform;
+  color: var(--text-color);
 }
 .event-card:hover { transform: translateY(-3px); border-color: var(--accent-color); }
 .event-card-icon {
@@ -471,11 +474,11 @@ body.light .event-tag { background: rgba(0, 0, 0, 0.05); }
   border-bottom: 1px solid var(--border-color);
 }
 .event-card-icon span { font-size: 2rem; color: var(--accent-color); opacity: 0.9; }
-.event-card-body { padding: 1rem 1.25rem 1.25rem; flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-.event-card-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 4px; color: var(--text-color); line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.event-card-date { display: flex; align-items: center; gap: 6px; color: #008bff; font-weight: 700; font-size: 0.88rem; margin-bottom: 8px; }
-.event-card-desc { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; flex-shrink: 1; }
-.event-card-footer { display: flex; flex-wrap: nowrap; gap: 6px; margin-top: auto; padding-top: 12px; overflow: hidden; }
+.event-card-body { padding: 1.25rem; flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.event-card-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 6px; color: var(--text-color); line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.event-card-date { display: flex; align-items: center; gap: 6px; color: #008bff; font-weight: 600; font-size: 0.85rem; margin-bottom: 12px; }
+.event-card-desc { font-size: 0.88rem; color: var(--text-muted); margin-bottom: 0; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; flex-shrink: 1; }
+.event-card-footer { display: flex; flex-wrap: nowrap; gap: 8px; margin-top: auto; padding-top: 16px; overflow: hidden; }
 .event-card-footer .event-tag {
   overflow: hidden; max-width: 50%; flex-shrink: 1; min-width: 0;
 }
@@ -824,3 +827,75 @@ body.light .time-picker-item:hover {
 
 
 
+
+/* ==================================================== */
+/*  PÁGINA DE EVENTO - Light Theme overrides            */
+/* ==================================================== */
+body.light .event-title {
+  color: #1a1a2e;
+}
+
+body.light .event-organizer-box {
+  border-bottom-color: rgba(0, 139, 255, 0.2);
+}
+
+body.light .org-label {
+  color: rgba(26, 26, 46, 0.55);
+}
+
+body.light .org-name {
+  color: #1a1a2e;
+}
+
+body.light .event-body {
+  color: rgba(26, 26, 46, 0.75);
+}
+
+body.light .event-action-card {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(0, 139, 255, 0.25);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+}
+
+body.light .event-info-line {
+  color: #1a1a2e;
+}
+
+body.light .social-counter {
+  color: rgba(26, 26, 46, 0.65);
+  background: rgba(0, 139, 255, 0.08);
+}
+
+body.light .social-counter strong {
+  color: #1a1a2e;
+}
+
+body.light .ds-btn-secondary {
+  color: rgba(26, 26, 46, 0.7);
+  border-color: rgba(0, 0, 0, 0.15);
+}
+
+body.light .ds-btn-secondary:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 139, 255, 0.4);
+  color: #1a1a2e;
+}
+
+body.light .campus-badge {
+  color: rgba(26, 26, 46, 0.7) !important;
+  border-color: rgba(0, 0, 0, 0.15) !important;
+  background: rgba(0, 0, 0, 0.04) !important;
+}
+
+body.light .event-page-wrapper {
+  background: #f5f6fa;
+}
+
+body.light .nav {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(0, 139, 255, 0.2);
+}
+
+body.light .event-list li::before {
+  color: rgb(0, 139, 255);
+}
