@@ -32,7 +32,7 @@ export default function PaginaDeEvento() {
     }
   };
 
-  const organizador = getOrganizadorInfo();
+  const organizador = getOrganizadorInfo() || { nome: 'Organizador', foto: null, iniciais: 'O' };
 
   // Dados mockados fundidos com os passados pelo estado
   const evento = {
