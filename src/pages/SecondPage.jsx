@@ -338,22 +338,9 @@ export default function SegundaPagina() {
 
   // --- ESTADOS DA APLICAÇÃO ---
   const [eventos, setEventos] = useState([
-    {
+        {
       id: 1,
-      titulo: '32º Congresso de Iniciação Científica da UnB',
-      data: '2026-09-25',
-      horario: '10:00',
-      campus: 'Darcy Ribeiro',
-      local: 'Centro Comunitário Athos Bulcão',
-      area: 'Acadêmico',
-      descricao: 'Último dia do 32º Congresso de Iniciação Científica e 23º Congresso de Iniciação Científica do DF. Bolsistas do PIBIC, PIBITI e PIBIC-AF apresentam os resultados de suas pesquisas dos editais 2025/2026 em sessões de pôsteres e comunicações orais. Oportunidade para conhecer a ciência de ponta produzida na UnB e interagir com jovens pesquisadores.',
-      linkExterno: 'https://proic.unb.br/',
-      visibilidade: 'Público',
-      criadoPorMim: false
-    },
-    {
-      id: 2,
-      titulo: 'Encerramento da 26ª Semana Universitária',
+      titulo: 'Encerramento da 26ª SEMUNI',
       data: '2026-09-25',
       horario: '17:00',
       campus: 'Darcy Ribeiro',
@@ -365,7 +352,33 @@ export default function SegundaPagina() {
       criadoPorMim: false
     },
     {
+      id: 2,
+      titulo: '32º Congresso de Iniciação Científica da UnB',
+      data: '2026-09-25',
+      horario: '10:00',
+      campus: 'Darcy Ribeiro',
+      local: 'Centro Comunitário Athos Bulcão',
+      area: 'Acadêmico',
+      descricao: 'Último dia do 32º Congresso de Iniciação Científica e 23º Congresso de Iniciação Científica do DF. Bolsistas do PIBIC, PIBITI e PIBIC-AF apresentam os resultados de suas pesquisas dos editais 2025/2026 em sessões de pôsteres e comunicações orais. Oportunidade para conhecer a ciência de ponta produzida na UnB e interagir com jovens pesquisadores.',
+      linkExterno: 'https://proic.unb.br/',
+      visibilidade: 'Público',
+      criadoPorMim: false
+    },
+        {
       id: 3,
+      titulo: '18º Encontro Nacional de História Oral',
+      data: '2026-10-12',
+      horario: '09:00',
+      campus: 'Darcy Ribeiro',
+      local: 'Campus Darcy Ribeiro',
+      area: 'Acadêmico',
+      descricao: 'Maior fórum de história oral do Brasil, promovido pela Associação Brasileira de História Oral (ABHO). O tema desta edição é "Oralidades plurais na construção de um futuro de justiça climática". O encontro ocorre de 12 a 16 de outubro e reúne pesquisadores, docentes, estudantes e representantes de movimentos sociais para reflexões sobre memória, narração e escuta.',
+      linkExterno: 'https://doity.com.br/abho2026',
+      visibilidade: 'Público',
+      criadoPorMim: false
+    },
+    {
+      id: 4,
       titulo: 'Conferência: Educar en Cultura Democrática',
       data: '2026-09-28',
       horario: '17:00',
@@ -378,7 +391,7 @@ export default function SegundaPagina() {
       criadoPorMim: false
     },
     {
-      id: 4,
+      id: 5,
       titulo: 'Exposição Diapedesis - CAL',
       data: '2026-10-01',
       horario: '08:00',
@@ -391,7 +404,7 @@ export default function SegundaPagina() {
       criadoPorMim: false
     },
     {
-      id: 5,
+      id: 6,
       titulo: 'Prazo Final - Trancamento Parcial de Matrícula',
       data: '2026-10-09',
       horario: '23:59',
@@ -400,19 +413,6 @@ export default function SegundaPagina() {
       area: 'Comunicado',
       descricao: 'Data-limite para realizar o trancamento parcial de matrícula no semestre 2026.2. O procedimento deve ser feito exclusivamente pelo sistema SIGAA. Atenção: após essa data, não será mais possível solicitar trancamento de disciplinas individuais neste período letivo.',
       linkExterno: 'https://sigaa.unb.br/sigaa/public/',
-      visibilidade: 'Público',
-      criadoPorMim: false
-    },
-    {
-      id: 6,
-      titulo: '18º Encontro Nacional de História Oral',
-      data: '2026-10-12',
-      horario: '09:00',
-      campus: 'Darcy Ribeiro',
-      local: 'Campus Darcy Ribeiro',
-      area: 'Acadêmico',
-      descricao: 'Maior fórum de história oral do Brasil, promovido pela Associação Brasileira de História Oral (ABHO). O tema desta edição é "Oralidades plurais na construção de um futuro de justiça climática". O encontro ocorre de 12 a 16 de outubro e reúne pesquisadores, docentes, estudantes e representantes de movimentos sociais para reflexões sobre memória, narração e escuta.',
-      linkExterno: 'https://doity.com.br/abho2026',
       visibilidade: 'Público',
       criadoPorMim: false
     },
