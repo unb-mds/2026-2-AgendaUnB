@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const CustomSelect = ({ value, onChange, options, placeholder, dropUp = false, className, wrapperWidth }) => {
@@ -323,6 +323,7 @@ const CustomTimePicker = ({ value, onChange, placeholder, dropUp = false, classN
 };
 
 export default function SegundaPagina() {
+  const navigate = useNavigate();
   const { user, profile, signOut } = useAuth();
   // --- GERENCIAMENTO DE TEMA LOCAL ---
   const [theme, setTheme] = useState(() => document.body.classList.contains('light') ? 'light' : 'dark');
@@ -337,8 +338,84 @@ export default function SegundaPagina() {
 
   // --- ESTADOS DA APLICAÇÃO ---
   const [eventos, setEventos] = useState([
-    { id: 1, titulo: 'Abertura da Semana Universitária', data: '2026-09-21', horario: '14:00', campus: 'Darcy Ribeiro', local: 'Beijódromo', area: 'Acadêmico', descricao: 'Cerimônia de abertura da Semuni.', visibilidade: 'Público', criadoPorMim: false },
-    { id: 2, titulo: 'Curso de Professores de Futmanobol', data: '2026-09-26', horario: '18:30', campus: 'FCTE', local: 'Restaurante Universitário', area: 'Cultura', descricao: 'Treino aberto para todos os alunos.', visibilidade: 'Público', criadoPorMim: false }
+    {
+      id: 1,
+      titulo: '32º Congresso de Iniciação Científica da UnB',
+      data: '2026-09-25',
+      horario: '10:00',
+      campus: 'Darcy Ribeiro',
+      local: 'Centro Comunitário Athos Bulcão',
+      area: 'Acadêmico',
+      descricao: 'Último dia do 32º Congresso de Iniciação Científica e 23º Congresso de Iniciação Científica do DF. Bolsistas do PIBIC, PIBITI e PIBIC-AF apresentam os resultados de suas pesquisas dos editais 2025/2026 em sessões de pôsteres e comunicações orais. Oportunidade para conhecer a ciência de ponta produzida na UnB e interagir com jovens pesquisadores.',
+      linkExterno: 'https://proic.unb.br/',
+      visibilidade: 'Público',
+      criadoPorMim: false
+    },
+    {
+      id: 2,
+      titulo: 'Encerramento da 26ª Semana Universitária',
+      data: '2026-09-25',
+      horario: '17:00',
+      campus: 'Darcy Ribeiro',
+      local: 'Memorial Darcy Ribeiro',
+      area: 'Cultura',
+      descricao: 'Cerimônia de encerramento da 26ª Semana Universitária da UnB, que teve como tema "Democracia em cena: arte, cultura e pertencimento". Serão apresentados os resultados da semana, premiações de destaques e uma programação cultural de despedida com apresentações de grupos estudantis.',
+      linkExterno: 'https://dex.unb.br/semanauniversitaria',
+      visibilidade: 'Público',
+      criadoPorMim: false
+    },
+    {
+      id: 3,
+      titulo: 'Conferência: Educar en Cultura Democrática',
+      data: '2026-09-28',
+      horario: '17:00',
+      campus: 'Darcy Ribeiro',
+      local: 'Auditório do Instituto de Ciências Sociais (ICS)',
+      area: 'Acadêmico',
+      descricao: 'Conferência internacional com o Prof. Antoni Santisteban Fernández, catedrático da Universidade Autônoma de Barcelona (UAB). O tema é "Educar en cultura democrática frente al avance de ideologías autoritarias". O evento é organizado pelo Laboratório de Ensino de Sociologia Lélia Gonzalez, com inscrições pelo SIGAA.',
+      linkExterno: 'https://sigaa.unb.br/sigaa/public/',
+      visibilidade: 'Público',
+      criadoPorMim: false
+    },
+    {
+      id: 4,
+      titulo: 'Exposição Diapedesis - CAL',
+      data: '2026-10-01',
+      horario: '08:00',
+      campus: 'Darcy Ribeiro',
+      local: 'Casa da Cultura da América Latina (SCS Qd. 4)',
+      area: 'Cultura',
+      descricao: 'Com curadoria de Yana Tamayo, esta exposição apresenta trabalhos do "Grupo Analgesia", composto por pacientes, profissionais de saúde e artistas do Hospital Universitário de Brasília (HUB-UnB). A mostra propõe uma reflexão sobre arte, corpo, saúde e políticas de cuidado, usando a diapedese como metáfora. Visitação gratuita até 17 de outubro.',
+      linkExterno: 'https://ddc.dex.unb.br/',
+      visibilidade: 'Público',
+      criadoPorMim: false
+    },
+    {
+      id: 5,
+      titulo: 'Prazo Final - Trancamento Parcial de Matrícula',
+      data: '2026-10-09',
+      horario: '23:59',
+      campus: 'Darcy Ribeiro',
+      local: 'Online (SIGAA)',
+      area: 'Comunicado',
+      descricao: 'Data-limite para realizar o trancamento parcial de matrícula no semestre 2026.2. O procedimento deve ser feito exclusivamente pelo sistema SIGAA. Atenção: após essa data, não será mais possível solicitar trancamento de disciplinas individuais neste período letivo.',
+      linkExterno: 'https://sigaa.unb.br/sigaa/public/',
+      visibilidade: 'Público',
+      criadoPorMim: false
+    },
+    {
+      id: 6,
+      titulo: '18º Encontro Nacional de História Oral',
+      data: '2026-10-12',
+      horario: '09:00',
+      campus: 'Darcy Ribeiro',
+      local: 'Campus Darcy Ribeiro',
+      area: 'Acadêmico',
+      descricao: 'Maior fórum de história oral do Brasil, promovido pela Associação Brasileira de História Oral (ABHO). O tema desta edição é "Oralidades plurais na construção de um futuro de justiça climática". O encontro ocorre de 12 a 16 de outubro e reúne pesquisadores, docentes, estudantes e representantes de movimentos sociais para reflexões sobre memória, narração e escuta.',
+      linkExterno: 'https://doity.com.br/abho2026',
+      visibilidade: 'Público',
+      criadoPorMim: false
+    },
   ]);
 
   const [visaoEventos, setVisaoEventos] = useState('Públicos');
@@ -353,6 +430,7 @@ export default function SegundaPagina() {
   const [area, setArea] = useState('');
   const [descricao, setDescricao] = useState('');
   const [visibilidade, setVisibilidade] = useState('');
+  const [linkExterno, setLinkExterno] = useState('');
 
   // Estados dos Filtros
   const [searchQuery, setSearchQuery] = useState('');
@@ -412,7 +490,19 @@ export default function SegundaPagina() {
     if (!titulo.trim() || !data || !horario) return;
 
     const novoEvento = {
-      id: Date.now(), titulo, data, horario, campus, local, area, descricao, visibilidade, criadoPorMim: true
+      id: Date.now(),
+      titulo,
+      data,
+      horario,
+      campus,
+      local,
+      area,
+      descricao,
+      visibilidade,
+      linkExterno,
+      organizadorNome: user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email || 'Organizador',
+      organizadorFoto: user?.user_metadata?.avatar_url || null,
+      criadoPorMim: true
     };
 
     setEventos([novoEvento, ...eventos]);
@@ -506,7 +596,7 @@ export default function SegundaPagina() {
         </div>
       </nav>
 
-      <main style={{ maxWidth: '1120px', margin: '0 auto', padding: '8rem 1.5rem 2rem' }}>
+      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '8rem 1.5rem 2rem' }}>
         
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2.5rem' }}>
           <div className="btn-toggle-group">
@@ -589,9 +679,14 @@ export default function SegundaPagina() {
             <h3 style={{ color: textColor, marginBottom: '0.5rem' }}>Nenhum evento encontrado</h3>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
             {eventosFiltrados.map((evento) => (
-              <div key={evento.id} className="event-card">
+              <div 
+                key={evento.id} 
+                className="event-card" 
+                onClick={() => navigate(`/evento/${evento.id}`, { state: { evento } })}
+                style={{ cursor: 'pointer' }}
+              >
                 <div className="event-card-icon">
                   <span className="material-symbols-outlined" style={{ color: textColor }} >
                     {getAreaIcon(evento.area)}
@@ -599,7 +694,9 @@ export default function SegundaPagina() {
                 </div>
 
                 <div className="event-card-body">
-                  <h3 className="event-card-title">{evento.titulo}</h3>
+                  <h3 className="event-card-title">
+                    {evento.titulo}
+                  </h3>
                   <div className="event-card-date">
                     {formatarData(evento.data)} - {evento.horario}
                   </div>
@@ -610,17 +707,21 @@ export default function SegundaPagina() {
                   )}
                   <div className="event-card-footer">
                     {evento.campus && (
-                      <span className="event-tag"><span className="material-symbols-outlined" style={{ fontSize: '0.9rem' }}>location_on</span>{evento.campus}</span>
+                      <span className="event-tag"><span className="material-symbols-outlined" style={{ fontSize: '0.9rem', flexShrink: 0 }}>location_on</span><span className="event-tag-text">{evento.campus}</span></span>
                     )}
                     {evento.local && (
-                      <span className="event-tag"><span className="material-symbols-outlined" style={{ fontSize: '0.9rem' }}>meeting_room</span>{evento.local}</span>
+                      <span className="event-tag"><span className="material-symbols-outlined" style={{ fontSize: '0.9rem', flexShrink: 0 }}>meeting_room</span><span className="event-tag-text">{evento.local}</span></span>
                     )}
                   </div>
                 </div>
 
                 {evento.criadoPorMim && (
                   <button 
-                    onClick={() => handleRemoverEvento(evento.id)} title="Excluir evento"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemoverEvento(evento.id);
+                    }} 
+                    title="Excluir evento"
                     className="event-card-delete"
                   >
                     <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>delete</span>
@@ -696,6 +797,10 @@ export default function SegundaPagina() {
                   <CustomSelect options={visibilidadeOptions} value={visibilidade} onChange={setVisibilidade} placeholder="Selecione..." isDark={isDark} className="custom-input" accentColor={accentColor} cardBg={cardBg} borderColor={borderColor} textColor={textColor} dropUp={true} />
                 </div>
               </div>
+              <div>
+                <label className="modal-label">LINK EXTERNO</label>
+                <input type="text" value={linkExterno} onChange={(e) => setLinkExterno(e.target.value)} placeholder="Ex: https://sigaa.unb.br/..." className="custom-input" />
+              </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '1rem' }}>
                 <button type="button" onClick={() => setIsModalOpen(false)} style={{ padding: '12px 20px', borderRadius: '16px', background: 'transparent', color: textMuted, border: `1px solid ${borderColor}`, cursor: 'pointer', fontWeight: 600 }}>
@@ -712,3 +817,6 @@ export default function SegundaPagina() {
     </div>
   );
 }
+
+
+

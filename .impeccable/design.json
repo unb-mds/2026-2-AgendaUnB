@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-24T21:15:00Z",
+  "title": "Design System: Agenda UnB",
+  "extensions": {
+    "colorMeta": {
+      "primary": { "role": "primary", "displayName": "Azul UnB Glow", "canonical": "#008bff", "tonalRamp": ["#001a33", "#003366", "#004d99", "#0066cc", "#008bff", "#33a6ff", "#66c2ff", "#99ddff"] },
+      "primary-deep": { "role": "primary", "displayName": "Azul Deep", "canonical": "rgba(0, 95, 210, 1)", "tonalRamp": ["#001026", "#001a3d", "#002b66", "#004099", "#005fd2", "#3382db", "#66a4e4", "#99c7ed"] },
+      "bg-dark": { "role": "neutral", "displayName": "Void Background", "canonical": "#050508", "tonalRamp": ["#000000", "#050508", "#0a0a0f", "#111119", "#1a1a24", "#242433", "#303042", "#3d3d53"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Títulos de seções (Orbitron)." },
+      "body": { "displayName": "Body", "purpose": "Textos descritivos longos." },
+      "label": { "displayName": "Label", "purpose": "Rótulos de botões e inputs, maiúsculo." }
+    },
+    "shadows": [
+      { "name": "glow-hover", "value": "0 8px 32px rgba(0,139,255,0.12)", "purpose": "Brilho sutil azulado emitido ao passar o mouse em cards." },
+      { "name": "modal-shadow", "value": "0 20px 50px rgba(0,0,0,0.8), 0 0 35px rgba(0,139,255,0.2)", "purpose": "Isolamento do modal de autenticação." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Botão Primário",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Botão de ação principal, cantos arredondados, preenchimento sólido azul.",
+      "html": "<button class=\"ds-btn-primary\">ENTRAR NA AGENDA</button>",
+      "css": ".ds-btn-primary { width: 100%; padding: 14px; background-color: rgba(0, 95, 210, 1); color: #fff; border: none; border-radius: 10px; font-weight: 600; font-size: 0.95rem; font-family: 'Inter', sans-serif; cursor: pointer; box-shadow: 0 4px 20px rgba(0, 139, 255, 0.35); transition: all 0.25s ease; } .ds-btn-primary:hover { background-color: #008bff; box-shadow: 0 8px 32px rgba(0, 139, 255, 0.5); transform: translateY(-2px); }"
+    },
+    {
+      "name": "Input de Texto",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Campo de digitação com glassmorphism e glow azul no focus.",
+      "html": "<input type=\"text\" class=\"ds-modal-input\" placeholder=\"Seu e-mail@unb.br\" />",
+      "css": ".ds-modal-input { width: 100%; padding: 13px 16px; border-radius: 10px; border: 1px solid rgba(0, 139, 255, 0.25); background: rgba(0, 15, 35, 0.6); color: #fff; font-size: 0.92rem; font-family: 'Inter', sans-serif; outline: none; transition: border-color 0.2s, box-shadow 0.2s; } .ds-modal-input::placeholder { color: rgba(255, 255, 255, 0.35); } .ds-modal-input:focus { border-color: rgba(0, 139, 255, 0.8); box-shadow: 0 0 12px rgba(0, 139, 255, 0.3); }"
+    },
+    {
+      "name": "Tag Categoria",
+      "kind": "chip",
+      "refersTo": "tag-pill",
+      "description": "Etiqueta superior fina usada para categoria/campus.",
+      "html": "<span class=\"ds-section-label\">CULTURA E ARTE</span>",
+      "css": ".ds-section-label { display: inline-block; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.18em; color: rgb(0,139,255); border: 1px solid rgba(0,139,255,0.35); padding: 5px 14px; border-radius: 999px; font-family: 'Inter', sans-serif; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Neon Campus",
+    "overview": "A identidade visual da Agenda UnB mescla o rigor acadêmico com um futurismo digital sutil. A interface abandona as clássicas telas brancas institucionais e adota uma estética predominantemente dark, focada no alto contraste e na modernidade. O uso intenso de glassmorphism (fundo translúcido e desfoque) cria camadas de profundidade, enquanto os toques brilhantes do azul iluminam pontos de interação.",
+    "keyCharacteristics": [
+      "Atmosfera noturna: Fundo super escuro, quase preto absoluto.",
+      "Translucidez: Modais, navbars e cards deixam o fundo vazar levemente através do backdrop-filter.",
+      "Brilhos em vez de sombras: Os efeitos de profundidade são alcançados com sombras azuis que emulam luzes neon ou glow.",
+      "Tipografia Sci-Fi: Títulos utilizam a fonte Orbitron para dar um toque tecnológico."
+    ],
+    "rules": [
+      { "name": "The Glow-Over-Shadow Rule", "body": "Em vez de usar sombras pretas para separar componentes do fundo, usamos o azul (rgba(0, 139, 255, 0.12)) para criar um aspecto de luz emitindo da borda do componente, especialmente em estados de hover.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do manter a legibilidade dos textos mesmo sobre áreas com blur.",
+      "Do usar o azul #008bff com parcimônia para que ele retenha seu valor de CTA e destaque."
+    ],
+    "donts": [
+      "Don't utilizar sombras pretas duras para destacar elementos dentro dos cards; confie na opacidade dos textos.",
+      "Don't quebrar o isolamento do modal com cores sólidas e opacas que destruam a sensação de vidro.",
+      "Don't utilizar emojis como ícones ou elementos de interface (UI). Toda a iconografia deve ser feita através da biblioteca Material Symbols."
+    ]
+  }
+}
