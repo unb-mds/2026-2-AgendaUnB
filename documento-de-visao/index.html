@@ -1,0 +1,1233 @@
+
+<!doctype html>
+<html lang="pt" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentação oficial do projeto Agenda UnB — Métodos de Desenvolvimento de Software (MDS) 2026/2">
+      
+      
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Documento de Visão — Agenda UnB - Agenda UnB Docs</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#documento-de-visao-agenda-unb" class="md-skip">
+          Pular para conteúdo
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Cabeçalho">
+    <a href=".." title="Agenda UnB Docs" class="md-header__button md-logo" aria-label="Agenda UnB Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Agenda UnB Docs
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Documento de Visão — Agenda UnB
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Modo automático"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Modo automático" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Mudar para modo escuro"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Mudar para modo escuro" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Mudar para modo claro"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Mudar para modo claro" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Buscar" placeholder="Buscar" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Pesquisar">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Limpar" aria-label="Limpar" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Inicializando busca
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/unb-mds/2026-2-AgendaUnB" title="Ir para repositório" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    unb-mds/G8-2026-2
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Abas" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Início
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../Architecture/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Arquitetura
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../requisitos/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Requisitos
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../padroes/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Padrões de Projeto
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../sprints/sprint-0/" class="md-tabs__link">
+          
+  
+  
+  Sprints
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../CONTRIBUTING/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Como Contribuir
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navegação" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Agenda UnB Docs" class="md-nav__button md-logo" aria-label="Agenda UnB Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Agenda UnB Docs
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/unb-mds/2026-2-AgendaUnB" title="Ir para repositório" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    unb-mds/G8-2026-2
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Início
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arquitetura
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../requisitos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Requisitos
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../padroes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Padrões de Projeto
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprints
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Sprints
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sprints/sprint-0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sprints/sprint-1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 1
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CONTRIBUTING/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Como Contribuir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Índice">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Índice
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-introducao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Introdução
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Introdução">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-proposito" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 Propósito
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-escopo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Escopo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-definicoes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 Definições
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-posicionamento" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Posicionamento
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Posicionamento">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-oportunidade-de-negocio" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Oportunidade de negócio
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-descricao-do-problema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Descrição do problema
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-declaracao-de-posicao-do-produto" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 Declaração de posição do produto
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-stakeholders-e-usuarios" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Stakeholders e usuários
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Stakeholders e usuários">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-stakeholders" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Stakeholders
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-perfis-de-usuario" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Perfis de usuário
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-visao-geral-do-produto" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Visão geral do produto
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Visão geral do produto">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-perspectiva" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Perspectiva
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-suposicoes-e-dependencias" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Suposições e dependências
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-recursos-do-produto" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Recursos do produto
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-restricoes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Restrições
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-riscos-e-questoes-em-aberto" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Riscos e questões em aberto
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-prioridade-dos-recursos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Prioridade dos recursos [?]
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+  
+
+
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="documento-de-visao-agenda-unb">Documento de Visão — Agenda UnB</h1>
+<p><strong>Versão:</strong> 0.1 (rascunho para revisão da equipe)
+<strong>Equipe:</strong> Agenda UnB — Métodos de Desenvolvimento de Software, 2026/2</p>
+<blockquote>
+<p>Itens marcados com <strong>[?]</strong> são suposições a confirmar em reunião.</p>
+</blockquote>
+<hr />
+<h2 id="1-introducao">1. Introdução</h2>
+<h3 id="11-proposito">1.1 Propósito</h3>
+<p>Este documento descreve a visão do produto Agenda UnB: qual problema ele resolve, para quem, e quais capacidades ele deve ter. Serve de referência comum para a equipe e de base para o backlog.</p>
+<p>Não detalha os requisitos, que estão em <code>docs/requisitos.md</code>, nem os padrões de código e de dados, que estão em <code>docs/padroes.md</code>. As decisões técnicas de arquitetura serão registradas em <code>docs/Architecture.md</code>, hoje em branco. O planejamento por sprint está em <code>docs/sprints/</code>, e o registro de uso de IA em <code>AI-USAGE.md</code>, na raiz do repositório.</p>
+<h3 id="12-escopo">1.2 Escopo</h3>
+<p>O produto é uma aplicação web para a comunidade da Universidade de Brasília, cobrindo dois pontos principais: divulgação de eventos do campus e organização de prazos acadêmicos individuais.</p>
+<p>Está fora do escopo: aplicativo nativo para celular e gestão acadêmica propriamente dita (notas, frequência, matrícula oficial).</p>
+<h3 id="13-definicoes">1.3 Definições</h3>
+<table>
+<thead>
+<tr>
+<th>Termo</th>
+<th>Significado</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Evento</td>
+<td>Atividade aberta do campus: palestra, calourada, semana universitária, prazo institucional</td>
+</tr>
+<tr>
+<td>Avaliação</td>
+<td>Prova, trabalho ou entrega de uma turma específica</td>
+</tr>
+<tr>
+<td>Plano de ensino</td>
+<td>Documento em PDF que o professor disponibiliza no início do semestre, contendo o cronograma da disciplina</td>
+</tr>
+<tr>
+<td>Turma</td>
+<td>Oferta de uma disciplina num semestre, identificada por código e professor</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="2-posicionamento">2. Posicionamento</h2>
+<h3 id="21-oportunidade-de-negocio">2.1 Oportunidade de negócio</h3>
+<p>A informação que organiza a rotina de um estudante da UnB está fragmentada em canais que não se relacionam. A grade está no SIGAA. As datas de prova estão em um PDF de plano de ensino que geralmente é aberto apenas na primeira semana de aula. Os eventos circulam por meio do Instagram de centro acadêmico, cartaz de mural e grupos de WhatsApp.</p>
+<p>Não existe um lugar onde o estudante veja o que vai acontecer com ele nas próximas semanas.</p>
+<h3 id="22-descricao-do-problema">2.2 Descrição do problema</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Problema</strong></td>
+<td>Informação acadêmica e institucional dispersa em múltiplos lugares desconectados</td>
+</tr>
+<tr>
+<td><strong>Afeta</strong></td>
+<td>Estudantes de graduação da UnB e também quem organiza eventos no campus</td>
+</tr>
+<tr>
+<td><strong>Impacto</strong></td>
+<td>Prazos descobertos em cima da hora, provas esquecidas, e eventos de extensão com baixa adesão por falta de divulgação eficaz</td>
+</tr>
+<tr>
+<td><strong>Ideia aplicada</strong></td>
+<td>Uma agenda única que reúna eventos do campus e prazos das disciplinas do próprio estudante, alimentada com o mínimo de esforço manual</td>
+</tr>
+</tbody>
+</table>
+<h3 id="23-declaracao-de-posicao-do-produto">2.3 Declaração de posição do produto</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Público</strong></td>
+<td>Estudantes de graduação da UnB</td>
+</tr>
+<tr>
+<td><strong>Razão</strong></td>
+<td>Acompanhar prazos de disciplinas e eventos do campus espalhados em vários canais</td>
+</tr>
+<tr>
+<td><strong>Nome escolhido</strong></td>
+<td>Agenda UnB</td>
+</tr>
+<tr>
+<td><strong>O que é</strong></td>
+<td>Aplicação web de agenda acadêmica e institucional</td>
+</tr>
+<tr>
+<td><strong>O que faz</strong></td>
+<td>Reúne num só calendário os eventos do campus e as avaliações das turmas em que o estudante está matriculado, extraindo datas automaticamente dos planos de ensino</td>
+</tr>
+<tr>
+<td><strong>Distingue-se de</strong></td>
+<td>Google Agenda, que exige cadastro manual de tudo, e do SIGAA, que não cobre eventos nem cronograma de avaliações</td>
+</tr>
+<tr>
+<td><strong>Resolução</strong></td>
+<td>Alimentada a partir das fontes que a universidade já produz, apenas juntando tudo em um só lugar para melhor visualização</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="3-stakeholders-e-usuarios">3. Stakeholders e usuários</h2>
+<h3 id="31-stakeholders">3.1 Stakeholders</h3>
+<table>
+<thead>
+<tr>
+<th>Stakeholder</th>
+<th>Interesse no produto</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Estudantes de graduação</td>
+<td>Usuários principais, querem não perder prazos</td>
+</tr>
+<tr>
+<td>Centros acadêmicos, ligas e grupos de extensão</td>
+<td>Precisam de um canal de divulgação que alcance quem não os segue nas redes</td>
+</tr>
+<tr>
+<td>Professores <strong>[?]</strong></td>
+<td>Origem indireta das datas, via plano de ensino; possível papel de validação</td>
+</tr>
+<tr>
+<td>Docente de MDS</td>
+<td>Avalia o projeto como produto e como processo</td>
+</tr>
+<tr>
+<td>Equipe G8</td>
+<td>Constrói, documenta e mantém</td>
+</tr>
+</tbody>
+</table>
+<h3 id="32-perfis-de-usuario">3.2 Perfis de usuário</h3>
+<p><strong>Estudante</strong> — usa a agenda diariamente e quer o mínimo de configuração possível, podendo entrar e ver o que vem pela frente.</p>
+<p><strong>Organizador de evento</strong> — usa pontualmente, a fim de publicar eventos, e precisa de um fluxo rápido de cadastro.</p>
+<p><strong>Administrador</strong> — modera o que é publicado e mantém o catálogo de disciplinas e turmas consistente.</p>
+<hr />
+<h2 id="4-visao-geral-do-produto">4. Visão geral do produto</h2>
+<h3 id="41-perspectiva">4.1 Perspectiva</h3>
+<p>Aplicação web responsiva, de uso público para a parte de eventos e autenticado para a parte acadêmica. Substitui, para o estudante, a tarefa manual de transcrever datas do plano de ensino para um calendário pessoal.</p>
+<h3 id="42-suposicoes-e-dependencias">4.2 Suposições e dependências</h3>
+<ul>
+<li>Estudantes da UnB possuem e-mail institucional ativo.</li>
+<li>Os planos de ensino estão disponíveis em PDF com texto selecionável, e não como imagem escaneada. <strong>[?]</strong> Premissa ainda não verificada — ver seção 7.</li>
+<li>Os estudantes cadastrarão as próprias turmas, já que não há integração com o SIGAA.</li>
+</ul>
+<hr />
+<h2 id="5-recursos-do-produto">5. Recursos do produto</h2>
+<p>O detalhamento está em <code>docs/requisitos.md</code>.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Recurso</th>
+<th>Descrição</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>R1</td>
+<td>Acesso com conta institucional</td>
+<td>Autenticação via Google, restrita à comunidade UnB</td>
+</tr>
+<tr>
+<td>R2</td>
+<td>Agenda unificada</td>
+<td>Calendário único com eventos salvos e avaliações das turmas do estudante</td>
+</tr>
+<tr>
+<td>R3</td>
+<td>Catálogo de eventos do campus</td>
+<td>Consulta pública, com filtros por campus, categoria e período</td>
+</tr>
+<tr>
+<td>R4</td>
+<td>Publicação e curadoria de eventos</td>
+<td>Cadastro por membros da comunidade, com moderação</td>
+</tr>
+<tr>
+<td>R5</td>
+<td>Vínculo com turmas</td>
+<td>Estudante indica em quais turmas está matriculado</td>
+</tr>
+<tr>
+<td>R6</td>
+<td>Extração automática de cronograma</td>
+<td>Upload do plano de ensino, com leitura das datas de avaliação</td>
+</tr>
+<tr>
+<td>R7</td>
+<td>Validação colaborativa</td>
+<td>Colegas de turma confirmam ou contestam datas extraídas</td>
+</tr>
+<tr>
+<td>R8</td>
+<td>Personalização individual</td>
+<td>Ajustar, ocultar ou anotar um item sem afetar a agenda dos colegas</td>
+</tr>
+<tr>
+<td>R9</td>
+<td>Lembretes</td>
+<td>Aviso de proximidade de prazo</td>
+</tr>
+<tr>
+<td>R10</td>
+<td>Exportação</td>
+<td>Envio da agenda para calendários externos</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="6-restricoes">6. Restrições</h2>
+<p><strong>De equipe</strong> — seis integrantes, com papéis distribuídos em duas frentes de front-end, duas de back-end e duas de banco de dados. Todos cursando a disciplina em paralelo a outras, com disponibilidade parcial.</p>
+<p><strong>De prazo</strong> — o semestre letivo de 2026/2, com entregas intermediárias em datas fixas. O prazo é rígido e não negociável.</p>
+<p><strong>De front-end</strong> — SPA em Vite + React, conforme já implementado no repositório. Uma mudança de framework a esta altura representaria retrabalho significativo e precisaria ser justificada em ADR.</p>
+<p><strong>Não definidas</strong> — a arquitetura de back-end, o banco de dados e a plataforma de hospedagem ainda não estão registrados em nenhum documento oficial do projeto até o momento. O <code>docs/Architecture.md</code> está em branco por enquanto, para fins de decisão em grupo.</p>
+<hr />
+<h2 id="7-riscos-e-questoes-em-aberto">7. Riscos e questões em aberto</h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Situação</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Legibilidade dos planos de ensino</td>
+<td>Se os PDFs forem imagens escaneadas, a extração automática exige OCR (Reconhecimento Óptico de Caracteres) e muda de custo</td>
+</tr>
+<tr>
+<td>Escopo x prazo</td>
+<td>21 requisitos funcionais aprovados. Priorização explícita ainda não feita</td>
+</tr>
+<tr>
+<td>Conflito no acesso</td>
+<td><code>docs/requisitos.md</code> (RF01) admite e-mail pessoal, o que é incompatível com uma agenda restrita à comunidade UnB. É necessário decidir qual prevalece</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="8-prioridade-dos-recursos">8. Prioridade dos recursos <strong>[?]</strong></h2>
+<p>Proposta de ordem, que deverá ser decidida pela equipe:</p>
+<p><strong>Essencial</strong> — R1, R3, R2 (parcial: apenas eventos). Entrega um produto utilizável e demonstrável.</p>
+<p><strong>Importante</strong> — R5, R8 e a entrada manual de avaliações. A agenda acadêmica funcionando sem automação.</p>
+<p><strong>Desejável</strong> — R6, R7, R9, R10. A automação, que é o diferencial, mas depende das duas camadas anteriores existirem.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Voltar para o topo
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.path", "navigation.top", "search.suggest", "search.highlight", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copiado para \u00e1rea de transfer\u00eancia", "clipboard.copy": "Copiar para \u00e1rea de transfer\u00eancia", "search.result.more.one": "mais 1 nesta p\u00e1gina", "search.result.more.other": "# mais nesta p\u00e1gina", "search.result.none": "Nenhum documento encontrado", "search.result.one": "1 documento encontrado", "search.result.other": "# documentos encontrados", "search.result.placeholder": "Digite para iniciar a busca", "search.result.term.missing": "Ausente", "select.version": "Selecione a vers\u00e3o"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

@@ -1,0 +1,1265 @@
+
+<!doctype html>
+<html lang="pt" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentação oficial do projeto Agenda UnB — Métodos de Desenvolvimento de Software (MDS) 2026/2">
+      
+      
+      
+      
+        <link rel="prev" href="..">
+      
+      
+        <link rel="next" href="../requisitos/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Arquitetura - Agenda UnB Docs</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#arquitetura-de-software" class="md-skip">
+          Pular para conteúdo
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Cabeçalho">
+    <a href=".." title="Agenda UnB Docs" class="md-header__button md-logo" aria-label="Agenda UnB Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Agenda UnB Docs
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Arquitetura
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Modo automático"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Modo automático" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Mudar para modo escuro"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Mudar para modo escuro" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Mudar para modo claro"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Mudar para modo claro" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Buscar" placeholder="Buscar" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Pesquisar">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Limpar" aria-label="Limpar" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Inicializando busca
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/unb-mds/2026-2-AgendaUnB" title="Ir para repositório" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    unb-mds/G8-2026-2
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Abas" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Início
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Arquitetura
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../requisitos/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Requisitos
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../padroes/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Padrões de Projeto
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../sprints/sprint-0/" class="md-tabs__link">
+          
+  
+  
+  Sprints
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../CONTRIBUTING/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Como Contribuir
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navegação" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Agenda UnB Docs" class="md-nav__button md-logo" aria-label="Agenda UnB Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Agenda UnB Docs
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/unb-mds/2026-2-AgendaUnB" title="Ir para repositório" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    unb-mds/G8-2026-2
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Início
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arquitetura
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arquitetura
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Índice">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Índice
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-objetivo-e-escopo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Objetivo e escopo
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-visao-geral" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Visão geral
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-stack-proposta" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Stack proposta
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-componentes-da-aplicacao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Componentes da aplicação
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Componentes da aplicação">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-frontend-web" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Frontend web
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-api-e-modulos-de-dominio" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 API e módulos de domínio
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-processamento-de-planos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 Processamento de planos
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-fluxos-principais-e-rotas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Fluxos principais e rotas
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-seguranca-privacidade-e-confiabilidade" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Segurança, privacidade e confiabilidade
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-implantacao-e-ambiente" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Implantação e ambiente
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-decisoes-pendentes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Decisões pendentes
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../requisitos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Requisitos
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../padroes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Padrões de Projeto
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprints
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Sprints
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sprints/sprint-0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sprints/sprint-1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 1
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CONTRIBUTING/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Como Contribuir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Índice">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Índice
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-objetivo-e-escopo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Objetivo e escopo
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-visao-geral" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Visão geral
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-stack-proposta" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Stack proposta
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-componentes-da-aplicacao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Componentes da aplicação
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Componentes da aplicação">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-frontend-web" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Frontend web
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-api-e-modulos-de-dominio" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 API e módulos de domínio
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-processamento-de-planos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 Processamento de planos
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-fluxos-principais-e-rotas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Fluxos principais e rotas
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-seguranca-privacidade-e-confiabilidade" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Segurança, privacidade e confiabilidade
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-implantacao-e-ambiente" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Implantação e ambiente
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-decisoes-pendentes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Decisões pendentes
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+  
+
+
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="arquitetura-de-software">Arquitetura de Software</h1>
+<p>Este documento registra uma <strong>proposta de arquitetura</strong> para a Agenda UnB. Ele detalha como a aplicação pode evoluir a partir do frontend existente e dos requisitos em <a href="../requisitos/"><code>requisitos.md</code></a>, seguindo os termos e as rotas definidos em <a href="../padroes/"><code>padroes.md</code></a>.</p>
+<div class="admonition warning">
+<p class="admonition-title">Proposta para validação da equipe</p>
+<p>React e Vite já estão no repositório. Python/FastAPI, PostgreSQL, SQLAlchemy, Alembic e Docker aparecem como proposta para a arquitetura do produto; ainda precisam ser aprovados pela equipe antes de serem tratados como decisões implementadas. Hospedagem, armazenamento de arquivos e provedores de e-mail também estão em aberto.</p>
+</div>
+<h2 id="1-objetivo-e-escopo">1. Objetivo e escopo</h2>
+<p>A Agenda UnB reúne duas agendas que hoje ficam separadas: eventos públicos dos campi e compromissos acadêmicos privados dos estudantes. A aplicação deve permitir consultar eventos, organizar avaliações de turmas e, na evolução prevista, extrair datas de planos de ensino para revisão pelo estudante.</p>
+<p>O produto é uma aplicação web responsiva. A interface para celular é a mesma aplicação web adaptada à tela; não está previsto um aplicativo nativo. A plataforma não substitui o SIGAA e não controla matrícula, notas ou frequência. Conforme o documento de visão, o estudante informa as próprias turmas, pois não há integração de matrícula com o SIGAA definida.</p>
+<h2 id="2-visao-geral">2. Visão geral</h2>
+<pre class="mermaid"><code>flowchart LR
+    U[Estudante, organizador ou administrador] --&gt; WEB[Frontend responsivo&lt;br/&gt;React + Vite]
+    WEB --&gt; API[API REST&lt;br/&gt;Python + FastAPI]
+    API --&gt; DB[(PostgreSQL)]
+    API --&gt; FILES[Armazenamento privado&lt;br/&gt;dos planos de ensino]
+    API --&gt; GOOGLE[Google OAuth]
+    API --&gt; EMAIL[Serviço de e-mail&lt;br/&gt;lembretes e notificações]
+    COLLECTOR[Coleta de fontes públicas&lt;br/&gt;de eventos] --&gt; API</code></pre>
+<p>O frontend envia e recebe dados JSON pela API. A API aplica as regras de negócio, valida a identidade e as permissões do usuário, consulta ou atualiza o banco e coordena integrações externas. O banco guarda dados estruturados; os PDFs ficam em armazenamento de arquivos com acesso restrito, e o banco mantém os metadados e a referência ao arquivo.</p>
+<p>Eventos públicos aprovados podem ser consultados sem login. A agenda pessoal, planos enviados, datas extraídas ainda não confirmadas e preferências do estudante exigem autenticação e verificação de propriedade. A coleta externa de eventos deve ser isolada: a indisponibilidade de uma fonte não pode impedir a consulta aos eventos já armazenados.</p>
+<h2 id="3-stack-proposta">3. Stack proposta</h2>
+<table>
+<thead>
+<tr>
+<th>Camada</th>
+<th>Tecnologia</th>
+<th>Uso previsto</th>
+<th>Situação</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Interface web</td>
+<td>JavaScript, React, Vite e React Router</td>
+<td>SPA responsiva; páginas, calendário, formulários e navegação</td>
+<td>React, Vite e React Router já estão declarados no <code>package.json</code></td>
+</tr>
+<tr>
+<td>Ferramentas do frontend</td>
+<td>Node.js e npm</td>
+<td>Instalar dependências, executar Vite em desenvolvimento e gerar os arquivos estáticos de produção</td>
+<td>Node.js é ferramenta de desenvolvimento/build; não é o backend proposto</td>
+</tr>
+<tr>
+<td>API</td>
+<td>Python e FastAPI</td>
+<td>Endpoints REST, autenticação, validação e coordenação dos módulos</td>
+<td>Proposta; <code>backend/</code> ainda não contém implementação</td>
+</tr>
+<tr>
+<td>Persistência</td>
+<td>PostgreSQL</td>
+<td>Dados relacionais de usuários, eventos, turmas e agenda</td>
+<td>Proposta; banco ainda não configurado</td>
+</tr>
+<tr>
+<td>Acesso ao banco</td>
+<td>SQLAlchemy</td>
+<td>Mapeamento entre modelos Python e tabelas relacionais</td>
+<td>Proposta, dependente da escolha da API Python</td>
+</tr>
+<tr>
+<td>Migrações</td>
+<td>Alembic</td>
+<td>Versionar mudanças no esquema do banco</td>
+<td>Proposta, a adotar junto ao SQLAlchemy</td>
+</tr>
+<tr>
+<td>Ambiente local</td>
+<td>Docker</td>
+<td>Padronizar a execução da API e do banco durante desenvolvimento</td>
+<td>Proposta; não há configuração Docker no repositório</td>
+</tr>
+<tr>
+<td>Arquivos</td>
+<td>Armazenamento privado de objetos/arquivos</td>
+<td>Guardar PDFs sem expô-los como arquivos públicos</td>
+<td>Provedor ainda não escolhido</td>
+</tr>
+</tbody>
+</table>
+<p>O backend deve implementar o prefixo <code>/api/v1</code> e os nomes de endpoints já documentados em <code>padroes.md</code>. O frontend e o backend permanecem separados: o navegador executa a SPA, enquanto Python/FastAPI executa a API. Node.js entra no fluxo de ferramentas do frontend, mesmo que o servidor da aplicação seja Python.</p>
+<p>Docker é uma forma de executar serviços de maneira reproduzível, não um banco de dados ou uma linguagem. A proposta é usá-lo no ambiente de desenvolvimento para a API e o PostgreSQL; a forma de implantação final será decidida depois.</p>
+<h2 id="4-componentes-da-aplicacao">4. Componentes da aplicação</h2>
+<h3 id="41-frontend-web">4.1 Frontend web</h3>
+<p>O frontend React apresenta o catálogo público de eventos e, após autenticação, a agenda pessoal. Deve funcionar em computadores, tablets e celulares por meio de layout responsivo. O código atual usa Vite e React Router; a estrutura existente ainda é inicial e não implementa os fluxos completos da agenda.</p>
+<p>Responsabilidades principais:</p>
+<ul>
+<li>consultar eventos por intervalo de datas, categoria e campus;</li>
+<li>apresentar calendário mensal, semanal ou em lista;</li>
+<li>permitir ao estudante gerenciar turmas e compromissos privados;</li>
+<li>enviar planos de ensino e apresentar o estado do processamento;</li>
+<li>permitir revisar e confirmar datas extraídas antes de adicioná-las à agenda;</li>
+<li>exibir estados de carregamento, erros de validação e confirmação das ações.</li>
+</ul>
+<h3 id="42-api-e-modulos-de-dominio">4.2 API e módulos de domínio</h3>
+<p>A API FastAPI expõe recursos HTTP JSON e separa entrada/saída HTTP das regras de negócio. Os controllers/routers recebem a requisição, verificam autenticação e permissão, validam os dados e chamam os serviços correspondentes. Os serviços aplicam regras e acessam repositórios ou integrações.</p>
+<table>
+<thead>
+<tr>
+<th>Módulo</th>
+<th>Responsabilidades</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Autenticação e usuários</strong></td>
+<td>Cadastro/login conforme a política aprovada, sessão, perfil e papéis <code>student</code>, <code>professor</code> e <code>admin</code></td>
+</tr>
+<tr>
+<td><strong>Agenda e eventos</strong></td>
+<td>Consultar eventos públicos, criar/editar eventos pessoais, filtros, inscrições e calendário unificado</td>
+</tr>
+<tr>
+<td><strong>Submissão e moderação</strong></td>
+<td>Receber propostas de eventos, manter estado <code>pending</code>, permitir aprovação/rejeição por administradores e publicar apenas eventos aprovados</td>
+</tr>
+<tr>
+<td><strong>Turmas</strong></td>
+<td>Manter ofertas de disciplinas por semestre e os vínculos informados pelos próprios estudantes</td>
+</tr>
+<tr>
+<td><strong>Planos de ensino</strong></td>
+<td>Receber PDF/texto, armazenar o arquivo, acompanhar processamento e disponibilizar as datas candidatas para revisão</td>
+</tr>
+<tr>
+<td><strong>Notificações e exportação</strong></td>
+<td>Programar lembretes e gerar arquivo <code>.ics</code> para calendários externos</td>
+</tr>
+<tr>
+<td><strong>Coleta de eventos</strong></td>
+<td>Importar dados de fontes públicas aprovadas, tratar falhas isoladamente e evitar duplicar eventos importados</td>
+</tr>
+</tbody>
+</table>
+<p>Os módulos podem começar como partes de uma única API. Não há necessidade, no escopo atual, de separá-los em microsserviços: essa separação lógica organiza responsabilidades sem acrescentar a carga operacional de vários serviços independentes.</p>
+<h3 id="43-processamento-de-planos">4.3 Processamento de planos</h3>
+<p>O upload não deve criar imediatamente compromissos confirmados. O fluxo proposto é:</p>
+<ol>
+<li>A API autentica o usuário, valida formato e tamanho e armazena o arquivo de forma privada.</li>
+<li>Um registro <code>Syllabus</code> é criado com estado <code>pending</code> e depois <code>processing</code>.</li>
+<li>O processador lê o texto do PDF ou texto enviado e cria datas candidatas associadas ao plano.</li>
+<li>O estudante confere título, tipo e data, podendo editar, aceitar ou descartar cada sugestão.</li>
+<li>Somente as sugestões confirmadas viram eventos privados na agenda.</li>
+</ol>
+<p>Para o MVP, o processador pode rodar como tarefa no backend, desde que o tempo de processamento seja aceitável. Uma fila e um worker separados podem ser acrescentados se o processamento bloquear requisições ou precisar de retentativas. OCR só deve ser incluído se a equipe confirmar que os PDFs de entrada são digitalizações sem texto selecionável.</p>
+<h2 id="5-fluxos-principais-e-rotas">5. Fluxos principais e rotas</h2>
+<p>Os nomes abaixo seguem a proposta existente em <code>padroes.md</code>; são contratos planejados, não endpoints já implementados.</p>
+<table>
+<thead>
+<tr>
+<th>Fluxo</th>
+<th>Rotas de referência</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Criar conta, entrar e obter identidade atual</td>
+<td><code>POST /api/v1/auth/register</code>, <code>POST /api/v1/auth/login</code>, <code>POST /api/v1/auth/google</code>, <code>GET /api/v1/auth/me</code></td>
+</tr>
+<tr>
+<td>Consultar e gerenciar eventos</td>
+<td><code>GET/POST /api/v1/events</code>, <code>GET/PUT/DELETE /api/v1/events/{id}</code></td>
+</tr>
+<tr>
+<td>Inscrever-se em evento público</td>
+<td><code>POST/DELETE /api/v1/events/{id}/attend</code></td>
+</tr>
+<tr>
+<td>Moderar proposta</td>
+<td><code>GET /api/v1/admin/events/pending</code>, <code>PATCH /api/v1/admin/events/{id}/review</code></td>
+</tr>
+<tr>
+<td>Enviar e acompanhar plano</td>
+<td><code>POST /api/v1/syllabus/upload</code>, <code>GET /api/v1/syllabus</code>, <code>GET /api/v1/syllabus/{id}</code></td>
+</tr>
+<tr>
+<td>Consultar categorias</td>
+<td><code>GET /api/v1/categories</code></td>
+</tr>
+</tbody>
+</table>
+<p>O backend deve verificar permissão em cada operação, sem confiar apenas no estado da interface. Por exemplo, uma rota de moderação exige papel <code>admin</code>; atualizar ou remover um evento privado exige que o usuário autenticado seja seu proprietário.</p>
+<h2 id="6-seguranca-privacidade-e-confiabilidade">6. Segurança, privacidade e confiabilidade</h2>
+<ul>
+<li>Senhas locais, caso esse modo de autenticação seja aprovado, devem ser armazenadas como hash seguro; nunca em texto simples.</li>
+<li>Tokens e segredos de OAuth devem permanecer no servidor e fora do repositório. A restrição por domínio de e-mail precisa ser decidida antes de configurar Google OAuth.</li>
+<li>A API deve aplicar autorização por papel e por propriedade do recurso. Dados acadêmicos, arquivos e datas privadas não podem ser expostos em consultas públicas.</li>
+<li>PDFs devem ser armazenados em local privado, com validação de formato/tamanho e acesso autorizado. A API não deve publicar o caminho interno do arquivo.</li>
+<li>Comunicação externa em produção deve usar HTTPS. Erros de leitura de PDF ou indisponibilidade de fontes externas devem produzir estados recuperáveis e mensagens claras.</li>
+<li>A coleta externa deve ser desacoplada das consultas normais à agenda para que uma falha de scraping não interrompa o serviço.</li>
+</ul>
+<h2 id="7-implantacao-e-ambiente">7. Implantação e ambiente</h2>
+<p>O repositório publica a <strong>documentação</strong> com MkDocs pelo workflow <code>.github/workflows/docs.yml</code>. Isso não define onde a aplicação Agenda UnB será hospedada. A hospedagem da SPA, da API, do banco e dos arquivos continua em aberto.</p>
+<p>No desenvolvimento, a proposta é executar a API Python e o PostgreSQL em containers Docker; o frontend continua usando npm/Vite. Arquivos <code>.env</code> locais devem guardar configurações e credenciais fora do controle de versão, usando <code>.env.example</code> apenas para documentar os nomes das variáveis necessárias.</p>
+<h2 id="8-decisoes-pendentes">8. Decisões pendentes</h2>
+<ol>
+<li><strong>Autenticação:</strong> <code>requisitos.md</code> permite e-mail pessoal ou institucional no RF01; a visão do produto sugere acesso restrito à comunidade UnB via Google. A política final deve ser acordada antes de implementar login e papéis.</li>
+<li><strong>Stack do backend e banco:</strong> Python/FastAPI, PostgreSQL, SQLAlchemy e Alembic são a proposta refletida no FigJam, ainda sem implementação no repositório.</li>
+<li><strong>Armazenamento e e-mail:</strong> escolher provedores e definir como guardar PDFs e enviar notificações.</li>
+<li><strong>Extração:</strong> verificar se os planos de ensino têm texto selecionável; decidir se OCR é necessário. Definir também como datas ambíguas serão revisadas.</li>
+<li><strong>Coleta de eventos:</strong> escolher fontes públicas suportadas, frequência de atualização e tratamento de duplicatas. A coleta de redes sociais exige validação técnica e de disponibilidade das fontes.</li>
+<li><strong>Prioridade do MVP:</strong> a visão prioriza primeiro autenticação, catálogo público e agenda de eventos; upload, extração automática, lembretes e exportação podem entrar em etapas posteriores.</li>
+<li><strong>Hospedagem:</strong> definir onde cada componente será implantado e quem terá acesso aos arquivos e dados de produção.</li>
+</ol>
+<p>Até essas decisões serem aprovadas, este documento deve ser lido como uma arquitetura de referência para discussão, e não como um registro de componentes já entregues.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Voltar para o topo
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.path", "navigation.top", "search.suggest", "search.highlight", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copiado para \u00e1rea de transfer\u00eancia", "clipboard.copy": "Copiar para \u00e1rea de transfer\u00eancia", "search.result.more.one": "mais 1 nesta p\u00e1gina", "search.result.more.other": "# mais nesta p\u00e1gina", "search.result.none": "Nenhum documento encontrado", "search.result.one": "1 documento encontrado", "search.result.other": "# documentos encontrados", "search.result.placeholder": "Digite para iniciar a busca", "search.result.term.missing": "Ausente", "select.version": "Selecione a vers\u00e3o"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

@@ -1,0 +1,1410 @@
+
+<!doctype html>
+<html lang="pt" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentação oficial do projeto Agenda UnB — Métodos de Desenvolvimento de Software (MDS) 2026/2">
+      
+      
+      
+      
+        <link rel="prev" href="../requisitos/">
+      
+      
+        <link rel="next" href="../sprints/sprint-0/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Padrões de Projeto - Agenda UnB Docs</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#glossario-e-padronizacao-de-nomenclaturas-projeto-agenda-unb" class="md-skip">
+          Pular para conteúdo
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Cabeçalho">
+    <a href=".." title="Agenda UnB Docs" class="md-header__button md-logo" aria-label="Agenda UnB Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Agenda UnB Docs
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Padrões de Projeto
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Modo automático"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Modo automático" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Mudar para modo escuro"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Mudar para modo escuro" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Mudar para modo claro"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Mudar para modo claro" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Buscar" placeholder="Buscar" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Pesquisar">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Limpar" aria-label="Limpar" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Inicializando busca
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/unb-mds/2026-2-AgendaUnB" title="Ir para repositório" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    unb-mds/G8-2026-2
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Abas" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Início
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../Architecture/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Arquitetura
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../requisitos/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Requisitos
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Padrões de Projeto
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../sprints/sprint-0/" class="md-tabs__link">
+          
+  
+  
+  Sprints
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../CONTRIBUTING/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Como Contribuir
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navegação" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Agenda UnB Docs" class="md-nav__button md-logo" aria-label="Agenda UnB Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Agenda UnB Docs
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/unb-mds/2026-2-AgendaUnB" title="Ir para repositório" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    unb-mds/G8-2026-2
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Início
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arquitetura
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../requisitos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Requisitos
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Padrões de Projeto
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Padrões de Projeto
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Índice">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Índice
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-glossario-de-dominio-entidades-principais" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Glossário de Domínio (Entidades Principais)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-convencoes-de-escrita-naming-conventions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Convenções de Escrita (Naming Conventions)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-estrutura-de-atributos-dos-modelos-campos-de-dados" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Estrutura de Atributos dos Modelos (Campos de Dados)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Estrutura de Atributos dos Modelos (Campos de Dados)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#user-usuario" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        👤 User (Usuário)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#event-evento-prazo-academico" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📅 Event (Evento / Prazo Acadêmico)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#syllabus-plano-de-ensino" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📄 Syllabus (Plano de Ensino)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#category-categoria" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🏷️ Category (Categoria)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#attendee-inscricao-em-evento" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🎟️ Attendee (Inscrição em Evento)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-padronizacao-de-rotas-da-api-rest-endpoints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Padronização de Rotas da API REST (Endpoints)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Padronização de Rotas da API REST (Endpoints)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#autenticacao-apiv1auth" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔑 Autenticação (/api/v1/auth)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#eventos-e-agenda-apiv1events" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📅 Eventos e Agenda (/api/v1/events)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#inscricao-direta-em-eventos-apiv1eventsidattend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🎟️ Inscrição Direta em Eventos (/api/v1/events/:id/attend)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#processamento-de-planos-de-ensino-apiv1syllabus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📄 Processamento de Planos de Ensino (/api/v1/syllabus)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#moderacao-e-administracao-apiv1admin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🛡️ Moderação e Administração (/api/v1/admin)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#categorias-apiv1categories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🏷️ Categorias (/api/v1/categories)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-codigos-de-resposta-http-padronizados" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Códigos de Resposta HTTP Padronizados
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprints
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Sprints
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sprints/sprint-0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sprints/sprint-1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 1
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CONTRIBUTING/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Como Contribuir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Índice">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Índice
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-glossario-de-dominio-entidades-principais" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Glossário de Domínio (Entidades Principais)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-convencoes-de-escrita-naming-conventions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Convenções de Escrita (Naming Conventions)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-estrutura-de-atributos-dos-modelos-campos-de-dados" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Estrutura de Atributos dos Modelos (Campos de Dados)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Estrutura de Atributos dos Modelos (Campos de Dados)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#user-usuario" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        👤 User (Usuário)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#event-evento-prazo-academico" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📅 Event (Evento / Prazo Acadêmico)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#syllabus-plano-de-ensino" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📄 Syllabus (Plano de Ensino)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#category-categoria" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🏷️ Category (Categoria)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#attendee-inscricao-em-evento" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🎟️ Attendee (Inscrição em Evento)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-padronizacao-de-rotas-da-api-rest-endpoints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Padronização de Rotas da API REST (Endpoints)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Padronização de Rotas da API REST (Endpoints)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#autenticacao-apiv1auth" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔑 Autenticação (/api/v1/auth)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#eventos-e-agenda-apiv1events" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📅 Eventos e Agenda (/api/v1/events)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#inscricao-direta-em-eventos-apiv1eventsidattend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🎟️ Inscrição Direta em Eventos (/api/v1/events/:id/attend)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#processamento-de-planos-de-ensino-apiv1syllabus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📄 Processamento de Planos de Ensino (/api/v1/syllabus)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#moderacao-e-administracao-apiv1admin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🛡️ Moderação e Administração (/api/v1/admin)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#categorias-apiv1categories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🏷️ Categorias (/api/v1/categories)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-codigos-de-resposta-http-padronizados" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Códigos de Resposta HTTP Padronizados
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+  
+
+
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="glossario-e-padronizacao-de-nomenclaturas-projeto-agenda-unb">📖 Glossário e Padronização de Nomenclaturas — Projeto Agenda UnB</h1>
+<p>Este documento estabelece as convenções de código, terminologia oficial e padrões de rotas da API para garantir consistência entre o <strong>Frontend</strong> e o <strong>Backend</strong> da aplicação <strong>Agenda UnB</strong>.</p>
+<hr />
+<h2 id="1-glossario-de-dominio-entidades-principais">1. Glossário de Domínio (Entidades Principais)</h2>
+<p>Utilizaremos o <strong>Inglês</strong> como idioma padrão para código, variáveis, entidades, rotas e banco de dados. Os textos da interface com o usuário (UI) permanecem em Português.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Termo (PT-BR)</th>
+<th style="text-align: left;">Termo Oficial (Código)</th>
+<th style="text-align: left;">Descrição / Uso</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Usuário</strong></td>
+<td style="text-align: left;"><code>User</code></td>
+<td style="text-align: left;">Conta de acesso da pessoa na aplicação (Estudante, Professor ou Administrador).</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Papel / Tipo de Usuário</strong></td>
+<td style="text-align: left;"><code>Role</code></td>
+<td style="text-align: left;">Nível de acesso do usuário (<code>student</code>, <code>professor</code>, <code>admin</code>).</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Evento / Compromisso</strong></td>
+<td style="text-align: left;"><code>Event</code></td>
+<td style="text-align: left;">Registro de uma atividade na agenda (acadêmica pessoal ou geral do campus).</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Plano de Ensino</strong></td>
+<td style="text-align: left;"><code>Syllabus</code></td>
+<td style="text-align: left;">Arquivo (PDF ou texto) enviado para extração automática de datas acadêmicas.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Calendário / Agenda</strong></td>
+<td style="text-align: left;"><code>Calendar</code></td>
+<td style="text-align: left;">Coleção/agrupamento de eventos de um usuário ou do campus.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Categoria / Etiqueta</strong></td>
+<td style="text-align: left;"><code>Category</code></td>
+<td style="text-align: left;">Classificação do evento (ex: <em>Prova</em>, <em>Trabalho</em>, <em>Seminário</em>, <em>Cultural</em>, <em>Palestra</em>).</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Notificação / Lembrete</strong></td>
+<td style="text-align: left;"><code>Reminder</code></td>
+<td style="text-align: left;">Alerta programado antes do início de um evento.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Inscrição / Participante</strong></td>
+<td style="text-align: left;"><code>Attendee</code></td>
+<td style="text-align: left;">Registro de presença/inscrição direta de um usuário em um evento público.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Moderação / Submissão</strong></td>
+<td style="text-align: left;"><code>Review</code> / <code>Submission</code></td>
+<td style="text-align: left;">Fluxo de validação de eventos propostos por usuários antes de entrarem na agenda pública.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="2-convencoes-de-escrita-naming-conventions">2. Convenções de Escrita (<em>Naming Conventions</em>)</h2>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Elemento</th>
+<th style="text-align: left;">Padrão</th>
+<th style="text-align: left;">Exemplo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Variáveis e Funções</strong></td>
+<td style="text-align: left;"><code>camelCase</code></td>
+<td style="text-align: left;"><code>eventId</code>, <code>getEventsByDate()</code>, <code>isAvailable</code>, <code>extractedEvents</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Classes, Componentes e Schemas</strong></td>
+<td style="text-align: left;"><code>PascalCase</code></td>
+<td style="text-align: left;"><code>EventController</code>, <code>CalendarGrid.jsx</code>, <code>RegisterModal.jsx</code>, <code>UserModel</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Arquivos de Código</strong></td>
+<td style="text-align: left;"><code>kebab-case</code> ou <code>PascalCase</code></td>
+<td style="text-align: left;"><code>event-service.js</code> ou <code>EventCard.jsx</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Rotas da API (URLs)</strong></td>
+<td style="text-align: left;"><code>kebab-case</code></td>
+<td style="text-align: left;"><code>/api/v1/user-settings</code>, <code>/api/v1/syllabus/upload</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Campos do Banco de Dados</strong></td>
+<td style="text-align: left;"><code>camelCase</code> <em>(ou <code>snake_case</code>)</em></td>
+<td style="text-align: left;"><code>createdAt</code>, <code>startTime</code>, <code>userId</code>, <code>approvalStatus</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Constantes Globais e Enums</strong></td>
+<td style="text-align: left;"><code>UPPER_SNAKE_CASE</code></td>
+<td style="text-align: left;"><code>MAX_EVENTS_PER_DAY</code>, <code>DEFAULT_PORT</code>, <code>ROLE_STUDENT</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Classes CSS</strong></td>
+<td style="text-align: left;"><code>kebab-case</code></td>
+<td style="text-align: left;"><code>.modal-btn-primary</code>, <code>.role-selector</code>, <code>.nav-items</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="3-estrutura-de-atributos-dos-modelos-campos-de-dados">3. Estrutura de Atributos dos Modelos (Campos de Dados)</h2>
+<h3 id="user-usuario">👤 <code>User</code> (Usuário)</h3>
+<ul>
+<li><code>id</code>: Identificador único (<code>UUID</code> ou <code>ObjectId</code>)</li>
+<li><code>name</code>: Nome completo</li>
+<li><code>email</code>: Endereço de e-mail institucional ou pessoal</li>
+<li><code>passwordHash</code>: Senha criptografada (opcional se autenticado via OAuth)</li>
+<li><code>role</code>: Papel no sistema (<code>"student"</code>, <code>"professor"</code>, <code>"admin"</code>)</li>
+<li><code>provider</code>: Método de login (<code>"local"</code>, <code>"google"</code>)</li>
+<li><code>googleId</code>: ID exclusivo fornecido pelo Google (quando autenticado via Google)</li>
+<li><code>avatarUrl</code>: URL da foto de perfil</li>
+<li><code>createdAt</code>: Data de criação da conta</li>
+<li><code>updatedAt</code>: Data da última alteração de perfil</li>
+</ul>
+<h3 id="event-evento-prazo-academico">📅 <code>Event</code> (Evento / Prazo Acadêmico)</h3>
+<ul>
+<li><code>id</code>: Identificador único do evento</li>
+<li><code>userId</code>: ID do criador/proprietário do evento (Chave Estrangeira)</li>
+<li><code>title</code>: Título do evento ou prazo (ex: <em>"Prova 1 - Cálculo 1"</em>, <em>"Semana Universitária"</em>)</li>
+<li><code>description</code>: Detalhes, ementa ou notas sobre a atividade</li>
+<li><code>location</code>: Local físico (ex: <em>"ICC Sul - Sala AT 03/12"</em>) ou link de videochamada</li>
+<li><code>startDate</code>: Data e hora de início (<code>ISO 8601</code>: <code>YYYY-MM-DDTHH:mm:ssZ</code>)</li>
+<li><code>endDate</code>: Data e hora de término (<code>ISO 8601</code>)</li>
+<li><code>isAllDay</code>: Booleano (<code>true</code>/<code>false</code>) indicando se dura o dia todo</li>
+<li><code>visibility</code>: Visibilidade do evento:</li>
+<li><code>"private"</code>: Evento pessoal / prazo acadêmico individual</li>
+<li><code>"public"</code>: Evento divulgado no calendário geral do campus</li>
+<li><code>status</code>: Andamento do evento (<code>"scheduled"</code>, <code>"cancelled"</code>, <code>"completed"</code>)</li>
+<li><code>approvalStatus</code>: Status de moderação para eventos públicos:</li>
+<li><code>"pending"</code>: Aguardando avaliação de um moderador/administrador</li>
+<li><code>"approved"</code>: Aprovado e visível na agenda pública</li>
+<li><code>"rejected"</code>: Recusado pela moderação</li>
+<li><code>source</code>: Origem do evento (<code>"manual"</code>, <code>"syllabus_extraction"</code>, <code>"instagram_sync"</code>, <code>"unb_feed"</code>)</li>
+<li><code>syllabusId</code>: ID do plano de ensino que originou a data (se aplicável)</li>
+<li><code>categoryId</code>: ID da categoria associada</li>
+<li><code>createdAt</code>: Data de registro no sistema</li>
+<li><code>updatedAt</code>: Data da última alteração</li>
+</ul>
+<h3 id="syllabus-plano-de-ensino">📄 <code>Syllabus</code> (Plano de Ensino)</h3>
+<ul>
+<li><code>id</code>: Identificador único do arquivo/processamento</li>
+<li><code>userId</code>: ID do usuário que realizou o upload</li>
+<li><code>fileName</code>: Nome original do arquivo enviado (ex: <em>"Plano_MDS_2026_2.pdf"</em>)</li>
+<li><code>fileUrl</code>: URL do arquivo armazenado (ex: bucket S3 ou Supabase Storage)</li>
+<li><code>fileType</code>: Tipo do arquivo (<code>"pdf"</code>, <code>"text"</code>)</li>
+<li><code>status</code>: Status do processamento por IA/parser (<code>"pending"</code>, <code>"processing"</code>, <code>"completed"</code>, <code>"failed"</code>)</li>
+<li><code>extractedEventsCount</code>: Quantidade de prazos/provas identificados</li>
+<li><code>errorMessage</code>: Descrição do erro, caso o processamento falhe</li>
+<li><code>createdAt</code>: Data e hora do envio</li>
+</ul>
+<h3 id="category-categoria">🏷️ <code>Category</code> (Categoria)</h3>
+<ul>
+<li><code>id</code>: Identificador da categoria</li>
+<li><code>name</code>: Nome da categoria (<em>"Prova"</em>, <em>"Trabalho"</em>, <em>"Seminário"</em>, <em>"Palestra"</em>, <em>"Cultural"</em>, <em>"Esporte"</em>)</li>
+<li><code>colorHex</code>: Código hexadecimal de cor (ex: <code>"#008BFF"</code>)</li>
+</ul>
+<h3 id="attendee-inscricao-em-evento">🎟️ <code>Attendee</code> (Inscrição em Evento)</h3>
+<ul>
+<li><code>id</code>: Identificador único do registro</li>
+<li><code>eventId</code>: ID do evento associado</li>
+<li><code>userId</code>: ID do usuário inscrito</li>
+<li><code>registeredAt</code>: Data e hora da inscrição</li>
+</ul>
+<hr />
+<h2 id="4-padronizacao-de-rotas-da-api-rest-endpoints">4. Padronização de Rotas da API REST (<code>Endpoints</code>)</h2>
+<p>Todas as rotas iniciam com o prefixo <code>/api/v1</code>.</p>
+<h3 id="autenticacao-apiv1auth">🔑 Autenticação (<code>/api/v1/auth</code>)</h3>
+<ul>
+<li><code>POST /api/v1/auth/register</code> — Criar nova conta local (Nome, Email, Senha, Role)</li>
+<li><code>POST /api/v1/auth/login</code> — Autenticar usuário com email e senha</li>
+<li><code>POST /api/v1/auth/google</code> — Autenticar ou cadastrar com token OAuth do Google</li>
+<li><code>POST /api/v1/auth/logout</code> — Encerrar sessão ativa</li>
+<li><code>GET /api/v1/auth/me</code> — Obter dados do usuário autenticado no momento</li>
+</ul>
+<h3 id="eventos-e-agenda-apiv1events">📅 Eventos e Agenda (<code>/api/v1/events</code>)</h3>
+<ul>
+<li><code>GET /api/v1/events</code> — Listar eventos visíveis ao usuário (suporta filtros: <code>?visibility=...&amp;startDate=...&amp;endDate=...&amp;categoryId=...</code>)</li>
+<li><code>GET /api/v1/events/:id</code> — Obter detalhes de um evento específico</li>
+<li><code>POST /api/v1/events</code> — Criar um novo evento (se público por usuário comum, nasce como <code>"pending"</code>)</li>
+<li><code>PUT /api/v1/events/:id</code> — Atualizar dados de um evento existente</li>
+<li><code>PATCH /api/v1/events/:id/status</code> — Atualizar andamento (<code>scheduled</code>, <code>cancelled</code>, <code>completed</code>)</li>
+<li><code>DELETE /api/v1/events/:id</code> — Excluir um evento</li>
+</ul>
+<h3 id="inscricao-direta-em-eventos-apiv1eventsidattend">🎟️ Inscrição Direta em Eventos (<code>/api/v1/events/:id/attend</code>)</h3>
+<ul>
+<li><code>POST /api/v1/events/:id/attend</code> — Inscrever o usuário autenticado no evento</li>
+<li><code>DELETE /api/v1/events/:id/attend</code> — Cancelar a inscrição do usuário no evento</li>
+<li><code>GET /api/v1/events/:id/attendees</code> — Listar participantes do evento (para organizadores/admin)</li>
+</ul>
+<h3 id="processamento-de-planos-de-ensino-apiv1syllabus">📄 Processamento de Planos de Ensino (<code>/api/v1/syllabus</code>)</h3>
+<ul>
+<li><code>POST /api/v1/syllabus/upload</code> — Enviar arquivo PDF ou texto bruto de plano de ensino</li>
+<li><code>GET /api/v1/syllabus</code> — Listar planos de ensino enviados pelo usuário</li>
+<li><code>GET /api/v1/syllabus/:id</code> — Obter status do processamento e eventos extraídos</li>
+</ul>
+<h3 id="moderacao-e-administracao-apiv1admin">🛡️ Moderação e Administração (<code>/api/v1/admin</code>)</h3>
+<ul>
+<li><code>GET /api/v1/admin/events/pending</code> — Listar eventos submetidos pela comunidade aguardando aprovação</li>
+<li><code>PATCH /api/v1/admin/events/:id/review</code> — Aprovar (<code>"approved"</code>) ou rejeitar (<code>"rejected"</code>) a publicação de um evento público</li>
+</ul>
+<h3 id="categorias-apiv1categories">🏷️ Categorias (<code>/api/v1/categories</code>)</h3>
+<ul>
+<li><code>GET /api/v1/categories</code> — Listar todas as categorias de eventos</li>
+<li><code>POST /api/v1/categories</code> — Criar uma nova categoria (apenas administradores)</li>
+<li><code>DELETE /api/v1/categories/:id</code> — Remover uma categoria</li>
+</ul>
+<hr />
+<h2 id="5-codigos-de-resposta-http-padronizados">5. Códigos de Resposta HTTP Padronizados</h2>
+<ul>
+<li><code>200 OK</code>: Requisição processada com sucesso.</li>
+<li><code>201 Created</code>: Recurso (evento/usuário/inscrição) criado com sucesso.</li>
+<li><code>202 Accepted</code>: Arquivo de plano de ensino recebido e em processamento assíncrono.</li>
+<li><code>400 Bad Request</code>: Dados inválidos enviados pelo frontend (ex: formato de arquivo não suportado, datas inconsistentes).</li>
+<li><code>401 Unauthorized</code>: Usuário não autenticado ou token inválido/expirado.</li>
+<li><code>403 Forbidden</code>: Usuário não possui permissão para esta ação (ex: não administrador tentando moderar eventos).</li>
+<li><code>404 Not Found</code>: Recurso não encontrado (ex: evento ou plano de ensino inexistente).</li>
+<li><code>409 Conflict</code>: Conflito de regras de negócio (ex: usuário já inscrito no evento).</li>
+<li><code>500 Internal Server Error</code>: Erro inesperado no servidor.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Voltar para o topo
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.path", "navigation.top", "search.suggest", "search.highlight", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copiado para \u00e1rea de transfer\u00eancia", "clipboard.copy": "Copiar para \u00e1rea de transfer\u00eancia", "search.result.more.one": "mais 1 nesta p\u00e1gina", "search.result.more.other": "# mais nesta p\u00e1gina", "search.result.none": "Nenhum documento encontrado", "search.result.one": "1 documento encontrado", "search.result.other": "# documentos encontrados", "search.result.placeholder": "Digite para iniciar a busca", "search.result.term.missing": "Ausente", "select.version": "Selecione a vers\u00e3o"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
