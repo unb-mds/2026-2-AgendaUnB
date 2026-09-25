@@ -58,7 +58,7 @@ A identidade visual da Agenda UnB mescla o rigor acadêmico com um futurismo dig
 **Key Characteristics:**
 - **Atmosfera noturna:** Fundo super escuro, quase preto absoluto.
 - **Translucidez:** Modais, navbars e cards deixam o fundo vazar levemente através do `backdrop-filter`.
-- **Brilhos em vez de sombras:** Os efeitos de profundidade são alcançados com sombras azuis que emulam luzes neon neon ou "glow".
+- **Brilhos em vez de sombras:** Os efeitos de profundidade são alcançados com sombras azuis que emulam luzes neon ou "glow".
 - **Tipografia Sci-Fi:** Títulos utilizam a fonte Orbitron para dar um toque tecnológico.
 
 ## Colors
