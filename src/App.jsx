@@ -277,7 +277,7 @@ export default function App() {
                     </svg>
                     Continuar com Google
                   </button>
-                </>
+                </> 
               )}
 
             </div>
@@ -415,7 +415,7 @@ export default function App() {
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
               <circle cx="12" cy="7" r="4" />
             </svg>
-            Entrar como convidado
+            {user ? `Entrar como ${profile?.nome_completo?.split(' ')[0] || user.user_metadata?.full_name?.split(' ')[0] || user.user_metadata?.name?.split(' ')[0] || 'você'}` : 'Entrar como convidado'}
           </button>
 
           <div className="scroll-hint">
