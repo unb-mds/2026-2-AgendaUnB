@@ -501,8 +501,8 @@ export default function SegundaPagina() {
       descricao,
       visibilidade,
       linkExterno,
-      organizadorNome: user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email || 'Organizador',
-      organizadorFoto: user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null,
+      organizadorNome: profile?.nome_completo || user?.user_metadata?.nome_completo || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email || 'Organizador',
+      organizadorFoto: profile?.avatar_url || user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null,
       criadoPorMim: true
     };
 
@@ -751,7 +751,7 @@ export default function SegundaPagina() {
                 <button type="button" onClick={() => setIsModalOpen(false)} style={{ padding: '12px 20px', borderRadius: '16px', background: 'transparent', color: textMuted, border: `1px solid ${borderColor}`, cursor: 'pointer', fontWeight: 600 }}>
                   Cancelar
                 </button>
-                <button type="submit" style={{ padding: '12px 24px', borderRadius: '16px', background: 'linear-gradient(135deg, rgb(0, 95, 210), rgb(0, 139, 255))', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600, boxShadow: '0 4px 15px rgba(0, 139, 255, 0.3)' }}>
+                <button type="submit" style={{ padding: '12px 24px', borderRadius: '16px', background: 'rgba(0, 95, 210, 1)', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600, boxShadow: '0 4px 15px rgba(0, 139, 255, 0.3)' }}>
                   Salvar Evento
                 </button>
               </div>

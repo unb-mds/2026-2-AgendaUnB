@@ -6,7 +6,7 @@ import '../styles/global.css';
 
 export default function PaginaDeEvento() {
   const { id } = useParams();
-  const { user, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const location = useLocation();
   
   const [interessados, setInteressados] = useState(10);
@@ -34,10 +34,10 @@ export default function PaginaDeEvento() {
       };
     }
     if (user) {
-      const nome = user.user_metadata?.full_name || user.user_metadata?.name || user.email || "Organizador";
+      const nome = profile?.nome_completo || user.user_metadata?.nome_completo || user.user_metadata?.full_name || user.user_metadata?.name || user.email || "Organizador";
       return {
         nome,
-        foto: user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
+        foto: profile?.avatar_url || user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
         iniciais: nome.charAt(0).toUpperCase()
       };
     }
@@ -138,7 +138,7 @@ Não perca!`,
           <div className="event-header">
             <div className="event-badges">
               <span className="ds-section-label" style={{ 
-                background: 'linear-gradient(135deg, rgb(0, 139, 255), rgba(0, 95, 210, 1))',
+                background: 'rgba(0, 139, 255, 1)',
                 color: '#fff',
                 borderColor: 'transparent',
                 boxShadow: '0 4px 15px rgba(0, 139, 255, 0.35)'
@@ -199,7 +199,7 @@ Não perca!`,
             
             <div className="event-actions">
               <button className="ds-btn-primary" onClick={handleConferir} style={{ 
-                background: 'linear-gradient(135deg, rgb(0, 95, 210), rgb(0, 139, 255))',
+                background: 'rgba(0, 95, 210, 1)',
                 height: '56px',
                 fontSize: '1rem',
                 textTransform: 'uppercase',

@@ -74,10 +74,10 @@ export default function NavBar({
             onClick={signOut}
             style={{ cursor: 'pointer', background: 'rgb(0, 139, 255)', color: '#fff', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', overflow: 'hidden' }}
           >
-            {user.user_metadata?.avatar_url || user.user_metadata?.picture ? (
-              <img src={user.user_metadata.avatar_url || user.user_metadata.picture} referrerPolicy="no-referrer" alt="Avatar" style={{width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover'}} />
+            {profile?.avatar_url || user.user_metadata?.avatar_url || user.user_metadata?.picture ? (
+              <img src={profile?.avatar_url || user.user_metadata.avatar_url || user.user_metadata.picture} referrerPolicy="no-referrer" alt="Avatar" style={{width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover'}} />
             ) : (
-              profile?.nome_completo?.[0]?.toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'
+              profile?.nome_completo?.[0]?.toUpperCase() || user.user_metadata?.nome_completo?.[0]?.toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'
             )}
           </div>
         )}
