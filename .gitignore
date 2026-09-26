@@ -5,6 +5,7 @@ node_modules/
 dist/
 dist-ssr/
 *.local
+.vscode
 
 # Credenciais — NUNCA versionar
 .env
