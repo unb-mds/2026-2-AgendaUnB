@@ -268,18 +268,18 @@ body, #root { width:100%; min-height:100%; background:#050508; font-family:'Inte
   padding: 7px 18px; border-radius: 999px; font-weight: 600; font-size: 0.82rem;
   font-family: 'Orbitron', sans-serif; font-size: 0.9rem; font-weight: 900;
   transition: all 0.25s ease;
-  box-shadow: 0 0 12px rgba(0, 139, 255, 0.2);
+  box-shadow: 0 0 12px rgba(0, 140, 255, 0.105);
 }
 .nav-btn-account:hover, .nav-btn-account-login:hover {
   background: rgba(0, 139, 255, 0.35); border-color: rgba(0, 139, 255, 0.7);
-  box-shadow: 0 0 20px rgba(0, 139, 255, 0.4); transform: translateY(-1px);
+  box-shadow: 0 0 20px rgba(0, 140, 255, 0.161); transform: translateY(-1px);
 }
 .nav-btn-account-login {
   cursor: pointer; background: rgba(21, 120, 201, 0.73);
   border: 1px solid rgba(0, 140, 255, 0.51); color: #fff;
   padding: 7px 18px; border-radius: 999px; font-weight: 600; font-size: 0.9rem;
   font-family: 'Orbitron', sans-serif; transition: all 0.25s ease;
-  box-shadow: 0 0 12px rgba(0, 139, 255, 0.5);
+  box-shadow: 0 0 12px rgba(1, 101, 183, 0.061);
 }
 
 /* ── Theme Toggle ── */
@@ -304,19 +304,19 @@ body.light .nav {
   border-color: rgba(0, 139, 255, 0.2);
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
 }
-body.light .nav-items a { color: rgba(26, 26, 46, 0.6); }
+body.light .nav-items a { color: rgba(26, 26, 46, 0.859); }
 body.light .nav-items a:hover { color: rgb(0, 139, 255); }
 body.light .nav-bell { color: rgba(26, 26, 46, 0.5); }
 body.light .nav-bell:hover { color: #1a1a2e; }
 body.light .nav-avatar { background: rgb(0, 139, 255); color: #fff; }
 body.light .nav-btn-account {
-  background: rgba(21, 150, 255, 0.08); border-color: rgba(0, 139, 255, 0.35); color: #1a1a2e;
+  background: rgba(242, 242, 242, 0.08); border-color: rgba(1, 1, 1, 0.47); color: #1a1a2e;
 }
 body.light .nav-btn-account:hover {
-  background: rgba(100, 185, 255, 0.12); border-color: rgba(0, 140, 255, 0.25);
+  background: rgba(100, 185, 255, 0.12); border-color: rgba(1, 1, 1, 0.47);
 }
 body.light .nav-btn-account-login {
-  background: rgba(29, 152, 252, 0.3); border-color: rgba(0, 110, 200, 0.47); color: #1a1a2e;
+  background: rgba(29, 152, 252, 0.659); border-color: rgba(1, 1, 1, 0.47); color: #1a1a2e;
 }
 body.light .nav-btn-account-login:hover {
   color: #1a1a2e;
