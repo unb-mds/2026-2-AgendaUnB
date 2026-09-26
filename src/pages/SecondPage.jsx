@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import NavBar from '../components/NavBar';
 
 const CustomSelect = ({ value, onChange, options, placeholder, dropUp = false, className, wrapperWidth }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -501,7 +502,7 @@ export default function SegundaPagina() {
       visibilidade,
       linkExterno,
       organizadorNome: user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email || 'Organizador',
-      organizadorFoto: user?.user_metadata?.avatar_url || null,
+      organizadorFoto: user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null,
       criadoPorMim: true
     };
 
@@ -538,63 +539,7 @@ export default function SegundaPagina() {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: bgColor, color: textColor, paddingBottom: '4rem', transition: 'background-color 0.3s' }}>
       
-      <nav className="nav" style={{ 
-        position: 'fixed', top: '18px', zIndex: 1000, display: 'flex', alignItems: 'center', 
-        justifyContent: 'space-between', padding: '0 28px',
-        background: isDark ? 'rgba(5,5,12,0.82)' : 'rgba(255, 255, 255, 0.85)',
-        borderColor: isDark ? 'rgba(0, 139, 255, 0.15)' : 'rgba(0, 139, 255, 0.2)'
-      }}>
-        {/* Espaço à esquerda vazio para manter a estrutura flex */}
-    <div> </div>
-
-        {/* Itens perfeitamente centralizados no meio via posicionamento absoluto */}
-        <div className="nav-items" style={{ 
-          position: 'absolute', left: '50%', transform: 'translateX(-50%)',
-          display: 'flex', gap: '2rem' 
-        }}>
-          <a href="#eventos" style={{ color: !isDark ? '#1a1a2e' : '', textDecoration: 'none', fontWeight: 600 }}>Eventos</a>
-          <a href="#plano-de-ensino" style={{ color: !isDark ? '#1a1a2e' : '', textDecoration: 'none', fontWeight: 600 }}>Plano de Ensino</a>
-        </div>
-
-        {/* Ações alinhadas à direita */}
-        <div className="nav-right" style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '1rem' }}>
-          {toggleTheme && (
-            <button 
-              className="theme-toggle" 
-              onClick={toggleTheme} 
-              title={isDark ? 'Tema claro' : 'Tema escuro'}
-              style={!isDark ? { background: 'rgba(0,0,0,0.06)', borderColor: 'rgba(0,0,0,0.12)', color: '#555' } : {}}
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: '1.2rem'  }}>
-                {isDark ? 'brightness_7' : 'bedtime'}
-              </span>
-            </button>
-          )}
-          <svg 
-            className="nav-bell" 
-            width="18" height="18" viewBox="0 0 24 24" fill="none" 
-            stroke={isDark ? "rgba(255,255,255,0.55)" : "rgba(26,26,46,0.5)"} 
-            strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-          >
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-          </svg>
-          {user && (
-            <div 
-              className="nav-avatar" 
-              title="Sair" 
-              onClick={signOut}
-              style={{ cursor: 'pointer', background: accentColor, color: '#fff', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', overflow: 'hidden' }}
-            >
-              {user.user_metadata?.avatar_url ? (
-                 <img src={user.user_metadata.avatar_url} alt="Avatar" style={{width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover'}} />
-              ) : (
-                 profile?.nome_completo?.[0]?.toUpperCase() || 'U'
-              )}
-            </div>
-          )}
-        </div>
-      </nav>
+      <NavBar pageType="second" isDark={isDark} toggleTheme={toggleTheme} />
 
       <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '8rem 1.5rem 2rem' }}>
         
