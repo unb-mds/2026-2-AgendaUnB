@@ -26,6 +26,8 @@ A plataforma será utilizada tanto de forma pontual (para descobrir o que está 
 
 ## Brand Commitments
 - A identidade visual é ancorada na cor **Azul (`#008bff`)**, que deve estar presente de forma consistente.
+- **Evitar:** Estilos com bordas coloridas e background mais claro (ex: azul claro com texto/borda azul) não devem ser usados, pois não transmitem a personalidade do produto.
+- **Pureza Visual:** Gradientes lineares (*linear-gradients*) e sombreamentos com opacidade superior a 20% estão terminantemente proibidos. A identidade requer preenchimentos sólidos (flat) ou *glassmorphism* neutro, onde o destaque é alcançado por brilhos (*glow*) e não por peso de sombras ou transições de cores.
 - Cores base já definidas e imutáveis:
   - Fundo Dark: `#080c16` | Fundo Light: `#f0f4f8`
   - Cards Dark: `#1a2235` | Cards Light: `#ffffff`

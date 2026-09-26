@@ -192,6 +192,7 @@ export default function App() {
     <>
       <div style={{ position:'fixed', inset:0, zIndex:0 }}>
         <video
+          className="hero-video"
           ref={videoRef}
           key={theme} /* Fazer o react a remontar a tag quando o tema mudar, pra recarregar a source certa */
           autoPlay loop muted playsInline
@@ -498,7 +499,7 @@ export default function App() {
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
               <circle cx="12" cy="7" r="4" />
             </svg>
-            {user ? `Entrar como ${profile?.nome_completo?.split(' ')[0] || user.user_metadata?.full_name?.split(' ')[0] || user.user_metadata?.name?.split(' ')[0] || 'você'}` : 'Entrar como convidado'}
+            {user ? `Entrar como ${profile?.nome_completo?.split(' ')[0] || user.user_metadata?.nome_completo?.split(' ')[0] || user.user_metadata?.full_name?.split(' ')[0] || user.user_metadata?.name?.split(' ')[0] || 'você'}` : 'Entrar como convidado'}
           </button>
 
           <div className="scroll-hint">
@@ -533,7 +534,7 @@ export default function App() {
               </div>
               <div className="feat">
                 <div className="feat-icon"><span className="material-symbols-outlined">upload_file</span></div>
-                <h3>Upload de Planos de Ensino</h3>
+                <h3>Planos de Ensino</h3>
                 <p>Envie múltiplos planos de ensino nos formatos PDF ou em texto bruto e deixe o sistema processar automaticamente.</p>
               </div>
               <div className="feat">
@@ -549,7 +550,7 @@ export default function App() {
               <div className="feat">
                 <div className="feat-icon"><span className="material-symbols-outlined">how_to_reg</span></div>
                 <h3>Inscrição Direta</h3>
-                <p>Inscreva-se em eventos diretamente pela plataforma com apenas um clique, sem redirecionamentos externos.</p>
+                <p>Inscreva-se em eventos através da plataforma com apenas um clique, usando os links externos.</p>
               </div>
               </div>
           </section>
@@ -562,8 +563,8 @@ export default function App() {
             <h2 className="section-h2">Tudo o que acontece no campus</h2>
             <p className="section-sub">Uma solução que criamos do zero para organizar eventos relevantes pra você.</p>
 
-            <div className="feat-grid">
-              <div className="feat">
+            <div className="about-container">
+              <div className="about-card">
                 <h3>O que é o Agenda UnB?</h3>
                 <p>O Agenda UnB é um projeto desenvolvido na matéria de Métodos de Desenvolvimento de Software da Universidade de Brasília, feito para centralizar todos os eventos dos campi da universidade em um único lugar, facilitando a organização e o acesso a informações importantes.</p>
                   <br></br>
@@ -626,7 +627,7 @@ export default function App() {
           {/* Footer */}
           <footer className="footer">
             <img src="/Marca-UnB.png" alt="Logo UnB" style={{ width:'70px', marginBottom:'1rem', opacity:0.5, filter: theme === 'light' ? 'invert(1)' : 'none' }}/>
-            <p>Agenda UnB — Universidade de Brasília © 2026</p>
+            <p>Agenda UnB - Universidade de Brasília © 2026</p>
           </footer>
 
         </div>

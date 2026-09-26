@@ -36,18 +36,20 @@ body, #root { width:100%; min-height:100%; background:#050508; font-family:'Inte
 .nav-bell:hover { color:#fff; }
 .nav-avatar {
   width:32px; height:32px; border-radius:50%;
-  background:rgb(0,139,255); display:grid; place-items:center;
+  background:rgb(5, 5, 5); display:grid; place-items:center;
   font-weight:700; font-size:0.85rem;
-  box-shadow:0 0 12px rgba(0,139,255,0.45);
+  box-shadow:0 0 12px rgba(0, 140, 255, 0.065);
 }
 
 /* ── Section ── */
 .section { padding:5rem 1.5rem; max-width:1120px; margin:0 auto; position:relative; z-index:2; }
 .section-label {
-  display:inline-block; font-size:0.7rem; font-weight:700;
-  text-transform:uppercase; letter-spacing:0.18em;
-  color:rgb(0,139,255); border:1px solid rgba(0,139,255,0.35);
-  padding:5px 14px; border-radius:999px; margin-bottom:1rem;
+  display: inline-block; font-size: 0.72rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.18em;
+  color: rgb(0, 139, 255); border: 1px solid rgba(0, 139, 255, 0.4);
+  background: transparent; padding: 6px 16px; border-radius: 999px; 
+  margin-bottom: 1rem;
+  box-shadow: 0 0 12px rgba(0, 139, 255, 0.1) inset, 0 0 12px rgba(0, 139, 255, 0.1);
 }
 .section-h2 {
   font-family:'Orbitron',sans-serif; font-size:clamp(1.6rem,3.5vw,2.2rem);
@@ -58,11 +60,15 @@ body, #root { width:100%; min-height:100%; background:#050508; font-family:'Inte
 /* ── Feature cards ── */
 .feat-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:1.25rem; }
 .feat {
-  text-align: justify;
+  text-align: left;
   background:rgba(8,12,22,0.65); border:1px solid rgba(0,139,255,0.12);
   border-radius:14px; padding:28px 22px;
   backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
   transition:transform .3s, border-color .3s, box-shadow .3s;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 16px;
 }
 .feat:hover {
   transform:translateY(-4px);
@@ -70,16 +76,60 @@ body, #root { width:100%; min-height:100%; background:#050508; font-family:'Inte
   box-shadow:0 8px 32px rgba(0,139,255,0.12);
 }
 .feat-icon {
-  width:44px; height:44px; border-radius:10px;
-  background:rgba(0,139,255,0.1); border:1px solid rgba(0,139,255,0.25);
-  display:grid; place-items:center;
-  color:rgb(0,139,255); margin-bottom:16px;
+  width: 48px; height: 48px; border-radius: 12px;
+  background: rgba(0, 139, 255, 1);
+  display: grid; place-items: center;
+  color: #ffffff;
+  border: none;
+  box-shadow: 0 4px 15px rgba(0, 139, 255, 0.25);
+  transition: all 0.3s ease;
+  grid-column: 1;
+  grid-row: 1;
+}
+.feat:hover {
+  box-shadow: 0 6px 22px rgba(0, 139, 255, 0.45);
+  transform: translateY(-2px);
 }
 .feat-icon .material-symbols-outlined {
-  font-size:1.4rem;
+  font-size: 1.6rem;
+  color:black;
 }
-.feat h3 { font-size:1.05rem; font-weight:600; margin-bottom:8px; }
-.feat p { color:rgba(255,255,255,0.55); font-size:0.88rem; line-height:1.6; }
+.feat h3 { 
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.05rem; 
+  font-weight: 700; 
+  margin-bottom: 0; 
+  grid-column: 2; 
+  grid-row: 1; 
+  line-height: 1.3;
+  letter-spacing: 0.03em;
+}
+.feat p { 
+  color: rgba(255,255,255,0.55); 
+  font-size: 0.88rem; 
+  line-height: 1.6; 
+  grid-column: 1 / -1; 
+  grid-row: 2; 
+  margin-top: 4px;
+  text-align: justify;
+}
+
+/* ── About Card ── */
+.about-container { width: 100%; max-width: 1200px; margin: 0 auto; }
+.about-card {
+  text-align: justify;
+  background: rgba(8,12,22,0.65); border: 1px solid rgba(0,139,255,0.12);
+  border-radius: 14px; padding: 36px 42px;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  transition: transform .3s, border-color .3s, box-shadow .3s;
+}
+.about-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(0,139,255,0.5);
+  box-shadow: 0 8px 32px rgba(0,139,255,0.12);
+}
+.about-card h3 { font-family: 'Orbitron', sans-serif; font-size: 1.25rem; font-weight: 700; margin-bottom: 12px; letter-spacing: 0.03em; }
+.about-card p { color: rgba(255,255,255,0.65); font-size: 0.95rem; line-height: 1.7; margin-bottom: 1rem; }
 
 /* ── Team ── */
 .team-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1.25rem; }
@@ -108,11 +158,11 @@ body, #root { width:100%; min-height:100%; background:#050508; font-family:'Inte
 }
 .team-name { font-weight:700; font-size:1.02rem; margin-bottom:4px; line-height:1.3; }
 .team-role {
-  color:rgb(0,139,255); font-size:0.75rem; font-weight:700;
-  text-transform:uppercase; letter-spacing:0.1em;
-  background:rgba(0,139,255,0.1); padding:3px 10px; border-radius:999px;
-  border:1px solid rgba(0,139,255,0.25);
-  margin-bottom:14px;
+  color: rgb(0,139,255); font-size: 0.72rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.12em;
+  background: rgba(255, 255, 255, 0.05); padding: 4px 12px; border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 14px;
 }
 .team-links {
   display:flex; flex-direction:column; gap:6px; margin-top:auto;
@@ -165,7 +215,7 @@ body, #root { width:100%; min-height:100%; background:#050508; font-family:'Inte
   border-radius: 20px;
   width: 100%; max-width: 520px;
   padding: 44px 36px 36px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 35px rgba(0, 139, 255, 0.2);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2), 0 0 35px rgba(0, 139, 255, 0.2);
   position: relative; color: #fff;
 }
 .modal-close {
@@ -201,7 +251,7 @@ body, #root { width:100%; min-height:100%; background:#050508; font-family:'Inte
   background-color:  rgba(0, 95, 210, 1 );
   color: #fff; border: none; border-radius: 10px;
   font-weight: 600; font-size: 0.95rem; font-family: 'Inter', sans-serif;
-  cursor: pointer; box-shadow: 0 4px 20px rgba(0, 139, 255, 0.35);
+  cursor: pointer; box-shadow: 0 4px 20px rgba(0, 140, 255, 0.119);
   transition: all 0.25s ease;
 }
 .role-selector {
@@ -240,8 +290,8 @@ body, #root { width:100%; min-height:100%; background:#050508; font-family:'Inte
   background: rgba(255, 255, 255, 0.05);
 }
 .modal-btn-primary:hover {
-  background: linear-gradient(135deg, rgb(30, 155, 255));
-  box-shadow: 0 6px 25px rgba(0, 139, 255, 0.5);
+  background-color: rgb(30, 155, 255);
+  box-shadow: 0 6px 25px rgba(0, 140, 255, 0.205);
   transform: translateY(-1px);
 }
 .modal-divider {
@@ -263,16 +313,20 @@ body, #root { width:100%; min-height:100%; background:#050508; font-family:'Inte
   background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.3);
 }
 .nav-btn-account {
-  cursor: pointer; background: rgba(0, 139, 255, 0.15);
-  border: 1px solid rgba(0, 139, 255, 0.4); color: #fff;
-  padding: 7px 18px; border-radius: 999px; font-weight: 600; font-size: 0.82rem;
-  font-family: 'Orbitron', sans-serif; font-size: 0.9rem; font-weight: 900;
+  cursor: pointer; background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15); color: #fff;
+  padding: 7px 18px; border-radius: 999px;
+  font-family: 'Orbitron', sans-serif; font-size: 0.9rem; font-weight: 700;
   transition: all 0.25s ease;
-  box-shadow: 0 0 12px rgba(0, 140, 255, 0.105);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
-.nav-btn-account:hover, .nav-btn-account-login:hover {
-  background: rgba(0, 139, 255, 0.35); border-color: rgba(0, 139, 255, 0.7);
-  box-shadow: 0 0 20px rgba(0, 140, 255, 0.161); transform: translateY(-1px);
+.nav-btn-account:hover {
+  background: rgba(0, 139, 255, 0.2); border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2); transform: translateY(-1px);
+}
+.nav-btn-account-login:hover {
+  background: rgba(0, 139, 255, 0.8); border-color: rgba(0, 139, 255, 1);
+  box-shadow: 0 0 20px rgba(0, 140, 255, 0.3); transform: translateY(-1px);
 }
 .nav-btn-account-login {
   cursor: pointer; background: rgba(21, 120, 201, 0.73);
@@ -313,7 +367,7 @@ body.light .nav-btn-account {
   background: rgba(242, 242, 242, 0.08); border-color: rgba(1, 1, 1, 0.47); color: #1a1a2e;
 }
 body.light .nav-btn-account:hover {
-  background: rgba(100, 185, 255, 0.12); border-color: rgba(1, 1, 1, 0.47);
+  background: rgba(100, 185, 255, 0.075); border-color: rgba(1, 1, 1, 0.47);
 }
 body.light .nav-btn-account-login {
   background: rgba(29, 152, 252, 0.659); border-color: rgba(1, 1, 1, 0.47); color: #1a1a2e;
@@ -343,6 +397,17 @@ body.light .feat:hover {
 body.light .feat h3 { color: #1a1a2e; }
 body.light .feat p { color: rgba(26, 26, 46, 0.6); }
 
+body.light .about-card {
+  background: rgba(255, 255, 255, 0.85); border-color: rgba(0, 139, 255, 0.15);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+body.light .about-card:hover {
+  border-color: rgba(0, 139, 255, 0.5);
+  box-shadow: 0 8px 32px rgba(0, 139, 255, 0.1);
+}
+body.light .about-card h3 { color: #1a1a2e; }
+body.light .about-card p { color: rgba(26, 26, 46, 0.6); }
+
 body.light .team-card {
   background: linear-gradient(175deg, rgba(255, 255, 255, 0.95), rgba(245, 246, 250, 0.98));
   border-color: rgba(0, 139, 255, 0.18);
@@ -354,6 +419,12 @@ body.light .team-card:hover {
 }
 body.light .team-pic { background: #e8eaef; color: rgba(0, 139, 255, 0.85); }
 body.light .team-name { color: #1a1a2e; }
+body.light .team-role {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.08);
+  color: rgb(0,139,255);
+  box-shadow: none;
+}
 body.light .team-links { border-top-color: rgba(0, 0, 0, 0.08); }
 body.light .team-link-item { color: rgba(26, 26, 46, 0.55); }
 body.light .team-link-item:hover { color: rgb(0, 139, 255); }
@@ -363,6 +434,13 @@ body.light .footer { color: rgba(26, 26, 46, 0.35); }
 
 body.light .scroll-hint { color: #1a1a2e; }
 body.light .scroll-hint svg { stroke: #1a1a2e; }
+
+/*
+ Ajuste de cor do vídeo de fundo no tema light
+ */
+body.light .hero-video {
+     filter: hue-rotate(20deg) saturate(250%) brightness(120%); 
+}
 
 body.light .modal-overlay { background: rgba(245, 246, 250, 0.85); }
 body.light .modal-box {
@@ -599,16 +677,17 @@ body.light .time-picker-item:hover {
 
 .ds-section-label {
   display: inline-block;
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.18em;
   color: rgb(0,139,255);
-  border: 1px solid rgba(0,139,255,0.35);
-  padding: 5px 14px;
+  border: 1px solid rgba(0,139,255,0.4);
+  padding: 6px 16px;
   border-radius: 999px;
   font-family: 'Inter', sans-serif;
-  background: rgba(0, 139, 255, 0.05);
+  background: transparent;
+  box-shadow: 0 0 12px rgba(0, 139, 255, 0.1) inset, 0 0 12px rgba(0, 139, 255, 0.1);
 }
 
 .campus-badge {
@@ -835,6 +914,9 @@ body.light .event-title {
   color: #1a1a2e;
 }
 
+body.light .feat-icon .material-symbols-outlined{
+  color: white;
+}
 body.light .event-organizer-box {
   border-bottom-color: rgba(0, 139, 255, 0.2);
 }

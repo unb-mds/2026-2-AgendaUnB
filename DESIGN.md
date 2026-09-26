@@ -134,3 +134,6 @@ A linguagem de formas mistura raios suaves e formas orgânicas de pílula.
 - **Don't** utilizar sombras pretas duras para destacar elementos dentro dos cards; confie na opacidade dos textos.
 - **Don't** quebrar o isolamento do modal com cores sólidas e opacas que destruam a sensação de vidro.
 - **Don't** utilizar emojis como ícones ou elementos de interface (UI). Toda a iconografia deve ser feita através da biblioteca Material Symbols.
+- **Don't** utilizar estilos com bordas coloridas acompanhadas de background mais claro (ex: fundo azul claro com borda e texto azuis), pois não passam a personalidade do produto.
+- **Don't** aplicar *linear gradients* em nenhum contexto de UI (fundos, botões, ícones ou textos). Use sempre cores sólidas que suportem a linguagem visual clara e limpa.
+- **Don't** ultrapassar 20% de opacidade em sombras pretas (`rgba(0,0,0,0.2)`). Evite sombras pesadas para simular elevação e, em vez disso, conte com o *backdrop-filter* (vidro) e o *glow* (sombra azul clara ou colorida) para gerar separação e hierarquia.
