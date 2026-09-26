@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import NavBar from '../components/NavBar';
 import '../styles/global.css';
 
 export default function PaginaDeEvento() {
@@ -36,10 +37,16 @@ export default function PaginaDeEvento() {
       const nome = user.user_metadata?.full_name || user.user_metadata?.name || user.email || "Organizador";
       return {
         nome,
-        foto: user.user_metadata?.avatar_url || null,
+        foto: user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
         iniciais: nome.charAt(0).toUpperCase()
       };
     }
+    
+    return {
+      nome: "Convidado",
+      foto: null,
+      iniciais: "C"
+    };
   };
 
   const organizador = getOrganizadorInfo() || { nome: 'Organizador', foto: null, iniciais: 'O' };
@@ -124,44 +131,7 @@ Não perca!`,
         }}
       />
 
-      <nav className="nav" style={{ 
-        position: 'fixed', top: '18px', zIndex: 1000,
-        background: isDark ? 'rgba(5,5,12,0.82)' : 'rgba(255, 255, 255, 0.85)',
-        borderColor: isDark ? 'rgba(0, 139, 255, 0.15)' : 'rgba(0, 139, 255, 0.2)'
-      }}>
-        <div className="nav-brand"></div>
-        <div className="nav-items">
-          <Link to="/segunda-pagina" style={{ color: !isDark ? '#1a1a2e' : '' }}>Explorar Eventos</Link>
-        </div>
-        <div className="nav-right">
-          <button 
-            className="theme-toggle" 
-            onClick={toggleTheme} 
-            title={isDark ? 'Tema claro' : 'Tema escuro'}
-            style={!isDark ? { background: 'rgba(0,0,0,0.06)', borderColor: 'rgba(0,0,0,0.12)', color: '#555' } : {}}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '1.2rem'  }}>
-              {isDark ? 'brightness_7' : 'bedtime'}
-            </span>
-          </button>
-          <span className="material-symbols-outlined nav-bell" style={{ color: isDark ? 'rgba(255,255,255,0.55)' : 'rgba(26,26,46,0.5)' }}>notifications</span>
-          {user ? (
-            <div 
-              className="nav-avatar" 
-              title="Sair"
-              onClick={signOut}
-              style={{ cursor: 'pointer', background: 'rgb(0, 139, 255)', color: '#fff', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
-              {user.user_metadata?.avatar_url ? (
-                <img src={user.user_metadata.avatar_url} alt="Avatar" style={{width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover'}} />
-              ) : (
-                user.email ? user.email.charAt(0).toUpperCase() : 'U'
-              )}
-            </div>
-          ) : (
-            <Link to="/" style={{ color: '#008bff', textDecoration: 'none', fontWeight: 700, fontSize: '0.8rem' }}>ENTRAR</Link>
-          )}
-        </div>
-      </nav>
+      <NavBar pageType="evento" isDark={isDark} toggleTheme={toggleTheme} />
 
       <main className="event-page-content" style={{ position: 'relative', zIndex: 1 }}>
         <div className="event-main-col">
