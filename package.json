@@ -16,7 +16,6 @@
   "devDependencies": {
     "@supabase/supabase-js": "^2.117.1",
     "@vitejs/plugin-react": "^4.5.2",
-    "supabase": "^2.117.0",
     "vite": "^6.3.5"
   },
   "description": "Agenda de eventos e prazos academicos da UnB"
