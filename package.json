@@ -14,6 +14,7 @@
     "react-router-dom": "^7.18.4"
   },
   "devDependencies": {
+    "@supabase/supabase-js": "^2.117.1",
     "@vitejs/plugin-react": "^4.5.2",
     "vite": "^6.3.5"
   },

@@ -35,11 +35,11 @@ Eventos públicos aprovados podem ser consultados sem login. A agenda pessoal, p
 | Interface web | JavaScript, React, Vite e React Router | SPA responsiva; páginas, calendário, formulários e navegação | React, Vite e React Router já estão declarados no `package.json` |
 | Ferramentas do frontend | Node.js e npm | Instalar dependências, executar Vite em desenvolvimento e gerar os arquivos estáticos de produção | Node.js é ferramenta de desenvolvimento/build; não é o backend proposto |
 | API | Python e FastAPI | Endpoints REST, autenticação, validação e coordenação dos módulos | Proposta; `backend/` ainda não contém implementação |
-| Persistência | PostgreSQL | Dados relacionais de usuários, eventos, turmas e agenda | Proposta; banco ainda não configurado |
-| Acesso ao banco | SQLAlchemy | Mapeamento entre modelos Python e tabelas relacionais | Proposta, dependente da escolha da API Python |
-| Migrações | Alembic | Versionar mudanças no esquema do banco | Proposta, a adotar junto ao SQLAlchemy |
-| Ambiente local | Docker | Padronizar a execução da API e do banco durante desenvolvimento | Proposta; não há configuração Docker no repositório |
-| Arquivos | Armazenamento privado de objetos/arquivos | Guardar PDFs sem expô-los como arquivos públicos | Provedor ainda não escolhido |
+| Persistência | PostgreSQL (via Supabase) | Dados relacionais de usuários, eventos, turmas e agenda | Configurado; banco gerenciado pelo Supabase com migrações aplicadas |
+| Acesso ao banco | Supabase JS SDK (`@supabase/supabase-js`) | Consultas, autenticação e storage direto do frontend via SDK | Em uso; declarado no `package.json` e utilizado em `src/lib/supabase.js` |
+| Migrações | Supabase Migrations (SQL) | Versionar mudanças no esquema do banco com arquivos SQL em `supabase/migrations/` | Em uso; três migrações já aplicadas |
+| Ambiente local | Supabase CLI | Subir PostgreSQL, Auth, Storage e Studio localmente via `supabase start` (usa Docker internamente) | Em uso; `supabase/config.toml` configurado |
+| Arquivos | Supabase Storage | Guardar PDFs sem expô-los como arquivos públicos | Habilitado no `config.toml`; buckets privados ainda não criados |
 
 O backend deve implementar o prefixo `/api/v1` e os nomes de endpoints já documentados em `padroes.md`. O frontend e o backend permanecem separados: o navegador executa a SPA, enquanto Python/FastAPI executa a API. Node.js entra no fluxo de ferramentas do frontend, mesmo que o servidor da aplicação seja Python.
 

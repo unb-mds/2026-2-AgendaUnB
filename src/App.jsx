@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from './contexts/AuthContext'
+import NavBar from './components/NavBar'
 import './styles/global.css'
 
 // ............................
@@ -56,8 +58,24 @@ const teamMembers = [
 // ............................
 export default function App() {
   const navigate = useNavigate();
+  const { user, profile, signInWithGoogle, signOut, signUpWithEmail, signInWithEmail } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+
+  // Formulário de cadastro
+  const [cadNome, setCadNome] = useState('');
+  const [cadEmail, setCadEmail] = useState('');
+  const [cadSenha, setCadSenha] = useState('');
+  const [cadConfirmaSenha, setCadConfirmaSenha] = useState('');
+
+  // Formulário de login
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginSenha, setLoginSenha] = useState('');
+
+  // Mensagem de erro e trava contra clique duplo
+  const [erroForm, setErroForm] = useState('');
+  const [enviando, setEnviando] = useState(false);
+
   const [theme, setTheme] = useState('dark')
   const [role, setRole] = useState('estudante')
   const heroRef = useRef(null)
@@ -76,6 +94,7 @@ export default function App() {
       if (e.key === 'Escape') {
         setIsMenuOpen(false);
         setIsLoginOpen(false);
+        setErroForm('');
       }
     };
 
@@ -112,6 +131,60 @@ export default function App() {
     return () => observer.disconnect();
   }, [theme]); // Depende do theme pois a tag de vídeo é recriada na troca de tema
 
+  const handleCriarConta = async () => {
+    setErroForm('');
+
+    if (cadSenha.length < 8) {
+      setErroForm('A senha precisa ter ao menos 8 caracteres.');
+      return;
+    }
+    if (cadSenha !== cadConfirmaSenha) {
+      setErroForm('As senhas não coincidem.');
+      return;
+    }
+
+    setEnviando(true);
+
+    // O seletor da tela usa 'estudante'/'professor';
+    // o banco espera 'student'/'professor'.
+    const { erro } = await signUpWithEmail({
+      email: cadEmail,
+      password: cadSenha,
+      nomeCompleto: cadNome,
+      papel: role === 'professor' ? 'professor' : 'student',
+    });
+
+    setEnviando(false);
+
+    if (erro) {
+      setErroForm(erro);
+      return;
+    }
+
+    setIsMenuOpen(false);
+    navigate('/segunda-pagina');
+  };
+
+  const handleEntrar = async () => {
+    setErroForm('');
+    setEnviando(true);
+
+    const { erro } = await signInWithEmail({
+      email: loginEmail,
+      password: loginSenha,
+    });
+
+    setEnviando(false);
+
+    if (erro) {
+      setErroForm(erro);
+      return;
+    }
+
+    setIsLoginOpen(false);
+    navigate('/segunda-pagina');
+  };
+
   // ............................
   // RENDER
   // ............................
@@ -119,6 +192,7 @@ export default function App() {
     <>
       <div style={{ position:'fixed', inset:0, zIndex:0 }}>
         <video
+          className="hero-video"
           ref={videoRef}
           key={theme} /* Fazer o react a remontar a tag quando o tema mudar, pra recarregar a source certa */
           autoPlay loop muted playsInline
@@ -128,50 +202,23 @@ export default function App() {
         </video>
       </div>
 
-      {/* Navbar */}
-      <nav className="nav">
-          <div></div>
-          <div className="nav-items">
-            <a href="#eventos">Funcionalidades</a>
-            <a href="#organizer">Sobre</a>
-            <a href="#equipe">Equipe</a>
-          </div>
-          <div className="nav-right">
-            <button className="theme-toggle" onClick={toggleTheme} title={theme === 'dark' ? 'Tema claro' : 'Tema escuro'}>
-              <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>
-                {theme === 'dark' ? 'brightness_7' : 'bedtime'}
-              </span>
-            </button>
-            <svg className="nav-bell" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-            </svg>
-            
-            {/* Criar conta*/}
-            <button 
-              className="nav-btn-account"
-              onClick={() => setIsMenuOpen(true)}
-            >
-              Criar conta
-            </button>
-            <button 
-              className="nav-btn-account-login"
-              onClick={() => setIsLoginOpen(true)}
-            >
-              Entrar
-            </button>
-          </div>
-        </nav>
+      <NavBar 
+        pageType="home" 
+        isDark={theme === 'dark'} 
+        toggleTheme={toggleTheme} 
+        onLoginClick={() => setIsLoginOpen(true)} 
+        onCreateAccountClick={() => setIsMenuOpen(true)} 
+      />
 
         {/*MODAL CRIAR CONTA*/}
         {isMenuOpen && (
-          <div className="modal-overlay" onClick={() => setIsMenuOpen(false)}>
+          <div className="modal-overlay" onClick={() => { setIsMenuOpen(false); setErroForm(''); }}>
             <div className="modal-box" onClick={(e) => e.stopPropagation()}>
               
               {/* Botão Fechar */}
               <button 
                 className="modal-close"
-                onClick={() => setIsMenuOpen(false)}
+                onClick={() => { setIsMenuOpen(false); setErroForm(''); }}
               >
                 ✕
               </button>
@@ -213,7 +260,13 @@ export default function App() {
               {/* Campos do Formulário */}
               <div className="modal-input-group">
                 <label className="modal-label">Nome Completo <span style={{color: 'rgb(0, 139, 255)'}}>*</span></label>
-                <input type="text" placeholder="Seu nome completo" className="modal-input" />
+                <input 
+                  type="text" 
+                  placeholder="Seu nome completo" 
+                  className="modal-input" 
+                  value={cadNome}
+                  onChange={(e) => setCadNome(e.target.value)}
+                />
               </div>
 
               <div className="modal-input-group">
@@ -222,41 +275,70 @@ export default function App() {
                   type="email" 
                   placeholder={role === 'professor' ? "nome.sobrenome@unb.br" : "seu@email.com"} 
                   className="modal-input" 
+                  value={cadEmail}
+                  onChange={(e) => setCadEmail(e.target.value)}
                 />
               </div>
 
               <div className="modal-input-group">
                 <label className="modal-label">Senha <span style={{color: 'rgb(0, 139, 255)'}}>*</span></label>
-                <input type="password" placeholder="Mínimo 8 caracteres" className="modal-input" />
+                <input 
+                  type="password" 
+                  placeholder="Mínimo 8 caracteres" 
+                  className="modal-input" 
+                  value={cadSenha}
+                  onChange={(e) => setCadSenha(e.target.value)}
+                />
               </div>
 
               <div className="modal-input-group">
                 <label className="modal-label">Confirmar Senha <span style={{color: 'rgb(0, 139, 255)'}}>*</span></label>
-                <input type="password" placeholder="Mínimo 8 caracteres" className="modal-input" />
+                <input 
+                  type="password" 
+                  placeholder="Mínimo 8 caracteres" 
+                  className="modal-input" 
+                  value={cadConfirmaSenha}
+                  onChange={(e) => setCadConfirmaSenha(e.target.value)}
+                />
               </div>
 
+              {erroForm && (
+                <p style={{
+                  color: '#ff6b6b',
+                  fontSize: '0.85rem',
+                  textAlign: 'center',
+                  marginBottom: '12px'
+                }}>
+                  {erroForm}
+                </p>
+              )}
 
               <button 
                 className="modal-btn-primary"
-                onClick={() => navigate('/segunda-pagina')}
+                onClick={handleCriarConta}
+                disabled={enviando}
               >
-                Criar Conta
+                {enviando ? 'Criando...' : 'Criar Conta'}
               </button>
 
-              <div className="modal-divider">ou</div>
+              {role !== 'professor' && (
+                <>
+                  <div className="modal-divider">ou</div>
 
-              <button 
-                className="modal-btn-google"
-                onClick={() => navigate('/segunda-pagina')}
-              >
-                <svg width="18" height="18" viewBox="0 0 48 48">
-                  <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.7 17.74 9.5 24 9.5z"/>
-                  <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-                  <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-                  <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-                </svg>
-                Cadastrar com Google
-              </button>
+                  <button 
+                    className="modal-btn-google"
+                    onClick={signInWithGoogle}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 48 48">
+                      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.7 17.74 9.5 24 9.5z"/>
+                      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                    </svg>
+                    Continuar com Google
+                  </button>
+                </> 
+              )}
 
             </div>
           </div>
@@ -264,13 +346,13 @@ export default function App() {
 
         {/*MODAL LOGIN*/}
         {isLoginOpen && (
-          <div className="modal-overlay" onClick={() => setIsLoginOpen(false)}>
+          <div className="modal-overlay" onClick={() => { setIsLoginOpen(false); setErroForm(''); }}>
             <div className="modal-box" onClick={(e) => e.stopPropagation()}>
               
               {/* Botão Fechar */}
               <button 
                 className="modal-close"
-                onClick={() => setIsLoginOpen(false)}
+                onClick={() => { setIsLoginOpen(false); setErroForm(''); }}
               >
                 ✕
               </button>
@@ -298,26 +380,50 @@ export default function App() {
               {/* Campos do Formulário */}
               <div className="modal-input-group">
                 <label className="modal-label">Email <span style={{color: 'rgb(0, 139, 255)'}}>*</span></label>
-                <input type="email" placeholder="seu@email.com" className="modal-input" />
+                <input 
+                  type="email" 
+                  placeholder="seu@email.com" 
+                  className="modal-input" 
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
+                />
               </div>
 
               <div className="modal-input-group">
                 <label className="modal-label">Senha <span style={{color: 'rgb(0, 139, 255)'}}>*</span></label>
-                <input type="password" placeholder="Sua senha" className="modal-input" />
+                <input 
+                  type="password" 
+                  placeholder="Sua senha" 
+                  className="modal-input" 
+                  value={loginSenha}
+                  onChange={(e) => setLoginSenha(e.target.value)}
+                />
               </div>
+
+              {erroForm && (
+                <p style={{
+                  color: '#ff6b6b',
+                  fontSize: '0.85rem',
+                  textAlign: 'center',
+                  marginBottom: '12px'
+                }}>
+                  {erroForm}
+                </p>
+              )}
 
               <button 
                 className="modal-btn-primary"
-                onClick={() => navigate('/segunda-pagina')}
+                onClick={handleEntrar}
+                disabled={enviando}
               >
-                Entrar
+                {enviando ? 'Entrando...' : 'Entrar'}
               </button>
 
               <div className="modal-divider">ou</div>
 
               <button 
                 className="modal-btn-google"
-                onClick={() => navigate('/segunda-pagina')}
+                onClick={signInWithGoogle}
               >
                 <svg width="18" height="18" viewBox="0 0 48 48">
                   <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.7 17.74 9.5 24 9.5z"/>
@@ -325,7 +431,7 @@ export default function App() {
                   <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
                   <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
                 </svg>
-                Entrar com Google
+                Continuar com Google
               </button>
 
             </div>
@@ -355,8 +461,8 @@ export default function App() {
               textTransform:'uppercase',
               color: theme === 'dark' ? '#fff' : '#1a1a2e',
               textShadow: theme === 'dark'
-                ? '0 0 30px rgba(0,139,255,0.45), 0 0 80px rgba(0,139,255,0.15)'
-                : '0 0 30px rgba(0,139,255,0.25)',
+                ? '0 0 30px rgba(0, 140, 255, 0.12), 0 0 80px rgba(0,139,255,0.15)'
+                : '0 0 30px rgba(0, 140, 255, 0.07)',
               margin:0,
             }}>
               AGENDA UNB
@@ -393,7 +499,7 @@ export default function App() {
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
               <circle cx="12" cy="7" r="4" />
             </svg>
-            Entrar como convidado
+            {user ? `Entrar como ${profile?.nome_completo?.split(' ')[0] || user.user_metadata?.nome_completo?.split(' ')[0] || user.user_metadata?.full_name?.split(' ')[0] || user.user_metadata?.name?.split(' ')[0] || 'você'}` : 'Entrar como convidado'}
           </button>
 
           <div className="scroll-hint">
@@ -428,7 +534,7 @@ export default function App() {
               </div>
               <div className="feat">
                 <div className="feat-icon"><span className="material-symbols-outlined">upload_file</span></div>
-                <h3>Upload de Planos de Ensino</h3>
+                <h3>Planos de Ensino</h3>
                 <p>Envie múltiplos planos de ensino nos formatos PDF ou em texto bruto e deixe o sistema processar automaticamente.</p>
               </div>
               <div className="feat">
@@ -444,7 +550,7 @@ export default function App() {
               <div className="feat">
                 <div className="feat-icon"><span className="material-symbols-outlined">how_to_reg</span></div>
                 <h3>Inscrição Direta</h3>
-                <p>Inscreva-se em eventos diretamente pela plataforma com apenas um clique, sem redirecionamentos externos.</p>
+                <p>Inscreva-se em eventos através da plataforma com apenas um clique, usando os links externos.</p>
               </div>
               </div>
           </section>
@@ -457,8 +563,8 @@ export default function App() {
             <h2 className="section-h2">Tudo o que acontece no campus</h2>
             <p className="section-sub">Uma solução que criamos do zero para organizar eventos relevantes pra você.</p>
 
-            <div className="feat-grid">
-              <div className="feat">
+            <div className="about-container">
+              <div className="about-card">
                 <h3>O que é o Agenda UnB?</h3>
                 <p>O Agenda UnB é um projeto desenvolvido na matéria de Métodos de Desenvolvimento de Software da Universidade de Brasília, feito para centralizar todos os eventos dos campi da universidade em um único lugar, facilitando a organização e o acesso a informações importantes.</p>
                   <br></br>
@@ -521,7 +627,7 @@ export default function App() {
           {/* Footer */}
           <footer className="footer">
             <img src="/Marca-UnB.png" alt="Logo UnB" style={{ width:'70px', marginBottom:'1rem', opacity:0.5, filter: theme === 'light' ? 'invert(1)' : 'none' }}/>
-            <p>Agenda UnB — Universidade de Brasília © 2026</p>
+            <p>Agenda UnB - Universidade de Brasília © 2026</p>
           </footer>
 
         </div>
