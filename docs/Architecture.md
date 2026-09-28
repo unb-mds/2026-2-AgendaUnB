@@ -120,6 +120,6 @@ No desenvolvimento, a proposta é executar a API Python e o PostgreSQL em contai
 1. **Armazenamento e e-mail:** escolher provedores e definir como guardar PDFs e enviar notificações.
 2. **Extração:** verificar se os planos de ensino têm texto selecionável; decidir se OCR é necessário. Definir também como datas ambíguas serão revisadas.
 3. **Coleta de eventos:** escolher fontes públicas suportadas, frequência de atualização e tratamento de duplicatas. A coleta de redes sociais exige validação técnica e de disponibilidade das fontes.
-4. **Prioridade do MVP:** a visão prioriza primeiro autenticação, catálogo público e agenda de eventos; upload, extração automática, lembretes e exportação podem entrar em etapas posteriores.
+4. **Prioridade do pré-MVP:** a visão prioriza primeiro autenticação, catálogo público e agenda de eventos; upload, extração automática, lembretes e exportação podem entrar em etapas posteriores.
 
 Até essas decisões serem aprovadas, este documento deve ser lido como uma arquitetura de referência para discussão, e não como um registro de componentes já entregues.
