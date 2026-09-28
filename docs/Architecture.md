@@ -1,9 +1,6 @@
 # Arquitetura de Software
 
-Este documento registra uma **proposta de arquitetura** para a Agenda UnB. Ele detalha como a aplicação pode evoluir a partir do frontend existente e dos requisitos em [`requisitos.md`](requisitos.md), seguindo os termos e as rotas definidos em [`padroes.md`](padroes.md).
-
-!!! warning "Proposta para validação da equipe"
-    React e Vite já estão no repositório. Python/FastAPI, PostgreSQL, SQLAlchemy, Alembic e Docker aparecem como proposta para a arquitetura do produto; ainda precisam ser aprovados pela equipe antes de serem tratados como decisões implementadas. Hospedagem, armazenamento de arquivos e provedores de e-mail também estão em aberto.
+Este documento registra uma a arquitetura para o Agenda UnB. Ele detalha como a aplicação pode evoluir a partir do frontend existente e dos requisitos em [`requisitos.md`](requisitos.md), seguindo os termos e as rotas definidos em [`padroes.md`](padroes.md).
 
 ## 1. Objetivo e escopo
 
