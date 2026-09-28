@@ -1,6 +1,6 @@
 # Arquitetura de Software
 
-Este documento registra uma a arquitetura para o Agenda UnB. Ele detalha como a aplicação pode evoluir a partir do frontend existente e dos requisitos em [`requisitos.md`](requisitos.md), seguindo os termos e as rotas definidos em [`padroes.md`](padroes.md).
+Este documento registra a arquitetura para o Agenda UnB. Ele detalha como a aplicação pode evoluir a partir do frontend existente e dos requisitos em [`requisitos.md`](requisitos.md), seguindo os termos e as rotas definidos em [`padroes.md`](padroes.md).
 
 ## 1. Objetivo e escopo
 
