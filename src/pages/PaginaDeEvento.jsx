@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { eventsApi, toUiEvent } from '../lib/api';
 import NavBar from '../components/NavBar';
 import '../styles/global.css';
 
@@ -8,6 +9,10 @@ export default function PaginaDeEvento() {
   const { id } = useParams();
   const { user, profile, signOut } = useAuth();
   const location = useLocation();
+  const eventoState = location.state?.evento;
+  const [eventoCarregado, setEventoCarregado] = useState(eventoState || null);
+  const [carregandoEvento, setCarregandoEvento] = useState(!eventoState);
+  const [erroEvento, setErroEvento] = useState('');
   
   const [interessados, setInteressados] = useState(10);
   const [hasClicked, setHasClicked] = useState(false);
@@ -23,7 +28,37 @@ export default function PaginaDeEvento() {
   const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark');
   const isDark = theme === 'dark';
 
-  const eventoState = location.state?.evento;
+  useEffect(() => {
+    if (eventoState) {
+      setEventoCarregado(eventoState);
+      setCarregandoEvento(false);
+      return undefined;
+    }
+
+    let active = true;
+    const loadEvent = async () => {
+      setCarregandoEvento(true);
+      setErroEvento('');
+      try {
+        let result;
+        let isPersonal = false;
+        try {
+          result = await eventsApi.getPublic(id);
+        } catch (publicError) {
+          if (!user) throw publicError;
+          result = await eventsApi.getPersonal(id);
+          isPersonal = true;
+        }
+        if (active) setEventoCarregado(toUiEvent(result, isPersonal));
+      } catch (error) {
+        if (active) setErroEvento(error.message || 'Não foi possível carregar o evento.');
+      } finally {
+        if (active) setCarregandoEvento(false);
+      }
+    };
+    loadEvent();
+    return () => { active = false; };
+  }, [id, user?.id, eventoState]);
 
   const getOrganizadorInfo = () => {
     if (eventoState?.organizadorNome) {
@@ -51,28 +86,20 @@ export default function PaginaDeEvento() {
 
   const organizador = getOrganizadorInfo() || { nome: 'Organizador', foto: null, iniciais: 'O' };
 
-  // Dados mockados fundidos com os passados pelo estado
+  const dataEvento = eventoCarregado || {};
   const evento = {
-    titulo: eventoState?.titulo || "Abertura Oficial da 26ª Semuni",
-    data: eventoState ? `${eventoState.data} - ${eventoState.horario}` : "Sexta, 21 de Setembro - 14:00",
-    local: eventoState?.local || "Memorial Darcy Ribeiro (Beijódromo) - Darcy Ribeiro",
-    campus: eventoState?.campus || "Darcy Ribeiro",
-    categoria: eventoState?.area || "Cultura",
+    titulo: dataEvento.titulo || 'Evento',
+    data: dataEvento.data ? `${dataEvento.data} - ${dataEvento.horario || ''}` : '',
+    local: dataEvento.local || dataEvento.campus || 'Local não informado',
+    campus: dataEvento.campus || '',
+    categoria: dataEvento.area || 'Evento',
     organizador,
-    descricao: eventoState?.descricao || `Cerimônia de abertura da 26ª Semana Universitária com o tema "Democracia em cena: arte, cultura e pertencimento".
-    
-Venha celebrar o início do evento mais importante do calendário acadêmico da Universidade de Brasília! Teremos apresentações artísticas, discursos das autoridades da universidade e a presença de convidados ilustres.
-
-**Destaques do Evento:**
-- Apresentação da Orquestra Sinfônica da UnB.
-- Mesa redonda com grandes pensadores sobre a Democracia.
-- Intervenções artísticas no entorno do Beijódromo.
-
-Não perca!`,
-    linkOriginal: eventoState?.linkExterno || "https://sigaa.unb.br"
+    descricao: dataEvento.descricao || 'Sem descrição disponível.',
+    linkOriginal: dataEvento.linkExterno || '',
   };
 
   const handleConferir = () => {
+    if (!evento.linkOriginal) return;
     if (!hasClicked) {
       setInteressados(prev => prev + 1);
       setHasClicked(true);
@@ -114,6 +141,21 @@ Não perca!`,
       return <p key={idx} style={{ color: isDark ? 'rgba(255,255,255,0.75)' : 'rgba(26,26,46,0.75)', fontSize: '1.05rem', lineHeight: '1.8' }}>{para}</p>;
     });
   };
+
+  if (carregandoEvento) {
+    return <main role="status" style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}>Carregando evento…</main>;
+  }
+
+  if (erroEvento) {
+    return (
+      <main role="alert" style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: '2rem', textAlign: 'center' }}>
+        <div>
+          <p>{erroEvento}</p>
+          <Link to="/segunda-pagina">Voltar aos eventos</Link>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <div className="event-page-wrapper" style={{ position: 'relative', overflow: 'hidden' }}>
@@ -198,7 +240,7 @@ Não perca!`,
             </div>
             
             <div className="event-actions">
-              <button className="ds-btn-primary" onClick={handleConferir} style={{ 
+              {evento.linkOriginal && <button className="ds-btn-primary" onClick={handleConferir} style={{
                 background: 'rgba(0, 95, 210, 1)',
                 height: '56px',
                 fontSize: '1rem',
@@ -207,7 +249,7 @@ Não perca!`,
               }}>
                 <span className="material-symbols-outlined">open_in_new</span>
                 CONFERIR EVENTO
-              </button>
+              </button>}
               
               <div className="social-counter" style={{
                 background: isDark ? 'rgba(0, 139, 255, 0.05)' : 'rgba(0, 139, 255, 0.08)',
