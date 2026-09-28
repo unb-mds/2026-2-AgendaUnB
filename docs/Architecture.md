@@ -115,14 +115,11 @@ O repositório publica a **documentação** com MkDocs pelo workflow `.github/wo
 
 No desenvolvimento, a proposta é executar a API Python e o PostgreSQL em containers Docker; o frontend continua usando npm/Vite. Arquivos `.env` locais devem guardar configurações e credenciais fora do controle de versão, usando `.env.example` apenas para documentar os nomes das variáveis necessárias.
 
-## 8. Decisões pendentes
+## 8. Decisões pendentes e escopo
 
-1. **Autenticação:** `requisitos.md` permite e-mail pessoal ou institucional no RF01; a visão do produto sugere acesso restrito à comunidade UnB via Google. A política final deve ser acordada antes de implementar login e papéis.
-2. **Stack do backend e banco:** Python/FastAPI, PostgreSQL, SQLAlchemy e Alembic são a proposta refletida no FigJam, ainda sem implementação no repositório.
-3. **Armazenamento e e-mail:** escolher provedores e definir como guardar PDFs e enviar notificações.
-4. **Extração:** verificar se os planos de ensino têm texto selecionável; decidir se OCR é necessário. Definir também como datas ambíguas serão revisadas.
-5. **Coleta de eventos:** escolher fontes públicas suportadas, frequência de atualização e tratamento de duplicatas. A coleta de redes sociais exige validação técnica e de disponibilidade das fontes.
-6. **Prioridade do MVP:** a visão prioriza primeiro autenticação, catálogo público e agenda de eventos; upload, extração automática, lembretes e exportação podem entrar em etapas posteriores.
-7. **Hospedagem:** definir onde cada componente será implantado e quem terá acesso aos arquivos e dados de produção.
+1. **Armazenamento e e-mail:** escolher provedores e definir como guardar PDFs e enviar notificações.
+2. **Extração:** verificar se os planos de ensino têm texto selecionável; decidir se OCR é necessário. Definir também como datas ambíguas serão revisadas.
+3. **Coleta de eventos:** escolher fontes públicas suportadas, frequência de atualização e tratamento de duplicatas. A coleta de redes sociais exige validação técnica e de disponibilidade das fontes.
+4. **Prioridade do MVP:** a visão prioriza primeiro autenticação, catálogo público e agenda de eventos; upload, extração automática, lembretes e exportação podem entrar em etapas posteriores.
 
 Até essas decisões serem aprovadas, este documento deve ser lido como uma arquitetura de referência para discussão, e não como um registro de componentes já entregues.
