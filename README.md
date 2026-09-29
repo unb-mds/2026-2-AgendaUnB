@@ -2,15 +2,12 @@
 
 <video src="https://github.com/user-attachments/assets/12817e2b-55d0-460e-9279-62d86f90c694" autoplay loop muted playsinline width="100%"></video>
 
-<br/>
-
-<p style="letter-spacing: 2px; font-size: 14px;">SEJAM BEM-VINDOS AO</p>
 
 # **AGENDA UNB**
 
 **Plataforma centralizada de eventos e organização acadêmica da Universidade de Brasilia**
 
-Metodos de Desenvolvimento de Software — 2026/2 — Grupo G8
+Metodos de Desenvolvimento de Software - 2026/2 - Grupo G8
 
 <br/>
 
@@ -26,8 +23,8 @@ A informacao que organiza a rotina de um estudante da UnB esta fragmentada: a gr
 
 O **Agenda UnB** resolve esse problema reunindo dois eixos em uma unica aplicacao web:
 
-- **Agenda do Campus** — Catalogo publico de eventos academicos, culturais e esportivos de todos os campi (Darcy Ribeiro, FCTE, FCTS, FUP e FAL), com filtros por area, campus e turno.
-- **Organizador Academico** — Calendario pessoal e privado do estudante, com criacao, edicao e exclusao de compromissos, e futuramente alimentado por extracao automatica de datas a partir de planos de ensino.
+- **Agenda do Campus** - Catalogo publico de eventos academicos, culturais e esportivos de todos os campi (Darcy Ribeiro, FCTE, FCTS, FUP e FAL), com filtros por area, campus e turno.
+- **Organizador Academico** - Calendario pessoal e privado do estudante, com criacao, edicao e exclusao de compromissos, e futuramente alimentado por extracao automatica de datas a partir de planos de ensino.
 
 ---
 
@@ -39,28 +36,25 @@ O **Agenda UnB** resolve esse problema reunindo dois eixos em uma unica aplicaca
   - [Pre-requisitos](#pre-requisitos)
   - [Frontend](#frontend)
   - [Backend](#backend)
-  - [Banco de Dados (Supabase)](#banco-de-dados-supabase)
-- [Arquitetura](#arquitetura)
-- [Funcionalidades Implementadas](#funcionalidades-implementadas)
+  - [Banco de Dados](#banco-de-dados-supabase)
 - [Equipe](#equipe)
 - [Documentacao](#documentacao)
-- [Licenca](#licenca)
 
 ---
 
 ## Stack Tecnologica
 
-| Camada | Tecnologia | Finalidade |
-|--------|-----------|------------|
-| Frontend | React 19, Vite 6, React Router 7 | SPA responsiva com roteamento client-side |
-| Backend | Python 3, FastAPI, SQLAlchemy 2, Pydantic 2 | API REST com validacao automatica |
-| Banco de Dados | PostgreSQL (Supabase) | Dados relacionais com Row Level Security |
-| Autenticacao | Supabase Auth | Google OAuth, login com e-mail/senha, JWT |
-| Migracoes | Supabase Migrations (SQL) | 5 migracoes versionadas |
-| Ambiente Local | Supabase CLI + Docker | PostgreSQL, Auth e Studio locais |
-| Documentacao | MkDocs Material | Site publicado no GitHub Pages |
-| Tipografia | Orbitron + Inter (Google Fonts) | Display sci-fi + body legivel |
-| Iconografia | Material Symbols | Icones consistentes em toda a UI |
+| Camada | Tecnologia |
+|--------|-----------|
+| Frontend | React 19, Vite 6, React Router 7 |
+| Backend | Python 3, FastAPI, SQLAlchemy 2, Pydantic 2 |
+| Banco de Dados | PostgreSQL (Supabase) |
+| Autenticacao | Supabase Auth |
+| Migracoes | Supabase Migrations (SQL) |
+| Ambiente Local | Supabase CLI + Docker |
+| Documentacao | MkDocs Material 
+| Tipografia | Orbitron + Inter (Google Fonts) |
+| Iconografia | Material Symbols |
 
 ---
 
@@ -133,46 +127,6 @@ O Supabase Studio local estara em `http://localhost:54323`.
 
 ---
 
-## Arquitetura
-
-```
-Navegador                        Supabase                      Backend
-+-----------------+      +---------------------+      +------------------+
-| React SPA       |----->| Auth (JWT, OAuth)   |      | FastAPI          |
-| Vite + Router   |      | PostgreSQL          |<-----| SQLAlchemy       |
-| Supabase JS SDK |----->| Row Level Security  |      | Auth Middleware   |
-+-----------------+      +---------------------+      +------------------+
-        |                                                      ^
-        |              fetch + Bearer JWT                      |
-        +------------------------------------------------------+
-```
-
-**Fluxo resumido:**
-
-1. O frontend autentica via Supabase Auth (e-mail/senha ou Google OAuth).
-2. O Supabase cria a sessao JWT e o trigger `tg_cria_perfil` insere o perfil no banco.
-3. Para operacoes de eventos, o frontend chama a API FastAPI com o token JWT.
-4. O middleware da API valida o token contra o Supabase e busca o papel do usuario.
-5. As rotas aplicam controle de acesso (RBAC): apenas professores/admins gerenciam eventos publicos.
-
----
-
-## Funcionalidades Implementadas
-
-### Frontend
-
-| Funcionalidade | Descricao |
-|---------------|-----------|
-| Landing Page | Hero com video shader animado, secoes de funcionalidades, sobre e equipe |
-| Cadastro | Modal com seletor Estudante/Professor, validacao de @unb.br para professor |
-| Login | Modal de login com e-mail/senha e Google OAuth |
-| Pagina de Eventos | Listagem publica e pessoal, filtros por area/campus/turno, busca textual |
-| Criacao de Eventos | Modal com DatePicker e TimePicker customizados, campos completos |
-| Edicao e Exclusao | CRUD completo para eventos pessoais |
-| Detalhe do Evento | Pagina dedicada com descricao, organizador, badges e link externo |
-| Tema Dark / Light | Alternancia completa com video de fundo responsivo ao tema |
-| NavBar | Glassmorphism, avatar do usuario, navegacao contextual |
-
 ### Backend (API)
 
 | Metodo | Rota | Descricao | Autenticacao |
@@ -228,8 +182,3 @@ Toda a documentacao do projeto esta publicada no GitHub Pages:
 | [Release v0.1.0](https://unb-mds.github.io/2026-2-AgendaUnB/release-notes/v0.1.0/) | Release note da primeira entrega |
 | [Sprints](https://unb-mds.github.io/2026-2-AgendaUnB/sprints/sprint-0/) | Acompanhamento agil por ciclo |
 
----
-
-## Licenca
-
-Projeto academico desenvolvido na disciplina de Metodos de Desenvolvimento de Software — Universidade de Brasilia, 2026/2.
