@@ -1,0 +1,2744 @@
+
+<!doctype html>
+<html lang="pt" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentação oficial do projeto Agenda UnB — Métodos de Desenvolvimento de Software (MDS) 2026/2">
+      
+      
+      
+      
+        <link rel="prev" href="../../sprints/sprint-1/">
+      
+      
+        <link rel="next" href="../../CONTRIBUTING/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>v0.1.0 - Agenda UnB Docs</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#release-note-agenda-unb-v010" class="md-skip">
+          Pular para conteúdo
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Cabeçalho">
+    <a href="../.." title="Agenda UnB Docs" class="md-header__button md-logo" aria-label="Agenda UnB Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Agenda UnB Docs
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              v0.1.0
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Modo automático"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Modo automático" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Mudar para modo escuro"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Mudar para modo escuro" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Mudar para modo claro"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Mudar para modo claro" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Buscar" placeholder="Buscar" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Pesquisar">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Limpar" aria-label="Limpar" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Inicializando busca
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/unb-mds/2026-2-AgendaUnB" title="Ir para repositório" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    unb-mds/G8-2026-2
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Abas" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Início
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../Architecture/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Arquitetura
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../requisitos/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Requisitos
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../padroes/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Padrões de Projeto
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../sprints/sprint-0/" class="md-tabs__link">
+          
+  
+  
+  Sprints
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="./" class="md-tabs__link">
+          
+  
+  
+  Release Notes
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../CONTRIBUTING/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Como Contribuir
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navegação" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Agenda UnB Docs" class="md-nav__button md-logo" aria-label="Agenda UnB Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Agenda UnB Docs
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/unb-mds/2026-2-AgendaUnB" title="Ir para repositório" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    unb-mds/G8-2026-2
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Início
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arquitetura
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../requisitos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Requisitos
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../padroes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Padrões de Projeto
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprints
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Sprints
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sprints/sprint-0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sprints/sprint-1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 1
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release Notes
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Release Notes
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.1.0
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.1.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Índice">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Índice
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-visao-geral-do-produto" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Visão Geral do Produto
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Visão Geral do Produto">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#posicionamento" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Posicionamento
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-stack-tecnologica" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Stack Tecnológica
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-funcionalidades-entregues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Funcionalidades Entregues
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Funcionalidades Entregues">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-frontend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Frontend
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3.1 Frontend">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#landing-page" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Landing Page (/)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#autenticacao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Autenticação
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pagina-de-eventos-segunda-pagina" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Página de Eventos (/segunda-pagina)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pagina-de-detalhe-do-evento-eventoid" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Página de Detalhe do Evento (/evento/:id)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#componentes-reutilizaveis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Componentes Reutilizáveis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tema-dark-light" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tema Dark / Light
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-backend-api-fastapi" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Backend (API FastAPI)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3.2 Backend (API FastAPI)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#autenticacao-e-autorizacao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Autenticação e Autorização
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#modulo-de-eventos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Módulo de Eventos
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#validacao-e-tratamento-de-erros" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Validação e Tratamento de Erros
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-camada-de-dados" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Camada de Dados
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3.3 Camada de Dados">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#esquema-do-banco-de-dados" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Esquema do Banco de Dados
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#modelo-entidade-relacionamento" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Modelo Entidade-Relacionamento
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#seguranca-no-banco-row-level-security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Segurança no Banco (Row Level Security)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#triggers-e-regras-de-integridade" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Triggers e Regras de Integridade
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-arquitetura-da-aplicacao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Arquitetura da Aplicação
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Arquitetura da Aplicação">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fluxo-de-autenticacao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fluxo de Autenticação
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-endpoints-da-api-implementados" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Endpoints da API Implementados
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Endpoints da API Implementados">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#filtros-disponiveis-em-get-apiv1events" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Filtros disponíveis em GET /api/v1/events
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-requisitos-funcionais-atendidos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Requisitos Funcionais Atendidos
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#requisitos-nao-funcionais-atendidos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Requisitos Não Funcionais Atendidos
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-design-system-e-identidade-visual" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Design System e Identidade Visual
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Design System e Identidade Visual">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#creative-north-star-the-neon-campus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Creative North Star: "The Neon Campus"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#paleta-de-cores" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Paleta de Cores
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tipografia" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tipografia
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#principios-visuais" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Princípios Visuais
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shapes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shapes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-links-uteis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Links Úteis
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#equipe-g8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Equipe G8
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../CONTRIBUTING/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Como Contribuir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Índice">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Índice
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-visao-geral-do-produto" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Visão Geral do Produto
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Visão Geral do Produto">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#posicionamento" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Posicionamento
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-stack-tecnologica" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Stack Tecnológica
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-funcionalidades-entregues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Funcionalidades Entregues
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Funcionalidades Entregues">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-frontend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Frontend
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3.1 Frontend">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#landing-page" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Landing Page (/)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#autenticacao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Autenticação
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pagina-de-eventos-segunda-pagina" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Página de Eventos (/segunda-pagina)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pagina-de-detalhe-do-evento-eventoid" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Página de Detalhe do Evento (/evento/:id)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#componentes-reutilizaveis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Componentes Reutilizáveis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tema-dark-light" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tema Dark / Light
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-backend-api-fastapi" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Backend (API FastAPI)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3.2 Backend (API FastAPI)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#autenticacao-e-autorizacao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Autenticação e Autorização
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#modulo-de-eventos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Módulo de Eventos
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#validacao-e-tratamento-de-erros" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Validação e Tratamento de Erros
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-camada-de-dados" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Camada de Dados
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3.3 Camada de Dados">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#esquema-do-banco-de-dados" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Esquema do Banco de Dados
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#modelo-entidade-relacionamento" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Modelo Entidade-Relacionamento
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#seguranca-no-banco-row-level-security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Segurança no Banco (Row Level Security)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#triggers-e-regras-de-integridade" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Triggers e Regras de Integridade
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-arquitetura-da-aplicacao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Arquitetura da Aplicação
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Arquitetura da Aplicação">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fluxo-de-autenticacao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fluxo de Autenticação
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-endpoints-da-api-implementados" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Endpoints da API Implementados
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Endpoints da API Implementados">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#filtros-disponiveis-em-get-apiv1events" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Filtros disponíveis em GET /api/v1/events
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-requisitos-funcionais-atendidos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Requisitos Funcionais Atendidos
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#requisitos-nao-funcionais-atendidos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Requisitos Não Funcionais Atendidos
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-design-system-e-identidade-visual" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Design System e Identidade Visual
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Design System e Identidade Visual">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#creative-north-star-the-neon-campus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Creative North Star: "The Neon Campus"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#paleta-de-cores" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Paleta de Cores
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tipografia" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tipografia
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#principios-visuais" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Princípios Visuais
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shapes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shapes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-links-uteis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Links Úteis
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#equipe-g8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Equipe G8
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+  
+
+
+  <nav class="md-path" aria-label="Navegação" >
+    <ol class="md-path__list">
+      
+        
+  
+  
+    <li class="md-path__item">
+      <a href="../.." class="md-path__link">
+        
+  <span class="md-ellipsis">
+    Início
+  </span>
+
+      </a>
+    </li>
+  
+
+      
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="./" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    Release Notes
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ol>
+  </nav>
+
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="release-note-agenda-unb-v010">Release Note — Agenda UnB v0.1.0</h1>
+<p><strong>Data:</strong> 28 de setembro de 2026<br />
+<strong>Equipe:</strong> Grupo G8 — Métodos de Desenvolvimento de Software, 2026/2<br />
+<strong>Repositório:</strong> <a href="https://github.com/unb-mds/2026-2-AgendaUnB">unb-mds/2026-2-AgendaUnB</a></p>
+<hr />
+<h2 id="1-visao-geral-do-produto">1. Visão Geral do Produto</h2>
+<p>O <strong>Agenda UnB</strong> é uma plataforma web centralizada para a comunidade da Universidade de Brasília que resolve um problema concreto: a informação que organiza a rotina de um estudante está fragmentada em canais desconectados — a grade está no SIGAA, as datas de prova estão em PDFs de planos de ensino abertos apenas na primeira semana, e os eventos circulam por Instagram, cartazes e grupos de WhatsApp.</p>
+<p>A plataforma reúne dois eixos principais:</p>
+<ol>
+<li><strong>Agenda do Campus</strong> — Divulgação e consulta de eventos acadêmicos, culturais e esportivos de todos os campi (Darcy Ribeiro, FCTE/Gama, FCTS/Ceilândia, FUP/Planaltina e FAL).</li>
+<li><strong>Organizador Acadêmico</strong> — Calendário pessoal do estudante com eventos privados e, futuramente, alimentado automaticamente a partir da extração de datas de planos de ensino.</li>
+</ol>
+<h3 id="posicionamento">Posicionamento</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Agenda UnB</th>
+<th>Google Calendar</th>
+<th>SIGAA</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Eventos do campus</td>
+<td>Sim — Catálogo público filtrável</td>
+<td>Não — Exige cadastro manual</td>
+<td>Não — Não cobre eventos</td>
+</tr>
+<tr>
+<td>Prazos acadêmicos</td>
+<td>Sim — Agenda pessoal integrada</td>
+<td>Não — Cadastro manual</td>
+<td>Não — Sem cronograma de avaliações</td>
+</tr>
+<tr>
+<td>Extração de plano de ensino</td>
+<td>Planejado</td>
+<td>Não</td>
+<td>Não</td>
+</tr>
+<tr>
+<td>Autenticação institucional</td>
+<td>Sim — Google OAuth + @unb.br</td>
+<td>Parcial</td>
+<td>Sim</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="2-stack-tecnologica">2. Stack Tecnológica</h2>
+<table>
+<thead>
+<tr>
+<th>Camada</th>
+<th>Tecnologia</th>
+<th>Versão</th>
+<th>Papel no Projeto</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Frontend</strong></td>
+<td>React</td>
+<td>19.x</td>
+<td>Biblioteca de UI — componentização da SPA</td>
+</tr>
+<tr>
+<td><strong>Bundler</strong></td>
+<td>Vite</td>
+<td>6.x</td>
+<td>Dev server com HMR e build de produção</td>
+</tr>
+<tr>
+<td><strong>Roteamento</strong></td>
+<td>React Router</td>
+<td>7.x</td>
+<td>Navegação SPA entre as 3 rotas da aplicação</td>
+</tr>
+<tr>
+<td><strong>Backend</strong></td>
+<td>Python + FastAPI</td>
+<td>3.x / 0.115+</td>
+<td>API REST com validação automática e docs OpenAPI</td>
+</tr>
+<tr>
+<td><strong>ORM</strong></td>
+<td>SQLAlchemy</td>
+<td>2.x</td>
+<td>Mapeamento objeto-relacional das tabelas do Supabase</td>
+</tr>
+<tr>
+<td><strong>Validação</strong></td>
+<td>Pydantic</td>
+<td>2.x</td>
+<td>Schemas de entrada/saída tipados para a API</td>
+</tr>
+<tr>
+<td><strong>HTTP Client</strong></td>
+<td>httpx</td>
+<td>0.28+</td>
+<td>Validação de JWT com a API do Supabase Auth</td>
+</tr>
+<tr>
+<td><strong>Banco de Dados</strong></td>
+<td>PostgreSQL</td>
+<td>15+</td>
+<td>Dados relacionais (via Supabase)</td>
+</tr>
+<tr>
+<td><strong>Autenticação</strong></td>
+<td>Supabase Auth</td>
+<td>—</td>
+<td>Gestão de sessões, Google OAuth, senhas bcrypt</td>
+</tr>
+<tr>
+<td><strong>SDK Frontend</strong></td>
+<td>@supabase/supabase-js</td>
+<td>2.x</td>
+<td>Chamadas de Auth e queries diretas do navegador</td>
+</tr>
+<tr>
+<td><strong>Migrações</strong></td>
+<td>Supabase Migrations</td>
+<td>—</td>
+<td>5 migrações SQL versionadas</td>
+</tr>
+<tr>
+<td><strong>Ambiente Local</strong></td>
+<td>Supabase CLI + Docker</td>
+<td>—</td>
+<td>PostgreSQL, Auth e Studio locais via <code>supabase start</code></td>
+</tr>
+<tr>
+<td><strong>Documentação</strong></td>
+<td>MkDocs Material</td>
+<td>—</td>
+<td>Site de documentação publicado no GitHub Pages</td>
+</tr>
+<tr>
+<td><strong>Tipografia</strong></td>
+<td>Google Fonts (Orbitron + Inter)</td>
+<td>—</td>
+<td>Fontes display (Sci-Fi) e body (legibilidade)</td>
+</tr>
+<tr>
+<td><strong>Iconografia</strong></td>
+<td>Material Symbols (Google)</td>
+<td>—</td>
+<td>Ícones consistentes em toda a UI</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="3-funcionalidades-entregues">3. Funcionalidades Entregues</h2>
+<h3 id="31-frontend">3.1 Frontend</h3>
+<h4 id="landing-page">Landing Page (<code>/</code>)</h4>
+<p>A página inicial da aplicação serve como portal de entrada e vitrine do projeto:</p>
+<ul>
+<li><strong>Hero Section</strong> — Título "AGENDA UNB" em Orbitron com vídeo de shader animado em loop (versões dark e light distintas), otimizado com <code>IntersectionObserver</code> para pausar quando fora da viewport.</li>
+<li><strong>Seção de Funcionalidades</strong> — Grade de 6 cards com ícones Material Symbols apresentando as capacidades do produto: Agenda Unificada, Submissão de Eventos, Planos de Ensino, Moderação, Importação Automática e Inscrição Direta.</li>
+<li><strong>Seção Sobre</strong> — Descrição do projeto e sua proposta de valor.</li>
+<li><strong>Seção Equipe</strong> — Cards dos 6 integrantes do Grupo G8 com foto do GitHub, papel na equipe, link do GitHub e e-mail.</li>
+<li><strong>Footer</strong> — Logo da UnB e créditos.</li>
+</ul>
+<h4 id="autenticacao">Autenticação</h4>
+<p>O sistema de autenticação implementa dois fluxos completos:</p>
+<ul>
+<li><strong>Cadastro com e-mail e senha</strong> — Modal com campos de nome completo, e-mail, senha e confirmação de senha. Inclui seletor de papel (Estudante / Professor) que determina as validações aplicadas.</li>
+<li><strong>Login com e-mail e senha</strong> — Modal dedicado com campos de e-mail e senha.</li>
+<li><strong>Login com Google OAuth</strong> — Botão "Continuar com Google" que redireciona para o fluxo OAuth do Supabase, disponível tanto no cadastro (apenas para estudantes) quanto no login.</li>
+<li><strong>Validação de papel Professor</strong> — O frontend verifica se o e-mail termina em <code>@unb.br</code> (excluindo <code>@aluno.unb.br</code>) antes de permitir o cadastro como professor. Esta mesma regra é enforced no banco de dados via CHECK constraint.</li>
+<li><strong>Promoção para Professor</strong> — Função <code>promoverParaProfessor()</code> permite que um usuário logado via Google altere seu papel para professor, desde que possua e-mail institucional.</li>
+<li><strong>Gestão de sessão</strong> — O <code>AuthContext</code> gerencia estado do usuário, perfil, loading e funções de autenticação para toda a aplicação.</li>
+</ul>
+<h4 id="pagina-de-eventos-segunda-pagina">Página de Eventos (<code>/segunda-pagina</code>)</h4>
+<p>Interface principal de uso da plataforma:</p>
+<ul>
+<li><strong>Toggle Públicos / Meus Eventos</strong> — Alterna entre a visão de eventos públicos aprovados (aberta a todos) e eventos pessoais do usuário logado.</li>
+<li><strong>Barra de busca</strong> — Pesquisa textual em tempo real pelo título dos eventos.</li>
+<li><strong>Filtros avançados</strong> — Três dropdowns customizados para filtrar por:<ul>
+<li><strong>Área</strong> — Acadêmico, Cultura, Esporte, Extensão, Lazer, Comunicado</li>
+<li><strong>Campus</strong> — Darcy Ribeiro, FCTE (Gama), FCTS (Ceilândia), FUP (Planaltina), FAL</li>
+<li><strong>Turno</strong> — Matutino (06h–12h), Vespertino (12h–18h), Noturno (18h–06h)</li>
+</ul>
+</li>
+<li><strong>Grid de cards de eventos</strong> — Layout responsivo com ícone da área, título, data formatada, descrição truncada e tags de campus/local.</li>
+<li><strong>Criação de eventos</strong> — Modal completo com:<ul>
+<li>Campos: título, descrição, data (DatePicker customizado), horário (TimePicker customizado), campus, área, local exato, visibilidade e link externo</li>
+<li>Visibilidade: Público (apenas professor/admin) ou Privado (qualquer logado)</li>
+</ul>
+</li>
+<li><strong>Edição de eventos pessoais</strong> — Reabre o modal preenchido com os dados do evento existente.</li>
+<li><strong>Exclusão de eventos</strong> — Botão de excluir com chamada à API.</li>
+</ul>
+<h4 id="pagina-de-detalhe-do-evento-eventoid">Página de Detalhe do Evento (<code>/evento/:id</code>)</h4>
+<p>Página dedicada para cada evento com layout de duas colunas:</p>
+<ul>
+<li><strong>Coluna principal</strong> — Badges de categoria e campus, título em destaque, box do organizador (avatar + nome) e descrição completa com formatação de parágrafos, subtítulos em negrito e listas.</li>
+<li><strong>Coluna lateral</strong> — Card com data, local, botão "Conferir Evento" (abre link externo), contador de interessados e botão de compartilhar (copia URL).</li>
+<li><strong>Carregamento assíncrono</strong> — Tenta buscar primeiro como evento público; se falhar e houver usuário logado, tenta como evento pessoal.</li>
+</ul>
+<h4 id="componentes-reutilizaveis">Componentes Reutilizáveis</h4>
+<ul>
+<li><strong>NavBar</strong> — Barra de navegação fixa com glassmorphism, adaptável a 3 contextos (home, second, evento). Inclui toggle de tema, avatar do usuário, botão de logout e links de navegação contextuais.</li>
+<li><strong>CustomSelect</strong> — Dropdown customizado com estilo glassmorphism, suporte a <code>dropUp</code> e fechamento ao clicar fora.</li>
+<li><strong>CustomDatePicker</strong> — Calendário mensal interativo com navegação entre meses, destaque do dia selecionado e do dia atual.</li>
+<li><strong>CustomTimePicker</strong> — Seletor de hora e minuto em duas colunas com scroll, header estilizado e auto-scroll para o valor selecionado.</li>
+</ul>
+<h4 id="tema-dark-light">Tema Dark / Light</h4>
+<ul>
+<li>Alternância completa via toggle na navbar.</li>
+<li>A classe <code>dark</code> ou <code>light</code> é aplicada ao <code>&lt;body&gt;</code>, e as variáveis CSS reagem.</li>
+<li>Vídeo de fundo do Hero troca entre <code>shaderopt-dark.webm</code> e <code>shaderopt-light.webm</code>.</li>
+<li>Todos os componentes (modais, cards, inputs, navbar) respondem ao tema.</li>
+</ul>
+<hr />
+<h3 id="32-backend-api-fastapi">3.2 Backend (API FastAPI)</h3>
+<p>A API REST serve como camada intermediária entre o frontend e o banco PostgreSQL, aplicando regras de negócio e controle de acesso.</p>
+<h4 id="autenticacao-e-autorizacao">Autenticação e Autorização</h4>
+<ul>
+<li><strong>Middleware <code>get_current_user</code></strong> — Extrai o token Bearer do header <code>Authorization</code>, valida-o contra o endpoint <code>/auth/v1/user</code> do Supabase via <code>httpx</code>, e busca o papel do usuário na tabela <code>profiles</code>.</li>
+<li><strong>Guard <code>require_event_manager</code></strong> — Restringe criação e exclusão de eventos públicos a usuários com papel <code>professor</code> ou <code>admin</code>.</li>
+<li><strong>Respostas de erro</strong> — 401 para sessão inválida/expirada, 403 para perfil não encontrado ou permissão insuficiente, 503 quando o Supabase está inacessível.</li>
+</ul>
+<h4 id="modulo-de-eventos">Módulo de Eventos</h4>
+<p>CRUD completo com separação clara entre eventos públicos e pessoais:</p>
+<ul>
+<li><strong>Eventos públicos</strong> — Apenas os com <code>status = 'aprovado'</code> são retornados nas consultas. Professores e admins criam eventos que nascem já aprovados. Filtros por campus, categoria, intervalo de datas e busca textual por título.</li>
+<li><strong>Eventos pessoais</strong> — Isolados por <code>user_id</code>: cada usuário só vê, edita e exclui os próprios eventos.</li>
+</ul>
+<h4 id="validacao-e-tratamento-de-erros">Validação e Tratamento de Erros</h4>
+<ul>
+<li><strong>Schemas Pydantic</strong> — <code>EventCreate</code>, <code>EventUpdate</code>, <code>PersonalEventCreate</code>, <code>PersonalEventUpdate</code> com validações de comprimento mínimo/máximo, formato de URL (<code>HttpUrl</code>) e obrigatoriedade de fuso horário (<code>ISO 8601</code>).</li>
+<li><strong>Exception handlers globais</strong> — <code>IntegrityError</code> retorna 409 (conflito), <code>SQLAlchemyError</code> retorna 503 (serviço indisponível).</li>
+<li><strong>CORS</strong> — Configurado para aceitar origens do dev server (<code>localhost:5173</code>), extensível via variável de ambiente <code>CORS_ORIGINS</code>.</li>
+</ul>
+<hr />
+<h3 id="33-camada-de-dados">3.3 Camada de Dados</h3>
+<h4 id="esquema-do-banco-de-dados">Esquema do Banco de Dados</h4>
+<p>O banco foi estruturado através de <strong>5 migrações SQL versionadas</strong> no diretório <code>supabase/migrations/</code>:</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Migração</th>
+<th>Tabela(s)</th>
+<th>Descrição</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><code>20260922195137</code></td>
+<td><code>profiles</code></td>
+<td>Perfis de usuário com CHECK constraints, triggers e RLS</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>20260923000000</code></td>
+<td><code>campus</code>, <code>categories</code></td>
+<td>Tabelas de referência com RLS pública</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>20260923004151</code></td>
+<td><code>eventos_pessoais</code></td>
+<td>Eventos privados com RLS por proprietário</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>20260923172640</code></td>
+<td><code>eventos</code>, <code>planos_ensino</code>, <code>avaliacoes</code></td>
+<td>Eventos públicos, planos de ensino e avaliações</td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>20260929011710</code></td>
+<td><code>profiles</code> (alter)</td>
+<td>Adiciona coluna <code>avatar_url</code></td>
+</tr>
+</tbody>
+</table>
+<h4 id="modelo-entidade-relacionamento">Modelo Entidade-Relacionamento</h4>
+<pre class="mermaid"><code>erDiagram
+    profiles {
+        uuid id PK
+        text nome_completo
+        text email
+        text papel
+        text avatar_url
+        timestamptz criado_em
+        timestamptz atualizado_em
+    }
+
+    campus {
+        uuid id PK
+        text nome
+        timestamptz created_at
+    }
+
+    categories {
+        uuid id PK
+        text nome
+        text cor
+        timestamptz created_at
+    }
+
+    eventos {
+        uuid id PK
+        uuid autor_id FK
+        text titulo
+        text descricao
+        timestamptz data_evento
+        timestamptz data_fim
+        text localizacao
+        text link_externo
+        uuid campus_id FK
+        uuid category_id FK
+        text status
+        timestamptz criado_em
+    }
+
+    inscricoes {
+        uuid usuario_id PK, FK
+        uuid evento_id PK, FK
+        timestamptz criado_em
+    }
+
+    eventos_pessoais {
+        uuid id PK
+        uuid user_id FK
+        text titulo
+        text descricao
+        timestamptz data_hora
+        timestamptz data_fim
+        uuid campus_id FK
+        uuid category_id FK
+        timestamptz criado_em
+    }
+
+    disciplinas {
+        uuid id PK
+        text codigo
+        text nome
+        timestamptz criado_em
+    }
+
+    turmas {
+        uuid id PK
+        uuid disciplina_id FK
+        text codigo
+        text semestre
+        uuid professor_id FK
+        timestamptz criado_em
+    }
+
+    matriculas {
+        uuid usuario_id PK, FK
+        uuid turma_id PK, FK
+        timestamptz criado_em
+    }
+
+    planos_ensino {
+        uuid id PK
+        uuid turma_id FK
+        text arquivo_url
+        timestamptz criado_em
+    }
+
+    avaliacoes {
+        uuid id PK
+        uuid turma_id FK
+        uuid plano_id FK
+        text titulo
+        timestamptz data_avaliacao
+        text origem
+        timestamptz criado_em
+    }
+
+    profiles ||--o{ eventos : "autor_id"
+    profiles ||--o{ eventos_pessoais : "user_id"
+    profiles ||--o{ inscricoes : "usuario_id"
+    profiles ||--o{ matriculas : "usuario_id"
+    profiles ||--o{ turmas : "professor_id"
+    campus ||--o{ eventos : "campus_id"
+    campus ||--o{ eventos_pessoais : "campus_id"
+    categories ||--o{ eventos : "category_id"
+    categories ||--o{ eventos_pessoais : "category_id"
+    eventos ||--o{ inscricoes : "evento_id"
+    disciplinas ||--o{ turmas : "disciplina_id"
+    turmas ||--o{ matriculas : "turma_id"
+    turmas ||--o{ planos_ensino : "turma_id"
+    turmas ||--o{ avaliacoes : "turma_id"
+    planos_ensino |o--o{ avaliacoes : "plano_id"</code></pre>
+<h4 id="seguranca-no-banco-row-level-security">Segurança no Banco (Row Level Security)</h4>
+<p>Todas as tabelas possuem RLS habilitado. As políticas implementadas garantem:</p>
+<table>
+<thead>
+<tr>
+<th>Tabela</th>
+<th>Operação</th>
+<th>Política</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>profiles</code></td>
+<td>SELECT</td>
+<td>Visível para todos (inclusive visitantes)</td>
+</tr>
+<tr>
+<td><code>profiles</code></td>
+<td>UPDATE</td>
+<td>Apenas o próprio usuário (<code>id = auth.uid()</code>)</td>
+</tr>
+<tr>
+<td><code>profiles</code></td>
+<td>INSERT</td>
+<td>Apenas via trigger <code>on_auth_user_created</code></td>
+</tr>
+<tr>
+<td><code>campus</code></td>
+<td>SELECT</td>
+<td>Leitura pública</td>
+</tr>
+<tr>
+<td><code>categories</code></td>
+<td>SELECT</td>
+<td>Leitura pública</td>
+</tr>
+<tr>
+<td><code>eventos</code></td>
+<td>SELECT</td>
+<td>Apenas eventos com <code>status = 'aprovado'</code></td>
+</tr>
+<tr>
+<td><code>eventos</code></td>
+<td>INSERT</td>
+<td>Apenas usuários autenticados, com <code>autor_id = auth.uid()</code></td>
+</tr>
+<tr>
+<td><code>eventos_pessoais</code></td>
+<td>SELECT / INSERT / UPDATE / DELETE</td>
+<td>Apenas o proprietário (<code>user_id = auth.uid()</code>)</td>
+</tr>
+<tr>
+<td><code>avaliacoes</code></td>
+<td>SELECT</td>
+<td>Leitura pública</td>
+</tr>
+</tbody>
+</table>
+<h4 id="triggers-e-regras-de-integridade">Triggers e Regras de Integridade</h4>
+<ul>
+<li><strong><code>tg_cria_perfil</code></strong> — Trigger <code>AFTER INSERT ON auth.users</code> que cria automaticamente o perfil na tabela <code>profiles</code>. Extrai o nome do metadata do Supabase Auth (com fallback para a parte antes do <code>@</code> do e-mail). Valida que professores tenham e-mail <code>@unb.br</code> e impede que <code>admin</code> seja definido via cadastro.</li>
+<li><strong><code>tg_email_imutavel</code></strong> — Trigger <code>BEFORE UPDATE ON profiles</code> que impede alteração do campo <code>email</code>, fechando o vetor de ataque onde o usuário trocaria o e-mail para <code>@unb.br</code> e se promoveria a professor.</li>
+<li><strong><code>tg_atualiza_timestamp</code></strong> — Trigger <code>BEFORE UPDATE ON profiles</code> que atualiza <code>atualizado_em</code> automaticamente.</li>
+<li><strong>CHECK constraint <code>professor_exige_email_institucional</code></strong> — Garante no nível do banco que <code>papel = 'professor'</code> exige <code>email ~* '@unb\.br$'</code>.</li>
+</ul>
+<hr />
+<h2 id="4-arquitetura-da-aplicacao">4. Arquitetura da Aplicação</h2>
+<pre class="mermaid"><code>flowchart TD
+    subgraph Cliente["Navegador do Usuário"]
+        SPA["SPA React\n(Vite + React Router)"]
+        SDK["Supabase JS SDK"]
+    end
+
+    subgraph Supabase["Supabase (Plataforma)"]
+        AUTH["Auth Service\n(JWT + Google OAuth + bcrypt)"]
+        PG["PostgreSQL\n(profiles, eventos, campus,\ncategories, eventos_pessoais,\nplanos_ensino, avaliacoes)"]
+        RLS["Row Level Security\n(7 tabelas protegidas)"]
+    end
+
+    subgraph Backend["Backend Python"]
+        API["FastAPI\n(/api/v1)"]
+        ORM["SQLAlchemy 2\n(models.py)"]
+        MIDDLEWARE["Auth Middleware\n(validação JWT via Supabase)"]
+    end
+
+    SPA --&gt;|"Login / Cadastro\n(signUp, signIn, OAuth)"| SDK
+    SDK &lt;--&gt;|"Auth API"| AUTH
+    AUTH --&gt;|"Trigger: on_auth_user_created"| PG
+
+    SPA --&gt;|"fetch + Bearer JWT\n(eventos CRUD)"| API
+    API --&gt; MIDDLEWARE
+    MIDDLEWARE --&gt;|"GET /auth/v1/user\n(valida token)"| AUTH
+    MIDDLEWARE --&gt;|"SELECT papel FROM profiles"| ORM
+    API --&gt; ORM
+    ORM &lt;--&gt;|"SQL queries"| PG
+    PG --- RLS</code></pre>
+<h3 id="fluxo-de-autenticacao">Fluxo de Autenticação</h3>
+<pre class="mermaid"><code>sequenceDiagram
+    participant U as Usuário
+    participant SPA as Frontend React
+    participant SA as Supabase Auth
+    participant DB as PostgreSQL
+    participant API as FastAPI
+
+    Note over U,API: Cadastro com e-mail e senha
+
+    U-&gt;&gt;SPA: Preenche formulário + seleciona papel
+    SPA-&gt;&gt;SPA: Valida (senha ≥ 8, @unb.br para professor)
+    SPA-&gt;&gt;SA: supabase.auth.signUp({ email, password, data: { nome_completo, papel } })
+    SA-&gt;&gt;DB: INSERT INTO auth.users
+    DB-&gt;&gt;DB: Trigger tg_cria_perfil() → INSERT INTO profiles
+    SA--&gt;&gt;SPA: Sessão JWT
+    SPA-&gt;&gt;SPA: AuthContext atualiza user + fetchProfile()
+
+    Note over U,API: Uso da API com autenticação
+
+    U-&gt;&gt;SPA: Cria evento pessoal
+    SPA-&gt;&gt;API: POST /api/v1/me/events (Bearer JWT)
+    API-&gt;&gt;SA: GET /auth/v1/user (valida JWT)
+    SA--&gt;&gt;API: { id: uuid }
+    API-&gt;&gt;DB: SELECT papel FROM profiles WHERE id = uuid
+    API-&gt;&gt;DB: INSERT INTO eventos_pessoais
+    API--&gt;&gt;SPA: 201 Created + EventRead</code></pre>
+<hr />
+<h2 id="5-endpoints-da-api-implementados">5. Endpoints da API Implementados</h2>
+<table>
+<thead>
+<tr>
+<th>Método</th>
+<th>Rota</th>
+<th>Descrição</th>
+<th style="text-align: center;">Auth</th>
+<th style="text-align: center;">Papel</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/events</code></td>
+<td>Listar eventos públicos aprovados</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/events/{id}</code></td>
+<td>Detalhe de um evento público</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/v1/events</code></td>
+<td>Criar evento público (nasce aprovado)</td>
+<td style="text-align: center;">Sim</td>
+<td style="text-align: center;">Professor / Admin</td>
+</tr>
+<tr>
+<td><code>DELETE</code></td>
+<td><code>/api/v1/events/{id}</code></td>
+<td>Excluir evento público</td>
+<td style="text-align: center;">Sim</td>
+<td style="text-align: center;">Professor / Admin</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/me/events</code></td>
+<td>Listar eventos pessoais do usuário</td>
+<td style="text-align: center;">Sim</td>
+<td style="text-align: center;">Qualquer</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/me/events/{id}</code></td>
+<td>Detalhe de evento pessoal</td>
+<td style="text-align: center;">Sim</td>
+<td style="text-align: center;">Dono</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/v1/me/events</code></td>
+<td>Criar evento pessoal</td>
+<td style="text-align: center;">Sim</td>
+<td style="text-align: center;">Qualquer</td>
+</tr>
+<tr>
+<td><code>PUT</code></td>
+<td><code>/api/v1/me/events/{id}</code></td>
+<td>Atualizar evento pessoal</td>
+<td style="text-align: center;">Sim</td>
+<td style="text-align: center;">Dono</td>
+</tr>
+<tr>
+<td><code>DELETE</code></td>
+<td><code>/api/v1/me/events/{id}</code></td>
+<td>Excluir evento pessoal</td>
+<td style="text-align: center;">Sim</td>
+<td style="text-align: center;">Dono</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/health</code></td>
+<td>Health check do servidor</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+</tr>
+</tbody>
+</table>
+<h3 id="filtros-disponiveis-em-get-apiv1events">Filtros disponíveis em <code>GET /api/v1/events</code></h3>
+<table>
+<thead>
+<tr>
+<th>Parâmetro</th>
+<th>Tipo</th>
+<th>Descrição</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>campus</code></td>
+<td>string</td>
+<td>Filtra por nome do campus (case-insensitive)</td>
+</tr>
+<tr>
+<td><code>category</code></td>
+<td>string</td>
+<td>Filtra por nome da categoria (case-insensitive)</td>
+</tr>
+<tr>
+<td><code>startDate</code></td>
+<td>ISO 8601</td>
+<td>Eventos a partir desta data</td>
+</tr>
+<tr>
+<td><code>endDate</code></td>
+<td>ISO 8601</td>
+<td>Eventos até esta data</td>
+</tr>
+<tr>
+<td><code>q</code></td>
+<td>string</td>
+<td>Busca textual no título (ILIKE)</td>
+</tr>
+<tr>
+<td><code>limit</code></td>
+<td>int (1–100)</td>
+<td>Quantidade máxima de resultados (default: 50)</td>
+</tr>
+<tr>
+<td><code>offset</code></td>
+<td>int (≥ 0)</td>
+<td>Paginação por offset</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="6-requisitos-funcionais-atendidos">6. Requisitos Funcionais Atendidos</h2>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">ID</th>
+<th style="text-align: left;">Requisito</th>
+<th style="text-align: left;">Implementação</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>RF01</strong></td>
+<td style="text-align: left;">Autenticação Local</td>
+<td style="text-align: left;">Login com e-mail e senha via Supabase Auth. Senhas armazenadas com bcrypt.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>RF02</strong></td>
+<td style="text-align: left;">Cadastro de Usuários</td>
+<td style="text-align: left;">Modal de cadastro com nome completo, e-mail, senha e confirmação. Perfil criado automaticamente via trigger no banco.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>RF03</strong></td>
+<td style="text-align: left;">Autenticação Google (OAuth)</td>
+<td style="text-align: left;">Botão "Continuar com Google" integrado ao Supabase OAuth. Redirect para <code>/segunda-pagina</code> após login.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>RF04</strong></td>
+<td style="text-align: left;">Categorização por Papel (Role)</td>
+<td style="text-align: left;">Seletor Estudante/Professor no cadastro. Professor exige <code>@unb.br</code> (validado no frontend, no trigger e no CHECK do banco). Admin definido manualmente. RBAC enforced no middleware da API.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>RF09</strong></td>
+<td style="text-align: left;">Gestão de Eventos Privados (CRUD)</td>
+<td style="text-align: left;">CRUD completo de eventos pessoais via API (<code>/me/events</code>) com RLS no banco. Frontend com criação, edição e exclusão.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>RF10</strong></td>
+<td style="text-align: left;">Submissão de Eventos Públicos</td>
+<td style="text-align: left;">Professores e admins podem criar eventos públicos via modal. Eventos nascem aprovados na versão atual.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>RF14</strong></td>
+<td style="text-align: left;">Resumo e Detalhes do Evento</td>
+<td style="text-align: left;">Página dedicada <code>/evento/:id</code> com descrição completa, data, horário, local, organizador e link externo.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>RF15</strong></td>
+<td style="text-align: left;">Divulgação Multi-campus</td>
+<td style="text-align: left;">Dropdown de campus cobrindo Darcy Ribeiro, FCTE (Gama), FCTS (Ceilândia), FUP (Planaltina) e FAL. Filtro implementado na API e no frontend.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>RF19</strong></td>
+<td style="text-align: left;">Filtros e Busca de Eventos</td>
+<td style="text-align: left;">Filtros por categoria, campus e turno no frontend. API suporta filtros por campus, categoria, intervalo de datas e busca textual.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>RF20</strong></td>
+<td style="text-align: left;">Alternância de Tema (Dark / Light)</td>
+<td style="text-align: left;">Toggle na navbar com transição completa. Todos os componentes respondem ao tema. Vídeo de fundo troca com o tema.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="requisitos-nao-funcionais-atendidos">Requisitos Não Funcionais Atendidos</h2>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">ID</th>
+<th style="text-align: left;">Requisito</th>
+<th style="text-align: left;">Implementação</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>RNF01</strong></td>
+<td style="text-align: left;">Criptografia de Credenciais</td>
+<td style="text-align: left;">Supabase Auth armazena senhas com bcrypt (cost factor padrão ≥ 10).</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>RNF04</strong></td>
+<td style="text-align: left;">Controle de Acesso (RBAC)</td>
+<td style="text-align: left;">Middleware <code>require_event_manager</code> restringe gestão de eventos públicos a professor/admin. CHECK constraints no banco impedem escalação de privilégio.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>RNF07</strong></td>
+<td style="text-align: left;">Design Responsivo</td>
+<td style="text-align: left;">Layout com <code>auto-fill</code> grid, <code>clamp()</code> para tipografia, e componentes que se adaptam a telas de 360px+.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>RNF09</strong></td>
+<td style="text-align: left;">Feedback Visual</td>
+<td style="text-align: left;">Mensagens de erro em vermelho nos modais, estado "Criando..." / "Entrando..." nos botões, alerta de erro ao carregar eventos, estados de carregamento e empty state.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>RNF10</strong></td>
+<td style="text-align: left;">Resiliência no Upload</td>
+<td style="text-align: left;">Tratamento de erros na API com <code>IntegrityError</code> → 409, <code>SQLAlchemyError</code> → 503, e mensagens amigáveis no frontend.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>RNF12</strong></td>
+<td style="text-align: left;">Compatibilidade entre Navegadores</td>
+<td style="text-align: left;">SPA com React 19 + Vite, usando APIs web padrão (<code>IntersectionObserver</code>, <code>fetch</code>, CSS custom properties).</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="7-design-system-e-identidade-visual">7. Design System e Identidade Visual</h2>
+<h3 id="creative-north-star-the-neon-campus">Creative North Star: "The Neon Campus"</h3>
+<p>A identidade visual mescla rigor acadêmico com futurismo digital. A interface adota uma estética predominantemente <em>dark</em>, focada no alto contraste e na modernidade.</p>
+<h3 id="paleta-de-cores">Paleta de Cores</h3>
+<table>
+<thead>
+<tr>
+<th>Token</th>
+<th>Valor</th>
+<th>Uso</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Azul UnB Glow</strong></td>
+<td><code>#008bff</code></td>
+<td>Cor vital — avatares, bordas, rótulos, efeitos glow</td>
+</tr>
+<tr>
+<td><strong>Azul Deep</strong></td>
+<td><code>rgba(0, 95, 210, 1)</code></td>
+<td>Fundo sólido de botões primários</td>
+</tr>
+<tr>
+<td><strong>Void Background</strong></td>
+<td><code>#050508</code></td>
+<td>Fundo raiz (dark)</td>
+</tr>
+<tr>
+<td><strong>Light Background</strong></td>
+<td><code>#f0f4f8</code></td>
+<td>Fundo raiz (light)</td>
+</tr>
+<tr>
+<td><strong>Glass Surface</strong></td>
+<td><code>rgba(8, 12, 22, 0.78)</code></td>
+<td>Modais e cards flutuantes (dark)</td>
+</tr>
+<tr>
+<td><strong>White High</strong></td>
+<td><code>#ffffff</code></td>
+<td>Texto principal e ícones ativos</td>
+</tr>
+<tr>
+<td><strong>White Medium</strong></td>
+<td><code>rgba(255, 255, 255, 0.55)</code></td>
+<td>Texto de apoio e placeholders</td>
+</tr>
+</tbody>
+</table>
+<h3 id="tipografia">Tipografia</h3>
+<table>
+<thead>
+<tr>
+<th>Nível</th>
+<th>Fonte</th>
+<th>Peso</th>
+<th>Uso</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Display</strong></td>
+<td>Orbitron</td>
+<td>700</td>
+<td>Títulos de seções, logo, cabeçalhos de modal</td>
+</tr>
+<tr>
+<td><strong>Title</strong></td>
+<td>Inter</td>
+<td>600</td>
+<td>Títulos de cards</td>
+</tr>
+<tr>
+<td><strong>Body</strong></td>
+<td>Inter</td>
+<td>400</td>
+<td>Descrições, formulários, leitura longa</td>
+</tr>
+<tr>
+<td><strong>Label</strong></td>
+<td>Inter</td>
+<td>600–700, uppercase</td>
+<td>Rótulos de inputs, categorias, badges</td>
+</tr>
+</tbody>
+</table>
+<h3 id="principios-visuais">Princípios Visuais</h3>
+<ul>
+<li><strong>Glassmorphism</strong> — Fundos translúcidos com <code>backdrop-filter: blur()</code> criam profundidade sem sombras pesadas.</li>
+<li><strong>Glow-Over-Shadow Rule</strong> — Em vez de sombras pretas, usamos <code>rgba(0, 139, 255, 0.12)</code> para criar aspecto de luz emitindo da borda do componente.</li>
+<li><strong>Sem gradientes lineares</strong> — Cores sólidas (flat) ou glassmorphism neutro. Gradientes estão terminantemente proibidos.</li>
+<li><strong>Sombras ≤ 20% opacidade</strong> — Máximo de <code>rgba(0,0,0,0.2)</code>. Elevação é alcançada com backdrop-filter e glow.</li>
+<li><strong>Iconografia</strong> — Exclusivamente Material Symbols. Emojis proibidos como elementos de UI.</li>
+</ul>
+<h3 id="shapes">Shapes</h3>
+<table>
+<thead>
+<tr>
+<th>Contexto</th>
+<th>Border Radius</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Navbar, filtros, badges</td>
+<td><code>999px</code> (pill)</td>
+</tr>
+<tr>
+<td>Cards e modais</td>
+<td><code>14px</code> a <code>20px</code></td>
+</tr>
+<tr>
+<td>Inputs</td>
+<td><code>10px</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="8-links-uteis">8. Links Úteis</h2>
+<table>
+<thead>
+<tr>
+<th>Recurso</th>
+<th>Link</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Documentação (GitHub Pages)</td>
+<td><a href="https://unb-mds.github.io/2026-2-AgendaUnB/">unb-mds.github.io/2026-2-AgendaUnB</a></td>
+</tr>
+<tr>
+<td>Figma</td>
+<td><a href="https://www.figma.com/board/RlZe9FgO3Bz3gPkxevs8UJ/AGENDA-UNB?node-id=1-217&amp;t=USKjIQh4OXxQVwsG-1">Board no Figma</a></td>
+</tr>
+<tr>
+<td>Miro</td>
+<td><a href="https://miro.com/welcomeonboard/b0lMYXFqaEFMTnNpejdUOE1tLy8rOGNHdk5QVndFOUN0ZTFtc1kvWC9UUWdCbUJXVkpFU2JKRXhqUHpRZEYxekt6NUNFZXNzOXkxVDRxRmk0TjI1akdVY0Q5QW0vUENuMVpvYWRaZzdVNFZ3bnBlKzQzU0llYmpHQ25HNS93Y210R2lncW1vRmFBVnlLcVJzTmdFdlNRPT0hdjE=?share_link_id=751569582229">Board no Miro</a></td>
+</tr>
+<tr>
+<td>Repositório</td>
+<td><a href="https://github.com/unb-mds/2026-2-AgendaUnB">github.com/unb-mds/2026-2-AgendaUnB</a></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="equipe-g8">Equipe G8</h2>
+<table>
+<thead>
+<tr>
+<th>Nome</th>
+<th>Papel</th>
+<th>GitHub</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Thomas Augusto Amorim de Araujo</td>
+<td>Frontend</td>
+<td><a href="https://github.com/thomas4ugust0">@thomas4ugust0</a></td>
+</tr>
+<tr>
+<td>Gabriel Escramin Lourenço</td>
+<td>Frontend</td>
+<td><a href="https://github.com/Bielziin07">@Bielziin07</a></td>
+</tr>
+<tr>
+<td>Heitor Gomes Monteiro</td>
+<td>Backend</td>
+<td><a href="https://github.com/heitormontt">@heitormontt</a></td>
+</tr>
+<tr>
+<td>Thomaz Marra Martins</td>
+<td>Backend</td>
+<td><a href="https://github.com/marrathomaz">@marrathomaz</a></td>
+</tr>
+<tr>
+<td>Felipe Couto Duque</td>
+<td>Banco de Dados</td>
+<td><a href="https://github.com/felipecduque7">@felipecduque7</a></td>
+</tr>
+<tr>
+<td>Luis Davi Pontes da Silva</td>
+<td>Banco de Dados</td>
+<td><a href="https://github.com/pontesluis">@pontesluis</a></td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Voltar para o topo
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.path", "navigation.top", "search.suggest", "search.highlight", "content.code.copy"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copiado para \u00e1rea de transfer\u00eancia", "clipboard.copy": "Copiar para \u00e1rea de transfer\u00eancia", "search.result.more.one": "mais 1 nesta p\u00e1gina", "search.result.more.other": "# mais nesta p\u00e1gina", "search.result.none": "Nenhum documento encontrado", "search.result.one": "1 documento encontrado", "search.result.other": "# documentos encontrados", "search.result.placeholder": "Digite para iniciar a busca", "search.result.term.missing": "Ausente", "select.version": "Selecione a vers\u00e3o"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
