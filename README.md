@@ -1,8 +1,11 @@
 <div align="center">
 
-<img src="./public/banner_text.png" width="100%" alt="Background Agenda UnB" />
+<img src="./public/banner.png" width="100%" alt="Background Agenda UnB" />
 
 <br/>
+<br/>
+
+# **AGENDA UNB**
 
 **Plataforma centralizada de eventos e organização acadêmica da Universidade de Brasília**
 
@@ -226,6 +229,3 @@ Toda a documentação do projeto está publicada no GitHub Pages:
 
 ---
 
-## 📄 Licença
-
-Projeto acadêmico desenvolvido na disciplina de Métodos de Desenvolvimento de Software — Universidade de Brasília, 2026/2.
