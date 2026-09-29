@@ -11,6 +11,8 @@ nav:
   - Sprints:
     - Sprint 0: sprints/sprint-0.md
     - Sprint 1: sprints/sprint-1.md
+  - Release Notes:
+    - v0.1.0: release-notes/v0.1.0.md
   - Como Contribuir: CONTRIBUTING.md
 
 theme:
