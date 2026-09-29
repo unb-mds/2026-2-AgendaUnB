@@ -1,66 +1,68 @@
 <div align="center">
 
-<video src="https://github.com/user-attachments/assets/12817e2b-55d0-460e-9279-62d86f90c694" autoplay loop muted playsinline width="100%"></video>
-
-
-# **AGENDA UNB**
-
-**Plataforma centralizada de eventos e organização acadêmica da Universidade de Brasilia**
-
-Metodos de Desenvolvimento de Software - 2026/2 - Grupo G8
+<img src="./public/banner_text.png" width="100%" alt="Background Agenda UnB" />
 
 <br/>
 
-[Documentacao](https://unb-mds.github.io/2026-2-AgendaUnB/) · [Figma](https://www.figma.com/board/RlZe9FgO3Bz3gPkxevs8UJ/AGENDA-UNB?node-id=1-217&t=USKjIQh4OXxQVwsG-1) · [Miro](https://miro.com/welcomeonboard/b0lMYXFqaEFMTnNpejdUOE1tLy8rOGNHdk5QVndFOUN0ZTFtc1kvWC9UUWdCbUJXVkpFU2JKRXhqUHpRZEYxekt6NUNFZXNzOXkxVDRxRmk0TjI1akdVY0Q5QW0vUENuMVpvYWRaZzdVNFZOd3RuM2RYU0wySUdxdk9jSm9OV3ZzVXVvMm53MW9OWFg5bkJoVXZxdFhRPT0hdjE=?share_link_id=945222608724)
+**Plataforma centralizada de eventos e organização acadêmica da Universidade de Brasília**
+
+Métodos de Desenvolvimento de Software — 2026/2 — Grupo G8
+
+<br/>
+
+[Documentação](https://unb-mds.github.io/2026-2-AgendaUnB/) · [Figma](https://www.figma.com/board/RlZe9FgO3Bz3gPkxevs8UJ/AGENDA-UNB?node-id=1-217&t=USKjIQh4OXxQVwsG-1) · [Miro](https://miro.com/welcomeonboard/b0lMYXFqaEFMTnNpejdUOE1tLy8rOGNHdk5QVndFOUN0ZTFtc1kvWC9UUWdCbUJXVkpFU2JKRXhqUHpRZEYxekt6NUNFZXNzOXkxVDRxRmk0TjI1akdVY0Q5QW0vUENuMVpvYWRaZzdVNFZOd3RuM2RYU0wySUdxdk9jSm9OV3ZzVXVvMm53MW9OWFg5bkJoVXZxdFhRPT0hdjE=?share_link_id=945222608724)
 
 </div>
 
 ---
 
-## Sobre o Projeto
+## 🚀 Sobre o Projeto
 
-A informacao que organiza a rotina de um estudante da UnB esta fragmentada: a grade esta no SIGAA, as datas de prova estao em PDFs de planos de ensino e os eventos circulam por Instagram, cartazes e grupos de WhatsApp. Nao existe um lugar unico onde o estudante veja o que vai acontecer nas proximas semanas.
+A informação que organiza a rotina de um estudante da UnB está fragmentada: a grade está no SIGAA, as datas de prova estão em PDFs de planos de ensino e os eventos circulam por Instagram, cartazes e grupos de WhatsApp. Não existe um lugar único onde o estudante veja o que vai acontecer nas próximas semanas.
 
-O **Agenda UnB** resolve esse problema reunindo dois eixos em uma unica aplicacao web:
+O **Agenda UnB** resolve esse problema reunindo dois eixos em uma única aplicação web:
 
-- **Agenda do Campus** - Catalogo publico de eventos academicos, culturais e esportivos de todos os campi (Darcy Ribeiro, FCTE, FCTS, FUP e FAL), com filtros por area, campus e turno.
-- **Organizador Academico** - Calendario pessoal e privado do estudante, com criacao, edicao e exclusao de compromissos, e futuramente alimentado por extracao automatica de datas a partir de planos de ensino.
+- **Agenda do Campus** — Catálogo público de eventos acadêmicos, culturais e esportivos de todos os campi (Darcy Ribeiro, FCTE, FCTS, FUP e FAL), com filtros por área, campus e turno.
+- **Organizador Acadêmico** — Calendário pessoal e privado do estudante, com criação, edição e exclusão de compromissos, e futuramente alimentado por extração automática de datas a partir de planos de ensino.
 
 ---
 
-## Sumario
+## 📋 Sumário
 
-- [Sobre o Projeto](#sobre-o-projeto)
-- [Stack Tecnologica](#stack-tecnologica)
-- [Como Executar](#como-executar)
-  - [Pre-requisitos](#pre-requisitos)
+- [Sobre o Projeto](#-sobre-o-projeto)
+- [Stack Tecnológica](#-stack-tecnológica)
+- [Como Executar](#️-como-executar)
+  - [Pré-requisitos](#pré-requisitos)
   - [Frontend](#frontend)
   - [Backend](#backend)
-  - [Banco de Dados](#banco-de-dados-supabase)
-- [Equipe](#equipe)
-- [Documentacao](#documentacao)
+  - [Banco de Dados (Supabase)](#banco-de-dados-supabase)
+- [Arquitetura](#️-arquitetura)
+- [Funcionalidades Implementadas](#-funcionalidades-implementadas)
+- [Equipe](#-equipe)
+- [Documentação](#-documentação)
+- [Licença](#-licença)
 
 ---
 
-## Stack Tecnologica
+## 🛠️ Stack Tecnológica
 
-| Camada | Tecnologia |
-|--------|-----------|
-| Frontend | React 19, Vite 6, React Router 7 |
-| Backend | Python 3, FastAPI, SQLAlchemy 2, Pydantic 2 |
-| Banco de Dados | PostgreSQL (Supabase) |
-| Autenticacao | Supabase Auth |
-| Migracoes | Supabase Migrations (SQL) |
-| Ambiente Local | Supabase CLI + Docker |
-| Documentacao | MkDocs Material 
-| Tipografia | Orbitron + Inter (Google Fonts) |
-| Iconografia | Material Symbols |
+| Camada | Tecnologia | Finalidade |
+|--------|-----------|------------|
+| Frontend | React 19, Vite 6, React Router 7 | SPA responsiva com roteamento client-side |
+| Backend | Python 3, FastAPI, SQLAlchemy 2, Pydantic 2 | API REST com validação automática |
+| Banco de Dados | PostgreSQL (Supabase) | Dados relacionais com Row Level Security |
+| Autenticação | Supabase Auth | Google OAuth, login com e-mail/senha, JWT |
+| Migrações | Supabase Migrations (SQL) | 5 migrações versionadas |
+| Ambiente Local | Supabase CLI + Docker | PostgreSQL, Auth e Studio locais |
+| Documentação | MkDocs Material | Site publicado no GitHub Pages |
+| Tipografia | Orbitron + Inter (Google Fonts) | Display sci-fi + body legível |
+| Iconografia | Material Symbols | Ícones consistentes em toda a UI |
 
 ---
 
-## Como Executar
+## ⚙️ Como Executar
 
-### Pre-requisitos
+### Pré-requisitos
 
 - [Node.js](https://nodejs.org/pt-br) (v18+)
 - [Python](https://www.python.org/downloads/) (v3.11+)
@@ -74,7 +76,7 @@ cd 2026-2-AgendaUnB
 npm install
 ```
 
-Crie um arquivo `.env` na raiz com as variaveis do Supabase (veja `.env.example`):
+Crie um arquivo `.env` na raiz com as variáveis do Supabase (veja `.env.example`):
 
 ```
 VITE_SUPABASE_URL=<sua-url>
@@ -88,7 +90,7 @@ Inicie o servidor de desenvolvimento:
 npm run dev
 ```
 
-A aplicacao estara disponivel em `http://localhost:5173`.
+A aplicação estará disponível em `http://localhost:5173`.
 
 ### Backend
 
@@ -100,7 +102,7 @@ venv\Scripts\activate   # Windows
 pip install -r requirements.txt
 ```
 
-Crie um arquivo `backend/.env` com as variaveis necessarias (veja `backend/.env.example`):
+Crie um arquivo `backend/.env` com as variáveis necessárias (veja `backend/.env.example`):
 
 ```
 DATABASE_URL=postgresql://<usuario>:<senha>@<host>:<porta>/<banco>
@@ -114,53 +116,93 @@ Inicie a API:
 uvicorn src.main:app --reload
 ```
 
-A API estara disponivel em `http://127.0.0.1:8000`. Documentacao interativa em `/docs`.
+A API estará disponível em `http://127.0.0.1:8000`. Documentação interativa em `/docs`.
 
 ### Banco de Dados (Supabase)
 
 ```bash
 supabase start        # Sobe PostgreSQL + Auth + Studio localmente
-supabase db reset     # Aplica todas as migracoes e seed
+supabase db reset     # Aplica todas as migrações e seed
 ```
 
-O Supabase Studio local estara em `http://localhost:54323`.
+O Supabase Studio local estará em `http://localhost:54323`.
 
 ---
 
+## 🏗️ Arquitetura
+
+```
+Navegador                        Supabase                      Backend
++-----------------+      +---------------------+      +------------------+
+| React SPA       |----->| Auth (JWT, OAuth)   |      | FastAPI          |
+| Vite + Router   |      | PostgreSQL          |<-----| SQLAlchemy       |
+| Supabase JS SDK |----->| Row Level Security  |      | Auth Middleware  |
++-----------------+      +---------------------+      +------------------+
+        |                                                      ^
+        |              fetch + Bearer JWT                      |
+        +------------------------------------------------------+
+```
+
+**Fluxo resumido:**
+
+1. O frontend autentica via Supabase Auth (e-mail/senha ou Google OAuth).
+2. O Supabase cria a sessão JWT e o trigger `tg_cria_perfil` insere o perfil no banco.
+3. Para operações de eventos, o frontend chama a API FastAPI com o token JWT.
+4. O middleware da API valida o token contra o Supabase e busca o papel do usuário.
+5. As rotas aplicam controle de acesso (RBAC): apenas professores/admins gerenciam eventos públicos.
+
+---
+
+## ✨ Funcionalidades Implementadas
+
+### Frontend
+
+| Funcionalidade | Descrição |
+|---------------|-----------|
+| Landing Page | Hero section, funcionalidades, sobre e equipe |
+| Cadastro | Modal com seletor Estudante/Professor, validação de @unb.br para professor |
+| Login | Modal de login com e-mail/senha e Google OAuth |
+| Página de Eventos | Listagem pública e pessoal, filtros por área/campus/turno, busca textual |
+| Criação de Eventos | Modal com DatePicker e TimePicker customizados, campos completos |
+| Edição e Exclusão | CRUD completo para eventos pessoais |
+| Detalhe do Evento | Página dedicada com descrição, organizador, badges e link externo |
+| Tema Dark / Light | Alternância completa visual (temas claro e escuro) |
+| NavBar | Glassmorphism, avatar do usuário, navegação contextual |
+
 ### Backend (API)
 
-| Metodo | Rota | Descricao | Autenticacao |
+| Método | Rota | Descrição | Autenticação |
 |--------|------|-----------|:------------:|
-| GET | `/api/v1/events` | Listar eventos publicos aprovados | Nao |
-| GET | `/api/v1/events/{id}` | Detalhe de evento publico | Nao |
-| POST | `/api/v1/events` | Criar evento publico | Professor/Admin |
-| DELETE | `/api/v1/events/{id}` | Excluir evento publico | Professor/Admin |
+| GET | `/api/v1/events` | Listar eventos públicos aprovados | Não |
+| GET | `/api/v1/events/{id}` | Detalhe de evento público | Não |
+| POST | `/api/v1/events` | Criar evento público | Professor/Admin |
+| DELETE | `/api/v1/events/{id}` | Excluir evento público | Professor/Admin |
 | GET | `/api/v1/me/events` | Listar eventos pessoais | Sim |
 | GET | `/api/v1/me/events/{id}` | Detalhe de evento pessoal | Sim (dono) |
 | POST | `/api/v1/me/events` | Criar evento pessoal | Sim |
 | PUT | `/api/v1/me/events/{id}` | Atualizar evento pessoal | Sim (dono) |
 | DELETE | `/api/v1/me/events/{id}` | Excluir evento pessoal | Sim (dono) |
-| GET | `/health` | Health check | Nao |
+| GET | `/health` | Health check | Não |
 
 ### Banco de Dados
 
 7 tabelas criadas com RLS: `profiles`, `campus`, `categories`, `eventos`, `eventos_pessoais`, `planos_ensino`, `avaliacoes`.
 
-Destaques de seguranca:
+Destaques de segurança:
 
-- Trigger automatico de criacao de perfil no cadastro
+- Trigger automático de criação de perfil no cadastro
 - CHECK constraint: professor exige e-mail `@unb.br`
-- E-mail imutavel no perfil (impede escalacao de privilegio)
-- Eventos pessoais isolados por usuario via RLS
+- E-mail imutável no perfil (impede escalação de privilégio)
+- Eventos pessoais isolados por usuário via RLS
 
 ---
 
-## Equipe
+## 👥 Equipe
 
 | Nome | Papel | GitHub |
 |------|:-----:|--------|
 | Thomas Augusto Amorim de Araujo | Frontend | [@thomas4ugust0](https://github.com/thomas4ugust0) |
-| Gabriel Escramin Lourenco | Frontend | [@Bielziin07](https://github.com/Bielziin07) |
+| Gabriel Escramin Lourenço | Frontend | [@Bielziin07](https://github.com/Bielziin07) |
 | Heitor Gomes Monteiro | Backend | [@heitormontt](https://github.com/heitormontt) |
 | Thomaz Marra Martins | Backend | [@marrathomaz](https://github.com/marrathomaz) |
 | Felipe Couto Duque | Banco de Dados | [@felipecduque7](https://github.com/felipecduque7) |
@@ -168,17 +210,22 @@ Destaques de seguranca:
 
 ---
 
-## Documentacao
+## 📚 Documentação
 
-Toda a documentacao do projeto esta publicada no GitHub Pages:
+Toda a documentação do projeto está publicada no GitHub Pages:
 
 **[unb-mds.github.io/2026-2-AgendaUnB](https://unb-mds.github.io/2026-2-AgendaUnB/)**
 
-| Documento | Descricao |
+| Documento | Descrição |
 |-----------|-----------|
-| [Arquitetura](https://unb-mds.github.io/2026-2-AgendaUnB/Architecture/) | Visao arquitetural, stack e modelos de dados |
+| [Arquitetura](https://unb-mds.github.io/2026-2-AgendaUnB/Architecture/) | Visão arquitetural, stack e modelos de dados |
 | [Requisitos](https://unb-mds.github.io/2026-2-AgendaUnB/requisitos/) | 21 RFs e 13 RNFs especificados |
-| [Padroes](https://unb-mds.github.io/2026-2-AgendaUnB/padroes/) | Glossario, naming conventions e rotas da API |
+| [Padrões](https://unb-mds.github.io/2026-2-AgendaUnB/padroes/) | Glossário, naming conventions e rotas da API |
 | [Release v0.1.0](https://unb-mds.github.io/2026-2-AgendaUnB/release-notes/v0.1.0/) | Release note da primeira entrega |
-| [Sprints](https://unb-mds.github.io/2026-2-AgendaUnB/sprints/sprint-0/) | Acompanhamento agil por ciclo |
+| [Sprints](https://unb-mds.github.io/2026-2-AgendaUnB/sprints/sprint-0/) | Acompanhamento ágil por ciclo |
 
+---
+
+## 📄 Licença
+
+Projeto acadêmico desenvolvido na disciplina de Métodos de Desenvolvimento de Software — Universidade de Brasília, 2026/2.
