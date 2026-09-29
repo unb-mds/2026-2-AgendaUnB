@@ -2,14 +2,12 @@
 
 <img src="./public/banner.png" width="100%" alt="Background Agenda UnB" />
 
-<br/>
-<br/>
 
 # **AGENDA UNB**
 
 **Plataforma centralizada de eventos e organização acadêmica da Universidade de Brasília**
 
-Métodos de Desenvolvimento de Software — 2026/2 — Grupo G8
+Métodos de Desenvolvimento de Software - 2026/2 - Grupo G8
 
 <br/>
 
@@ -19,6 +17,22 @@ Métodos de Desenvolvimento de Software — 2026/2 — Grupo G8
 
 ---
 
+## 📋 Sumário
+
+- [Sobre o Projeto](#sobre-o-projeto)
+- [Stack Tecnológica](#stack-tecnologica)
+- [Como Executar](#como-executar)
+    - [Pré-requisitos](#pre-requisitos)
+    - [Frontend](#frontend)
+    - [Backend](#backend)
+    - [Banco de Dados](#banco-de-dados)
+- [Funcionalidades da R1](#funcionalidades)
+- [Equipe](#equipe)
+- [Documentação](#documentacao)
+
+---
+
+<a id="sobre-o-projeto"></a>
 ## 🚀 Sobre o Projeto
 
 A informação que organiza a rotina de um estudante da UnB está fragmentada: a grade está no SIGAA, as datas de prova estão em PDFs de planos de ensino e os eventos circulam por Instagram, cartazes e grupos de WhatsApp. Não existe um lugar único onde o estudante veja o que vai acontecer nas próximas semanas.
@@ -30,23 +44,7 @@ O **Agenda UnB** resolve esse problema reunindo dois eixos em uma única aplica�
 
 ---
 
-## 📋 Sumário
-
-- [Sobre o Projeto](#-sobre-o-projeto)
-- [Stack Tecnológica](#-stack-tecnológica)
-- [Como Executar](#️-como-executar)
-  - [Pré-requisitos](#pré-requisitos)
-  - [Frontend](#frontend)
-  - [Backend](#backend)
-  - [Banco de Dados (Supabase)](#banco-de-dados-supabase)
-- [Arquitetura](#️-arquitetura)
-- [Funcionalidades Implementadas](#-funcionalidades-implementadas)
-- [Equipe](#-equipe)
-- [Documentação](#-documentação)
-- [Licença](#-licença)
-
----
-
+<a id="stack-tecnologica"></a>
 ## 🛠️ Stack Tecnológica
 
 | Camada | Tecnologia | Finalidade |
@@ -55,7 +53,7 @@ O **Agenda UnB** resolve esse problema reunindo dois eixos em uma única aplica�
 | Backend | Python 3, FastAPI, SQLAlchemy 2, Pydantic 2 | API REST com validação automática |
 | Banco de Dados | PostgreSQL (Supabase) | Dados relacionais com Row Level Security |
 | Autenticação | Supabase Auth | Google OAuth, login com e-mail/senha, JWT |
-| Migrações | Supabase Migrations (SQL) | 5 migrações versionadas |
+| Migrações | Supabase Migrations (SQL) | Versionamento de migrações |
 | Ambiente Local | Supabase CLI + Docker | PostgreSQL, Auth e Studio locais |
 | Documentação | MkDocs Material | Site publicado no GitHub Pages |
 | Tipografia | Orbitron + Inter (Google Fonts) | Display sci-fi + body legível |
@@ -63,100 +61,78 @@ O **Agenda UnB** resolve esse problema reunindo dois eixos em uma única aplica�
 
 ---
 
+<a id="como-executar"></a>
 ## ⚙️ Como Executar
 
-### Pré-requisitos
+### <a id="pre-requisitos"></a>Pré-requisitos
 
 - [Node.js](https://nodejs.org/pt-br) (v18+)
 - [Python](https://www.python.org/downloads/) (v3.11+)
 - [Supabase CLI](https://supabase.com/docs/guides/cli/getting-started) (requer Docker)
 
-### Frontend
+### <a id="frontend"></a>Frontend
 
-```bash
+~~~bash
 git clone https://github.com/unb-mds/2026-2-AgendaUnB.git
 cd 2026-2-AgendaUnB
 npm install
-```
+~~~
 
 Crie um arquivo `.env` na raiz com as variáveis do Supabase (veja `.env.example`):
 
-```
+~~~env
 VITE_SUPABASE_URL=<sua-url>
 VITE_SUPABASE_ANON_KEY=<sua-chave>
 VITE_API_URL=http://127.0.0.1:8000/api/v1
-```
+~~~
 
 Inicie o servidor de desenvolvimento:
 
-```bash
+~~~bash
 npm run dev
-```
+~~~
 
 A aplicação estará disponível em `http://localhost:5173`.
 
-### Backend
+### <a id="backend"></a>Backend
 
-```bash
+~~~bash
 cd backend
 python -m venv venv
 venv\Scripts\activate   # Windows
 # source venv/bin/activate  # Linux/macOS
 pip install -r requirements.txt
-```
+~~~
 
 Crie um arquivo `backend/.env` com as variáveis necessárias (veja `backend/.env.example`):
 
-```
+~~~env
 DATABASE_URL=postgresql://<usuario>:<senha>@<host>:<porta>/<banco>
 SUPABASE_URL=<sua-url>
 SUPABASE_ANON_KEY=<sua-chave>
-```
+~~~
 
 Inicie a API:
 
-```bash
+~~~bash
 uvicorn src.main:app --reload
-```
+~~~
 
 A API estará disponível em `http://127.0.0.1:8000`. Documentação interativa em `/docs`.
 
-### Banco de Dados (Supabase)
+### <a id="banco-de-dados"></a>Banco de Dados (Supabase)
 
-```bash
+~~~bash
 supabase start        # Sobe PostgreSQL + Auth + Studio localmente
 supabase db reset     # Aplica todas as migrações e seed
-```
+~~~
 
 O Supabase Studio local estará em `http://localhost:54323`.
 
 ---
 
-## 🏗️ Arquitetura
-
-```
-Navegador                        Supabase                      Backend
-+-----------------+      +---------------------+      +------------------+
-| React SPA       |----->| Auth (JWT, OAuth)   |      | FastAPI          |
-| Vite + Router   |      | PostgreSQL          |<-----| SQLAlchemy       |
-| Supabase JS SDK |----->| Row Level Security  |      | Auth Middleware  |
-+-----------------+      +---------------------+      +------------------+
-        |                                                      ^
-        |              fetch + Bearer JWT                      |
-        +------------------------------------------------------+
-```
-
-**Fluxo resumido:**
-
-1. O frontend autentica via Supabase Auth (e-mail/senha ou Google OAuth).
-2. O Supabase cria a sessão JWT e o trigger `tg_cria_perfil` insere o perfil no banco.
-3. Para operações de eventos, o frontend chama a API FastAPI com o token JWT.
-4. O middleware da API valida o token contra o Supabase e busca o papel do usuário.
-5. As rotas aplicam controle de acesso (RBAC): apenas professores/admins gerenciam eventos públicos.
-
----
-
-## ✨ Funcionalidades Implementadas
+<a id="funcionalidades"></a>
+## ✨ Funcionalidades da R1
 
 ### Frontend
 
@@ -193,13 +169,14 @@ Navegador                        Supabase                      Backend
 
 Destaques de segurança:
 
-- Trigger automático de criação de perfil no cadastro
+- Trigger automático de criação de perfil no registro
 - CHECK constraint: professor exige e-mail `@unb.br`
-- E-mail imutável no perfil (impede escalação de privilégio)
+- E-mail imutável no perfil (impede escalada de privilégios)
 - Eventos pessoais isolados por usuário via RLS
 
 ---
 
+<a id="equipe"></a>
 ## 👥 Equipe
 
 | Nome | Papel | GitHub |
@@ -213,6 +190,7 @@ Destaques de segurança:
 
 ---
 
+<a id="documentacao"></a>
 ## 📚 Documentação
 
 Toda a documentação do projeto está publicada no GitHub Pages:
@@ -228,4 +206,3 @@ Toda a documentação do projeto está publicada no GitHub Pages:
 | [Sprints](https://unb-mds.github.io/2026-2-AgendaUnB/sprints/sprint-0/) | Acompanhamento ágil por ciclo |
 
 ---
-
