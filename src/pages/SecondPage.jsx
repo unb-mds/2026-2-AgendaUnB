@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { eventsApi, toApiEvent, toUiEvent } from '../lib/api';
 import NavBar from '../components/NavBar';
 
 const CustomSelect = ({ value, onChange, options, placeholder, dropUp = false, className, wrapperWidth }) => {
@@ -325,7 +326,7 @@ const CustomTimePicker = ({ value, onChange, placeholder, dropUp = false, classN
 
 export default function SegundaPagina() {
   const navigate = useNavigate();
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, isProfessor, isAdmin } = useAuth();
   // --- GERENCIAMENTO DE TEMA LOCAL ---
   const [theme, setTheme] = useState(() => document.body.classList.contains('light') ? 'light' : 'dark');
   
@@ -338,89 +339,13 @@ export default function SegundaPagina() {
   const isDark = theme === 'dark';
 
   // --- ESTADOS DA APLICAÇÃO ---
-  const [eventos, setEventos] = useState([
-        {
-      id: 1,
-      titulo: 'Encerramento da 26ª SEMUNI',
-      data: '2026-09-25',
-      horario: '17:00',
-      campus: 'Darcy Ribeiro',
-      local: 'Memorial Darcy Ribeiro',
-      area: 'Cultura',
-      descricao: 'Cerimônia de encerramento da 26ª Semana Universitária da UnB, que teve como tema "Democracia em cena: arte, cultura e pertencimento". Serão apresentados os resultados da semana, premiações de destaques e uma programação cultural de despedida com apresentações de grupos estudantis.',
-      linkExterno: 'https://dex.unb.br/semanauniversitaria',
-      visibilidade: 'Público',
-      criadoPorMim: false
-    },
-    {
-      id: 2,
-      titulo: '32º Congresso de Iniciação Científica da UnB',
-      data: '2026-09-25',
-      horario: '10:00',
-      campus: 'Darcy Ribeiro',
-      local: 'Centro Comunitário Athos Bulcão',
-      area: 'Acadêmico',
-      descricao: 'Último dia do 32º Congresso de Iniciação Científica e 23º Congresso de Iniciação Científica do DF. Bolsistas do PIBIC, PIBITI e PIBIC-AF apresentam os resultados de suas pesquisas dos editais 2025/2026 em sessões de pôsteres e comunicações orais. Oportunidade para conhecer a ciência de ponta produzida na UnB e interagir com jovens pesquisadores.',
-      linkExterno: 'https://proic.unb.br/',
-      visibilidade: 'Público',
-      criadoPorMim: false
-    },
-        {
-      id: 3,
-      titulo: '18º Encontro Nacional de História Oral',
-      data: '2026-10-12',
-      horario: '09:00',
-      campus: 'Darcy Ribeiro',
-      local: 'Campus Darcy Ribeiro',
-      area: 'Acadêmico',
-      descricao: 'Maior fórum de história oral do Brasil, promovido pela Associação Brasileira de História Oral (ABHO). O tema desta edição é "Oralidades plurais na construção de um futuro de justiça climática". O encontro ocorre de 12 a 16 de outubro e reúne pesquisadores, docentes, estudantes e representantes de movimentos sociais para reflexões sobre memória, narração e escuta.',
-      linkExterno: 'https://doity.com.br/abho2026',
-      visibilidade: 'Público',
-      criadoPorMim: false
-    },
-    {
-      id: 4,
-      titulo: 'Conferência: Educar en Cultura Democrática',
-      data: '2026-09-28',
-      horario: '17:00',
-      campus: 'Darcy Ribeiro',
-      local: 'Auditório do Instituto de Ciências Sociais (ICS)',
-      area: 'Acadêmico',
-      descricao: 'Conferência internacional com o Prof. Antoni Santisteban Fernández, catedrático da Universidade Autônoma de Barcelona (UAB). O tema é "Educar en cultura democrática frente al avance de ideologías autoritarias". O evento é organizado pelo Laboratório de Ensino de Sociologia Lélia Gonzalez, com inscrições pelo SIGAA.',
-      linkExterno: 'https://sigaa.unb.br/sigaa/public/',
-      visibilidade: 'Público',
-      criadoPorMim: false
-    },
-    {
-      id: 5,
-      titulo: 'Exposição Diapedesis - CAL',
-      data: '2026-10-01',
-      horario: '08:00',
-      campus: 'Darcy Ribeiro',
-      local: 'Casa da Cultura da América Latina (SCS Qd. 4)',
-      area: 'Cultura',
-      descricao: 'Com curadoria de Yana Tamayo, esta exposição apresenta trabalhos do "Grupo Analgesia", composto por pacientes, profissionais de saúde e artistas do Hospital Universitário de Brasília (HUB-UnB). A mostra propõe uma reflexão sobre arte, corpo, saúde e políticas de cuidado, usando a diapedese como metáfora. Visitação gratuita até 17 de outubro.',
-      linkExterno: 'https://ddc.dex.unb.br/',
-      visibilidade: 'Público',
-      criadoPorMim: false
-    },
-    {
-      id: 6,
-      titulo: 'Prazo Final - Trancamento Parcial de Matrícula',
-      data: '2026-10-09',
-      horario: '23:59',
-      campus: 'Darcy Ribeiro',
-      local: 'Online (SIGAA)',
-      area: 'Comunicado',
-      descricao: 'Data-limite para realizar o trancamento parcial de matrícula no semestre 2026.2. O procedimento deve ser feito exclusivamente pelo sistema SIGAA. Atenção: após essa data, não será mais possível solicitar trancamento de disciplinas individuais neste período letivo.',
-      linkExterno: 'https://sigaa.unb.br/sigaa/public/',
-      visibilidade: 'Público',
-      criadoPorMim: false
-    },
-  ]);
+  const [eventos, setEventos] = useState([]);
+  const [carregandoEventos, setCarregandoEventos] = useState(true);
+  const [erroEventos, setErroEventos] = useState('');
 
   const [visaoEventos, setVisaoEventos] = useState('Públicos');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [eventoEmEdicao, setEventoEmEdicao] = useState(null);
 
   // Estados do Modal
   const [titulo, setTitulo] = useState('');
@@ -441,16 +366,48 @@ export default function SegundaPagina() {
 
   // --- DADOS BASE PARA OS DROPDOWNS ---
   const areasOptions = ['Acadêmico', 'Cultura', 'Esporte', 'Extensão', 'Lazer', 'Comunicado'].map(a => ({ label: a, value: a }));
-  const campiOptions = ['Darcy Ribeiro', 'FCTE - Gama', 'FCTS - Ceilândia', 'FUP - Planaltina', 'FAL'].map(c => ({ label: c, value: c }));
+  const campiOptions = [
+    { label: 'Darcy Ribeiro', value: 'Darcy Ribeiro (Plano Piloto)' },
+    { label: 'FCTE - Gama', value: 'Faculdade do Gama (FCTE)' },
+    { label: 'FCTS - Ceilândia', value: 'Faculdade de Ceilândia (FCTS)' },
+    { label: 'FUP - Planaltina', value: 'Faculdade de Planaltina (FUP)' },
+    { label: 'FAL', value: 'Fazenda Água Limpa (FAL)' },
+  ];
   const turnoOptions = [
     { label: 'Matutino (06h - 12h)', value: 'Matutino' },
     { label: 'Vespertino (12h - 18h)', value: 'Vespertino' },
     { label: 'Noturno (18h - 06h)', value: 'Noturno' }
   ];
   const visibilidadeOptions = [
-    { label: 'Público', value: 'Público' },
-    { label: 'Apenas para mim', value: 'Privado' }
+    ...((isProfessor || isAdmin) && !eventoEmEdicao ? [{ label: 'Público', value: 'Público' }] : []),
+    { label: 'Apenas para mim', value: 'Privado' },
   ];
+
+  useEffect(() => {
+    let active = true;
+    const loadEvents = async () => {
+      setCarregandoEventos(true);
+      setErroEventos('');
+      try {
+        const result = visaoEventos === 'MEUS'
+          ? await eventsApi.listPersonal()
+          : await eventsApi.listPublic({
+            campus: filtroCampus,
+            category: filtroArea,
+            search: searchQuery,
+          });
+        if (active) {
+          setEventos(result.map((event) => toUiEvent(event, visaoEventos === 'MEUS')));
+        }
+      } catch (error) {
+        if (active) setErroEventos(error.message || 'Não foi possível carregar os eventos.');
+      } finally {
+        if (active) setCarregandoEventos(false);
+      }
+    };
+    loadEvents();
+    return () => { active = false; };
+  }, [visaoEventos, filtroCampus, filtroArea, searchQuery, user?.id]);
 
   // --- FUNÇÕES AUXILIARES ---
   const getAreaIcon = (areaName) => {
@@ -486,33 +443,80 @@ export default function SegundaPagina() {
   };
 
   // --- HANDLERS ---
-  const handleAdicionarEvento = (e) => {
+  const resetModal = () => {
+    setTitulo('');
+    setData('');
+    setHorario('');
+    setCampus('');
+    setLocal('');
+    setArea('');
+    setDescricao('');
+    setVisibilidade('');
+    setLinkExterno('');
+    setEventoEmEdicao(null);
+  };
+
+  const handleAdicionarEvento = async (e) => {
     e.preventDefault();
     if (!titulo.trim() || !data || !horario) return;
 
-    const novoEvento = {
-      id: Date.now(),
-      titulo,
-      data,
-      horario,
-      campus,
-      local,
-      area,
-      descricao,
-      visibilidade,
-      linkExterno,
-      organizadorNome: profile?.nome_completo || user?.user_metadata?.nome_completo || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email || 'Organizador',
-      organizadorFoto: profile?.avatar_url || user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null,
-      criadoPorMim: true
-    };
+    try {
+      setErroEventos('');
+      const payload = toApiEvent({ titulo, data, horario, campus, local, area, descricao, linkExterno });
+      let savedEvent;
+      if (eventoEmEdicao) {
+        savedEvent = await eventsApi.updatePersonal(eventoEmEdicao.id, payload);
+      } else if (visibilidade === 'Público') {
+        savedEvent = await eventsApi.createPublic(payload);
+      } else {
+        savedEvent = await eventsApi.createPersonal(payload);
+      }
 
-    setEventos([novoEvento, ...eventos]);
-    setTitulo(''); setData(''); setHorario(''); setCampus(''); setLocal(''); setArea(''); setDescricao(''); setVisibilidade('Público');
-    setIsModalOpen(false);
+      const mappedEvent = toUiEvent(savedEvent, visibilidade !== 'Público');
+      if (visibilidade === 'Público' && visaoEventos !== 'Públicos') {
+        setVisaoEventos('Públicos');
+        setEventos([mappedEvent]);
+      } else if (visibilidade !== 'Público' && visaoEventos !== 'MEUS') {
+        setVisaoEventos('MEUS');
+        setEventos([mappedEvent]);
+      } else {
+        setEventos((current) => eventoEmEdicao
+          ? current.map((event) => event.id === mappedEvent.id ? mappedEvent : event)
+          : [mappedEvent, ...current]);
+      }
+      resetModal();
+      setIsModalOpen(false);
+    } catch (error) {
+      setErroEventos(error.message || 'Não foi possível salvar o evento.');
+    }
   };
 
-  const handleRemoverEvento = (idParaRemover) => {
-    setEventos(eventos.filter(ev => ev.id !== idParaRemover));
+  const handleEditarEvento = (evento) => {
+    setEventoEmEdicao(evento);
+    setTitulo(evento.titulo);
+    setData(evento.data);
+    setHorario(evento.horario);
+    setCampus(evento.campus);
+    setLocal(evento.local);
+    setArea(evento.area);
+    setDescricao(evento.descricao);
+    setVisibilidade('Privado');
+    setLinkExterno('');
+    setIsModalOpen(true);
+  };
+
+  const handleRemoverEvento = async (idParaRemover) => {
+    try {
+      setErroEventos('');
+      if (visaoEventos === 'MEUS') {
+        await eventsApi.deletePersonal(idParaRemover);
+      } else {
+        await eventsApi.deletePublic(idParaRemover);
+      }
+      setEventos((current) => current.filter((event) => event.id !== idParaRemover));
+    } catch (error) {
+      setErroEventos(error.message || 'Não foi possível excluir o evento.');
+    }
   };
 
   // --- LÓGICA DE FILTRAGEM ---
@@ -573,17 +577,23 @@ export default function SegundaPagina() {
                 }}
               />
             </div>
-            <button
-              onClick={() => setIsModalOpen(true)}
-              style={{
-                padding: '0 24px', borderRadius: '26px', background: accentColor,
-                color: '#fff', border: 'none', fontWeight: 600, fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
-                boxShadow: '0 4px 15px rgba(0, 140, 255, 0.19)', height: '56px'
-              }}
-            >
-              <span className="material-symbols-outlined">add</span>
-              Criar Evento
-            </button>
+            {user && (
+              <button
+                onClick={() => {
+                  resetModal();
+                  setVisibilidade(isProfessor || isAdmin ? 'Público' : 'Privado');
+                  setIsModalOpen(true);
+                }}
+                style={{
+                  padding: '0 24px', borderRadius: '26px', background: accentColor,
+                  color: '#fff', border: 'none', fontWeight: 600, fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
+                  boxShadow: '0 4px 15px rgba(0, 140, 255, 0.19)', height: '56px'
+                }}
+              >
+                <span className="material-symbols-outlined">add</span>
+                Criar Evento
+              </button>
+            )}
           </div>
 
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center', zIndex: 11, position: 'relative' }}>
@@ -618,7 +628,15 @@ export default function SegundaPagina() {
           <span className="material-symbols-outlined" style={{ color: accentColor, fontSize: '1.4rem' }}>event</span>
         </h2>
 
-        {eventosFiltrados.length === 0 ? (
+        {erroEventos && (
+          <div role="alert" style={{ marginBottom: '1rem', padding: '1rem', borderRadius: '12px', color: '#b42318', background: '#fee4e2' }}>
+            {erroEventos}
+          </div>
+        )}
+
+        {carregandoEventos ? (
+          <p role="status" style={{ textAlign: 'center', padding: '3rem', color: textMuted }}>Carregando eventos…</p>
+        ) : eventosFiltrados.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '4rem 2rem', background: cardBg, borderRadius: '24px', border: `1px dashed ${borderColor}` }}>
             <span className="material-symbols-outlined" style={{ fontSize: '3rem', color: textMuted, marginBottom: '1rem' }}>event_busy</span>
             <h3 style={{ color: textColor, marginBottom: '0.5rem' }}>Nenhum evento encontrado</h3>
@@ -660,17 +678,34 @@ export default function SegundaPagina() {
                   </div>
                 </div>
 
-                {evento.criadoPorMim && (
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleRemoverEvento(evento.id);
-                    }} 
-                    title="Excluir evento"
-                    className="event-card-delete"
+                {(visaoEventos === 'MEUS' ? evento.criadoPorMim : (isProfessor || isAdmin)) && (
+                  <div
+                    onClick={(event) => event.stopPropagation()}
+                    style={{ position: 'absolute', top: '12px', right: '12px', display: 'flex', gap: '6px' }}
                   >
-                    <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>delete</span>
-                  </button>
+                    {visaoEventos === 'MEUS' && (
+                      <button
+                        type="button"
+                        onClick={() => handleEditarEvento(evento)}
+                        title="Editar evento"
+                        aria-label={`Editar ${evento.titulo}`}
+                        className="event-card-delete"
+                        style={{ position: 'static' }}
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>edit</span>
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoverEvento(evento.id)}
+                      title="Excluir evento"
+                      aria-label={`Excluir ${evento.titulo}`}
+                      className="event-card-delete"
+                      style={{ position: 'static' }}
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>delete</span>
+                    </button>
+                  </div>
                 )}
               </div>
             ))}
@@ -693,14 +728,14 @@ export default function SegundaPagina() {
         <div className="modal-overlay">
           <div className="modal-container">
             <button 
-              onClick={() => setIsModalOpen(false)}
+              onClick={() => { setIsModalOpen(false); resetModal(); }}
               className="modal-close"
             >
               <span className="material-symbols-outlined" style={{ fontSize: '1.5rem' }}>close</span>
             </button>
             <h2 className="modal-title">
               <span className="material-symbols-outlined">event_note</span>
-              Novo Evento
+              {eventoEmEdicao ? 'Editar Evento Pessoal' : 'Novo Evento'}
             </h2>
             <form onSubmit={handleAdicionarEvento} className="modal-form">
               
@@ -748,11 +783,11 @@ export default function SegundaPagina() {
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '1rem' }}>
-                <button type="button" onClick={() => setIsModalOpen(false)} style={{ padding: '12px 20px', borderRadius: '16px', background: 'transparent', color: textMuted, border: `1px solid ${borderColor}`, cursor: 'pointer', fontWeight: 600 }}>
+                <button type="button" onClick={() => { setIsModalOpen(false); resetModal(); }} style={{ padding: '12px 20px', borderRadius: '16px', background: 'transparent', color: textMuted, border: `1px solid ${borderColor}`, cursor: 'pointer', fontWeight: 600 }}>
                   Cancelar
                 </button>
                 <button type="submit" style={{ padding: '12px 24px', borderRadius: '16px', background: 'rgba(0, 95, 210, 1)', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600, boxShadow: '0 4px 15px rgba(0, 139, 255, 0.3)' }}>
-                  Salvar Evento
+                  {eventoEmEdicao ? 'Salvar alterações' : 'Salvar Evento'}
                 </button>
               </div>
             </form>
