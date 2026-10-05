@@ -78,12 +78,11 @@ cd 2026-2-AgendaUnB
 npm install
 ~~~
 
-Crie um arquivo `.env` na raiz com as variáveis do Supabase (veja `.env.example`):
+Crie um arquivo `.env` na raiz e na pasta backend, configurando-as com as variáveis de ambiente do Supabase usando:
 
-~~~env
-VITE_SUPABASE_URL=<sua-url>
-VITE_SUPABASE_ANON_KEY=<sua-chave>
-VITE_API_URL=http://127.0.0.1:8000/api/v1
+~~~bash
+cp .env.example .env
+cp backend/.env.example backend/.env
 ~~~
 
 Inicie o servidor de desenvolvimento:
@@ -94,42 +93,38 @@ npm run dev
 
 A aplicação estará disponível em `http://localhost:5173`.
 
-### <a id="backend"></a>Backend
-
-~~~bash
-cd backend
-python -m venv venv
-venv\Scripts\activate   # Windows
-# source venv/bin/activate  # Linux/macOS
-pip install -r requirements.txt
-~~~
-
-Crie um arquivo `backend/.env` com as variáveis necessárias (veja `backend/.env.example`):
-
-~~~env
-DATABASE_URL=postgresql://<usuario>:<senha>@<host>:<porta>/<banco>
-SUPABASE_URL=<sua-url>
-SUPABASE_ANON_KEY=<sua-chave>
-~~~
-
-Inicie a API:
-
-~~~bash
-uvicorn src.main:app --reload
-~~~
-
-A API estará disponível em `http://127.0.0.1:8000`. Documentação interativa em `/docs`.
-
 ### <a id="banco-de-dados"></a>Banco de Dados (Supabase)
 
 ~~~bash
-supabase start        # Sobe PostgreSQL + Auth + Studio localmente
-supabase db reset     # Aplica todas as migrações e seed
+npx supabase start        # Sobe PostgreSQL + Auth + Studio localmente
+npx supabase db reset     # Aplica todas as migrações e seed
 ~~~
 
 O Supabase Studio local estará em `http://localhost:54323`.
 
 ---
+
+### <a id="backend"></a>Backend
+
+~~~bash
+cd backend
+
+# 1. Criar o ambiente virtual do Python
+python3 -m venv venv
+
+# 2. Ativar o ambiente virtual
+source venv/bin/activate
+
+# 3. Instalar as bibliotecas Python
+pip install -r requirements.txt
+
+# 4. Iniciar a API em modo desenvolvimento
+uvicorn src.main:app --reload
+~~~
+
+> 🌐 *API FastAPI:* [http://localhost:8000](http://localhost:8000)  
+> 📖 *Swagger (documentação interativa):* [http://localhost:8000/docs](http://localhost:8000/docs)
+
 
 <a id="funcionalidades"></a>
 ## ✨ Funcionalidades da R1
