@@ -74,20 +74,20 @@ O **Agenda UnB** resolve esse problema reunindo dois eixos em uma única aplica�
 
 ~~~bash
 git clone https://github.com/unb-mds/2026-2-AgendaUnB.git
-cd 2026-2-AgendaUnB
+cd 2026-2-AgendaUnB/frontend
 npm install
 ~~~
 
-Crie um arquivo `.env` na raiz e na pasta backend, configurando-as com as variáveis de ambiente do Supabase usando:
+Crie um arquivo `.env` na raiz do projeto configurando as variáveis de ambiente do Supabase e do banco de dados. A partir da raiz do repositório, execute:
 
 ~~~bash
 cp .env.example .env
-cp backend/.env.example backend/.env
 ~~~
 
-Inicie o servidor de desenvolvimento:
+Inicie o servidor de desenvolvimento do frontend:
 
 ~~~bash
+cd frontend
 npm run dev
 ~~~
 

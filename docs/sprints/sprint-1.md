@@ -1,39 +1,32 @@
-# 🏃‍♂️ Sprint 1
+# Sprint 01 - Delimitação de escopo, produto e consolidação de ideias.
 
-**Período:** Em andamento / Planejamento da Release 1  
-**Status:** Em execução 🔄
+**Período:** 10/08/2026 - 23/08/2026
 
----
+**Objetivo:** Definir o que seria o Agenda UnB, levantar funcionalidades, estabelecer identidade visual e dividir o desenvolvimento entre os integrantes.
 
-## 🎯 1. Objetivos da Sprint
+## Principais acontecimentos:
+- Tema Agenda UnB confirmado após seleção do projeto.
+- Discussão inicial das funcionalidades.
+- Ideia de organizar automaticamente avaliações a partir de planos de ensino.
+- Definição de uma identidade visual.
+  - Foco em boa aparência sem comprometer a funcionalidade.
+- Discussão sobre responsividade e desempenho.
+- Criação/início do README do projeto.
+- Definição das áreas de desenvolvimento:
+  - **Front-end:** Thomas e Gabriel Escramin;
+  - **Back-end:** Thomaz e Heitor Monteiro;
+  - **Banco de Dados:** Felipe Couto e Luis Davi.
+- Definição de Python como possibilidade para o back-end.
+- Organização das primeiras reuniões.
+- Primeira reunião geral realizada em 26/08.
+- Criação do Miro para organização do projeto.
+- Organização do repositório GitHub.
 
-* Estruturação e publicação da documentação oficial do projeto no **GitHub Pages com MkDocs**.
-* Definição e homologação do documento de **Requisitos de Software (RFs e RNFs)**.
-* Consolidação do **Documento de Arquitetura de Software**.
-* Desenvolvimento e aprimoramento da interface da Landing Page (Design e Modal de Cadastro com seleção de papéis).
-
----
-
-## 📋 2. Tarefas e Planejamento
-
-| ID | Descrição | Responsáveis | Status |
-| :--- | :--- | :--- | :--- |
-| **TS05** | Configuração do pipeline de CI/CD para deploy da documentação no GitHub Pages | Thomaz | Concluído |
-| **TS06** | Escrita da Especificação de Requisitos Funcionais e Não Funcionais | Thomaz / Luis | Concluído |
-| **TS07** | Criação do Documento de Arquitetura e Modelagem de Dados | Heitor / Thomaz | Concluído |
-| **TS08** | Implementação do modal de criação de conta com papéis (Estudante/Professor) no React | Thomas / Gabriel | Concluído |
-| **TS09** | Planejamento da arquitetura do parser de planos de ensino | Backend Team | Em andamento |
-
----
-
-## 📈 3. Resultados Parciais
-
-* Documentação MkDocs Material no ar com suporte a abas, dark/light mode e visualização de Sprints.
-* Código do frontend com seleção de *role* e temas integrado.
-* Padrões de escrita de código e Git devidamente documentados.
-
----
-
-## 🔄 4. Retrospectiva da Sprint
-
-*(A ser preenchida na reunião de fechamento da Sprint 1)*
+## Entregas/resultados da Sprint:
+- Identidade inicial do produto definida pela equipe de front-end.
+- Funcionalidades iniciais levantadas.
+- Equipe dividida por áreas.
+- Repositório criado.
+- README inicial.
+- Miro criado.
+- Decisões técnicas básicas estabelecidas.
