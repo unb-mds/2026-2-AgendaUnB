@@ -1,0 +1,1024 @@
+
+<!doctype html>
+<html lang="pt" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentação oficial do projeto Agenda UnB — Métodos de Desenvolvimento de Software (MDS) 2026/2">
+      
+      
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>1.Design - Agenda UnB Docs</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#1design" class="md-skip">
+          Pular para conteúdo
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Cabeçalho">
+    <a href=".." title="Agenda UnB Docs" class="md-header__button md-logo" aria-label="Agenda UnB Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Agenda UnB Docs
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              1.Design
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Modo automático"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Modo automático" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Mudar para modo escuro"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Mudar para modo escuro" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Mudar para modo claro"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Mudar para modo claro" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Buscar" placeholder="Buscar" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Pesquisar">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Limpar" aria-label="Limpar" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Inicializando busca
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/unb-mds/2026-2-AgendaUnB" title="Ir para repositório" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    unb-mds/G8-2026-2
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Abas" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Início
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../Architecture/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Arquitetura
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../requisitos/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Requisitos
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../padroes/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Padrões de Projeto
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../sprints/sprint-1/" class="md-tabs__link">
+          
+  
+  
+  Sprints
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../release-notes/v0.1.0/" class="md-tabs__link">
+          
+  
+  
+  Release Notes
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../CONTRIBUTING/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Como Contribuir
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navegação" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Agenda UnB Docs" class="md-nav__button md-logo" aria-label="Agenda UnB Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Agenda UnB Docs
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/unb-mds/2026-2-AgendaUnB" title="Ir para repositório" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    unb-mds/G8-2026-2
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Início
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arquitetura
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../requisitos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Requisitos
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../padroes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Padrões de Projeto
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprints
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Sprints
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sprints/sprint-1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 1
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sprints/sprint-2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sprints/sprint-3/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sprints/sprint-4/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 4
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release Notes
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Release Notes
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release-notes/v0.1.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.1.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CONTRIBUTING/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Como Contribuir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Índice">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Índice
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#11-referencias-visuais-e-inspiracao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 Referências visuais e inspiração
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-estilo-visual-halftone-e-o-neon-campus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2. Estilo visual Halftone e o "Neon Campus"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#13-identidade-visual-consolidada" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3. Identidade visual consolidada
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+  
+
+
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="1design">1.Design</h1>
+<h2 id="11-referencias-visuais-e-inspiracao">1.1 Referências visuais e inspiração</h2>
+<p>Durante o processo de desenvolvimento da identidade visual do AgendaUnB, a equipe utilizou o site Awwwards como referência para pesquisar tendências, estilos e conceitos de design aplicados ao desenvolvimento de interfaces web.
+A plataforma serviu como fonte de inspiração para a construção de uma interface moderna, visualmente organizada e alinhada às tendências atuais de desenvolvimento web.
+A partir dessas referências, a equipe buscou desenvolver uma identidade própria para o AgendaUnB, adaptando elementos visuais que contribuíssem para transmitir organização, modernidade e simplicidade.</p>
+<p>Especificamente, a equipe inspirou-se no site "Son Daven" (https://www.awwwards.com/sites/son-daven) e em técnicas e estilos demonstradas neste vídeo (https://youtu.be/BBKGPxw-6iY?si=7rVYIGBMF3PrFjo6) para a construção de um site com personalidade e interações avançadas. No âmbito acadêmico, o projeto também se inspirou em outras iniciativas que também foram desenvolvidas na disciplina de Métodos de Desenvolvimento de Software, como o <strong>SuaGradeUnB</strong> e o <strong>NoFluxoUnB</strong>, que, além de servirem como referências de como resolver problemas de organização universitária de forma eficiente, também representaram bons exemplos de UI e UX que almejamos alcançar em nosso projeto, o que fez com que mantivéssemos algumas estruturas que já estavam consolidadas e validadas naqueles projetos, tais como a NavBar, experiência de autenticação, entre outros.</p>
+<p>Como parte dessa identidade única que buscávamos, a produção dos vídeos principais da aplicação em estilo halftone (versões <em>dark</em> e <em>light</em>) não foi feita por edição/geração convencional, mas originou-se de uma implementação focada em computação gráfica web. Utilizando as bibliotecas <strong>Three.js</strong> e <strong>React Three Fiber</strong>, um vídeo limpo original (gerado e tratado utilizando o Google AI STudio) foi capturado via <code>VideoTexture</code> e sofreu pós-processamento via <strong>WebGL</strong>. O núcleo dessa estética foi a construção de um <em>fragment shader</em> (GLSL) customizado, injetado através de um <code>ShaderPass</code>. Esse <em>shader</em> processou o conteúdo aplicando algoritmos de <em>dithering</em> (pontilhamento), pixelização e <em>halftone</em> (retículas), além de manipular contraste para gerar a aparência digital texturizada característica da plataforma. Assim, a equipe do frontend estabeleceu parâmetros matemáticos (<em>uniforms</em> como densidade da grade, força do efeito e contraste de cor) e, com essa parte do frontend concluída, houve a renderização dos dois shaders resultantes em vídeos .webm (um feito para o modo claro e outro para o escuro) para que a demanda de desempenho computacional (principalmente uso da GPU) fosse reduzida consideravelmente, tornando o site mais otimizado e responsivo e mantendo o diferencial estético.</p>
+<h2 id="12-estilo-visual-halftone-e-o-neon-campus">1.2. Estilo visual Halftone e o "Neon Campus"</h2>
+<p>Como citado acima, um dos elementos utilizados na construção da identidade visual do AgendaUnB foi o estilo Halftone, também conhecido como retícula de pontos.
+Essa técnica visual utiliza pequenos pontos organizados em padrões para criar texturas, contrastes e efeitos gráficos. No projeto, essa abordagem foi incorporada como elemento estético, contribuindo para tornar a interface visualmente diferenciada sem comprometer sua proposta minimalista.
+A utilização do Halftone busca estabelecer uma identidade visual mais característica para o sistema, combinando elementos gráficos modernos com uma interface limpa e organizada.</p>
+<p>Aliado ao Halftone, a bússola criativa do projeto segue o conceito e identidade visual <strong>"The Neon Campus"</strong>. A interface adota uma atmosfera predominantemente <em>clean</em> (fundos quase pretos ou brancos absolutos, como <code>#080c16</code>), utilizando amplamente o <strong>Glassmorphism</strong> (fundos translúcidos com <code>backdrop-filter</code>). Para transmitir profundidade sem pesar a interface, aplicamos a regra do <em>"Glow-Over-Shadow"</em>: em vez de sombras pretas duras (sendo proibidas no projeto opacidades maiores que 20%), a elevação dos componentes é destacada por meio de brilhos (glows) na cor Azul UnB Glow (<code>#008bff</code>), simulando luzes neon. Estilos com bordas coloridas em fundos claros e o uso de <em>linear gradients</em> também são estritamente evitados para manter a pureza e identidade visual. O design inclui o uso exclusivo da tipografia <strong>Orbitron</strong> para cabeçalhos (trazendo um ar tecnológico) e <strong>Inter</strong> para textos gerais, além do uso padronizado da iconografia via <strong>Material Symbols</strong>.</p>
+<h2 id="13-identidade-visual-consolidada">1.3. Identidade visual consolidada</h2>
+<p>A identidade visual do AgendaUnB combina diferentes elementos para estabelecer uma apresentação consistente:
+- Referência estética: inspiração em projetos e tendências de design encontrados na plataforma Awwwards (com destaque para o "Son Daven") e nos projetos locais SuaGradeUnB e NoFluxoUnB.
+- Paleta de cores: predominância de tons de azul (com destaque para o Azul UnB Glow <code>#008bff</code>).
+- Estilo gráfico: utilização de elementos Halftone, baseados em padrões de pequenos pontos, combinados ao Glassmorphism e à regra do Glow-Over-Shadow.
+- Logotipo: ampulheta minimalista, representando a gestão e organização do tempo.
+- Estilo geral: visual clean, minimalista e moderno, isento de degradês ou sombras poluentes.
+- Tipografia e Ícones: casamento das fontes Orbitron e Inter, com iconografia padronizada em Material Symbols.
+- Personalização: disponibilização dos temas claro e escuro.</p>
+<h1 id="2-ui-user-interface-interface-do-usuario">2. UI — User Interface (Interface do Usuário)</h1>
+<p>A interface do AgendaUnB foi desenvolvida utilizando a biblioteca React, buscando proporcionar uma navegação simples, organizada e intuitiva entre as funcionalidades disponíveis. Na arquitetura de desenvolvimento, a SPA (Single Page Application) foi construída junto à ferramenta <strong>Vite</strong> para otimização de build, operando de forma desacoplada do backend e utilizando o <strong>Supabase JS</strong> para realizar a comunicação direta com serviços de banco e armazenamento.</p>
+<p>A aplicação está estruturada em duas páginas principais, cada uma com uma finalidade específica dentro do sistema. Essa divisão permite separar as informações institucionais e de autenticação das funcionalidades relacionadas ao gerenciamento de eventos acadêmicos.</p>
+<h2 id="21-primeira-pagina-apresentacao-e-autenticacao">2.1. Primeira página — Apresentação e autenticação</h2>
+<p>A primeira página tem como finalidade apresentar o AgendaUnB aos visitantes, disponibilizando informações sobre a proposta do projeto, seus objetivos e os desenvolvedores responsáveis.
+Além da apresentação institucional, essa página disponibiliza os mecanismos de autenticação necessários para que o usuário possa acessar as funcionalidades internas da aplicação.
+Os métodos de autenticação disponibilizados são:
+- E-mail e senha: permite que o usuário realize seu acesso utilizando suas credenciais cadastradas.
+- Google: possibilita a autenticação por meio de uma conta Google (ideal para o fluxo de estudantes).
+- Convidado: possibilita o usuário acessar de forma anônima, mas sem acesso a funcionalidade de criação de eventos privados.
+Além destes perfis, foi estipulada uma verificação rigorosa para Professores e Administração, exigindo validação por e-mail com o domínio oficial <code>@unb.br</code> para atestar a veracidade de eventos oficiais.</p>
+<p>A página também disponibiliza o controle de alternância entre os temas claro e escuro, permitindo modificar a aparência visual de toda a aplicação.</p>
+<h2 id="22-segunda-pagina-gerenciamento-de-eventos">2.2. Segunda página — Gerenciamento de eventos</h2>
+<p>A segunda página concentra as principais funcionalidades do AgendaUnB, relacionadas à visualização e ao gerenciamento de eventos acadêmicos.
+Nessa página, os usuários podem visualizar eventos públicos divulgados por professores e administradores, além de criar seus próprios eventos privados.
+Os eventos são apresentados por meio de cards (cartões), permitindo organizar visualmente as informações de cada atividade e facilitar sua identificação.
+Os principais recursos disponíveis nessa página são:
+- Eventos públicos: eventos divulgados por professores e administradores, disponíveis para visualização pelos usuários.
+- Eventos privados: eventos criados individualmente pelo usuário, cujo acesso é restrito ao próprio criador.
+- Apresentação em cards: organização visual dos eventos em cartões translúcidos (com bordas suaves de 14 a 20px e brilhos interativos de hover), facilitando a leitura e identificação das informações. Categorizações rígidas informam rapidamente a qual campus ou tipo de atividade o evento pertence através de rótulos (badges em formato de pílula).
+- Gerenciamento de eventos: disponibilização das funcionalidades relacionadas à criação e organização dos compromissos pessoais.</p>
+<h2 id="23-extracao-de-planos-de-ensino-core-feature-pos-r1">2.3. Extração de Planos de Ensino (Core Feature pós-R1)</h2>
+<p>Para automatizar o preenchimento da agenda, a interface dispõe de um fluxo completo voltado ao envio de Planos de Ensino em PDF. O usuário realiza o upload do arquivo e acompanha o seu status de processamento através de <em>feedback</em> visual (estados como <em>pending</em> e <em>processing</em>). Após o sistema extrair as avaliações, a interface fornece uma tela de revisão ("Human-in-the-loop") para que o aluno possa corrigir nomes, descartar sugestões inconsistentes e aceitar as datas finais de provas e trabalhos antes de adicioná-las efetivamente à sua agenda privada.</p>
+<h2 id="24-navegacao-entre-paginas">2.4. Navegação entre páginas</h2>
+<p>Para implementar a navegação entre as diferentes páginas da aplicação, a equipe de frontend utilizou a biblioteca React Router DOM.
+Essa biblioteca permite gerenciar as rotas da aplicação React, possibilitando a navegação entre diferentes páginas sem a necessidade de recarregar completamente o site a cada mudança de rota.
+A utilização dessa tecnologia contribui para uma estrutura de navegação mais organizada, permitindo separar as funcionalidades da aplicação e facilitar futuras expansões do sistema, enquanto assegura comunicação fluida com a API (FastAPI) em segundo plano.</p>
+<h2 id="25-alternancia-entre-temas-claro-e-escuro">2.5. Alternância entre temas claro e escuro</h2>
+<p>O sistema disponibiliza um mecanismo de alternância entre os temas claro e escuro, permitindo que o usuário escolha a aparência visual de sua preferência.
+Essa funcionalidade possui abrangência global, ou seja, a alteração realizada pelo usuário é aplicada à interface de toda a aplicação, mantendo a consistência visual durante a navegação entre as páginas.
+A implementação busca proporcionar maior conforto visual e flexibilidade de utilização. As variáveis de luz e os vidros translúcidos se adaptam, assegurando a <em>bivalência</em> para que ambos os temas apresentem uma experiência de excelência, clareza e imersão.</p>
+<h2 id="26-responsividade">2.6. Responsividade</h2>
+<p>O AgendaUnB foi desenvolvido com uma interface responsiva, permitindo que os elementos visuais se adaptem a diferentes resoluções e tamanhos de tela.
+A estrutura da interface modifica o posicionamento e as dimensões de seus componentes conforme o dispositivo utilizado, buscando preservar a organização e a funcionalidade do sistema (redimensionando, por exemplo, exibições amplas de calendário em formatos de lista mobile e ajustando áreas de toque para as pontas dos dedos).
+Dessa forma, a aplicação pode ser utilizada em computadores, tablets e smartphones, proporcionando uma experiência consistente em diferentes dispositivos sem depender de um aplicativo nativo.</p>
+<h1 id="3-ux-user-experience-experiencia-do-usuario">3. UX — User Experience (Experiência do Usuário)</h1>
+<p>A experiência do usuário no AgendaUnB tem como principal objetivo facilitar a organização e o acompanhamento de eventos acadêmicos, proporcionando um ambiente acessível, intuitivo e eficiente para estudantes universitários e atuando como o hub definitivo para conter a dispersão de informações.
+A estrutura da aplicação foi planejada para separar a apresentação institucional das funcionalidades de gerenciamento de eventos, permitindo que o usuário compreenda inicialmente a proposta do sistema e, posteriormente, acesse os recursos disponíveis.
+As decisões relacionadas à experiência do usuário consideram os seguintes aspectos:</p>
+<h2 id="31-facilidade-de-navegacao-e-reducao-da-carga-cognitiva">3.1. Facilidade de navegação e redução da carga cognitiva</h2>
+<p>A divisão da aplicação em duas páginas principais permite organizar as funcionalidades de acordo com suas finalidades, facilitando a localização dos recursos disponíveis num só ambiente e limitando distrações.
+A utilização do React Router DOM contribui para uma navegação fluida entre as diferentes áreas do sistema.</p>
+<h2 id="32-personalizacao-da-interface">3.2. Personalização da interface</h2>
+<p>A disponibilização dos temas claro e escuro permite que o usuário personalize a aparência visual da aplicação de acordo com suas preferências.
+Como a alteração é aplicada globalmente, o usuário mantém sua experiência visual consistente durante a utilização do sistema, adaptando-se confortavelmente aos longos períodos noturnos ou diurnos de estudo.</p>
+<h2 id="33-organizacao-e-hierarquia-visual-dos-eventos">3.3. Organização e hierarquia visual dos eventos</h2>
+<p>A separação entre eventos públicos e privados permite distinguir os compromissos divulgados pela administração daqueles criados individualmente pelos usuários.
+Além disso, a apresentação dos eventos em cards facilita a identificação e a leitura das informações relacionadas a cada atividade, estabelecendo uma <em>hierarquia acadêmica</em> em que o discente pode bater o olho na tela e distinguir uma simples atração cultural de uma prova perigosa de fim de semestre.</p>
+<h2 id="34-facilidade-de-autenticacao">3.4. Facilidade de autenticação</h2>
+<p>A disponibilização de diferentes métodos de autenticação, por meio de e-mail e senha ou conta Google ou como convidado, oferece alternativas para o acesso ao sistema.
+Essa abordagem busca tornar o processo de entrada mais flexível e conveniente para os usuários, acompanhando o ritmo ágil dos alunos e as demandas burocráticas de docentes.</p>
+<h2 id="35-acessibilidade-em-diferentes-dispositivos">3.5. Acessibilidade em diferentes dispositivos</h2>
+<p>A responsividade da aplicação permite que os usuários acessem o AgendaUnB por meio de diferentes dispositivos, adaptando a interface às características de cada tela.
+Essa característica amplia as possibilidades de utilização do sistema, permitindo que os estudantes consultem seus eventos e compromissos independentemente de estarem utilizando um computador ou dispositivo móvel na cantina do campus.</p>
+<h2 id="36-simplicidade-transparencia-e-intuitividade">3.6. Simplicidade, transparência e intuitividade</h2>
+<p>A organização dos elementos visuais, a divisão das funcionalidades e a utilização de componentes padronizados buscam reduzir a complexidade de utilização do sistema.
+O objetivo é permitir que os estudantes realizem suas atividades de maneira simples, sem precisar percorrer caminhos desnecessários para encontrar os recursos desejados. A adoção de indicadores de carregamento e áreas de moderação humana em processos densos (como a leitura dos PDFs) garantem que a pessoa mantenha controle total sem se perder na intuição da plataforma.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Voltar para o topo
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.path", "navigation.top", "search.suggest", "search.highlight", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copiado para \u00e1rea de transfer\u00eancia", "clipboard.copy": "Copiar para \u00e1rea de transfer\u00eancia", "search.result.more.one": "mais 1 nesta p\u00e1gina", "search.result.more.other": "# mais nesta p\u00e1gina", "search.result.none": "Nenhum documento encontrado", "search.result.one": "1 documento encontrado", "search.result.other": "# documentos encontrados", "search.result.placeholder": "Digite para iniciar a busca", "search.result.term.missing": "Ausente", "select.version": "Selecione a vers\u00e3o"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
