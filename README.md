@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="./public/banner.png" width="100%" alt="Background Agenda UnB" />
+<img src="frontend/public/banner.png" width="100%" alt="Background Agenda UnB" />
 
 
 # **AGENDA UNB**
