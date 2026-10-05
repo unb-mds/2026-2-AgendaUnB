@@ -17,23 +17,39 @@ Antes de iniciar, certifique-se de ter instalado em sua máquina:
 
 ### 2.1 Clonar o Repositório
 ```bash
-git clone https://github.com/unb-mds/G8-2026-2.git
-cd G8-2026-2
+git clone https://github.com/unb-mds/2026-2-AgendaUnB.git
+cd 2026-2-AgendaUnB
 ```
 
-### 2.2 Executar o Frontend
+### 2.2 Configurar as Variáveis de Ambiente
+Para rodar localmente, você precisará das variáveis do Supabase e do banco de dados. Temos um único arquivo de ambiente na raiz:
 ```bash
-# Instalar as dependências do projeto
-npm install
+cp .env.example .env
+```
 
-# Iniciar o servidor de desenvolvimento Vite
+### 2.3 Executar o Frontend
+O frontend foi isolado em um diretório próprio para melhor organização:
+```bash
+cd frontend
+npm install
 npm run dev
 ```
-O aplicativo estará disponível em: `http://localhost:5173`.
+A aplicação estará disponível em: `http://localhost:5173`.
 
-### 2.3 Executar a Documentação (MkDocs) Localmente
+### 2.4 Executar o Backend
+O backend (FastAPI/Python) reside na sua respectiva pasta:
 ```bash
-# Instalar a dependência do tema Material
+cd backend
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+uvicorn src.main:app --reload
+```
+A API local estará disponível em `http://localhost:8000` e a documentação do Swagger em `http://localhost:8000/docs`.
+
+### 2.5 Executar a Documentação (MkDocs) Localmente
+```bash
+# Instalar a dependência do tema Material (pode ser no venv do backend ou global)
 pip install mkdocs-material
 
 # Subir o servidor local com hot-reload da documentação

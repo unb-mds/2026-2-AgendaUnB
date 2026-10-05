@@ -9,8 +9,10 @@ nav:
   - Requisitos: requisitos.md
   - Padrões de Projeto: padroes.md
   - Sprints:
-    - Sprint 0: sprints/sprint-0.md
     - Sprint 1: sprints/sprint-1.md
+    - Sprint 2: sprints/sprint-2.md
+    - Sprint 3: sprints/sprint-3.md
+    - Sprint 4: sprints/sprint-4.md
   - Release Notes:
     - v0.1.0: release-notes/v0.1.0.md
   - Como Contribuir: CONTRIBUTING.md

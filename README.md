@@ -198,6 +198,6 @@ Toda a documentação do projeto está publicada no GitHub Pages:
 | [Requisitos](https://unb-mds.github.io/2026-2-AgendaUnB/requisitos/) | 21 RFs e 13 RNFs especificados |
 | [Padrões](https://unb-mds.github.io/2026-2-AgendaUnB/padroes/) | Glossário, naming conventions e rotas da API |
 | [Release v0.1.0](https://unb-mds.github.io/2026-2-AgendaUnB/release-notes/v0.1.0/) | Release note da primeira entrega |
-| [Sprints](https://unb-mds.github.io/2026-2-AgendaUnB/sprints/sprint-0/) | Acompanhamento ágil por ciclo |
+| [Sprints](https://unb-mds.github.io/2026-2-AgendaUnB/sprints/sprint-1/) | Acompanhamento ágil por ciclo |
 
 ---
