@@ -1,14 +1,14 @@
-﻿# Dependências
+# Dependências Node
 node_modules/
-.venv/
-__pycache__/
-*.py[cod]
 
-# Build
+# Build e Editor
 dist/
 dist-ssr/
 *.local
-.vscode
+.vscode/
+.DS_Store
+Thumbs.db
+*.swp
 
 # Credenciais — NUNCA versionar
 .env
@@ -20,14 +20,33 @@ dist-ssr/
 supabase/.temp/
 supabase/.branches/
 
-# Editor / SO
-.DS_Store
-Thumbs.db
-*.swp
-
-# Logs
+# Logs Gerais
 npm-debug.log*
 yarn-error.log*
+*.log
 
-# Backend
-pycache/
+# Backend (Python)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Testes e Cobertura (Backend)
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Caches de ferramentas (Backend)
+.mypy_cache/
+.ruff_cache/
+
+# Bancos de dados locais (Backend)
+*.sqlite3
+*.db
+
+# Ambientes virtuais e binários do backend
+venv/
+.venv/
+env/
+backend/venv/
+backend/bin/
