@@ -23,12 +23,14 @@ Métodos de Desenvolvimento de Software - 2026/2 - Grupo G8
 - [Stack Tecnológica](#stack-tecnologica)
 - [Como Executar](#como-executar)
     - [Pré-requisitos](#pre-requisitos)
-    - [Frontend](#frontend)
-    - [Backend](#backend)
-    - [Banco de Dados](#banco-de-dados)
+    - [1. Configuração Inicial e .env](#1-configuracao-inicial-e-env)
+    - [2. Banco de Dados (Supabase)](#2-banco-de-dados-supabase)
+    - [3. Backend (FastAPI)](#3-backend-fastapi)
+    - [4. Frontend (React)](#4-frontend-react)
+    - [5. Documentação Local (MkDocs)](#5-documentacao-local-mkdocs)
 - [Funcionalidades da R1](#funcionalidades)
 - [Equipe](#equipe)
-- [Documentação](#documentacao)
+- [Documentação Oficial](#documentacao)
 
 ---
 
@@ -40,7 +42,7 @@ A informação que organiza a rotina de um estudante da UnB está fragmentada: a
 O **Agenda UnB** resolve esse problema reunindo dois eixos em uma única aplicação web:
 
 - **Agenda do Campus** — Catálogo público de eventos acadêmicos, culturais e esportivos de todos os campi (Darcy Ribeiro, FCTE, FCTS, FUP e FAL), com filtros por área, campus e turno.
-- **Organizador Acadêmico** — Calendário pessoal e privado do estudante, com criação, edição e exclusão de compromissos, e futuramente alimentado por extração automática de datas a partir de planos de ensino.
+- **Organizador Acadêmico** — Calendário pessoal e privado do estudante, com criação, edição e exclusão de compromissos, e futuramente alimentado por extração automática de datas a partir de planos de ensino e atestado de matrícula.
 
 ---
 
@@ -64,67 +66,99 @@ O **Agenda UnB** resolve esse problema reunindo dois eixos em uma única aplica�
 <a id="como-executar"></a>
 ## ⚙️ Como Executar
 
-### <a id="pre-requisitos"></a>Pré-requisitos
+<a id="pre-requisitos"></a>
+### 📦 Pré-requisitos
 
-- [Node.js](https://nodejs.org/pt-br) (v18+)
-- [Python](https://www.python.org/downloads/) (v3.11+)
-- [Supabase CLI](https://supabase.com/docs/guides/cli/getting-started) (requer Docker)
-
-### <a id="frontend"></a>Frontend
-
-~~~bash
-git clone https://github.com/unb-mds/2026-2-AgendaUnB.git
-cd 2026-2-AgendaUnB/frontend
-npm install
-~~~
-
-Crie um arquivo `.env` na raiz do projeto configurando as variáveis de ambiente do Supabase e do banco de dados. A partir da raiz do repositório, execute:
-
-~~~bash
-cp .env.example .env
-~~~
-
-Inicie o servidor de desenvolvimento do frontend:
-
-~~~bash
-cd frontend
-npm run dev
-~~~
-
-A aplicação estará disponível em `http://localhost:5173`.
-
-### <a id="banco-de-dados"></a>Banco de Dados (Supabase)
-
-~~~bash
-npx supabase start        # Sobe PostgreSQL + Auth + Studio localmente
-npx supabase db reset     # Aplica todas as migrações e seed
-~~~
-
-O Supabase Studio local estará em `http://localhost:54323`.
+Certifique-se de possuir instalado em seu ambiente:
+* [Node.js](https://nodejs.org/) (v18+ ou LTS)
+* [Python](https://www.python.org/downloads/) (v3.11+ ou v3.12)
+* [Docker Desktop / Docker Engine](https://www.docker.com/) (em execução para o Supabase)
+* [Git](https://git-scm.com/)
 
 ---
 
-### <a id="backend"></a>Backend
+<a id="1-configuracao-inicial-e-env"></a>
+### 1. Configuração Inicial e `.env`
 
-~~~bash
-cd backend
+Clone o repositório e crie o arquivo de configuração `.env` a partir do modelo `.env.example`:
 
-# 1. Criar o ambiente virtual do Python
-python3 -m venv venv
+| Etapa | Linux / macOS (Bash / Zsh) | Windows (PowerShell) | Windows (CMD) |
+|---|---|---|---|
+| **Clonar repositório** | `git clone https://github.com/unb-mds/2026-2-AgendaUnB.git`<br>`cd 2026-2-AgendaUnB` | `git clone https://github.com/unb-mds/2026-2-AgendaUnB.git`<br>`cd 2026-2-AgendaUnB` | `git clone https://github.com/unb-mds/2026-2-AgendaUnB.git`<br>`cd 2026-2-AgendaUnB` |
+| **Copiar variáveis `.env`** | `cp .env.example .env` | `Copy-Item .env.example .env` | `copy .env.example .env` |
 
-# 2. Ativar o ambiente virtual
-source venv/bin/activate
+---
 
-# 3. Instalar as bibliotecas Python
-pip install -r requirements.txt
+<a id="2-banco-de-dados-supabase"></a>
+### 2. Banco de Dados (Supabase Local)
 
-# 4. Iniciar a API em modo desenvolvimento
-uvicorn src.main:app --reload
-~~~
+O Supabase gerencia o PostgreSQL, autenticação, storage e migrações locais via Docker. Execute na **raiz do repositório**:
 
-> 🌐 *API FastAPI:* [http://localhost:8000](http://localhost:8000)  
-> 📖 *Swagger (documentação interativa):* [http://localhost:8000/docs](http://localhost:8000/docs)
+| Ação | Comando (Linux / macOS / Windows) | Finalidade |
+|---|---|---|
+| **Iniciar containers** | `npx supabase start` | Sobe PostgreSQL, Supabase Auth, Storage e Studio local |
+| **Resetar banco / Migrações** | `npx supabase db reset` | Aplica todas as 5 migrações SQL e o seed inicial |
+| **Parar containers** | `npx supabase stop` | Encerra os serviços locais do Supabase |
 
+> 🌐 **Supabase Studio (Dashboard Local):** [http://localhost:54323](http://localhost:54323)  
+> 🔑 **API URL Local:** `http://127.0.0.1:54321`
+
+---
+
+<a id="3-backend-fastapi"></a>
+### 3. Backend (API FastAPI)
+
+Abra um terminal, acesse a pasta `backend/`, configure o ambiente virtual Python, instale as dependências e inicie o servidor:
+
+| Etapa | Linux / macOS (Bash / Zsh) | Windows (PowerShell) | Windows (CMD) |
+|---|---|---|---|
+| **1. Entrar na pasta** | `cd backend` | `cd backend` | `cd backend` |
+| **2. Criar ambiente virtual** | `python3 -m venv venv` | `python -m venv venv` | `python -m venv venv` |
+| **3. Ativar o venv** | `source venv/bin/activate` | `.\venv\Scripts\Activate.ps1` | `venv\Scripts\activate.bat` |
+| **4. Instalar dependências** | `pip install -r requirements.txt` | `pip install -r requirements.txt` | `pip install -r requirements.txt` |
+| **5. Iniciar a API** | `uvicorn src.main:app --reload` | `uvicorn src.main:app --reload` | `uvicorn src.main:app --reload` |
+
+> 💡 **Nota para Windows (PowerShell):** Se a execução de scripts for bloqueada ao ativar o ambiente (`running scripts is disabled`), execute antes no PowerShell:  
+> ```powershell
+> Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+> ```
+> E em seguida execute novamente `.\venv\Scripts\Activate.ps1`.
+
+> 🌐 **API FastAPI:** [http://localhost:8000](http://localhost:8000)  
+> 📖 **Swagger / OpenAPI (Documentação interativa):** [http://localhost:8000/docs](http://localhost:8000/docs)  
+> 🩺 **Health Check:** [http://localhost:8000/health](http://localhost:8000/health)
+
+---
+
+<a id="4-frontend-react"></a>
+### 4. Frontend (React + Vite)
+
+Abra um novo terminal na raiz do projeto, acesse a pasta `frontend/`, instale os módulos e inicie o servidor de desenvolvimento:
+
+| Etapa | Linux / macOS (Bash) | Windows (PowerShell / CMD) |
+|---|---|---|
+| **1. Entrar na pasta** | `cd frontend` | `cd frontend` |
+| **2. Instalar dependências** | `npm install` | `npm install` |
+| **3. Iniciar o dev server** | `npm run dev` | `npm run dev` |
+| **4. Gerar build estático** | `npm run build` | `npm run build` |
+
+> 🌐 **Aplicação Web:** [http://localhost:5173](http://localhost:5173)
+
+---
+
+<a id="5-documentacao-local-mkdocs"></a>
+### 5. Documentação Local (MkDocs — Opcional)
+
+Para rodar localmente o site de documentação com tema Material:
+
+| Etapa | Linux / macOS | Windows (PowerShell / CMD) |
+|---|---|---|
+| **Instalar MkDocs Material** | `pip install mkdocs-material` | `pip install mkdocs-material` |
+| **Iniciar servidor de docs** | `mkdocs serve -a 127.0.0.1:8008` | `mkdocs serve -a 127.0.0.1:8008` |
+
+> 📚 **Documentação local:** [http://127.0.0.1:8008](http://127.0.0.1:8008) *(utilizando a porta 8008 para não conflitar com a API FastAPI na 8000)*
+
+---
 
 <a id="funcionalidades"></a>
 ## ✨ Funcionalidades da R1

@@ -22,13 +22,35 @@ cd 2026-2-AgendaUnB
 ```
 
 ### 2.2 Configurar as Variáveis de Ambiente
-Para rodar localmente, você precisará das variáveis do Supabase e do banco de dados. Temos um único arquivo de ambiente na raiz:
-```bash
-cp .env.example .env
-```
+Crie o arquivo `.env` na raiz a partir do `.env.example`:
 
-### 2.3 Executar o Frontend
-O frontend foi isolado em um diretório próprio para melhor organização:
+| Linux / macOS (Bash) | Windows (PowerShell) | Windows (CMD) |
+|---|---|---|
+| `cp .env.example .env` | `Copy-Item .env.example .env` | `copy .env.example .env` |
+
+### 2.3 Banco de Dados (Supabase Local)
+Com o Docker em execução, execute na raiz:
+```bash
+npx supabase start      # Inicia PostgreSQL, Auth e Studio
+npx supabase db reset   # Aplica migrações e seed
+```
+Acesse o Studio local em `http://localhost:54323`.
+
+### 2.4 Executar o Backend (FastAPI)
+Navegue até a pasta `backend/` e prepare o ambiente virtual:
+
+| Etapa | Linux / macOS | Windows (PowerShell) | Windows (CMD) |
+|---|---|---|---|
+| **1. Entrar na pasta** | `cd backend` | `cd backend` | `cd backend` |
+| **2. Criar ambiente virtual** | `python3 -m venv venv` | `python -m venv venv` | `python -m venv venv` |
+| **3. Ativar o venv** | `source venv/bin/activate` | `.\venv\Scripts\Activate.ps1` | `venv\Scripts\activate.bat` |
+| **4. Instalar dependências** | `pip install -r requirements.txt` | `pip install -r requirements.txt` | `pip install -r requirements.txt` |
+| **5. Iniciar a API** | `uvicorn src.main:app --reload` | `uvicorn src.main:app --reload` | `uvicorn src.main:app --reload` |
+
+> 🌐 API local: `http://localhost:8000` | Swagger: `http://localhost:8000/docs`
+
+### 2.5 Executar o Frontend
+Em outro terminal:
 ```bash
 cd frontend
 npm install
@@ -36,26 +58,12 @@ npm run dev
 ```
 A aplicação estará disponível em: `http://localhost:5173`.
 
-### 2.4 Executar o Backend
-O backend (FastAPI/Python) reside na sua respectiva pasta:
+### 2.6 Executar a Documentação (MkDocs — Opcional)
 ```bash
-cd backend
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-uvicorn src.main:app --reload
-```
-A API local estará disponível em `http://localhost:8000` e a documentação do Swagger em `http://localhost:8000/docs`.
-
-### 2.5 Executar a Documentação (MkDocs) Localmente
-```bash
-# Instalar a dependência do tema Material (pode ser no venv do backend ou global)
 pip install mkdocs-material
-
-# Subir o servidor local com hot-reload da documentação
-mkdocs serve
+mkdocs serve -a 127.0.0.1:8008
 ```
-Acesse no navegador: `http://127.0.0.1:8000`.
+Acesse no navegador: `http://127.0.0.1:8008`.
 
 ---
 
