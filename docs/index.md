@@ -68,6 +68,7 @@ O objetivo do **Agenda UnB** é criar uma plataforma centralizada para a comunid
 
 Navegue pelas seções através das abas superiores ou pelos links abaixo:
 
+* [🎯 Visão do Produto](documento-de-visao.md) — Problema, stakeholders, declaração de posicionamento e priorização.
 * [🏛️ Arquitetura](Architecture.md) — Visão arquitetural, tecnologias, frontend, backend e modelos de dados.
 * [📋 Requisitos](requisitos.md) — Especificação completa de Requisitos Funcionais (RF) e Não Funcionais (RNF).
 * [📐 Padrões de Projeto](padroes.md) — Glossário oficial, convenções de código, branches e commits.

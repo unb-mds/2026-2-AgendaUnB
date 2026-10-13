@@ -11,19 +11,19 @@ Este documento reúne os **Requisitos Funcionais (RF)** e **Requisitos Não Func
 | **RF01** | **Autenticação Local** | O sistema deve permitir que os usuários façam login e se autentiquem com e-mail (institucional ou pessoal) e senha criptografada. |
 | **RF02** | **Cadastro de Usuários** | O sistema deve permitir o cadastro de novos usuários informando nome completo, e-mail e senha, com confirmação de senha. |
 | **RF03** | **Autenticação Google (OAuth)** | O sistema deve permitir cadastro e login ágil com um clique utilizando contas Google. |
-| **RF04** | **Categorização por Papel (Role)** | O sistema deve categorizar e conceder permissões ao usuário conforme seu perfil: Estudante (`student`), Professor (`professor`) ou Administrador (`admin`). |
-| **RF05** | **Upload de Planos de Ensino** | O sistema deve permitir que os usuários enviem arquivos de planos de ensino em formatos suportados (PDF ou texto bruto). |
-| **RF06** | **Extração Automática de Datas** | O sistema deve processar os planos de ensino enviados e extrair automaticamente datas de provas, entregas de trabalhos e seminários acadêmicos. |
-| **RF07** | **Revisão de Dados Extraídos** | O sistema deve apresentar uma prévia das datas acadêmicas identificadas para que o estudante possa conferir antes de salvá-las na agenda. |
+| **RF04** | **Categorização por Papel (Role)** | O sistema deve categorizar e conceder permissões ao usuário conforme seu perfil: Estudante (`student`), Professor (`professor`) ou Administrador (`admin`). Administradores possuem permissão exclusiva para alterar os papéis de outros usuários. |
+| **RF05** | **Upload de Planos de Ensino e Atestado de Matrícula** | O sistema deve permitir o envio de arquivos em PDF ou texto bruto sob o Modelo Dual: planos de ensino oficiais (por professores), uploads particulares de planos (por estudantes) e atestado de matrícula do SIGAA (para alocação automática de disciplinas e turmas). |
+| **RF06** | **Extração Automática de Dados Acadêmicos** | O sistema deve processar os arquivos enviados e extrair automaticamente datas de provas e trabalhos dos planos de ensino, além de extrair código de disciplina, nome da matéria e turma a partir do atestado de matrícula. |
+| **RF07** | **Revisão e Validação Colaborativa** | O sistema deve fornecer revisão assistida ("Human-in-the-loop") para conferência de dados em uploads particulares e fluxo de validação colaborativa ativa (votação/confirmação) entre colegas da mesma turma para planos oficiais compartilhados. |
 | **RF08** | **Visualização em Agenda / Calendário** | O sistema deve exibir todos os compromissos em uma interface visual de calendário (visões mensal, semanal ou lista). |
 | **RF09** | **Gestão de Eventos Privados (CRUD)** | O sistema deve permitir ao usuário criar, editar e excluir eventos e prazos acadêmicos particulares em sua agenda pessoal. |
-| **RF10** | **Submissão de Eventos Públicos** | O sistema deve permitir que usuários submetam propostas de eventos públicos e acadêmicos para divulgação na plataforma. |
-| **RF11** | **Moderação de Eventos (Painel Admin)** | O sistema deve disponibilizar aos Administradores uma área para aprovar, rejeitar ou editar eventos públicos submetidos antes de sua publicação geral. |
+| **RF10** | **Submissão de Eventos Públicos** | O sistema deve permitir que usuários submetam propostas de eventos públicos e acadêmicos para divulgação na plataforma (na Release 1, implementada a criação direta por Professores e Administradores; para a Release 2, submissão aberta pela comunidade com status pendente). |
+| **RF11** | **Moderação de Eventos e Painel Administrativo** | O sistema deve disponibilizar um painel administrativo onde Professores e Administradores podem visualizar, aprovar ou rejeitar eventos públicos submetidos, e onde Administradores gerenciam os papéis dos usuários. |
 | **RF12** | **Inscrição Direta em Eventos** | O sistema deve permitir que os usuários se inscrevam diretamente em eventos públicos do campus com apenas um clique. |
 | **RF13** | **Cancelamento de Inscrição** | O sistema deve permitir que o usuário cancele a qualquer momento sua inscrição prévia em um evento. |
 | **RF14** | **Resumo e Detalhes do Evento** | O sistema deve fornecer uma página/modal com a descrição completa do evento, data, horário, local e link externo oficial da organização. |
-| **RF15** | **Divulgação Multi-campus** | O sistema deve organizar e divulgar eventos que ocorram em todos os campi da UnB (Darcy Ribeiro, FGA, FCE e FUP). |
-| **RF16** | **Coleta Automática Externa (Web Scraping)** | O sistema deve possuir rotinas para coletar e importar automaticamente eventos divulgados pela UnB através do SIGAA, portais de notícias e redes sociais. |
+| **RF15** | **Divulgação Multi-campus** | O sistema deve organizar e divulgar eventos que ocorram em todos os campi da UnB (Darcy Ribeiro, FGA/FCTE, FCE/FCTS, FUP e FAL). |
+| **RF16** | **Coleta Automática Externa** | O sistema deve possuir rotinas para coletar e importar automaticamente eventos divulgados pela UnB através de portais de notícias e canais institucionais (mantendo SIGAA e redes sociais condicionadas à viabilidade técnica). |
 | **RF17** | **Notificações de Proximidade** | O sistema deve notificar o usuário com antecedência programada quando a data de uma prova, trabalho ou evento inscrito estiver se aproximando. |
 | **RF18** | **Histórico de Participação** | O sistema deve disponibilizar um histórico dos eventos dos quais o usuário participou, separando eventos públicos e privados. |
 | **RF19** | **Filtros e Busca de Eventos** | O sistema deve permitir filtrar e classificar eventos por categoria (prova, trabalho, palestra, cultural), campus/instituto e intervalo de datas. |
@@ -57,4 +57,4 @@ Os requisitos não funcionais estão divididos de acordo com a norma **ISO/IEC 2
 
 ### 🧩 2.5 Compatibilidade e Manutenibilidade (Compatibility & Maintainability)
 * **RNF12 — Compatibilidade entre Navegadores:** A aplicação deve ser homologada e funcional nas versões atuais dos principais navegadores web do mercado (Google Chrome, Mozilla Firefox, Microsoft Edge e Safari).
-* **RNF13 — Qualidade de Código e Padrões:** O desenvolvimento deve seguir rigorosamente as regras estipuladas no [`padrao.md`](file:///c:/Users/Thomaz/Documents/APC/MDS/G8-2026-2/padrao.md) e manter cobertura de testes automatizados unitários e de integração nas funcionalidades de negócio essenciais.
+* **RNF13 — Qualidade de Código e Padrões:** O desenvolvimento deve seguir rigorosamente as regras estipuladas em [`padroes.md`](padroes.md) e manter cobertura de testes automatizados unitários e de integração nas funcionalidades de negócio essenciais.
