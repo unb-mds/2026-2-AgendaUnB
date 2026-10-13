@@ -25,37 +25,38 @@ O frontend envia e recebe dados JSON pela API. A API aplica as regras de negóci
 
 Eventos públicos aprovados podem ser consultados sem login. A agenda pessoal, planos enviados, datas extraídas ainda não confirmadas e preferências do estudante exigem autenticação e verificação de propriedade. A coleta externa de eventos deve ser isolada: a indisponibilidade de uma fonte não pode impedir a consulta aos eventos já armazenados.
 
-## 3. Stack proposta
+## 3. Stack consolidada
 
 | Camada | Tecnologia | Uso previsto | Situação |
 |---|---|---|---|
-| Interface web | JavaScript, React, Vite e React Router | SPA responsiva; páginas, calendário, formulários e navegação | React, Vite e React Router já estão declarados no `package.json` |
-| Ferramentas do frontend | Node.js e npm | Instalar dependências, executar Vite em desenvolvimento e gerar os arquivos estáticos de produção | Node.js é ferramenta de desenvolvimento/build; não é o backend proposto |
-| API | Python e FastAPI | Endpoints REST, autenticação, validação e coordenação dos módulos | Proposta; `backend/` ainda não contém implementação |
-| Persistência | PostgreSQL (via Supabase) | Dados relacionais de usuários, eventos, turmas e agenda | Configurado; banco gerenciado pelo Supabase com migrações aplicadas |
-| Acesso ao banco | Supabase JS SDK (`@supabase/supabase-js`) | Consultas, autenticação e storage direto do frontend via SDK | Em uso; declarado no `package.json` e utilizado em `src/lib/supabase.js` |
-| Migrações | Supabase Migrations (SQL) | Versionar mudanças no esquema do banco com arquivos SQL em `supabase/migrations/` | Em uso; três migrações já aplicadas |
+| Interface web | JavaScript, React 19, Vite 6 e React Router 7 | SPA responsiva; landing page, catálogo de eventos, formulários e detalhes | Em uso; implementado em `frontend/src/` com páginas `/`, `/segunda-pagina` e `/evento/:id` |
+| Ferramentas do frontend | Node.js e npm | Instalar dependências, executar Vite em desenvolvimento e gerar os arquivos estáticos de produção | Em uso; build configurado via npm/Vite |
+| API | Python 3.12, FastAPI, SQLAlchemy 2 e Pydantic 2 | Endpoints REST, validação de schemas, autorização e coordenação dos módulos | Em uso; implementado em `backend/src/` com suite de testes em `backend/tests/` |
+| Persistência | PostgreSQL 15+ (via Supabase) | Dados relacionais de usuários, eventos públicos, eventos pessoais e referências | Em uso; banco gerenciado pelo Supabase com RLS ativo em todas as tabelas |
+| Acesso ao banco | Supabase JS SDK (`@supabase/supabase-js`) e SQLAlchemy | Frontend acessa Auth e dados públicos via SDK; API Python acessa o PostgreSQL via SQLAlchemy | Em uso; SDK em `src/lib/supabase.js` e SQLAlchemy em `backend/src/database/` |
+| Migrações | Supabase Migrations (SQL) | Versionar mudanças no esquema do banco com arquivos SQL em `supabase/migrations/` | Em uso; cinco migrações SQL aplicadas e versionadas |
 | Ambiente local | Supabase CLI | Subir PostgreSQL, Auth, Storage e Studio localmente via `supabase start` (usa Docker internamente) | Em uso; `supabase/config.toml` configurado |
-| Arquivos | Supabase Storage | Guardar PDFs sem expô-los como arquivos públicos | Habilitado no `config.toml`; buckets privados ainda não criados |
+| Arquivos | Supabase Storage | Guardar PDFs de planos de ensino com controle de acesso privado | Em uso/configurado no `config.toml` |
 
-O backend deve implementar o prefixo `/api/v1` e os nomes de endpoints já documentados em `padroes.md`. O frontend e o backend permanecem separados: o navegador executa a SPA, enquanto Python/FastAPI executa a API. Node.js entra no fluxo de ferramentas do frontend, mesmo que o servidor da aplicação seja Python.
+O backend implementa o prefixo `/api/v1` para os recursos de negócio, desacoplado do frontend SPA. A comunicação utiliza tokens JWT gerados pelo Supabase Auth e validados pelo backend via middleware.
 
-Docker é uma forma de executar serviços de maneira reproduzível, não um banco de dados ou uma linguagem. A proposta é usá-lo no ambiente de desenvolvimento para a API e o PostgreSQL; a forma de implantação final será decidida depois.
+Docker é utilizado no ambiente de desenvolvimento local via Supabase CLI e para empacotar a API Python (`backend/Dockerfile`).
 
 ## 4. Componentes da aplicação
 
 ### 4.1 Frontend web
 
-O frontend React apresenta o catálogo público de eventos e, após autenticação, a agenda pessoal. Deve funcionar em computadores, tablets e celulares por meio de layout responsivo. O código atual usa Vite e React Router; a estrutura existente ainda é inicial e não implementa os fluxos completos da agenda.
+O frontend React apresenta a vitrine institucional, o catálogo público de eventos e, após autenticação, a gestão de compromissos privados. Funciona em computadores, tablets e smartphones por meio de layout responsivo e do Design System "The Neon Campus".
 
 Responsabilidades principais:
 
-- consultar eventos por intervalo de datas, categoria e campus;
-- apresentar calendário mensal, semanal ou em lista;
-- permitir ao estudante gerenciar turmas e compromissos privados;
-- enviar planos de ensino e apresentar o estado do processamento;
-- permitir revisar e confirmar datas extraídas antes de adicioná-las à agenda;
-- exibir estados de carregamento, erros de validação e confirmação das ações.
+- apresentar landing page com shaders WebGL em estilo halftone e apresentação do projeto;
+- consultar eventos públicos por intervalo de datas, categoria, campus e turno com busca textual;
+- gerenciar eventos pessoais do estudante (criar, editar e excluir compromissos privados);
+- permitir autenticação via e-mail/senha, Google OAuth ou navegação anônima como visitante;
+- apresentar tela dedicada de detalhes do evento (`/evento/:id`);
+- suportar alternância global entre temas claro e escuro;
+- preparar fluxos para upload de planos de ensino e revisão de datas extraídas (Release 2).
 
 ### 4.2 API e módulos de domínio
 
@@ -63,42 +64,68 @@ A API FastAPI expõe recursos HTTP JSON e separa entrada/saída HTTP das regras 
 
 | Módulo | Responsabilidades |
 |---|---|
-| **Autenticação e usuários** | Cadastro/login conforme a política aprovada, sessão, perfil e papéis `student`, `professor` e `admin` |
+| **Autenticação e governança** | Sessão via Supabase Auth, perfil e papéis `student`, `professor` e `admin`; alteração de cargos exclusiva para administradores |
 | **Agenda e eventos** | Consultar eventos públicos, criar/editar eventos pessoais, filtros, inscrições e calendário unificado |
-| **Submissão e moderação** | Receber propostas de eventos, manter estado `pending`, permitir aprovação/rejeição por administradores e publicar apenas eventos aprovados |
-| **Turmas** | Manter ofertas de disciplinas por semestre e os vínculos informados pelos próprios estudantes |
-| **Planos de ensino** | Receber PDF/texto, armazenar o arquivo, acompanhar processamento e disponibilizar as datas candidatas para revisão |
+| **Submissão e moderação** | Receber propostas de eventos com status `pending`, permitir aprovação/rejeição por professores e administradores |
+| **Turmas e Matrículas** | Processar upload de atestados de matrícula (PDF do SIGAA) para alocar automaticamente estudantes em suas disciplinas e turmas |
+| **Planos de ensino (Modelo Dual)** | Receber planos oficiais (professores) e uploads particulares (estudantes), extrair datas e gerenciar validação colaborativa e individual |
 | **Notificações e exportação** | Programar lembretes e gerar arquivo `.ics` para calendários externos |
-| **Coleta de eventos** | Importar dados de fontes públicas aprovadas, tratar falhas isoladamente e evitar duplicar eventos importados |
+| **Coleta de eventos** | Importar eventos de portais de notícias e canais institucionais da UnB (SIGAA e redes sociais condicionadas à viabilidade) |
 
-Os módulos podem começar como partes de uma única API. Não há necessidade, no escopo atual, de separá-los em microsserviços: essa separação lógica organiza responsabilidades sem acrescentar a carga operacional de vários serviços independentes.
+Os módulos operam como componentes lógicos da API FastAPI única, mantendo o acoplamento baixo sem a complexidade operacional de microsserviços.
 
-### 4.3 Processamento de planos
+### 4.3 Processamento de planos e atestados de matrícula
 
-O upload não deve criar imediatamente compromissos confirmados. O fluxo proposto é:
+O upload de documentos acadêmicos opera de forma assíncrona com os seguintes fluxos:
 
-1. A API autentica o usuário, valida formato e tamanho e armazena o arquivo de forma privada.
-2. Um registro `Syllabus` é criado com estado `pending` e depois `processing`.
-3. O processador lê o texto do PDF ou texto enviado e cria datas candidatas associadas ao plano.
-4. O estudante confere título, tipo e data, podendo editar, aceitar ou descartar cada sugestão.
-5. Somente as sugestões confirmadas viram eventos privados na agenda.
+#### Fluxo 1: Atestado de Matrícula (Alocação Automática em Turmas)
+1. O estudante envia o PDF do atestado de matrícula emitido pelo SIGAA (`POST /api/v1/enrollment/upload`).
+2. O parser extrai códigos de disciplinas, nomes de matérias, turmas e professores.
+3. O sistema cria ou vincula o estudante às respectivas turmas no banco relacional (`matriculas`), dispensando inserção manual.
 
-Para o MVP, o processador pode rodar como tarefa no backend, desde que o tempo de processamento seja aceitável. Uma fila e um worker separados podem ser acrescentados se o processamento bloquear requisições ou precisar de retentativas. OCR só deve ser incluído se a equipe confirmar que os PDFs de entrada são digitalizações sem texto selecionável.
+#### Fluxo 2: Planos de Ensino — Modelo Dual
+1. **Planos Oficiais de Turmas (Docentes):**
+   - O professor envia o plano de ensino da disciplina.
+   - O parser identifica as datas de avaliações, provas e trabalhos.
+   - As avaliações são vinculadas à turma e ficam disponíveis para consulta dos matriculados.
+   - **Validação Colaborativa Ativa:** Alunos da mesma turma podem confirmar ou contestar as datas sugeridas pelo parser.
+2. **Uploads Particulares de Estudo (Estudantes):**
+   - O estudante envia um plano de ensino diretamente para sua organização pessoal.
+   - As datas extraídas passam por uma tela de revisão assistida ("Human-in-the-loop"), onde o discente pode editar ou descartar itens antes de salvá-los como compromissos privados na sua agenda.
 
 ## 5. Fluxos principais e rotas
 
-Os nomes abaixo seguem a proposta existente em `padroes.md`; são contratos planejados, não endpoints já implementados.
+A arquitetura organiza os endpoints REST da aplicação com prefixo `/api/v1`. Os fluxos abaixo separam o que foi **entregue na Release 1** do que está **planejado para a Release 2** e etapas seguintes:
 
-| Fluxo | Rotas de referência |
-|---|---|
-| Criar conta, entrar e obter identidade atual | `POST /api/v1/auth/register`, `POST /api/v1/auth/login`, `POST /api/v1/auth/google`, `GET /api/v1/auth/me` |
-| Consultar e gerenciar eventos | `GET/POST /api/v1/events`, `GET/PUT/DELETE /api/v1/events/{id}` |
-| Inscrever-se em evento público | `POST/DELETE /api/v1/events/{id}/attend` |
-| Moderar proposta | `GET /api/v1/admin/events/pending`, `PATCH /api/v1/admin/events/{id}/review` |
-| Enviar e acompanhar plano | `POST /api/v1/syllabus/upload`, `GET /api/v1/syllabus`, `GET /api/v1/syllabus/{id}` |
-| Consultar categorias | `GET /api/v1/categories` |
+### 5.1 Endpoints Implementados (Release 1)
 
-O backend deve verificar permissão em cada operação, sem confiar apenas no estado da interface. Por exemplo, uma rota de moderação exige papel `admin`; atualizar ou remover um evento privado exige que o usuário autenticado seja seu proprietário.
+| Fluxo | Método e Rota | Descrição e Acesso |
+|---|---|---|
+| Autenticação (Client SDK) | `Supabase Auth SDK` | Cadastro, login com senha e Google OAuth gerenciados no frontend com tokens JWT |
+| Catálogo de eventos | `GET /api/v1/events` | Listagem pública com filtros (`campus`, `category`, `startDate`, `endDate`, `q`, `limit`, `offset`) |
+| Detalhe de evento público | `GET /api/v1/events/{id}` | Consulta aberta aos detalhes do evento aprovado |
+| Criar evento público | `POST /api/v1/events` | Criação restrita a `professor` e `admin`; nasce aprovado |
+| Excluir evento público | `DELETE /api/v1/events/{id}` | Exclusão restrita a `professor` e `admin` |
+| Listar eventos pessoais | `GET /api/v1/me/events` | Compromissos e prazos privados do usuário autenticado |
+| Detalhe de evento pessoal | `GET /api/v1/me/events/{id}` | Consulta restrita ao proprietário (`user_id`) |
+| Criar evento pessoal | `POST /api/v1/me/events` | Criação de compromisso na agenda particular |
+| Atualizar evento pessoal | `PUT /api/v1/me/events/{id}` | Atualização restrita ao proprietário |
+| Excluir evento pessoal | `DELETE /api/v1/me/events/{id}` | Exclusão restrita ao proprietário |
+| Health check | `GET /health` | Verificação de disponibilidade da API |
+
+### 5.2 Endpoints Planejados (Release 2 e Futuro)
+
+| Fluxo | Rotas planejadas | Descrição e Permissões |
+|---|---|---|
+| Atestado de Matrícula | `POST /api/v1/enrollment/upload` | Envio de atestado do SIGAA e alocação automática em turmas |
+| Planos de ensino | `POST /api/v1/syllabus/upload`, `GET /api/v1/syllabus` | Upload e acompanhamento no Modelo Dual (oficial docente e privado aluno) |
+| Validação Colaborativa | `POST /api/v1/assessments/{id}/confirm` | Votação/confirmação de datas de avaliações por colegas de turma |
+| Moderação de Eventos | `GET /api/v1/admin/events/pending`, `PATCH /api/v1/admin/events/{id}/review` | Visualização e aprovação de eventos por Professores e Admins |
+| Gestão de Papéis | `PATCH /api/v1/admin/users/{id}/role` | Alteração de cargos (`student`, `professor`, `admin`) exclusiva para Admins |
+| Inscrição em evento | `POST/DELETE /api/v1/events/{id}/attend` | Inscrição direta e cancelamento em eventos do campus |
+| Categorias | `GET/POST /api/v1/categories` | Consulta e gestão de categorias de eventos |
+
+O backend verifica autorização em cada operação através de middlewares (`get_current_user`, `require_event_manager`) e políticas de RLS no PostgreSQL, assegurando que nenhum dado acadêmico privado seja exposto.
 
 ## 6. Segurança, privacidade e confiabilidade
 
