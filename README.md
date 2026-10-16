@@ -23,11 +23,14 @@ Métodos de Desenvolvimento de Software - 2026/2 - Grupo G8
 - [Stack Tecnológica](#stack-tecnologica)
 - [Como Executar](#como-executar)
     - [Pré-requisitos](#pre-requisitos)
-    - [1. Configuração Inicial e .env](#1-configuracao-inicial-e-env)
-    - [2. Banco de Dados (Supabase)](#2-banco-de-dados-supabase)
-    - [3. Backend (FastAPI)](#3-backend-fastapi)
-    - [4. Frontend (React)](#4-frontend-react)
-    - [5. Documentação Local (MkDocs)](#5-documentacao-local-mkdocs)
+    - [Execução Rápida via Makefile (Recomendado)](#execucao-rapida-via-makefile-recomendado)
+    - [Execução Manual Passo a Passo](#execucao-manual-passo-a-passo)
+        - [1. Configuração Inicial e .env](#1-configuracao-inicial-e-env)
+        - [2. Banco de Dados (Supabase)](#2-banco-de-dados-supabase)
+        - [3. Backend (FastAPI)](#3-backend-fastapi)
+        - [4. Frontend (React)](#4-frontend-react)
+        - [5. Documentação Local (MkDocs)](#5-documentacao-local-mkdocs)
+        - [6. Testes Automatizados](#6-testes-automatizados)
 - [Funcionalidades da R1](#funcionalidades)
 - [Equipe](#equipe)
 - [Documentação Oficial](#documentacao)
@@ -74,11 +77,75 @@ Certifique-se de possuir instalado em seu ambiente:
 * [Python](https://www.python.org/downloads/) (v3.11+ ou v3.12)
 * [Docker Desktop / Docker Engine](https://www.docker.com/) (em execução para o Supabase)
 * [Git](https://git-scm.com/)
+* [GNU Make](https://www.gnu.org/software/make/) *(Recomendado para automação dos comandos em 1 passo)*:
+  * **Linux (Ubuntu/Debian):** `sudo apt install make` ou `build-essential`
+  * **macOS:** Integrado com as ferramentas de desenvolvedor (`xcode-select --install`)
+  * **Windows:** Disponível via [Chocolatey](https://chocolatey.org/) (`choco install make`), [Scoop](https://scoop.sh/) (`scoop install make`), [winget](https://learn.microsoft.com/pt-br/windows/package-manager/winget/) (`winget install GnuWin32.Make`) ou utilizando o terminal **Git Bash** / **WSL**.
 
 ---
 
+<a id="execucao-rapida-via-makefile-recomendado"></a>
+### ⚡ Execução Rápida via Makefile (Recomendado)
+
+O projeto conta com um [`Makefile`](Makefile) na raiz que automatiza a configuração do ambiente, a instalação de dependências e a execução integrada de todos os serviços.
+
+> 💡 **Dica para Windows:** No Windows, recomenda-se executar os comandos `make` através do terminal **Git Bash** (instalado junto com o Git) ou **WSL**, garantindo a compatibilidade de execução concorrente dos processos com encerramento seguro via `Ctrl+C`.
+
+#### 1. Configuração completa do ambiente
+Cria o `.env` a partir de `.env.example`, cria o ambiente virtual Python (`backend/venv`), instala as dependências do backend (`requirements.txt` e `requirements-dev.txt`), instala os pacotes do frontend (`npm install`) e inicializa os containers do Supabase local:
+
+```bash
+make setup
+```
+
+#### 2. Iniciar todos os serviços (Banco + Backend + Frontend)
+Sobe o banco Supabase, a API FastAPI e o servidor Vite de forma concorrente em um único terminal com recarregamento automático (*live reload*):
+
+```bash
+make dev
+```
+
+Após iniciar, os serviços estarão disponíveis nos seguintes endereços:
+
+| Serviço | Endereço Local | Descrição |
+|---|---|---|
+| **Frontend Web** | [http://localhost:5173](http://localhost:5173) | Interface React da aplicação |
+| **Backend API** | [http://localhost:8000](http://localhost:8000) | Servidor FastAPI |
+| **Swagger / OpenAPI** | [http://localhost:8000/docs](http://localhost:8000/docs) | Documentação interativa dos endpoints |
+| **Health Check** | [http://localhost:8000/health](http://localhost:8000/health) | Verificação de integridade da API |
+| **Supabase Studio** | [http://localhost:54323](http://localhost:54323) | Dashboard visual do PostgreSQL e Auth |
+
+> **Para encerrar:** Pressione `Ctrl+C` no terminal. O script encerra simultaneamente o Backend e o Frontend de forma limpa. Para parar os containers do banco de dados, execute `make stop`.
+
+---
+
+#### 📌 Guia de Comandos do Makefile
+
+| Comando | Finalidade |
+|---|---|
+| `make dev` *(ou `make run`)* | Inicia Supabase, Backend e Frontend juntos em um único comando |
+| `make setup` | Instala todas as dependências (Back + Front), cria `.env` e sobe o Supabase |
+| `make stop` *(ou `make down`)* | Encerra os containers do banco de dados (Supabase) |
+| `make backend` | Executa apenas o servidor FastAPI (`http://localhost:8000`) |
+| `make frontend` | Executa apenas o servidor Vite do Frontend (`http://localhost:5173`) |
+| `make docs` | Executa o servidor local de documentação MkDocs (`http://127.0.0.1:8008`) |
+| `make db-start` | Inicia os containers locais do Supabase (PostgreSQL, Auth, Storage) |
+| `make db-stop` | Para os containers locais do Supabase |
+| `make db-reset` | Reaplica todas as migrações SQL e o seed inicial no banco de dados |
+| `make db-status` | Exibe o status e URLs dos serviços locais do Supabase |
+| `make test` | Executa a suíte de testes automatizados do Backend com `pytest` |
+| `make clean` | Limpa arquivos temporários e caches (`__pycache__`, `.pytest_cache`, `dist`) |
+| `make help` *(ou `make`)* | Exibe o menu interativo com os comandos disponíveis |
+
+---
+
+<a id="execucao-manual-passo-a-passo"></a>
+### Execução Manual Passo a Passo (Alternativa sem Make)
+
+Caso não utilize o `make` ou prefira executar cada serviço separadamente em terminais dedicados:
+
 <a id="1-configuracao-inicial-e-env"></a>
-### 1. Configuração Inicial e `.env`
+#### 1. Configuração Inicial e `.env`
 
 Clone o repositório e crie o arquivo de configuração `.env` a partir do modelo `.env.example`:
 
@@ -90,23 +157,24 @@ Clone o repositório e crie o arquivo de configuração `.env` a partir do model
 ---
 
 <a id="2-banco-de-dados-supabase"></a>
-### 2. Banco de Dados (Supabase Local)
+#### 2. Banco de Dados (Supabase Local)
 
 O Supabase gerencia o PostgreSQL, autenticação, storage e migrações locais via Docker. Execute na **raiz do repositório**:
 
-| Ação | Comando (Linux / macOS / Windows) | Finalidade |
-|---|---|---|
-| **Iniciar containers** | `npx supabase start` | Sobe PostgreSQL, Supabase Auth, Storage e Studio local |
-| **Resetar banco / Migrações** | `npx supabase db reset` | Aplica todas as 5 migrações SQL e o seed inicial |
-| **Parar containers** | `npx supabase stop` | Encerra os serviços locais do Supabase |
+| Ação | Comando (Linux / macOS / Windows) | Equivalente Make | Finalidade |
+|---|---|---|---|
+| **Iniciar containers** | `npx supabase start` | `make db-start` | Sobe PostgreSQL, Supabase Auth, Storage e Studio local |
+| **Resetar banco / Migrações** | `npx supabase db reset` | `make db-reset` | Aplica todas as 5 migrações SQL e o seed inicial |
+| **Status dos serviços** | `npx supabase status` | `make db-status` | Exibe chaves anon, porta da API e URLs |
+| **Parar containers** | `npx supabase stop` | `make db-stop` | Encerra os serviços locais do Supabase |
 
-> 🌐 **Supabase Studio (Dashboard Local):** [http://localhost:54323](http://localhost:54323)  
-> 🔑 **API URL Local:** `http://127.0.0.1:54321`
+> **Supabase Studio (Dashboard Local):** [http://localhost:54323](http://localhost:54323)  
+> **API URL Local:** `http://127.0.0.1:54321`
 
 ---
 
 <a id="3-backend-fastapi"></a>
-### 3. Backend (API FastAPI)
+#### 3. Backend (API FastAPI)
 
 Abra um terminal, acesse a pasta `backend/`, configure o ambiente virtual Python, instale as dependências e inicie o servidor:
 
@@ -116,7 +184,8 @@ Abra um terminal, acesse a pasta `backend/`, configure o ambiente virtual Python
 | **2. Criar ambiente virtual** | `python3 -m venv venv` | `python -m venv venv` | `python -m venv venv` |
 | **3. Ativar o venv** | `source venv/bin/activate` | `.\venv\Scripts\Activate.ps1` | `venv\Scripts\activate.bat` |
 | **4. Instalar dependências** | `pip install -r requirements.txt` | `pip install -r requirements.txt` | `pip install -r requirements.txt` |
-| **5. Iniciar a API** | `uvicorn src.main:app --reload` | `uvicorn src.main:app --reload` | `uvicorn src.main:app --reload` |
+| **5. Instalar dependências dev** | `pip install -r requirements-dev.txt` | `pip install -r requirements-dev.txt` | `pip install -r requirements-dev.txt` |
+| **6. Iniciar a API** | `uvicorn src.main:app --reload` | `uvicorn src.main:app --reload` | `uvicorn src.main:app --reload` |
 
 > 💡 **Nota para Windows (PowerShell):** Se a execução de scripts for bloqueada ao ativar o ambiente (`running scripts is disabled`), execute antes no PowerShell:  
 > ```powershell
@@ -124,44 +193,49 @@ Abra um terminal, acesse a pasta `backend/`, configure o ambiente virtual Python
 > ```
 > E em seguida execute novamente `.\venv\Scripts\Activate.ps1`.
 
-> 🌐 **API FastAPI:** [http://localhost:8000](http://localhost:8000)  
-> 📖 **Swagger / OpenAPI (Documentação interativa):** [http://localhost:8000/docs](http://localhost:8000/docs)  
-> 🩺 **Health Check:** [http://localhost:8000/health](http://localhost:8000/health)
-
 ---
 
 <a id="4-frontend-react"></a>
-### 4. Frontend (React + Vite)
+#### 4. Frontend (React + Vite)
 
 Abra um novo terminal na raiz do projeto, acesse a pasta `frontend/`, instale os módulos e inicie o servidor de desenvolvimento:
 
-| Etapa | Linux / macOS (Bash) | Windows (PowerShell / CMD) |
-|---|---|---|
-| **1. Entrar na pasta** | `cd frontend` | `cd frontend` |
-| **2. Instalar dependências** | `npm install` | `npm install` |
-| **3. Iniciar o dev server** | `npm run dev` | `npm run dev` |
-| **4. Gerar build estático** | `npm run build` | `npm run build` |
-
-> 🌐 **Aplicação Web:** [http://localhost:5173](http://localhost:5173)
+| Etapa | Linux / macOS (Bash) | Windows (PowerShell / CMD) | Equivalente Make |
+|---|---|---|---|
+| **1. Entrar na pasta** | `cd frontend` | `cd frontend` | — |
+| **2. Instalar dependências** | `npm install` | `npm install` | `make check-frontend` |
+| **3. Iniciar o dev server** | `npm run dev` | `npm run dev` | `make frontend` |
+| **4. Gerar build estático** | `npm run build` | `npm run build` | — |
 
 ---
 
 <a id="5-documentacao-local-mkdocs"></a>
-### 5. Documentação Local (MkDocs — Opcional)
+#### 5. Documentação Local (MkDocs — Opcional)
 
 Para rodar localmente o site de documentação com tema Material:
 
-| Etapa | Linux / macOS | Windows (PowerShell / CMD) |
-|---|---|---|
-| **Instalar MkDocs Material** | `pip install mkdocs-material` | `pip install mkdocs-material` |
-| **Iniciar servidor de docs** | `mkdocs serve -a 127.0.0.1:8008` | `mkdocs serve -a 127.0.0.1:8008` |
+| Etapa | Linux / macOS | Windows (PowerShell / CMD) | Equivalente Make |
+|---|---|---|---|
+| **Instalar MkDocs Material** | `pip install mkdocs-material` | `pip install mkdocs-material` | — |
+| **Iniciar servidor de docs** | `mkdocs serve -a 127.0.0.1:8008` | `mkdocs serve -a 127.0.0.1:8008` | `make docs` |
 
-> 📚 **Documentação local:** [http://127.0.0.1:8008](http://127.0.0.1:8008) *(utilizando a porta 8008 para não conflitar com a API FastAPI na 8000)*
+> **Documentação local:** [http://127.0.0.1:8008](http://127.0.0.1:8008)
+
+---
+
+<a id="6-testes-automatizados"></a>
+#### 6. Testes Automatizados (Backend)
+
+Para executar a suíte de testes unitários e de integração do Backend:
+
+| Ação | Via Makefile | Manualmente (na pasta `backend/` com `venv` ativo) |
+|---|---|---|
+| **Executar testes** | `make test` | `pytest tests/` |
 
 ---
 
 <a id="funcionalidades"></a>
-## ✨ Funcionalidades da R1
+## Funcionalidades da R1
 
 ### Frontend
 

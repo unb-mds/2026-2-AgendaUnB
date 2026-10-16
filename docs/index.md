@@ -4,7 +4,7 @@ Bem-vindo à documentação oficial do projeto **Agenda UnB**, desenvolvido pelo
 
 ---
 
-## 🎯 Sobre o Projeto
+## Sobre o Projeto
 
 O objetivo do **Agenda UnB** é criar uma plataforma centralizada para a comunidade acadêmica da UnB, reunindo em um único ambiente:
 
@@ -14,7 +14,7 @@ O objetivo do **Agenda UnB** é criar uma plataforma centralizada para a comunid
 
 ---
 
-## 👥 Equipe G8
+## Equipe G8
 
 <div class="team-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-top: 1.5rem;">
 
@@ -64,13 +64,13 @@ O objetivo do **Agenda UnB** é criar uma plataforma centralizada para a comunid
 
 ---
 
-## 📚 Mapa da Documentação
+## Mapa da Documentação
 
 Navegue pelas seções através das abas superiores ou pelos links abaixo:
 
-* [🎯 Visão do Produto](documento-de-visao.md) — Problema, stakeholders, declaração de posicionamento e priorização.
-* [🏛️ Arquitetura](Architecture.md) — Visão arquitetural, tecnologias, frontend, backend e modelos de dados.
-* [📋 Requisitos](requisitos.md) — Especificação completa de Requisitos Funcionais (RF) e Não Funcionais (RNF).
-* [📐 Padrões de Projeto](padroes.md) — Glossário oficial, convenções de código, branches e commits.
-* [🏃‍♂️ Sprints](sprints/sprint-0.md) — Acompanhamento ágil das entregas por ciclo de desenvolvimento.
-* [🤝 Como Contribuir](CONTRIBUTING.md) — Guia de instalação e ambiente de desenvolvimento local.
+* [Visão do Produto](documento-de-visao.md) — Problema, stakeholders, declaração de posicionamento e priorização.
+* [Arquitetura](Architecture.md) — Visão arquitetural, tecnologias, frontend, backend e modelos de dados.
+* [Requisitos](requisitos.md) — Especificação completa de Requisitos Funcionais (RF) e Não Funcionais (RNF).
+* [Padrões de Projeto](padroes.md) — Glossário oficial, convenções de código, branches e commits.
+* [Sprints](sprints/sprint-1.md) — Acompanhamento ágil das entregas por ciclo de desenvolvimento.
+* [Como Contribuir](CONTRIBUTING.md) — Guia de instalação e ambiente de desenvolvimento local.
