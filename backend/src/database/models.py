@@ -66,6 +66,20 @@ class PublicEvent(Base):
     author: Mapped[Profile] = relationship()
 
 
+class SavedPublicEvent(Base):
+    __tablename__ = "eventos_salvos"
+
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), primary_key=True
+    )
+    event_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("eventos.id", ondelete="CASCADE"), primary_key=True, index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        "criado_em", DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
 class PersonalEvent(Base):
     __tablename__ = "eventos_pessoais"
 

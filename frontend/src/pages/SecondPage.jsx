@@ -1,8 +1,9 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { eventsApi, toApiEvent, toUiEvent } from '../lib/api';
 import NavBar from '../components/NavBar';
+import EventCalendar from '../components/EventCalendar';
 
 const CustomSelect = ({ value, onChange, options, placeholder, dropUp = false, className, wrapperWidth }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -326,6 +327,7 @@ const CustomTimePicker = ({ value, onChange, placeholder, dropUp = false, classN
 
 export default function SegundaPagina() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, profile, signOut, isProfessor, isAdmin } = useAuth();
   // --- GERENCIAMENTO DE TEMA LOCAL ---
   const [theme, setTheme] = useState(() => document.body.classList.contains('light') ? 'light' : 'dark');
@@ -343,7 +345,8 @@ export default function SegundaPagina() {
   const [carregandoEventos, setCarregandoEventos] = useState(true);
   const [erroEventos, setErroEventos] = useState('');
 
-  const [visaoEventos, setVisaoEventos] = useState('Públicos');
+  const [visaoEventos, setVisaoEventos] = useState(() => searchParams.get('aba') === 'meus' ? 'MEUS' : 'Públicos');
+  const [modoVisualizacao, setModoVisualizacao] = useState('lista');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [eventoEmEdicao, setEventoEmEdicao] = useState(null);
 
@@ -389,15 +392,23 @@ export default function SegundaPagina() {
       setCarregandoEventos(true);
       setErroEventos('');
       try {
-        const result = visaoEventos === 'MEUS'
-          ? await eventsApi.listPersonal()
-          : await eventsApi.listPublic({
+        let mappedEvents;
+        if (visaoEventos === 'MEUS') {
+          const [personal, saved] = await Promise.all([eventsApi.listPersonal(), eventsApi.listSaved()]);
+          mappedEvents = [
+            ...personal.map(event => toUiEvent(event, true)),
+            ...saved.map(event => ({ ...toUiEvent(event), salvoNaAgenda: true })),
+          ].sort((a, b) => `${a.data}T${a.horario}`.localeCompare(`${b.data}T${b.horario}`));
+        } else {
+          const result = await eventsApi.listPublic({
             campus: filtroCampus,
             category: filtroArea,
             search: searchQuery,
           });
+          mappedEvents = result.map(event => toUiEvent(event));
+        }
         if (active) {
-          setEventos(result.map((event) => toUiEvent(event, visaoEventos === 'MEUS')));
+          setEventos(mappedEvents);
         }
       } catch (error) {
         if (active) setErroEventos(error.message || 'Não foi possível carregar os eventos.');
@@ -505,15 +516,18 @@ export default function SegundaPagina() {
     setIsModalOpen(true);
   };
 
-  const handleRemoverEvento = async (idParaRemover) => {
+  const handleRemoverEvento = async (evento) => {
+    const idParaRemover = evento.id;
     try {
       setErroEventos('');
-      if (visaoEventos === 'MEUS') {
+      if (visaoEventos === 'MEUS' && evento.salvoNaAgenda) {
+        await eventsApi.removeSaved(idParaRemover);
+      } else if (visaoEventos === 'MEUS') {
         await eventsApi.deletePersonal(idParaRemover);
       } else {
         await eventsApi.deletePublic(idParaRemover);
       }
-      setEventos((current) => current.filter((event) => event.id !== idParaRemover));
+      setEventos((current) => current.filter((event) => event.id !== idParaRemover || event.visibilidade !== evento.visibilidade));
     } catch (error) {
       setErroEventos(error.message || 'Não foi possível excluir o evento.');
     }
@@ -522,7 +536,7 @@ export default function SegundaPagina() {
   // --- LÓGICA DE FILTRAGEM ---
   const eventosFiltrados = useMemo(() => {
     return eventos.filter(evento => {
-      const matchVisao = visaoEventos === 'Públicos' ? evento.visibilidade === 'Público' : evento.criadoPorMim === true;
+      const matchVisao = visaoEventos === 'Públicos' ? evento.visibilidade === 'Público' : evento.criadoPorMim || evento.salvoNaAgenda;
       const matchBusca = evento.titulo.toLowerCase().includes(searchQuery.toLowerCase());
       const matchArea = filtroArea ? evento.area === filtroArea : true;
       const matchCampus = filtroCampus ? evento.campus === filtroCampus : true;
@@ -566,10 +580,10 @@ export default function SegundaPagina() {
 
         <div style={{ marginBottom: '2.5rem' }}>
           <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-            <div style={{ flex: 1, minWidth: '300px', position: 'relative' }}>
+            <div style={{ flex: '1 1 280px', minWidth: 0, position: 'relative' }}>
               <span className="material-symbols-outlined" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: textMuted }}>search</span>
               <input
-                type="text" placeholder="Busque eventos, comunicados..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                type="text" aria-label="Buscar eventos e comunicados" placeholder="Busque eventos, comunicados..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
                 style={{
                   width: '100%', padding: '16px 20px 16px 48px', borderRadius: '24px',
                   border: `1px solid ${borderColor}`, background: cardBg, color: textColor, fontSize: '1.05rem',
@@ -623,10 +637,30 @@ export default function SegundaPagina() {
           </div>
         </div>
 
-        <h2 style={{ fontFamily: "'Orbitron', sans-serif", fontSize: '1.4rem', marginBottom: '1.5rem', color: isDark ? '#fff' : '#1a1a2e', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {visaoEventos === 'MEUS' ? 'MEUS EVENTOS' : 'EVENTOS PÚBLICOS'}
-          <span className="material-symbols-outlined" style={{ color: accentColor, fontSize: '1.4rem' }}>event</span>
-        </h2>
+        <div className="events-section-header">
+          <h2 className="events-section-title">
+            {visaoEventos === 'MEUS' ? 'MEUS EVENTOS' : 'EVENTOS PÚBLICOS'}
+            <span className="material-symbols-outlined" aria-hidden="true" style={{ color: accentColor, fontSize: '1.4rem' }}>event</span>
+          </h2>
+          <div className="btn-toggle-group events-view-toggle" role="group" aria-label="Visualização dos eventos">
+            <button
+              type="button"
+              className={`btn-toggle-item ${modoVisualizacao === 'lista' ? 'active' : ''}`}
+              aria-pressed={modoVisualizacao === 'lista'}
+              onClick={() => setModoVisualizacao('lista')}
+            >
+              Lista
+            </button>
+            <button
+              type="button"
+              className={`btn-toggle-item ${modoVisualizacao === 'calendario' ? 'active' : ''}`}
+              aria-pressed={modoVisualizacao === 'calendario'}
+              onClick={() => setModoVisualizacao('calendario')}
+            >
+              Calendário
+            </button>
+          </div>
+        </div>
 
         {erroEventos && (
           <div role="alert" style={{ marginBottom: '1rem', padding: '1rem', borderRadius: '12px', color: '#b42318', background: '#fee4e2' }}>
@@ -634,18 +668,20 @@ export default function SegundaPagina() {
           </div>
         )}
 
-        {carregandoEventos ? (
+        {modoVisualizacao === 'calendario' ? (
+          <EventCalendar events={eventosFiltrados} loading={carregandoEventos} error={Boolean(erroEventos)} />
+        ) : carregandoEventos ? (
           <p role="status" style={{ textAlign: 'center', padding: '3rem', color: textMuted }}>Carregando eventos…</p>
-        ) : eventosFiltrados.length === 0 ? (
+        ) : erroEventos ? null : eventosFiltrados.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '4rem 2rem', background: cardBg, borderRadius: '24px', border: `1px dashed ${borderColor}` }}>
             <span className="material-symbols-outlined" style={{ fontSize: '3rem', color: textMuted, marginBottom: '1rem' }}>event_busy</span>
             <h3 style={{ color: textColor, marginBottom: '0.5rem' }}>Nenhum evento encontrado</h3>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))', gap: '20px' }}>
             {eventosFiltrados.map((evento) => (
               <div 
-                key={evento.id} 
+                key={`${evento.visibilidade}-${evento.id}`}
                 className="event-card" 
                 onClick={() => navigate(`/evento/${evento.id}`, { state: { evento } })}
                 style={{ cursor: 'pointer' }}
@@ -669,6 +705,7 @@ export default function SegundaPagina() {
                     </p>
                   )}
                   <div className="event-card-footer">
+                    {evento.salvoNaAgenda && <span className="event-tag">Público salvo</span>}
                     {evento.campus && (
                       <span className="event-tag"><span className="material-symbols-outlined" style={{ fontSize: '0.9rem', flexShrink: 0 }}>location_on</span><span className="event-tag-text">{evento.campus}</span></span>
                     )}
@@ -678,12 +715,12 @@ export default function SegundaPagina() {
                   </div>
                 </div>
 
-                {(visaoEventos === 'MEUS' ? evento.criadoPorMim : (isProfessor || isAdmin)) && (
+                {(visaoEventos === 'MEUS' ? (evento.criadoPorMim || evento.salvoNaAgenda) : (isProfessor || isAdmin)) && (
                   <div
                     onClick={(event) => event.stopPropagation()}
                     style={{ position: 'absolute', top: '12px', right: '12px', display: 'flex', gap: '6px' }}
                   >
-                    {visaoEventos === 'MEUS' && (
+                    {visaoEventos === 'MEUS' && evento.criadoPorMim && (
                       <button
                         type="button"
                         onClick={() => handleEditarEvento(evento)}
@@ -697,13 +734,13 @@ export default function SegundaPagina() {
                     )}
                     <button
                       type="button"
-                      onClick={() => handleRemoverEvento(evento.id)}
-                      title="Excluir evento"
-                      aria-label={`Excluir ${evento.titulo}`}
+                      onClick={() => handleRemoverEvento(evento)}
+                      title={evento.salvoNaAgenda ? 'Remover dos meus eventos' : 'Excluir evento'}
+                      aria-label={evento.salvoNaAgenda ? `Remover ${evento.titulo} dos meus eventos` : `Excluir ${evento.titulo}`}
                       className="event-card-delete"
                       style={{ position: 'static' }}
                     >
-                      <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>delete</span>
+                      <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>{evento.salvoNaAgenda ? 'bookmark_remove' : 'delete'}</span>
                     </button>
                   </div>
                 )}
