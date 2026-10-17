@@ -27,17 +27,27 @@ async function request(path, { auth = false, ...options } = {}) {
 }
 
 export const eventsApi = {
-  listPublic: (filters = {}) => {
+  listPublic: async (filters = {}) => {
     const query = new URLSearchParams();
     if (filters.campus) query.set('campus', filters.campus);
     if (filters.category) query.set('category', filters.category);
     if (filters.search) query.set('q', filters.search);
-    const encodedQuery = query.toString();
-    const suffix = encodedQuery ? `?${encodedQuery}` : '';
-    return request(`/events${suffix}`);
+    const pageSize = 100;
+    const events = new Map();
+    query.set('limit', String(pageSize));
+    for (let offset = 0; ; offset += pageSize) {
+      query.set('offset', String(offset));
+      const page = await request(`/events?${query.toString()}`);
+      for (const event of page) events.set(event.id, event);
+      if (page.length < pageSize) return [...events.values()];
+    }
   },
   getPublic: (id) => request(`/events/${encodeURIComponent(id)}`),
   listPersonal: () => request('/me/events', { auth: true }),
+  listSaved: () => request('/me/saved-events', { auth: true }),
+  savedStatus: (id) => request(`/me/saved-events/${encodeURIComponent(id)}`, { auth: true }),
+  savePublic: (id) => request(`/me/saved-events/${encodeURIComponent(id)}`, { auth: true, method: 'PUT' }),
+  removeSaved: (id) => request(`/me/saved-events/${encodeURIComponent(id)}`, { auth: true, method: 'DELETE' }),
   getPersonal: (id) => request(`/me/events/${encodeURIComponent(id)}`, { auth: true }),
   createPublic: (event) => request('/events', {
     method: 'POST',

@@ -45,6 +45,10 @@ class EventRead(BaseModel):
     organizer_avatar: str | None = None
 
 
+class SavedEventStatus(BaseModel):
+    saved: bool
+
+
 class PersonalEventRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
