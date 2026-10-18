@@ -80,7 +80,7 @@ Certifique-se de possuir instalado em seu ambiente:
 * [GNU Make](https://www.gnu.org/software/make/) *(Recomendado para automação dos comandos em 1 passo)*:
   * **Linux (Ubuntu/Debian):** `sudo apt install make` ou `build-essential`
   * **macOS:** Integrado com as ferramentas de desenvolvedor (`xcode-select --install`)
-  * **Windows:** Disponível via [Chocolatey](https://chocolatey.org/) (`choco install make`), [Scoop](https://scoop.sh/) (`scoop install make`), [winget](https://learn.microsoft.com/pt-br/windows/package-manager/winget/) (`winget install GnuWin32.Make`) ou utilizando o terminal **Git Bash** / **WSL**.
+  * **Windows:** Disponível via [Chocolatey](https://chocolatey.org/install) (`choco install make`), [Scoop](https://scoop.sh/) (`scoop install make`), [winget](https://learn.microsoft.com/pt-br/windows/package-manager/winget/) (`winget install GnuWin32.Make`) ou utilizando o terminal **Git Bash** / **WSL**.
 
 ---
 
@@ -92,7 +92,7 @@ O projeto conta com um [`Makefile`](Makefile) na raiz que automatiza a configura
 > 💡 **Dica para Windows:** No Windows, recomenda-se executar os comandos `make` através do terminal **Git Bash** (instalado junto com o Git) ou **WSL**, garantindo a compatibilidade de execução concorrente dos processos com encerramento seguro via `Ctrl+C`.
 
 #### 1. Configuração completa do ambiente
-Cria o `.env` a partir de `.env.example`, cria o ambiente virtual Python (`backend/venv`), instala as dependências do backend (`requirements.txt` e `requirements-dev.txt`), instala os pacotes do frontend (`npm install`) e inicializa os containers do Supabase local:
+Cria o `.env` a partir de `.env.example`, cria o ambiente virtual Python (`backend/venv`), instala as dependências do backend (`requirements.txt` e `requirements-dev.txt`), instala os pacotes do frontend (`npm install`) e inicializa os containers do Supabase local (para Windows, é importante lembrar de estar com o Docker aberto):
 
 ```bash
 make setup

@@ -152,7 +152,7 @@ export default function PaginaDeEvento() {
       <main role="alert" style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: '2rem', textAlign: 'center' }}>
         <div>
           <p>{erroEvento}</p>
-          <Link to="/segunda-pagina">Voltar aos eventos</Link>
+          <Link to="/eventos">Voltar aos eventos</Link>
         </div>
       </main>
     );

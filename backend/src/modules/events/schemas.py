@@ -14,6 +14,13 @@ class EventInput(BaseModel):
     category: str | None = Field(default=None, min_length=2, max_length=80)
     location: str | None = Field(default=None, max_length=250)
 
+    @field_validator("campus", "category", "location", "description", mode="before")
+    @classmethod
+    def empty_str_to_none(cls, value: str | None) -> str | None:
+        if isinstance(value, str) and not value.strip():
+            return None
+        return value
+
     @field_validator("starts_at")
     @classmethod
     def require_timezone(cls, value: datetime) -> datetime:
