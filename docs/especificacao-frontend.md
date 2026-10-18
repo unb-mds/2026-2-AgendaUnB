@@ -38,7 +38,7 @@ Os métodos de autenticação disponibilizados são:
 - E-mail e senha: permite que o usuário realize seu acesso utilizando suas credenciais cadastradas.
 - Google: possibilita a autenticação por meio de uma conta Google (ideal para o fluxo de estudantes).
 - Convidado: possibilita o usuário acessar de forma anônima, mas sem acesso a funcionalidade de criação de eventos privados.
-Além destes perfis, foi estipulada uma verificação rigorosa para Professores e Administração, exigindo validação por e-mail com o domínio oficial `@unb.br` para atestar a veracidade de eventos oficiais.
+O cadastro e a autopromoção para professor exigem e-mail institucional `@unb.br`. Um administrador pode atribuir o perfil de professor a uma conta com outro domínio pelo painel Admin.
 
 A página também disponibiliza o controle de alternância entre os temas claro e escuro, permitindo modificar a aparência visual de toda a aplicação.
 
@@ -98,3 +98,8 @@ Essa característica amplia as possibilidades de utilização do sistema, permit
 ## 3.6. Simplicidade, transparência e intuitividade
 A organização dos elementos visuais, a divisão das funcionalidades e a utilização de componentes padronizados buscam reduzir a complexidade de utilização do sistema.
 O objetivo é permitir que os estudantes realizem suas atividades de maneira simples, sem precisar percorrer caminhos desnecessários para encontrar os recursos desejados. A adoção de indicadores de carregamento e áreas de moderação humana em processos densos (como a leitura dos PDFs) garantem que a pessoa mantenha controle total sem se perder na intuição da plataforma.
+
+
+## Painel administrativo e navegação implementada
+
+Eventos (`/eventos`), Plano de Ensino (`/plano-de-ensino`), Sugestões (`/sugestoes`) e Admin (`/admin`) têm rotas próprias e navegação com indicação sublinhada da página ativa. Sugestões é exclusiva para professores e administradores; Admin, para administradores. Estudantes enviam propostas pelo campo Visibilidade do formulário Criar Evento e acompanham as decisões pelo sino. Consulte [Painel administrativo e sugestões](painel-administrativo.md) para os fluxos, permissões, migração e testes. A importação de planos de ensino permanece em preparação.

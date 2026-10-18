@@ -4,10 +4,17 @@ import { useAuth } from '../contexts/AuthContext';
 import { eventsApi, toApiEvent, toUiEvent } from '../lib/api';
 import NavBar from '../components/NavBar';
 import EventCalendar from '../components/EventCalendar';
+import { Feedback, Modal } from '../components/ManagementUI';
 
-const CustomSelect = ({ value, onChange, options, placeholder, dropUp = false, className, wrapperWidth }) => {
+const CustomSelect = ({ value, onChange, options, placeholder, dropUp = false, className, wrapperWidth, ariaLabel }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
+  const triggerRef = useRef(null);
+  const selectOption = selected => {
+    onChange(selected);
+    setIsOpen(false);
+    triggerRef.current?.focus();
+  };
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -20,9 +27,16 @@ const CustomSelect = ({ value, onChange, options, placeholder, dropUp = false, c
   }, []);
 
   return (
-    <div ref={containerRef} style={{ position: 'relative', width: wrapperWidth || '100%', zIndex: isOpen ? 1000 : 1 }}>
+    <div ref={containerRef} onKeyDownCapture={e => {
+      if (isOpen && e.key === 'Escape') {
+        e.preventDefault(); e.stopPropagation(); setIsOpen(false); triggerRef.current?.focus();
+      }
+    }} style={{ position: 'relative', width: wrapperWidth || '100%', zIndex: isOpen ? 1000 : 1 }}>
       <div 
+        ref={triggerRef}
         className={className || "custom-input"}
+        role="button" tabIndex={0} aria-expanded={isOpen} aria-label={ariaLabel}
+        onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setIsOpen(v => !v); } }}
         onClick={() => setIsOpen(!isOpen)}
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -44,7 +58,9 @@ const CustomSelect = ({ value, onChange, options, placeholder, dropUp = false, c
           width: '100%', minWidth: '180px', maxHeight: '220px', overflowY: 'auto'
         }}>
           <div 
-            onClick={() => { onChange(''); setIsOpen(false); }}
+            role="button" tabIndex={0}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectOption(''); } }}
+            onClick={() => selectOption('')}
             className={`custom-picker-option ${!value ? 'active' : ''}`}
           >
             {placeholder}
@@ -52,7 +68,9 @@ const CustomSelect = ({ value, onChange, options, placeholder, dropUp = false, c
           {options.map(opt => (
             <div 
               key={opt.value}
-              onClick={() => { onChange(opt.value); setIsOpen(false); }}
+              role="button" tabIndex={0}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectOption(opt.value); } }}
+              onClick={() => selectOption(opt.value)}
               className={`custom-picker-option ${value === opt.value ? 'active' : ''}`}
             >
               {opt.label}
@@ -100,9 +118,16 @@ const CustomDatePicker = ({ value, onChange, placeholder, dropUp = false, classN
   const displayValue = value ? value.split('-').reverse().join('/') : '';
 
   return (
-    <div ref={containerRef} style={{ position: 'relative', width: '100%', zIndex: isOpen ? 1000 : 1 }}>
+    <div ref={containerRef} onKeyDownCapture={e => {
+      if (isOpen && e.key === 'Escape') {
+        e.preventDefault(); e.stopPropagation(); setIsOpen(false);
+        containerRef.current?.querySelector('.custom-input')?.focus();
+      }
+    }} style={{ position: 'relative', width: '100%', zIndex: isOpen ? 1000 : 1 }}>
       <div 
         className={className || "custom-input"}
+        role="button" tabIndex={0} aria-expanded={isOpen}
+        onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setIsOpen(v => !v); } }}
         onClick={() => setIsOpen(!isOpen)}
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -146,6 +171,9 @@ const CustomDatePicker = ({ value, onChange, placeholder, dropUp = false, classN
                 <div 
                   key={i} 
                   className={classes}
+                  role={d ? "button" : undefined} tabIndex={d ? 0 : undefined}
+                  aria-label={d ? `${d}/${viewDate.getMonth() + 1}/${viewDate.getFullYear()}` : undefined}
+                  onKeyDown={e => { if (d && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); handleSelectDate(d); } }}
                   onClick={() => handleSelectDate(d)}
                   style={{
                     height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -221,9 +249,16 @@ const CustomTimePicker = ({ value, onChange, placeholder, dropUp = false, classN
   };
 
   return (
-    <div ref={containerRef} style={{ position: 'relative', width: '100%', zIndex: isOpen ? 1000 : 1 }}>
+    <div ref={containerRef} onKeyDownCapture={e => {
+      if (isOpen && e.key === 'Escape') {
+        e.preventDefault(); e.stopPropagation(); setIsOpen(false);
+        containerRef.current?.querySelector('.custom-input')?.focus();
+      }
+    }} style={{ position: 'relative', width: '100%', zIndex: isOpen ? 1000 : 1 }}>
       <div 
         className={className || "custom-input"}
+        role="button" tabIndex={0} aria-expanded={isOpen}
+        onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setIsOpen(v => !v); } }}
         onClick={() => setIsOpen(!isOpen)}
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -269,6 +304,8 @@ const CustomTimePicker = ({ value, onChange, placeholder, dropUp = false, classN
               {hours.map(h => (
                 <div
                   key={h} ref={tempHour === h ? hourRef : null}
+                  role="button" tabIndex={0} aria-label={`Hora ${h}`}
+                  onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleHourClick(h); } }}
                   onClick={() => handleHourClick(h)}
                   className="time-picker-item"
                   style={{
@@ -299,6 +336,8 @@ const CustomTimePicker = ({ value, onChange, placeholder, dropUp = false, classN
               {minutes.map(m => (
                 <div
                   key={m} ref={tempMin === m ? minRef : null}
+                  role="button" tabIndex={0} aria-label={`Minuto ${m}`}
+                  onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleMinClick(m); } }}
                   onClick={() => handleMinClick(m)}
                   className="time-picker-item"
                   style={{
@@ -348,6 +387,9 @@ export default function SegundaPagina() {
   const [visaoEventos, setVisaoEventos] = useState(() => searchParams.get('aba') === 'meus' ? 'MEUS' : 'Públicos');
   const [modoVisualizacao, setModoVisualizacao] = useState('lista');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [savingEvent, setSavingEvent] = useState(false);
+  const savingEventRef = useRef(false);
+  const [suggestionSuccess, setSuggestionSuccess] = useState('');
   const [eventoEmEdicao, setEventoEmEdicao] = useState(null);
 
   // Estados do Modal
@@ -383,6 +425,7 @@ export default function SegundaPagina() {
   ];
   const visibilidadeOptions = [
     ...((isProfessor || isAdmin) && !eventoEmEdicao ? [{ label: 'Público', value: 'Público' }] : []),
+    ...(profile?.papel === 'student' && !eventoEmEdicao ? [{ label: 'Sugerir evento', value: 'Sugestão' }] : []),
     { label: 'Apenas para mim', value: 'Privado' },
   ];
 
@@ -465,16 +508,48 @@ export default function SegundaPagina() {
     setVisibilidade('');
     setLinkExterno('');
     setEventoEmEdicao(null);
+    setErroEventos('');
   };
 
   const handleAdicionarEvento = async (e) => {
     e.preventDefault();
-    if (!titulo.trim() || !data || !horario) return;
+    if (savingEventRef.current) return;
+    const tituloLimpo = titulo.trim();
+    if (!tituloLimpo) {
+      setErroEventos('Informe o título do evento.');
+      return;
+    }
+    if (tituloLimpo.length < 3) {
+      setErroEventos('O título do evento deve ter pelo menos 3 caracteres.');
+      return;
+    }
+    if (!data) {
+      setErroEventos('Selecione uma data para o evento.');
+      return;
+    }
+    if (!horario) {
+      setErroEventos('Selecione um horário para o evento.');
+      return;
+    }
+    if (!visibilidade) {
+      setErroEventos('Selecione a visibilidade do evento.');
+      return;
+    }
 
+    savingEventRef.current = true;
+    setSavingEvent(true);
     try {
       setErroEventos('');
       const payload = toApiEvent({ titulo, data, horario, campus, local, area, descricao, linkExterno });
       let savedEvent;
+      if (visibilidade === 'Sugestão' && !eventoEmEdicao) {
+        await eventsApi.suggest(payload);
+        window.dispatchEvent(new Event('suggestion-submitted'));
+        setSuggestionSuccess('Sugestão enviada! Acompanhe a análise pelo sino de notificações.');
+        resetModal();
+        setIsModalOpen(false);
+        return;
+      }
       if (eventoEmEdicao) {
         savedEvent = await eventsApi.updatePersonal(eventoEmEdicao.id, payload);
       } else if (visibilidade === 'Público') {
@@ -499,6 +574,9 @@ export default function SegundaPagina() {
       setIsModalOpen(false);
     } catch (error) {
       setErroEventos(error.message || 'Não foi possível salvar o evento.');
+    } finally {
+      savingEventRef.current = false;
+      setSavingEvent(false);
     }
   };
 
@@ -608,6 +686,7 @@ export default function SegundaPagina() {
                 Criar Evento
               </button>
             )}
+
           </div>
 
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center', zIndex: 11, position: 'relative' }}>
@@ -637,6 +716,7 @@ export default function SegundaPagina() {
           </div>
         </div>
 
+        <Feedback success={suggestionSuccess} />
         <div className="events-section-header">
           <h2 className="events-section-title">
             {visaoEventos === 'MEUS' ? 'MEUS EVENTOS' : 'EVENTOS PÚBLICOS'}
@@ -762,27 +842,23 @@ export default function SegundaPagina() {
       </main>
 
       {isModalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-container">
-            <button 
-              onClick={() => { setIsModalOpen(false); resetModal(); }}
-              className="modal-close"
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: '1.5rem' }}>close</span>
-            </button>
-            <h2 className="modal-title">
-              <span className="material-symbols-outlined">event_note</span>
-              {eventoEmEdicao ? 'Editar Evento Pessoal' : 'Novo Evento'}
-            </h2>
+        <Modal className="event-create-dialog" title={eventoEmEdicao ? 'Editar Evento Pessoal' : 'Novo Evento'} busy={savingEvent}
+          onClose={() => { setIsModalOpen(false); resetModal(); }}>
             <form onSubmit={handleAdicionarEvento} className="modal-form">
+              {erroEventos && (
+                <div role="alert" style={{ padding: '0.75rem 1rem', borderRadius: '12px', color: '#b42318', background: '#fee4e2', fontSize: '0.85rem', fontWeight: 500, lineHeight: 1.4 }}>
+                  {erroEventos}
+                </div>
+              )}
               
               <div>
-                <label className="modal-label">TÍTULO DO EVENTO *</label>
-                <input type="text" required value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder="Dê um título breve para o seu evento..." className="custom-input" />
+                <label htmlFor="event-title" className="modal-label">TÍTULO DO EVENTO *</label>
+                <input id="event-title" type="text" required minLength={3} maxLength={200} value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder="Dê um título breve para o seu evento..." className="custom-input" />
               </div>
               <div>
-                <label className="modal-label">DESCRIÇÃO</label>
-                <textarea value={descricao} onChange={(e) => setDescricao(e.target.value)} placeholder="Forneça mais detalhes..." className="custom-input" style={{ resize: 'vertical', minHeight: '80px', fontFamily: 'inherit' }} />
+                <label htmlFor="event-description" className="modal-label">DESCRIÇÃO</label>
+                <textarea id="event-description" maxLength={10000} value={descricao} onChange={(e) => setDescricao(e.target.value)}
+                  placeholder="Forneça mais detalhes..." className="custom-input event-description-input" />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
@@ -797,39 +873,39 @@ export default function SegundaPagina() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label className="modal-label">CAMPUS</label>
-                  <CustomSelect options={campiOptions} value={campus} onChange={setCampus} placeholder="Selecione..." isDark={isDark} className="custom-input" accentColor={accentColor} cardBg={cardBg} borderColor={borderColor} textColor={textColor} dropUp={true} />
+                  <CustomSelect options={campiOptions} value={campus} onChange={setCampus} placeholder="Selecione..." ariaLabel="Campus" isDark={isDark} className="custom-input" accentColor={accentColor} cardBg={cardBg} borderColor={borderColor} textColor={textColor} dropUp={true} />
                 </div>
                 <div>
                   <label className="modal-label">ÁREA</label>
-                  <CustomSelect options={areasOptions} value={area} onChange={setArea} placeholder="Selecione..." isDark={isDark} className="custom-input" accentColor={accentColor} cardBg={cardBg} borderColor={borderColor} textColor={textColor} dropUp={true} />
+                  <CustomSelect options={areasOptions} value={area} onChange={setArea} placeholder="Selecione..." ariaLabel="Área" isDark={isDark} className="custom-input" accentColor={accentColor} cardBg={cardBg} borderColor={borderColor} textColor={textColor} dropUp={true} />
                 </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
-                  <label className="modal-label">LOCAL EXATO</label>
-                  <input type="text" value={local} onChange={(e) => setLocal(e.target.value)} placeholder="Ex: Auditório, S9, MOCAP..." className="custom-input" />
+                  <label htmlFor="event-location" className="modal-label">LOCAL EXATO</label>
+                  <input id="event-location" type="text" maxLength={250} value={local} onChange={(e) => setLocal(e.target.value)} placeholder="Ex: Auditório, S9, MOCAP..." className="custom-input" />
                 </div>
                 <div>
-                  <label className="modal-label">VISIBILIDADE</label>
-                  <CustomSelect options={visibilidadeOptions} value={visibilidade} onChange={setVisibilidade} placeholder="Selecione..." isDark={isDark} className="custom-input" accentColor={accentColor} cardBg={cardBg} borderColor={borderColor} textColor={textColor} dropUp={true} />
+                  <span className="modal-label">VISIBILIDADE *</span>
+                  <CustomSelect options={visibilidadeOptions} value={visibilidade} onChange={setVisibilidade} placeholder="Selecione..." ariaLabel="Visibilidade" className="custom-input" dropUp={true} />
                 </div>
               </div>
+              {visibilidade === 'Sugestão' && <p id="suggestion-help" className="management-muted">Seu evento será analisado por professores e administradores antes da publicação. Você receberá a confirmação e o resultado pelo sino de notificações.</p>}
               <div>
-                <label className="modal-label">LINK EXTERNO</label>
-                <input type="text" value={linkExterno} onChange={(e) => setLinkExterno(e.target.value)} placeholder="Ex: https://sigaa.unb.br/..." className="custom-input" />
+                <label htmlFor="event-url" className="modal-label">LINK EXTERNO</label>
+                <input id="event-url" type="url" maxLength={2000} value={linkExterno} onChange={(e) => setLinkExterno(e.target.value)} placeholder="Ex: https://sigaa.unb.br/..." className="custom-input" />
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '1rem' }}>
-                <button type="button" onClick={() => { setIsModalOpen(false); resetModal(); }} style={{ padding: '12px 20px', borderRadius: '16px', background: 'transparent', color: textMuted, border: `1px solid ${borderColor}`, cursor: 'pointer', fontWeight: 600 }}>
+                <button type="button" disabled={savingEvent} onClick={() => { setIsModalOpen(false); resetModal(); }} style={{ padding: '12px 20px', borderRadius: '16px', background: 'transparent', color: textMuted, border: `1px solid ${borderColor}`, cursor: 'pointer', fontWeight: 600 }}>
                   Cancelar
                 </button>
-                <button type="submit" style={{ padding: '12px 24px', borderRadius: '16px', background: 'rgba(0, 95, 210, 1)', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600, boxShadow: '0 4px 15px rgba(0, 139, 255, 0.3)' }}>
-                  {eventoEmEdicao ? 'Salvar alterações' : 'Salvar Evento'}
+                <button type="submit" disabled={savingEvent} style={{ padding: '12px 24px', borderRadius: '16px', background: 'rgba(0, 95, 210, 1)', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600, boxShadow: '0 4px 15px rgba(0, 139, 255, 0.3)' }}>
+                  {savingEvent ? 'Enviando…' : eventoEmEdicao ? 'Salvar alterações' : visibilidade === 'Sugestão' ? 'Enviar sugestão' : 'Salvar Evento'}
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

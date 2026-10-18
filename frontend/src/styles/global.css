@@ -439,7 +439,7 @@ body.light .scroll-hint svg { stroke: #1a1a2e; }
  Ajuste de cor do vídeo de fundo no tema light
  */
 body.light .hero-video {
-     filter: hue-rotate(20deg) saturate(250%) brightness(120%); 
+     filter: hue-rotate(20deg) saturate(200%) brightness(100%); 
 }
 
 body.light .modal-overlay { background: rgba(245, 246, 250, 0.85); }
@@ -756,7 +756,9 @@ body.light .btn-toggle-group { background: #e2e8f0; }
 }
 body.dark .custom-picker-option:hover, body:not(.light) .custom-picker-option:hover { background: rgba(0, 140, 255, 0.318); }
 body.light .custom-picker-option:hover { background: rgba(0, 140, 255, 0.316); }
-.custom-picker-option.active { background: rgba(0, 140, 255, 0.775); color: var(white); }
+.custom-picker-option.active { background: rgba(0, 140, 255, 0.775); color: #fff; }
+body.light .custom-picker-option.active,
+body.light .custom-picker-option.active:hover { background: #006bc4; color: #fff; }
 
 /* Empty State */
 .empty-state { text-align: center; padding: 4rem 2rem; background: var(--card-bg); border-radius: 24px; border: 1px dashed var(--border-color); }
