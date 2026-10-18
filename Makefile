@@ -1,4 +1,17 @@
-SHELL := /bin/bash
+# Configuracao do Shell de execucao (compatibilidade Windows e Unix)
+ifeq ($(OS),Windows_NT)
+    ifneq ($(wildcard C:/Program\ Files/Git/bin/bash.exe),)
+        SHELL := C:/Program Files/Git/bin/bash.exe
+    else ifneq ($(wildcard C:/Program\ Files\ \(x86\)/Git/bin/bash.exe),)
+        SHELL := C:/Program Files (x86)/Git/bin/bash.exe
+    else ifneq ($(wildcard $(LOCALAPPDATA)/Programs/Git/bin/bash.exe),)
+        SHELL := $(LOCALAPPDATA)/Programs/Git/bin/bash.exe
+    else
+        SHELL := bash.exe
+    endif
+else
+    SHELL := /bin/bash
+endif
 
 # Diretorio raiz do projeto (caminho absoluto)
 ROOT_DIR            := $(CURDIR)
@@ -135,7 +148,7 @@ dev: check-env check-backend check-frontend db-start
 	@echo " Pressione [Ctrl+C] para encerrar o Backend e o Frontend."
 	@echo "======================================================================"
 	@echo ""
-	@bash -c '\
+	@$(SHELL) -c '\
 		(cd "$(ROOT_DIR)/backend" && $(UVICORN) src.main:app --reload --port $(BACKEND_PORT)) & \
 		BACK_PID=$$!; \
 		(cd "$(ROOT_DIR)/frontend" && npm run dev -- --port $(FRONTEND_PORT)) & \

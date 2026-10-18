@@ -20,13 +20,21 @@ async function request(path, { auth = false, ...options } = {}) {
 
   const result = await response.json().catch(() => null);
   if (!response.ok) {
-    const detail = result?.detail;
-    throw new Error(typeof detail === 'string' ? detail : 'Não foi possível concluir a solicitação.');
+    let detail = result?.detail;
+    if (Array.isArray(detail)) {
+      detail = detail.map((err) => `${err.loc?.slice(-1)?.[0] || 'campo'}: ${err.msg}`).join('; ');
+    } else if (typeof detail !== 'string') {
+      detail = 'Não foi possível concluir a solicitação.';
+    }
+    throw new Error(detail);
   }
   return result;
 }
 
 export const eventsApi = {
+  suggest: (event) => request('/suggestions', {
+    method: 'POST', auth: true, body: JSON.stringify(event),
+  }),
   listPublic: async (filters = {}) => {
     const query = new URLSearchParams();
     if (filters.campus) query.set('campus', filters.campus);
@@ -101,11 +109,11 @@ export function toApiEvent({ titulo, data, horario, campus, local, area, descric
   }
   return {
     title: titulo.trim(),
-    description: descricao.trim() || null,
+    description: descricao?.trim() || null,
     starts_at: startsAt.toISOString(),
-    campus: campus || null,
-    category: area || null,
-    location: local.trim() || null,
-    ...(linkExterno.trim() ? { external_url: linkExterno.trim() } : {}),
+    campus: campus?.trim() || null,
+    category: area?.trim() || null,
+    location: local?.trim() || null,
+    ...(linkExterno?.trim() ? { external_url: linkExterno.trim() } : {}),
   };
 }
