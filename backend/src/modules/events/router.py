@@ -183,6 +183,32 @@ def delete_public_event(
     return Response(status_code=204)
 
 
+@router.post("/suggestions", response_model=EventRead, status_code=201)
+def suggest_event(
+    payload: EventCreate,
+    db: Session = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+) -> EventRead:
+    if current_user.role != "student":
+        raise HTTPException(status_code=403, detail="Apenas estudantes enviam sugestões")
+    event = PublicEvent(
+        author_id=current_user.id,
+        title=payload.title,
+        description=payload.description or "",
+        starts_at=payload.starts_at,
+        location=payload.location,
+        external_url=str(payload.external_url) if payload.external_url else None,
+        campus_id=_campus_id(db, payload.campus),
+        category_id=_category_id(db, payload.category),
+        status="pendente",
+    )
+    # O trigger do banco registra a notificação na mesma transação.
+    db.add(event)
+    db.commit()
+    db.refresh(event)
+    return _public_read(event)
+
+
 @router.get("/me/saved-events", response_model=list[EventRead])
 def list_saved_events(
     current_user: CurrentUser = Depends(get_current_user),
