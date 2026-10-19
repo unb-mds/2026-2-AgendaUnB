@@ -30,3 +30,21 @@
 - README inicial.
 - Miro criado.
 - Decisões técnicas básicas estabelecidas.
+
+## Issues da sprint
+
+Consulta ao GitHub em **19/10/2026**. Estado e checklists abaixo reproduzem o registro das issues nessa consulta; uma issue fechada não representa verificação independente de todos os critérios. As atribuições históricas foram preservadas.
+
+| Issue | Estado no GitHub | Responsáveis |
+| --- | --- | --- |
+| [#7 — Sprint 01 concluída](https://github.com/unb-mds/2026-2-AgendaUnB/issues/7) | Fechada | Não informado |
+
+## Texto das issues registradas
+
+### #7 — Sprint 01 concluída
+
+**Origem:** [Issue #7](https://github.com/unb-mds/2026-2-AgendaUnB/issues/7).
+
+**Estado:** Fechada.
+
+**Labels:** Nenhuma.
