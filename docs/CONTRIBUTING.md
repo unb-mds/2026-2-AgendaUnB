@@ -145,3 +145,35 @@ Exemplos:
 * `fix(navbar): corrige alinhamento dos botões em telas menores`
 * `docs(requisitos): inclui novos requisitos de moderação`
 * `refactor(parser): melhora desempenho da extração de datas em PDF`
+
+
+## 5. Atualizações de banco e verificações
+
+O estado atual inclui eventos salvos, sugestões, moderação, notificações e administração. Aplique todas as migrações em ordem antes de disponibilizar a API/frontend correspondente. Para atualizar o Supabase local já iniciado sem recriar o banco:
+
+```bash
+npx supabase migration up --local
+```
+
+`make db-reset` recria o banco, reaplica migrações e seed. Use-o somente quando puder descartar os dados locais. Para outros ambientes, siga o fluxo de migrações adotado pela equipe.
+
+Execute as verificações a partir das respectivas pastas:
+
+```bash
+# backend, com o ambiente Python ativo
+python -m pytest tests -q
+
+# frontend
+npm run build
+node --test src/lib/calendar.test.js
+```
+
+Os testes de API usam SQLite. Para exercitar RLS, RPCs e triggers reais, configure `TEST_SUPABASE_DB_URL` com a conexão PostgreSQL do Supabase local e execute pytest. Os testes de banco só aceitam `localhost`/`127.0.0.1`, desfazem os dados ao terminar e são ignorados quando a variável não está configurada. Não use uma conexão de produção.
+
+Para conferir o site de documentação, com MkDocs Material instalado:
+
+```bash
+mkdocs build --strict
+```
+
+Ao alterar uma funcionalidade, atualize os guias correspondentes e o estado em [Atualizações pós-R1](atualizacoes.md). Notas de versões anteriores são registros históricos. Registre uso relevante de IA em [AI-USAGE.md](AI-USAGE.md), incluindo o que foi efetivamente verificado.

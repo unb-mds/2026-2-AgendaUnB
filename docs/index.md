@@ -8,9 +8,9 @@ Bem-vindo à documentação oficial do projeto **Agenda UnB**, desenvolvido pelo
 
 O objetivo do **Agenda UnB** é criar uma plataforma centralizada para a comunidade acadêmica da UnB, reunindo em um único ambiente:
 
-1. **Agenda do Campus:** Divulgação e acompanhamento de eventos sociais, acadêmicos e culturais de todos os campi da universidade (Darcy Ribeiro, FGA, FCE e FUP).
-2. **Organizador Acadêmico Inteligente:** Calendário pessoal do estudante alimentado automaticamente a partir da extração inteligente de datas de provas, entregas de trabalhos e seminários contidos em planos de ensino (PDF ou texto bruto).
-3. **Inscrição Direta e Colaboração:** Capacidade de se inscrever em eventos com um clique e submissão colaborativa de novas atividades com fluxo de moderação.
+1. **Agenda do Campus:** Divulgação e acompanhamento de eventos sociais, acadêmicos e culturais de todos os campi da universidade (Darcy Ribeiro, FCTE/Gama, FCTS/Ceilândia, FUP e FAL).
+2. **Organizador Acadêmico Inteligente:** Agenda pessoal em lista ou calendário mensal/semanal, com compromissos privados e eventos públicos salvos. A extração automática de datas de planos de ensino e atestados é uma evolução planejada.
+3. **Sugestões e Moderação:** Estudantes propõem eventos; professores e administradores aprovam ou recusam, com notificações ao autor. Administradores gerenciam usuários e cargos. Inscrição direta permanece planejada.
 
 ---
 
@@ -74,3 +74,14 @@ Navegue pelas seções através das abas superiores ou pelos links abaixo:
 * [Padrões de Projeto](padroes.md) — Glossário oficial, convenções de código, branches e commits.
 * [Sprints](sprints/sprint-1.md) — Acompanhamento ágil das entregas por ciclo de desenvolvimento.
 * [Como Contribuir](CONTRIBUTING.md) — Guia de instalação e ambiente de desenvolvimento local.
+
+
+## Estado atual
+
+A [v0.1.0](release-notes/v0.1.0.md) registra a entrega de 28/09/2026. Consulte [Atualizações pós-R1](atualizacoes.md) para o estado documentado em 19/10/2026, incluindo calendário, eventos públicos salvos e administração.
+
+* [Eventos salvos](eventos-salvos.md) — Vínculos com a agenda pessoal, API e migração.
+* [Painel administrativo e sugestões](painel-administrativo.md) — Permissões, moderação, notificações e testes.
+* [Interface e design](especificacao-frontend.md) — Navegação e experiência de uso.
+
+A página Plano de Ensino informa que upload e extração ainda estão em preparação. As estruturas de banco/Storage não significam que o processamento já esteja disponível.

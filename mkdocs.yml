@@ -7,8 +7,12 @@ nav:
   - Início: index.md
   - Visão do Produto: documento-de-visao.md
   - Arquitetura: Architecture.md
+  - Modelo de Dados: modelo-de-dados.md
+  - Especificação do Banco: especificacao-banco-de-dados.md
   - Requisitos: requisitos.md
   - Padrões de Projeto: padroes.md
+  - Interface e Design: especificacao-frontend.md
+  - Personas: personas.md
   - Sprints:
     - Sprint 1: sprints/sprint-1.md
     - Sprint 2: sprints/sprint-2.md

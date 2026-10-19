@@ -30,6 +30,15 @@ O campo **verificado** é o mais importante. Sem ele, a entrada declara o uso ma
 
 ## Entradas
 
+### 19/10/2026 — Sincronização da documentação com o estado pós-R1
+
+- **Quem:** Thomas Augusto Amorim de Araujo (solicitante).
+- **Ferramenta:** Codex (OpenAI).
+- **O que foi pedido:** Ler e atualizar a documentação com as mudanças recentes do projeto.
+- **O que entrou no repositório:** Atualização dos guias de produto, arquitetura, requisitos, interface, padrões, contribuição e índice; documento `docs/atualizacoes.md` e navegação MkDocs. Sem alteração na implementação.
+- **O que foi verificado:** Leitura das rotas React e FastAPI, cliente de RPCs, componentes de calendário e eventos salvos e migrações de moderação, cargos e Storage. Validados o YAML do MkDocs, os 17 destinos da navegação, os links locais Markdown e a contagem de 11 migrações.
+- **O que foi rejeitado ou corrigido:** Removidas descrições de moderação como futura e de extração de PDF como pronta; distinguido vínculo salvo de inscrição e notificação de decisão de lembrete de proximidade. Corrigida a regra de domínio de professor e um exemplo de sombra incompatível com a regra de design. A nota v0.1.0 foi preservada como histórico.
+
 ### 18/09/2026 — Ajustes de autenticação, correções de UI e modularização do CSS
 
 - **Quem:** Thomas Augusto Amorim de Araujo
