@@ -11,13 +11,13 @@ Este documento reúne os **Requisitos Funcionais (RF)** e **Requisitos Não Func
 | **RF01** | **Autenticação Local** | O sistema deve permitir que os usuários façam login e se autentiquem com e-mail (institucional ou pessoal) e senha criptografada. |
 | **RF02** | **Cadastro de Usuários** | O sistema deve permitir o cadastro de novos usuários informando nome completo, e-mail e senha, com confirmação de senha. |
 | **RF03** | **Autenticação Google (OAuth)** | O sistema deve permitir cadastro e login ágil com um clique utilizando contas Google. |
-| **RF04** | **Categorização por Papel (Role)** | O sistema deve categorizar e conceder permissões ao usuário conforme seu perfil: Estudante (`student`), Professor (`professor`) ou Administrador (`admin`). Administradores possuem permissão exclusiva para alterar os papéis de outros usuários. |
+| **RF04** | **Categorização por Papel (Role)** | O sistema deve categorizar e conceder permissões ao usuário conforme seu perfil: Estudante (`student`), Professor (`professor`) ou Administrador (`admin`). Administradores possuem permissão exclusiva para alterar os papéis de outros usuários. Cadastro e autopromoção para professor exigem `@unb.br`; a atribuição por administrador admite outro domínio. |
 | **RF05** | **Upload de Planos de Ensino e Atestado de Matrícula** | O sistema deve permitir o envio de arquivos em PDF ou texto bruto sob o Modelo Dual: planos de ensino oficiais (por professores), uploads particulares de planos (por estudantes) e atestado de matrícula do SIGAA (para alocação automática de disciplinas e turmas). |
 | **RF06** | **Extração Automática de Dados Acadêmicos** | O sistema deve processar os arquivos enviados e extrair automaticamente datas de provas e trabalhos dos planos de ensino, além de extrair código de disciplina, nome da matéria e turma a partir do atestado de matrícula. |
 | **RF07** | **Revisão e Validação Colaborativa** | O sistema deve fornecer revisão assistida ("Human-in-the-loop") para conferência de dados em uploads particulares e fluxo de validação colaborativa ativa (votação/confirmação) entre colegas da mesma turma para planos oficiais compartilhados. |
 | **RF08** | **Visualização em Agenda / Calendário** | O sistema deve exibir todos os compromissos em uma interface visual de calendário (visões mensal, semanal ou lista). |
 | **RF09** | **Gestão de Eventos Privados (CRUD)** | O sistema deve permitir ao usuário criar, editar e excluir eventos e prazos acadêmicos particulares em sua agenda pessoal. |
-| **RF10** | **Submissão de Eventos Públicos** | O sistema deve permitir que usuários submetam propostas de eventos públicos e acadêmicos para divulgação na plataforma (na Release 1, implementada a criação direta por Professores e Administradores; para a Release 2, submissão aberta pela comunidade com status pendente). |
+| **RF10** | **Submissão de Eventos Públicos** | O sistema deve permitir que usuários submetam propostas de eventos públicos e acadêmicos para divulgação na plataforma (professores e administradores publicam diretamente; estudantes enviam sugestões com status pendente pelo formulário Criar Evento). |
 | **RF11** | **Moderação de Eventos e Painel Administrativo** | O sistema deve disponibilizar um painel administrativo onde Professores e Administradores podem visualizar, aprovar ou rejeitar eventos públicos submetidos, e onde Administradores gerenciam os papéis dos usuários. |
 | **RF12** | **Inscrição Direta em Eventos** | O sistema deve permitir que os usuários se inscrevam diretamente em eventos públicos do campus com apenas um clique. |
 | **RF13** | **Cancelamento de Inscrição** | O sistema deve permitir que o usuário cancele a qualquer momento sua inscrição prévia em um evento. |
@@ -40,7 +40,7 @@ Os requisitos não funcionais estão divididos de acordo com a norma **ISO/IEC 2
 * **RNF01 — Criptografia de Credenciais:** Todas as senhas de usuários devem ser armazenadas utilizando algoritmos de derivação de chave e hash unidirecional seguro (ex: `bcrypt` com *cost factor* $\ge 10$ ou `Argon2`).
 * **RNF02 — Privacidade dos Dados Acadêmicos (LGPD):** Planos de ensino, notas e eventos privados dos estudantes são estritamente confidenciais e não podem ser acessíveis por terceiros ou expostos sem autenticação.
 * **RNF03 — Comunicação Criptografada:** Todo o tráfego de dados entre a aplicação web, a API de backend e o banco de dados deve utilizar criptografia TLS/HTTPS.
-* **RNF04 — Controle de Acesso (RBAC):** O acesso a rotas administrativas (moderação de eventos, gestão de categorias) deve ser restrito exclusivamente a usuários com a atribuição de Administrador (`admin`).
+* **RNF04 — Controle de Acesso (RBAC):** A moderação de sugestões deve ser restrita a Professores e Administradores. A gestão de usuários e a alteração de cargos de terceiros são exclusivas de Administradores (`admin`). As permissões devem ser verificadas no servidor/banco, além da proteção das rotas da interface.
 
 ### ⚡ 2.2 Desempenho e Eficiência (Performance)
 * **RNF05 — Tempo de Resposta da API:** Pelo menos 95% das requisições de consulta de eventos (`GET /events`) devem ser respondidas pelo servidor em até **300 milissegundos** sob condições normais de uso.
@@ -58,3 +58,19 @@ Os requisitos não funcionais estão divididos de acordo com a norma **ISO/IEC 2
 ### 🧩 2.5 Compatibilidade e Manutenibilidade (Compatibility & Maintainability)
 * **RNF12 — Compatibilidade entre Navegadores:** A aplicação deve ser homologada e funcional nas versões atuais dos principais navegadores web do mercado (Google Chrome, Mozilla Firefox, Microsoft Edge e Safari).
 * **RNF13 — Qualidade de Código e Padrões:** O desenvolvimento deve seguir rigorosamente as regras estipuladas em [`padroes.md`](padroes.md) e manter cobertura de testes automatizados unitários e de integração nas funcionalidades de negócio essenciais.
+
+
+## 3. Situação da implementação pós-Sprint 05:
+
+| Requisitos | Situação |
+| --- | --- |
+| RF01–RF04 | Autenticação e perfis implementados, com painel de administração e exceção institucional controlada por admin. |
+| RF08–RF11 | Lista e calendário mensal/semanal, CRUD privado, publicação direta, sugestões estudantis e moderação implementados. |
+| RF14, RF15, RF20 | Detalhes, catálogo multi-campus e temas implementados. |
+| RF19 | Busca e filtros de categoria/campus/turno na interface; intervalo de datas disponível na API. |
+| RF05–RF07 | Planejados. Bucket privado preparado; a página de planos informa que upload e extração ainda não estão disponíveis. |
+| RF12, RF13, RF16–RF18, RF21 | Planejados: inscrição/cancelamento, coleta externa, lembretes, histórico de participação e exportação. |
+
+O vínculo de um evento público salvo em Meus Eventos não representa inscrição ou confirmação de participação (RF12/RF13). As notificações atuais são de envio e decisão de sugestões; lembretes por proximidade (RF17) continuam planejados. Essas extensões estão detalhadas em [Eventos salvos](eventos-salvos.md) e [Painel administrativo](painel-administrativo.md).
+
+Os RNFs são critérios de qualidade. Sua presença nesta especificação não comprova homologação de desempenho, acessibilidade ou navegadores; essas verificações devem ser registradas quando executadas.

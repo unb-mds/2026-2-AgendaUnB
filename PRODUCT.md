@@ -19,9 +19,11 @@ O produto atua como um organizador central da vida acadêmica de toda a comunida
 A plataforma será utilizada tanto de forma pontual (para descobrir o que está acontecendo no campus hoje) quanto para o planejamento de longo prazo do semestre (acompanhamento de calendário de provas e trabalhos dos planos de ensino).
 
 ## Capabilities and Constraints
-- Sistema de dupla autenticação e perfis (Estudantes via Google OAuth e login padrão, Professores via e-mail `@unb.br`).
+- Autenticação por e-mail/senha e Google OAuth, com perfis estudante/professor/admin. Cadastro e autopromoção para professor exigem `@unb.br`; admins podem atribuir esse papel a outro domínio.
 - Categorização rígida atrelada aos campi da UnB e aos tipos de atividades.
-- Extração/Leitura de dados de Planos de Ensino (feature futura/core).
+- Lista e calendário mensal/semanal; agenda pessoal reúne eventos privados e públicos salvos por vínculo.
+- Sugestões estudantis, moderação por professores/admins, notificações de decisão e gestão de cargos exclusiva de admins.
+- Extração/leitura de planos de ensino e atestados permanece futura; `/plano-de-ensino` informa esse estado.
 - Obrigatório suporte fluido a temas (Claro e Escuro).
 
 ## Brand Commitments
