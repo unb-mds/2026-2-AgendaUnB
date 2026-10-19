@@ -85,3 +85,8 @@ A [v0.1.0](release-notes/v0.1.0.md) registra a entrega de 28/09/2026. Consulte [
 * [Interface e design](especificacao-frontend.md) — Navegação e experiência de uso.
 
 A página Plano de Ensino informa que upload e extração ainda estão em preparação. As estruturas de banco/Storage não significam que o processamento já esteja disponível.
+
+
+## Planejamento e histórico de issues
+
+As páginas de [Sprint 01](sprints/sprint-1.md), [Sprint 02](sprints/sprint-2.md), [Sprint 03](sprints/sprint-3.md), [Sprint 04](sprints/sprint-4.md) e [Sprint 05](sprints/sprint-5.md) registram as issues existentes, seus textos e estados consultados em 19/10/2026. A [Sprint 06](sprints/sprint-6.md) reúne a proposta de planos de ensino com IA e as realocações de #38 e #40, ainda pendentes exclusivamente no backend.

@@ -25,7 +25,7 @@ cd 2026-2-AgendaUnB
 
 ### 2.2 Fluxo Rápido com Makefile (Recomendado)
 
-O projeto disponibiliza um [`Makefile`](../Makefile) na raiz que simplifica toda a rotina de desenvolvimento:
+O projeto disponibiliza um [`Makefile`](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/Makefile) na raiz que simplifica toda a rotina de desenvolvimento:
 
 #### Passo 1: Setup completo em 1 comando
 Cria o `.env` (a partir de `.env.example`), cria o ambiente virtual Python (`backend/venv`), instala as dependências de produção e de testes do backend, instala os pacotes do frontend e inicializa os containers do Supabase:
