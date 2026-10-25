@@ -21,12 +21,7 @@ deixarem de estar aprovados não aparecem nas consultas da agenda.
 
 ## API autenticada
 
-| Método | Rota | Resultado |
-| --- | --- | --- |
-| GET | `/api/v1/me/saved-events` | Eventos públicos aprovados salvos pelo usuário |
-| GET | `/api/v1/me/saved-events/{id}` | `{ "saved": true/false }` |
-| PUT | `/api/v1/me/saved-events/{id}` | Salva sem duplicar, retorna `{ "saved": true }` |
-| DELETE | `/api/v1/me/saved-events/{id}` | Remove somente o vínculo, retorna 204 |
+Consulte os [contratos de eventos salvos](api-specs.md#eventos-salvos-pos-r1) para métodos, payloads e respostas.
 
 PUT e DELETE são idempotentes. PUT retorna 404 para evento inexistente ou não
 aprovado. Todas as rotas exigem autenticação; o cliente nunca escolhe `user_id`.
