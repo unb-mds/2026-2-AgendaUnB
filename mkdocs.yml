@@ -7,6 +7,8 @@ nav:
   - Início: index.md
   - Visão do Produto: documento-de-visao.md
   - Arquitetura: Architecture.md
+  - Contratos do Backend: api-specs.md
+  - Plano de Implantação: implantacao.md
   - Modelo de Dados: modelo-de-dados.md
   - Especificação do Banco: especificacao-banco-de-dados.md
   - Requisitos: requisitos.md

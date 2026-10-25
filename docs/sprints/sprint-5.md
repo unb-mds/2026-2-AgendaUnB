@@ -162,3 +162,7 @@ Saneamento de dívidas técnicas de documentação. O projeto avançou para a R1
 - [x] Criar documento `modelo-de-dados.md` (ou adicionar seção robusta em Arquitetura) contendo o Diagrama Entidade-Relacionamento (DER) e o dicionário de dados das 7 tabelas atuais do Supabase. (se não tiver sido feito no documento de especificação do banco de dados)
 - [x] Criar documento `api-specs.md` detalhando os contratos do backend (rotas, payloads esperados e códigos HTTP de resposta).
 - [x] Criar documento `implantacao.md` para registrar o plano de Hospedagem e CI/CD (deploy do frontend, backend e homologação do banco), que ainda não existem formalmente no projeto.
+
+## Nota de regularização documental — 24/10/2026
+
+O checklist histórico da issue #45 acima foi preservado. Apesar das marcações de conclusão, `api-specs.md` e `implantacao.md` não estavam presentes no commit `e0ecf46`. Os documentos foram adicionados nesta consolidação: [contratos do backend](../api-specs.md) e [plano de implantação](../implantacao.md). A arquitetura e os padrões também foram revisados. A criação do plano não significa hospedagem, pipeline ou homologação executados; esta nota não altera o estado da issue no GitHub.
