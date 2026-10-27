@@ -12,6 +12,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from src.modules.events.router import router as events_router
+from src.modules.syllabus.router import router as syllabus_router
 
 
 app = FastAPI(
@@ -83,6 +84,7 @@ app.add_middleware(
 )
 
 app.include_router(events_router, prefix="/api/v1")
+app.include_router(syllabus_router, prefix="/api/v1")
 
 
 @app.get("/health", tags=["health"])
