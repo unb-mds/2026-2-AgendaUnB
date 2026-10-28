@@ -6,7 +6,7 @@ Este documento apresenta a estrutura visual de dados adotada no banco de dados S
 
 ## 1. Diagrama Entidade-Relacionamento (DER)
 
-O diagrama abaixo ilustra as relações entre as 7 tabelas que compõem o banco de dados.
+O diagrama abaixo ilustra as relações entre as tabelas centrais do banco de dados. As tabelas `eventos_salvos` e `notificacoes` estão descritas em [Especificação do Banco](especificacao-banco-de-dados.md) e em [Painel administrativo](painel-administrativo.md).
 
 ---
 
@@ -67,11 +67,31 @@ entity "EVENTOS_PESSOAIS" {
 entity "PLANOS_ENSINO" {
   * id : UUID <<PK>>
   --
-  * professor_id : UUID <<FK>>
+  * proprietario_id : UUID <<FK>>
+  * tipo : TEXT (particular | oficial)
+  professor_id : UUID <<FK>> (só oficial)
   * disciplina : TEXT
-  * turma : TEXT
-  arquivo_url : TEXT
-  created_at : TIMESTAMPTZ
+  turma : TEXT (só oficial)
+  ano : SMALLINT
+  semestre : SMALLINT (1 | 2)
+  arquivo_caminho : TEXT <<Unique>>
+  arquivo_nome_original : TEXT
+  arquivo_tamanho_bytes : INTEGER
+  arquivo_mime : TEXT
+  arquivo_paginas : SMALLINT
+  * status : TEXT (pendente | processando | concluido | falha)
+  * execucao_atual : SMALLINT
+  provedor_ia : TEXT
+  modelo_ia : TEXT
+  versao_processamento : TEXT
+  erro_codigo : TEXT
+  erro_mensagem : TEXT
+  processamento_iniciado_em : TIMESTAMPTZ
+  processado_em : TIMESTAMPTZ
+  plano_oficial_id : UUID <<FK>>
+  arquivo_url : TEXT (legado)
+  criado_em : TIMESTAMPTZ
+  atualizado_em : TIMESTAMPTZ
 }
 
 entity "AVALIACOES" {
@@ -83,9 +103,34 @@ entity "AVALIACOES" {
   created_at : TIMESTAMPTZ
 }
 
+entity "CANDIDATOS_AVALIACAO" {
+  * id : UUID <<PK>>
+  --
+  * plano_id : UUID <<FK>>
+  * execucao : SMALLINT
+  * ordem : SMALLINT
+  * titulo : TEXT
+  * tipo : TEXT
+  data_sugerida : DATE
+  hora_sugerida : TIME
+  * campos_ambiguos : TEXT[]
+  ambiguo : BOOLEAN (calculado)
+  * pagina_origem : SMALLINT
+  * trecho_origem : TEXT
+  * provedor_ia : TEXT
+  * modelo_ia : TEXT
+  * versao_processamento : TEXT
+  * status : TEXT (pendente | descartado | confirmado)
+  revisado_em : TIMESTAMPTZ
+  evento_pessoal_id : UUID <<FK, Unique>>
+  criado_em : TIMESTAMPTZ
+  .. Unique (plano_id, execucao, ordem) ..
+}
+
 PROFILES ||--o{ EVENTOS : "cria"
 PROFILES ||--o{ EVENTOS_PESSOAIS : "possui"
-PROFILES ||--o{ PLANOS_ENSINO : "envia"
+PROFILES ||--o{ PLANOS_ENSINO : "envia (proprietario_id)"
+PROFILES |o--o{ PLANOS_ENSINO : "responde pela turma (professor_id)"
 
 CAMPUS ||--o{ EVENTOS : "localiza"
 CAMPUS ||--o{ EVENTOS_PESSOAIS : "localiza"
@@ -94,4 +139,7 @@ CATEGORIES ||--o{ EVENTOS : "classifica"
 CATEGORIES ||--o{ EVENTOS_PESSOAIS : "classifica"
 
 PLANOS_ENSINO ||--o{ AVALIACOES : "gera"
+PLANOS_ENSINO ||--o{ CANDIDATOS_AVALIACAO : "IA sugere"
+PLANOS_ENSINO |o--o{ PLANOS_ENSINO : "plano_oficial_id"
+CANDIDATOS_AVALIACAO |o--o| EVENTOS_PESSOAIS : "confirmado vira"
 @enduml
