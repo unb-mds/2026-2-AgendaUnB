@@ -82,36 +82,36 @@ Agenda estritamente privada, gerenciada e visualizada unicamente por cada estuda
 
 ## 4. Organizador Acadêmico
 
-Migração de referência: `20261027120000_planos_particulares_e_candidatos.sql` (S6-D01, #53).
+Migrações de referência: `20261026120000_upload_planos_ensino.sql` (#40) e `20261027120000_planos_particulares_e_candidatos.sql` (S6-D01, #53).
 
 Fluxo: o upload (#40) cria o plano como `pendente`; o processamento (S6-B01) passa para `processando`, grava candidatos e termina em `concluido` ou `falha`; a revisão (S6-B02) marca cada candidato como `confirmado` ou `descartado`. Nenhum evento pessoal é criado sem confirmação do estudante.
 
 ### 4.1. Tabela `planos_ensino`
-PDFs de plano de ensino. Um plano é `particular` (enviado por um usuário para a própria agenda) ou `oficial` (plano de uma turma, enviado pelo professor; reservado para o Modelo Dual).
+PDFs de plano de ensino. Um plano é `particular` (enviado por um usuário para a própria agenda) ou `oficial` (plano de uma turma, enviado pelo professor; reservado para o Modelo Dual). As colunas de arquivo e rastreamento vêm da #40 (`20261026120000`); tipo, estados, erro sanitizado, período e dados da IA vêm da S6-D01 (`20261027120000`).
 *   **Dono e tipo:**
     *   `id` (UUID, Primary Key).
-    *   `proprietario_id` (UUID, Not Null): quem enviou. FK para `profiles(id)` (`ON DELETE CASCADE`).
+    *   `user_id` (UUID, Not Null): dono, quem enviou. FK para `profiles(id)` (`ON DELETE CASCADE`).
     *   `tipo` (TEXT, Not Null, padrão `particular`): `particular` ou `oficial`.
     *   `professor_id` (UUID): somente em plano oficial, professor responsável pela turma. Em plano particular é sempre nulo.
-    *   `disciplina` (TEXT, Not Null).
-    *   `turma` (TEXT): obrigatória somente em plano oficial.
-    *   `ano` (SMALLINT, 2000–2100) e `semestre` (SMALLINT, 1 ou 2): obrigatórios em plano particular.
+    *   `disciplina` (TEXT) e `turma` (TEXT): turma obrigatória somente em plano oficial.
+    *   `ano` (SMALLINT, 2000–2100) e `semestre` (SMALLINT, 1 ou 2): opcionais por enquanto; o upload (#40) ainda não os recebe.
     *   `plano_oficial_id` (UUID): referência opcional ao plano oficial correspondente (`ON DELETE SET NULL`). Só em plano particular e nunca para si mesmo.
 *   **Arquivo** (bucket `syllabus_files`, #43):
-    *   `arquivo_caminho` (TEXT, Unique): formato `<proprietario_id>/<arquivo>.pdf`, a mesma pasta exigida pelas políticas do bucket. Obrigatório em plano particular.
-    *   `arquivo_nome_original` (TEXT, até 255), `arquivo_tamanho_bytes` (INTEGER, 1 B a 10 MB), `arquivo_mime` (somente `application/pdf`), `arquivo_paginas` (SMALLINT ≥ 1). O limite de 10 páginas da Sprint 06 é validado no back-end (#40), não no banco, para não exigir migração quando o recorte mudar.
-    *   `arquivo_url` (TEXT): legado, anterior à S6. Novos registros usam `arquivo_caminho`.
+    *   `caminho_arquivo` (TEXT, Unique): `syllabus_files/<user_id>/<arquivo>.pdf`. A pasta precisa ser a do dono, a mesma exigida pelas políticas do bucket. Obrigatório em plano particular.
+    *   `nome_arquivo` (TEXT, até 255), `tamanho_bytes` (BIGINT, 1 B a 10 MB), `tipo_arquivo` (somente `pdf`), `paginas` (SMALLINT ≥ 1). O limite de 10 páginas da Sprint 06 é validado no back-end (#40).
+    *   `arquivo_url` (TEXT): legado. Use `caminho_arquivo`.
 *   **Processamento:**
-    *   `status` (TEXT, Not Null, padrão `pendente`): `pendente`, `processando`, `concluido` ou `falha`.
+    *   `status` (TEXT, Not Null, padrão `pendente`): `pendente`, `processando`, `concluido` ou `falha`. Os valores em inglês aceitos pela #40 (`processing`, `failed`, `completed`) foram convertidos e não são mais aceitos.
+    *   `quantidade_eventos` (INT ≥ 0): quantidade de candidatos extraídos.
     *   `execucao_atual` (SMALLINT, Not Null, padrão 0): número da execução mais recente. Cada novo processamento incrementa; os candidatos válidos são os desta execução.
     *   `provedor_ia`, `modelo_ia`, `versao_processamento` (TEXT): da execução mais recente.
     *   `erro_codigo` (TEXT): obrigatório se, e somente se, `status = 'falha'`. Valores: `pdf_invalido`, `pdf_protegido`, `pdf_sem_texto`, `limite_paginas`, `falha_ia`, `tempo_esgotado`, `erro_interno`.
-    *   `erro_mensagem` (TEXT, até 500): texto curto e seguro para o usuário, só em `falha`. Nunca guarda stack trace, texto do PDF ou resposta bruta da IA.
+    *   `erro` (TEXT, até 500): mensagem curta e segura para o usuário, só em `falha`. Nunca guarda stack trace, texto do PDF ou resposta bruta da IA.
     *   `processamento_iniciado_em` (obrigatório em `processando`), `processado_em` (obrigatório se, e somente se, `concluido` ou `falha`), `criado_em`, `atualizado_em` (mantido por trigger).
     *   **Resultado vazio** é `concluido` sem candidatos, e não `falha`.
-*   **Dados anteriores à S6:** as linhas existentes viraram `tipo = 'oficial'`, `proprietario_id = professor_id`, `status = 'concluido'` e `processado_em = criado_em`. Nada foi apagado.
-*   **Índices:** histórico do usuário `(proprietario_id, criado_em desc, id)`; fila do worker `(status, processamento_iniciado_em)` parcial em `pendente`/`processando`, usada para retomar tarefas interrompidas; `plano_oficial_id` parcial.
-*   **Políticas RLS:** RLS habilitado. As políticas de acesso do dono são da S6-D02; até lá, o navegador não lê planos.
+*   **Dados anteriores:** linhas sem `caminho_arquivo` (anteriores à #40) viraram `oficial`, com o professor como dono e `status = 'concluido'`. Linhas criadas pela #40 continuam `particular`; `professor_id` foi limpo e `processing` virou `pendente`. Nada foi apagado.
+*   **Índices:** histórico do usuário `(user_id, criado_em desc, id)`; fila do worker `(status, processamento_iniciado_em)` parcial em `pendente`/`processando`, usada para retomar tarefas interrompidas; `plano_oficial_id` parcial; e os índices da #40 em `user_id` e `status`.
+*   **Políticas RLS:** RLS habilitado. A #40 criou leitura e inserção pelo próprio dono (`user_id = auth.uid()`). As demais políticas são da S6-D02.
 
 ### 4.2. Tabela `candidatos_avaliacao`
 Avaliações sugeridas pela IA. São sugestões: só viram compromisso após confirmação do estudante.
