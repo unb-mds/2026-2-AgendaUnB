@@ -43,7 +43,7 @@ async def handle_database_error(request: Request, exc: SQLAlchemyError) -> JSONR
 
 @app.exception_handler(RequestValidationError)
 async def handle_validation_error(request: Request, exc: RequestValidationError) -> JSONResponse:
-    logger.warning("Validation error on %s %s: %s (body=%s)", request.method, request.url.path, exc.errors(), exc.body)
+    logger.warning("Validation error on %s %s", request.method, request.url.path)
     field_labels = {
         "title": "Título",
         "description": "Descrição",
@@ -67,7 +67,7 @@ async def handle_validation_error(request: Request, exc: RequestValidationError)
         messages.append(f"{label}: {msg}")
     return JSONResponse(
         status_code=422,
-        content={"detail": "; ".join(messages), "errors": exc.errors()},
+        content={"detail": "; ".join(messages), "errors": [{"loc": e["loc"], "msg": e["msg"], "type": e["type"]} for e in exc.errors()]},
     )
 
 default_origins = "http://localhost:5173,http://127.0.0.1:5173"

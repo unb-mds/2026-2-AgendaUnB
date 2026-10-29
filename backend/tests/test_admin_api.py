@@ -64,3 +64,59 @@ def test_users_schema_and_filters(api):
     assert response.json()["total"] == 1
     assert client.get("/api/v1/admin/users?papel=owner").status_code == 422
     assert client.get("/api/v1/admin/users?offset=-1").status_code == 422
+
+from src.database.models import Profile
+
+def test_role_changes(api):
+    client, sessions, user, _ = api
+    actor, target = uuid4(), uuid4()
+    user["value"] = CurrentUser(id=actor, role="admin")
+    with sessions() as db:
+        db.add_all([Profile(id=actor,papel="admin"), Profile(id=target,papel="student")])
+        db.commit()
+    url = f"/api/v1/admin/users/{target}/role"
+    for body in ({"role":"owner"}, {"role":"admin", "email":"forged"}):
+        assert client.patch(url,json=body).status_code == 422
+    assert client.patch(f"/api/v1/admin/users/{actor}/role", json={"role":"student"}).status_code == 409
+    assert client.patch(url,json={"role":"admin"}).status_code == 200
+    assert client.patch(url,json={"role":"professor"}).status_code == 200
+    assert client.patch(f"/api/v1/admin/users/{uuid4()}/role",json={"role":"admin"}).status_code == 404
+    with sessions() as db:
+        db.get(Profile,actor).papel = "student"
+        db.commit()
+    assert client.patch(url,json={"role":"admin"}).status_code == 403
+
+@pytest.mark.parametrize("method,path,body", [("get","events/pending",None),("get","users",None),("patch",f"events/{uuid4()}/review",{"status":"aprovado"}),("patch",f"users/{uuid4()}/role",{"role":"admin"})])
+def test_routes_require_authentication(api, monkeypatch, method, path, body):
+    client, _, user, _ = api
+    url = "/api/v1/admin/" + path
+    for role in ("student", "professor"):
+        user["value"] = CurrentUser(id=uuid4(),role=role)
+        assert client.request(method,url,json=body).status_code == 403
+    from src.middlewares.auth import get_current_user
+    app.dependency_overrides.pop(get_current_user)
+    assert client.request(method,url,json=body).status_code == 401
+    monkeypatch.setenv("SUPABASE_URL", "https://example.invalid")
+    monkeypatch.setenv("SUPABASE_ANON_KEY", "test")
+    import httpx
+    monkeypatch.setattr("src.middlewares.auth.httpx.get", lambda *a, **kw: httpx.Response(401))
+    assert client.request(method,url,json=body,headers={"Authorization":"Bearer invalid"}).status_code == 401
+
+def test_same_token_loses_admin_access(api, monkeypatch):
+    client, sessions, user, _ = api
+    actor = uuid4()
+    with sessions() as db:
+        db.add(Profile(id=actor, papel="admin"))
+        db.commit()
+    from src.middlewares.auth import get_current_user
+    import httpx
+    app.dependency_overrides.pop(get_current_user)
+    monkeypatch.setenv("SUPABASE_URL", "https://example.invalid")
+    monkeypatch.setenv("SUPABASE_ANON_KEY", "test")
+    monkeypatch.setattr("src.middlewares.auth.httpx.get", lambda *a, **kw: httpx.Response(200,json={"id":str(actor)}))
+    headers = {"Authorization":"Bearer same-token"}
+    assert client.get("/api/v1/admin/events/pending",headers=headers).status_code == 200
+    with sessions() as db:
+        db.get(Profile,actor).papel = "student"
+        db.commit()
+    assert client.get("/api/v1/admin/events/pending",headers=headers).status_code == 403

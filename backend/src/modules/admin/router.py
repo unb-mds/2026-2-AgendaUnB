@@ -1,8 +1,5 @@
 from fastapi import APIRouter, Depends
 from src.middlewares.auth import require_admin
-
-router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(require_admin)])
-
 from uuid import UUID
 from datetime import datetime
 from fastapi import Query, HTTPException
@@ -11,6 +8,15 @@ from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 from src.database.connection import get_db
 from src.database.models import PublicEvent
+from typing import Literal
+from pydantic import Field
+import logging
+from src.middlewares.auth import CurrentUser
+from sqlalchemy import text
+from src.database.models import Profile
+
+router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(require_admin)])
+
 
 class AdminEvent(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -25,10 +31,6 @@ class AdminEvent(BaseModel):
 def pending(db: Session = Depends(get_db), offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100)):
     return db.scalars(select(PublicEvent).where(PublicEvent.status == "pendente").order_by(PublicEvent.created_at, PublicEvent.id).offset(offset).limit(limit)).all()
 
-from typing import Literal
-from pydantic import Field
-import logging
-from src.middlewares.auth import CurrentUser
 
 logger = logging.getLogger("agenda_unb.admin")
 
@@ -55,7 +57,6 @@ def review(id: UUID, body: ReviewInput, db: Session = Depends(get_db), actor: Cu
     logger.info("review actor=%s target=%s status=%s result=success", actor.id, id, body.status)
     return ReviewResult(id=id, status=body.status, justificativa_recusa=reason)
 
-from sqlalchemy import text
 
 class AdminUser(BaseModel):
     id: UUID
@@ -77,3 +78,35 @@ def users(busca: str = Query("", max_length=200), papel: Literal["", "student", 
     # Transaction-local identity for the existing security-definer RPC.
     db.execute(text("select set_config('request.jwt.claim.sub', :actor, true)"), {"actor": str(actor.id)})
     return db.execute(text("select public.admin_buscar_usuarios(:busca, :papel, :confirmado, :offset)"), {"busca": busca, "papel": papel, "confirmado": confirmado, "offset": offset}).scalar_one()
+
+
+class RoleInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    role: Literal["student", "professor", "admin"]
+
+class RoleResult(BaseModel):
+    id: UUID
+    role: str
+
+@router.patch("/users/{id}/role", response_model=RoleResult)
+def change_role(id: UUID, body: RoleInput, db: Session = Depends(get_db), actor: CurrentUser = Depends(require_admin)):
+    # Serialize with all profile writers, including the existing Supabase RPCs.
+    # Acquire before row locks to avoid competing last-admin checks.
+    if db.bind.dialect.name == "postgresql":
+        db.execute(text("LOCK TABLE public.profiles IN SHARE ROW EXCLUSIVE MODE"))
+    elif db.bind.dialect.name == "sqlite":
+        db.execute(text("UPDATE profiles SET papel = papel WHERE 1 = 0"))
+    else:
+        raise HTTPException(503, "Banco nao suportado para troca segura de cargo")
+    if db.scalar(select(Profile.papel).where(Profile.id == actor.id)) != "admin":
+        raise HTTPException(403, "Apenas administradores")
+    target = db.get(Profile, id)
+    if target is None:
+        raise HTTPException(404, "Usuario inexistente")
+    if target.papel == "admin" and body.role != "admin":
+        if not db.scalar(select(Profile.id).where(Profile.papel == "admin", Profile.id != id).limit(1)):
+            raise HTTPException(409, "O ultimo administrador nao pode ser rebaixado")
+    target.papel = body.role
+    db.commit()
+    logger.info("role actor=%s target=%s role=%s result=success", actor.id, id, body.role)
+    return RoleResult(id=id, role=body.role)
