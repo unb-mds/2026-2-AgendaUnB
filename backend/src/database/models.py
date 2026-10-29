@@ -126,7 +126,7 @@ class Syllabus(Base):
     file_size: Mapped[int | None] = mapped_column("tamanho_bytes", BigInteger, nullable=True)
     file_type: Mapped[str] = mapped_column("tipo_arquivo", String, default="pdf", nullable=False)
     status: Mapped[str] = mapped_column(
-        String, nullable=False, default="processing"
+        String, nullable=False, default="pendente"
     )
     extracted_events_count: Mapped[int] = mapped_column("quantidade_eventos", Integer, default=0, nullable=False)
     error_message: Mapped[str | None] = mapped_column("erro", Text, nullable=True)
