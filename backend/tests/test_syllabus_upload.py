@@ -89,18 +89,18 @@ def test_upload_syllabus_success(api):
     assert response.status_code == 202
     body = response.json()
     assert "id" in body
-    assert body["status"] == "processing"
+    assert body["status"] == "pendente"
     assert body["fileName"] == "plano_de_ensino.pdf"
     assert str(user_id) in body["filePath"]
     assert body["fileType"] == "pdf"
     assert body["fileSize"] == len(pdf_bytes)
 
-    # Verifica no banco se o registro foi salvo com status 'processing'
+    # Verifica no banco se o registro foi salvo com status 'pendente'
     with TestSession() as session:
         record = session.scalar(select(Syllabus).where(Syllabus.id == UUID(body["id"])))
         assert record is not None
         assert record.user_id == user_id
-        assert record.status == "processing"
+        assert record.status == "pendente"
         assert record.file_name == "plano_de_ensino.pdf"
         assert record.disciplina == "Métodos de Desenvolvimento de Software"
         assert record.turma == "01"
@@ -282,12 +282,11 @@ def test_get_syllabus_status(api):
         syllabus = Syllabus(
             id=uuid4(),
             user_id=user_id,
-            professor_id=user_id,
             file_name="plano.pdf",
             file_path=f"syllabus_files/{user_id}/plano.pdf",
             file_size=1024,
             file_type="pdf",
-            status="processing",
+            status="pendente",
             disciplina="Cálculo 1",
             turma="A",
         )
@@ -299,7 +298,7 @@ def test_get_syllabus_status(api):
     assert response.status_code == 200
     body = response.json()
     assert body["id"] == str(syllabus_id)
-    assert body["status"] == "processing"
+    assert body["status"] == "pendente"
     assert body["fileName"] == "plano.pdf"
     assert body["disciplina"] == "Cálculo 1"
 
@@ -316,7 +315,7 @@ def test_get_syllabus_status_forbidden_for_other_user(api):
             file_path=f"syllabus_files/{other_user_id}/plano.pdf",
             file_size=1024,
             file_type="pdf",
-            status="processing",
+            status="pendente",
         )
         session.add(syllabus)
         session.commit()
