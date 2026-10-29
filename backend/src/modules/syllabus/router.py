@@ -33,7 +33,7 @@ async def upload_syllabus(
     (extensão .pdf, MIME type, assinatura de bytes, integridade, texto legível e tamanho máximo)
     e envia o arquivo para o bucket privado do Supabase Storage.
 
-    Gera um registro na tabela de rastreamento com status inicial 'processing'
+    Gera um registro na tabela de rastreamento com status inicial 'pendente'
     e retorna HTTP 202 Accepted.
     """
     content = await validate_pdf_file(file)
