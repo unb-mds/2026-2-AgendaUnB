@@ -61,6 +61,8 @@ class PublicEvent(Base):
         "criado_em", DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
+    justificativa_recusa: Mapped[str | None] = mapped_column(Text, nullable=True)
+
     campus: Mapped[Campus | None] = relationship()
     category: Mapped[Category | None] = relationship()
     author: Mapped[Profile] = relationship()

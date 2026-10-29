@@ -126,3 +126,14 @@ def test_admin_can_promote_personal_email_but_user_cannot(database):
     assert conn.execute(text('select papel from public.profiles where id=:id'), {'id': personal}).scalar() == 'professor'
     assume(conn, personal)
     assert conn.execute(text('select public.is_event_moderator()')).scalar() is True
+
+
+def test_admin_role_lock_serializes_profile_writers(database):
+    conn, users = database
+    conn.execute(text("LOCK TABLE public.profiles IN SHARE ROW EXCLUSIVE MODE"))
+    with conn.engine.connect() as other:
+        with pytest.raises(DBAPIError) as error:
+            other.execute(text("SET LOCAL lock_timeout = '100ms'"))
+            other.execute(text("UPDATE public.profiles SET papel = papel WHERE id = :id"), {"id":users["admin"]})
+        assert error.value.orig.sqlstate == "55P03"
+        other.rollback()
