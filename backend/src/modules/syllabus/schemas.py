@@ -14,7 +14,7 @@ class SyllabusUploadResponse(BaseModel):
     file_path: str = Field(alias="filePath")
     file_size: int | None = Field(default=None, alias="fileSize")
     file_type: str = Field(default="pdf", alias="fileType")
-    status: str = Field(default="processing")
+    status: str = Field(default="pendente")
     created_at: datetime = Field(alias="createdAt")
     message: str = "Plano de ensino recebido com sucesso e direcionado para processamento."
 

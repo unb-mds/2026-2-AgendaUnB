@@ -67,25 +67,26 @@ entity "EVENTOS_PESSOAIS" {
 entity "PLANOS_ENSINO" {
   * id : UUID <<PK>>
   --
-  * proprietario_id : UUID <<FK>>
+  * user_id : UUID <<FK>> (dono)
   * tipo : TEXT (particular | oficial)
   professor_id : UUID <<FK>> (só oficial)
-  * disciplina : TEXT
+  disciplina : TEXT
   turma : TEXT (só oficial)
   ano : SMALLINT
   semestre : SMALLINT (1 | 2)
-  arquivo_caminho : TEXT <<Unique>>
-  arquivo_nome_original : TEXT
-  arquivo_tamanho_bytes : INTEGER
-  arquivo_mime : TEXT
-  arquivo_paginas : SMALLINT
+  nome_arquivo : TEXT
+  caminho_arquivo : TEXT <<Unique>>
+  tamanho_bytes : BIGINT
+  * tipo_arquivo : TEXT (pdf)
+  paginas : SMALLINT
   * status : TEXT (pendente | processando | concluido | falha)
+  * quantidade_eventos : INT
   * execucao_atual : SMALLINT
   provedor_ia : TEXT
   modelo_ia : TEXT
   versao_processamento : TEXT
   erro_codigo : TEXT
-  erro_mensagem : TEXT
+  erro : TEXT
   processamento_iniciado_em : TIMESTAMPTZ
   processado_em : TIMESTAMPTZ
   plano_oficial_id : UUID <<FK>>
@@ -129,7 +130,7 @@ entity "CANDIDATOS_AVALIACAO" {
 
 PROFILES ||--o{ EVENTOS : "cria"
 PROFILES ||--o{ EVENTOS_PESSOAIS : "possui"
-PROFILES ||--o{ PLANOS_ENSINO : "envia (proprietario_id)"
+PROFILES ||--o{ PLANOS_ENSINO : "envia (user_id)"
 PROFILES |o--o{ PLANOS_ENSINO : "responde pela turma (professor_id)"
 
 CAMPUS ||--o{ EVENTOS : "localiza"
