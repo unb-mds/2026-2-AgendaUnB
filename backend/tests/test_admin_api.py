@@ -46,3 +46,21 @@ def test_review(api, status):
     assert response.json()["justificativa_recusa"] == ("Motivo" if status == "rejeitado" else None)
     assert client.patch(url, json=body).status_code == 409
     assert client.patch(f"/api/v1/admin/events/{uuid4()}/review", json=body).status_code == 404
+
+from unittest.mock import MagicMock
+from src.database.connection import get_db
+from src.main import app
+
+def test_users_schema_and_filters(api):
+    client, _, user, _ = api
+    assert client.get("/api/v1/admin/users").status_code == 403
+    user["value"] = CurrentUser(id=uuid4(), role="admin")
+    db = MagicMock()
+    db.execute.return_value.scalar_one.return_value = {"items": [{"id":str(uuid4()), "email":"test@example.org", "nome_completo":"Teste", "papel":"student", "criado_em":"2026-01-01T00:00:00Z", "ultimo_login":None, "email_confirmado":False, "password":"secret"}], "total":1,"all":1,"unconfirmed":1}
+    app.dependency_overrides[get_db] = lambda: db
+    response = client.get("/api/v1/admin/users?busca=Teste")
+    assert response.status_code == 200
+    assert "password" not in response.text
+    assert response.json()["total"] == 1
+    assert client.get("/api/v1/admin/users?papel=owner").status_code == 422
+    assert client.get("/api/v1/admin/users?offset=-1").status_code == 422

@@ -54,3 +54,26 @@ def review(id: UUID, body: ReviewInput, db: Session = Depends(get_db), actor: Cu
     db.commit()
     logger.info("review actor=%s target=%s status=%s result=success", actor.id, id, body.status)
     return ReviewResult(id=id, status=body.status, justificativa_recusa=reason)
+
+from sqlalchemy import text
+
+class AdminUser(BaseModel):
+    id: UUID
+    email: str | None
+    nome_completo: str | None
+    papel: Literal["student", "professor", "admin"]
+    criado_em: datetime
+    ultimo_login: datetime | None
+    email_confirmado: bool
+
+class UsersPage(BaseModel):
+    items: list[AdminUser]
+    total: int
+    all: int
+    unconfirmed: int
+
+@router.get("/users", response_model=UsersPage)
+def users(busca: str = Query("", max_length=200), papel: Literal["", "student", "professor", "admin"] = "", confirmado: Literal["", "sim", "nao"] = "", offset: int = Query(0, ge=0), db: Session = Depends(get_db), actor: CurrentUser = Depends(require_admin)):
+    # Transaction-local identity for the existing security-definer RPC.
+    db.execute(text("select set_config('request.jwt.claim.sub', :actor, true)"), {"actor": str(actor.id)})
+    return db.execute(text("select public.admin_buscar_usuarios(:busca, :papel, :confirmado, :offset)"), {"busca": busca, "papel": papel, "confirmado": confirmado, "offset": offset}).scalar_one()
