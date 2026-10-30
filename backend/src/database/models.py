@@ -98,6 +98,14 @@ class PersonalEvent(Base):
     category_id: Mapped[UUID | None] = mapped_column(
         Uuid(as_uuid=True), ForeignKey("categories.id"), nullable=True
     )
+    origin_syllabus_id: Mapped[UUID | None] = mapped_column(
+        "origem_plano_id", Uuid(as_uuid=True), nullable=True
+    )
+    origin_candidate_id: Mapped[UUID | None] = mapped_column(
+        "origem_avaliacao_id", Uuid(as_uuid=True), nullable=True, unique=True
+    )
+    origin_page: Mapped[int | None] = mapped_column("origem_pagina", Integer, nullable=True)
+    origin_excerpt: Mapped[str | None] = mapped_column("origem_trecho", Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         "criado_em", DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -137,3 +145,26 @@ class Syllabus(Base):
     )
 
     user: Mapped[Profile] = relationship(foreign_keys=[user_id])
+
+
+class SyllabusCandidate(Base):
+    """Avaliação extraída de um plano, ainda sujeita à revisão do estudante."""
+
+    __tablename__ = "avaliacoes"
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    syllabus_id: Mapped[UUID] = mapped_column(
+        "plano_id", Uuid(as_uuid=True), ForeignKey("planos_ensino.id", ondelete="CASCADE"),
+        nullable=False, index=True,
+    )
+    title: Mapped[str] = mapped_column("titulo", String, nullable=False)
+    starts_at: Mapped[datetime | None] = mapped_column(
+        "data_avaliacao", DateTime(timezone=True), nullable=True
+    )
+    kind: Mapped[str | None] = mapped_column("tipo", String, nullable=True)
+    ambiguous: Mapped[bool] = mapped_column("ambiguo", default=False, nullable=False)
+    source_page: Mapped[int | None] = mapped_column("pagina_origem", Integer, nullable=True)
+    source_excerpt: Mapped[str | None] = mapped_column("trecho_origem", Text, nullable=True)
+    status: Mapped[str] = mapped_column("status", String, default="pendente", nullable=False)
+    processing_version: Mapped[str | None] = mapped_column("versao_processamento", String, nullable=True)
+    provider: Mapped[str | None] = mapped_column("provedor", String, nullable=True)
