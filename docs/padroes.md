@@ -142,10 +142,13 @@ Todas exigem sessão; `user_id` vem da identidade validada. PUT/DELETE são idem
 ### 📋 Atestado de Matrícula (`/api/v1/enrollment`) — *Planejado, sem endpoint implementado*
 * `POST /api/v1/enrollment/upload` — Enviar PDF do atestado de matrícula do SIGAA para alocação automática de turmas
 
-### 📄 Processamento de Planos de Ensino (`/api/v1/syllabus`) — *Planejado, sem endpoint implementado*
-* `POST /api/v1/syllabus/upload` — Enviar arquivo PDF ou texto bruto de plano de ensino (Modelo Dual)
-* `GET /api/v1/syllabus` — Listar planos de ensino enviados pelo usuário
-* `GET /api/v1/syllabus/:id` — Obter status do processamento e eventos/prazos extraídos
+### 📄 Processamento de Planos de Ensino (`/api/v1/syllabus`) — Implementado parcialmente
+* `POST /api/v1/syllabus/upload` — Envia PDF e cria o rastreamento em estado `processing`.
+* `GET /api/v1/syllabus?limit=20&offset=0` — Lista, com paginação, somente os planos do usuário autenticado. Resposta: `{ items, total, limit, offset }`.
+* `GET /api/v1/syllabus/:id` — Retorna o estado e candidatos do plano, incluindo `sourcePage`, `sourceExcerpt`, ambiguidade e status.
+* `POST /api/v1/syllabus/:id/confirm` — Recebe `{ candidates: [{ candidateId, title?, description?, startsAt?, category? }] }`; grava somente os candidatos selecionados em `eventos_pessoais` após o estado `concluido`/`completed`. Datas precisam incluir fuso ISO 8601. Resposta inclui os eventos criados e sua `origin` (`syllabusId`, `candidateId`, `page`, `excerpt`).
+
+Todas as operações exigem sessão e verificam a propriedade pelo usuário autenticado. A confirmação é idempotente por candidato; candidatos não selecionados permanecem pendentes. O parser/worker que preenche candidatos ainda é uma dependência separada.
 
 ### ✅ Validação Colaborativa (`/api/v1/assessments`) — *Planejado, sem endpoint implementado*
 * `POST /api/v1/assessments/:id/confirm` — Votar para confirmar ou contestar data de avaliação extraída de plano compartilhado

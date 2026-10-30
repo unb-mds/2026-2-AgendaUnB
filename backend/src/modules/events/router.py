@@ -16,6 +16,7 @@ from src.modules.events.schemas import (
     EventUpdate,
     PersonalEventCreate,
     PersonalEventRead,
+    PersonalEventOriginRead,
     PersonalEventUpdate,
     SavedEventStatus,
 )
@@ -82,6 +83,16 @@ def _personal_read(event: PersonalEvent) -> PersonalEventRead:
         starts_at=event.starts_at,
         campus=event.campus.nome if event.campus else None,
         category=event.category.nome if event.category else None,
+        origin=(
+            PersonalEventOriginRead(
+                syllabusId=event.origin_syllabus_id,
+                candidateId=event.origin_candidate_id,
+                page=event.origin_page,
+                excerpt=event.origin_excerpt,
+            )
+            if event.origin_syllabus_id and event.origin_candidate_id
+            else None
+        ),
     )
 
 
