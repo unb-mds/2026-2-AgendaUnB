@@ -37,3 +37,21 @@
 - Alteração do front-end para permitir entrada como visitante (feedback).
 - Apresentação da nova interface do front-end e do placeholder (roteamento) para a segunda página da aplicação (19/09).
 - Discussão técnica sobre scraping e integração com dados acadêmicos.
+
+## Issues da sprint
+
+Consulta ao GitHub em **19/10/2026**. Estado e checklists abaixo reproduzem o registro das issues nessa consulta; uma issue fechada não representa verificação independente de todos os critérios. As atribuições históricas foram preservadas.
+
+| Issue | Estado no GitHub | Responsáveis |
+| --- | --- | --- |
+| [#9 — Sprint 03 concluída](https://github.com/unb-mds/2026-2-AgendaUnB/issues/9) | Fechada | Não informado |
+
+## Texto das issues registradas
+
+### #9 — Sprint 03 concluída
+
+**Origem:** [Issue #9](https://github.com/unb-mds/2026-2-AgendaUnB/issues/9).
+
+**Estado:** Fechada.
+
+**Labels:** Nenhuma.

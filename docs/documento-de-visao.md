@@ -1,6 +1,5 @@
 # Documento de Visão — Agenda UnB
 
-**Versão:** 1.0 (Consolidado pós-Release 1)  
 **Equipe:** Agenda UnB — Métodos de Desenvolvimento de Software, 2026/2  
 
 ---
@@ -9,7 +8,7 @@
 
 ### 1.1 Propósito
 
-Este documento descreve a visão do produto Agenda UnB: qual problema ele resolve, para quem, e quais capacidades ele deve ter. Serve de referência comum para a equipe e de base para o backlog. Não detalha os requisitos funcionais e não funcionais, que estão em [`requisitos.md`](requisitos.md), nem os padrões de código, dados e API, que estão em [`padroes.md`](padroes.md). As decisões técnicas de arquitetura e infraestrutura estão consolidadas em [`Architecture.md`](Architecture.md). A identidade visual e as especificações de interface e design system estão em [`DESIGN.md`](../DESIGN.md), [`PRODUCT.md`](../PRODUCT.md) e [`especificacao-frontend.md`](especificacao-frontend.md). O planejamento ágil por sprint está em [`sprints/`](sprints/sprint-1.md), as entregas e notas de versão em [`release-notes/`](release-notes/v0.1.0.md), e o registro de uso de IA em [`AI-USAGE.md`](AI-USAGE.md).
+Este documento descreve a visão do produto Agenda UnB: qual problema ele resolve, para quem, e quais capacidades ele deve ter. Serve de referência comum para a equipe e de base para o backlog. Não detalha os requisitos funcionais e não funcionais, que estão em [`requisitos.md`](requisitos.md), nem os padrões de código, dados e API, que estão em [`padroes.md`](padroes.md). As decisões técnicas de arquitetura e infraestrutura estão consolidadas em [`Architecture.md`](Architecture.md). A identidade visual e as especificações de interface e design system estão em [`DESIGN.md`](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/DESIGN.md), [`PRODUCT.md`](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/PRODUCT.md) e [`especificacao-frontend.md`](especificacao-frontend.md). O planejamento ágil por sprint está em [`sprints/`](sprints/sprint-1.md), as entregas e notas de versão em [`release-notes/`](release-notes/v0.1.0.md), e o registro de uso de IA em [`AI-USAGE.md`](AI-USAGE.md).
 
 ### 1.2 Escopo
 
@@ -76,7 +75,7 @@ Não existe um lugar único onde o estudante visualize de forma integrada o que 
 
 **Estudante (`student`)** — Usuário principal da agenda. Acessa a plataforma para acompanhar eventos do campus, gerenciar compromissos privados, realizar upload do seu atestado de matrícula (PDF do SIGAA) para alocação automática em turmas e matérias, enviar planos de ensino particulares ou validar de forma colaborativa as avaliações de planos oficiais da sua turma. Autentica-se com e-mail e senha ou via Google OAuth.
 
-**Professor (`professor`)** — Usuário com perfil validado por e-mail institucional sob o domínio `@unb.br`. Cria e gerencia eventos acadêmicos oficiais, disponibiliza planos de ensino oficiais das suas turmas e possui acesso ao painel de moderação para visualizar e aprovar/rejeitar eventos submetidos pela comunidade.
+**Professor (`professor`)** — Cadastro e autopromoção exigem e-mail institucional `@unb.br`; administradores podem atribuir o perfil a contas de outro domínio. Cria e gerencia eventos acadêmicos oficiais, poderá disponibilizar planos de ensino oficiais das suas turmas e possui acesso ao painel de moderação para visualizar e aprovar/rejeitar eventos submetidos pela comunidade.
 
 **Administrador (`admin`)** — Possui acesso pleno ao painel administrativo da plataforma: visualiza e modera eventos públicos, gerencia categorias do sistema e possui privilégio exclusivo de alterar papéis/cargos de usuários (`student`, `professor`, `admin`).
 
@@ -92,7 +91,7 @@ Aplicação web responsiva (SPA), de uso público para consulta do catálogo de 
 
 ### 4.2 Suposições e dependências
 
-- Estudantes possuem conta de e-mail ativa para autenticação (pessoal ou Google/institucional); professores possuem e-mail institucional sob o domínio `@unb.br`.
+- Estudantes possuem conta de e-mail ativa para autenticação (pessoal ou Google/institucional); o cadastro e a autopromoção de professores exigem `@unb.br`, com exceção para atribuição de cargo realizada por administrador.
 - Os estudantes realizam o upload do seu atestado de matrícula emitido pelo SIGAA (formato PDF), permitindo que o parser extraia código de disciplina, nome da matéria e turma, vinculando o estudante automaticamente às suas respectivas ofertas sem necessidade de integração direta por API com o SIGAA.
 - Para os cronogramas acadêmicos, adota-se o **Modelo Dual**: professores cadastram planos de ensino oficiais vinculados às turmas, enquanto estudantes podem submeter uploads particulares de planos de ensino diretamente para sua agenda pessoal.
 - Os planos de ensino e atestados de matrícula submetidos são preferencialmente arquivos digitais em formato PDF com texto selecionável ou texto bruto (RF05). Casos de digitalizações em imagem sem camada de texto geram notificação clara de erro sem travar o sistema (RNF10), com suporte a inserção manual.
@@ -106,7 +105,7 @@ O detalhamento completo dos 21 requisitos funcionais está em [`requisitos.md`](
 
 | # | Recurso | Descrição |
 |---|---|---|
-| R1 | Acesso e Perfis Diferenciados | Autenticação local (e-mail/senha), Google OAuth para estudantes, validação estrita com `@unb.br` para professores, moderação administrativa (`admin`) e modo visitante sem autenticação (RF01–RF04) |
+| R1 | Acesso e Perfis Diferenciados | Autenticação local (e-mail/senha), Google OAuth para estudantes, `@unb.br` no cadastro/autopromoção de professores, com atribuição excepcional por admin, moderação administrativa (`admin`) e modo visitante sem autenticação (RF01–RF04) |
 | R2 | Agenda Unificada e Eventos Pessoais | Calendário visual com compromissos pessoais e gestão completa (CRUD) de prazos acadêmicos privados do usuário (RF08, RF09) |
 | R3 | Catálogo Multi-campus de Eventos | Consulta pública de eventos dos campi (Darcy Ribeiro, FGA, FCE, FUP, FAL), com busca textual e filtros por categoria, campus e turno (RF14, RF15, RF19) |
 | R4 | Publicação e Painel Administrativo de Moderação | Cadastro de eventos públicos com painel de moderação para professores e admins aprovarem submissões comunitárias, e gestão de papéis restrita a administradores (RF10, RF11) |
@@ -143,7 +142,7 @@ O detalhamento completo dos 21 requisitos funcionais está em [`requisitos.md`](
 |---|---|
 | Legibilidade dos planos e atestados | O parser foca em arquivos PDF com texto selecionável e texto bruto (RF05), garantindo processamento rápido (RNF06 < 20s). Para arquivos escaneados ou corrompidos, o sistema emite instrução amigável de erro (RNF10) e permite preenchimento manual ou inserção de texto bruto. |
 | Coleta externa (Web Scraping) | Redes sociais (Instagram) e SIGAA possuem alto risco de manutenção e bloqueios. A mitigação estratégica acordada prioriza feeds/portais oficiais de notícias da UnB, além de fortalecer a submissão descentralizada por professores e centros acadêmicos com fluxo de moderação. |
-| Política de acesso e governança | Modelo de dupla autenticação consolidado: estudantes têm baixa fricção (Google OAuth ou e-mail pessoal/institucional); professores validam com `@unb.br`. No painel administrativo, professores e admins podem aprovar eventos, mas somente administradores podem alterar papéis de usuários. |
+| Política de acesso e governança | Modelo de dupla autenticação consolidado: estudantes têm baixa fricção (Google OAuth ou e-mail pessoal/institucional); cadastro e autopromoção de professores exigem `@unb.br`, enquanto a atribuição por admin admite outro domínio. No painel administrativo, professores e admins podem aprovar eventos, mas somente administradores podem alterar papéis de usuários. |
 
 ---
 
@@ -162,10 +161,18 @@ A ordem de prioridade segue o planejamento por ciclos acordado pela equipe:
 - R5: Upload de atestado de matrícula do SIGAA para alocação automática de turmas e matérias
 - R6: Extração automática de planos de ensino no Modelo Dual (planos oficiais por professores e uploads particulares por estudantes) (RF05, RF06)
 - R7: Validação colaborativa ativa por colegas de turma e revisão assistida "Human-in-the-loop" (RF07)
-- R4 (completo): Painel administrativo para aprovação de eventos (professores e admins) e gestão de papéis (apenas admins) (RF11)
+- R4 (completo): Painel de moderação por professores/admins e gestão de cargos por admins (RF11), já implementados após a R1.
 
 **Fase 3 — Desejável / Expansão**
 - R8: Inscrição direta e cancelamento em eventos com 1 clique (RF12, RF13) e histórico (RF18)
 - R9: Lembretes e notificações de proximidade (RF17)
 - R10: Exportação de calendário para `.ics` (RF21)
 - R12: Coleta externa em portais institucionais (com fontes adicionais como SIGAA e Instagram se viável) (RF16)
+
+## 9. Estado atual após a Sprint 05 — 18/10/2026
+
+Além da base entregue, estão implementados o calendário mensal/semanal, os vínculos de eventos públicos salvos em Meus Eventos, o envio de sugestões estudantis, o painel de moderação, as notificações de decisão e o painel de usuários/cargos. A gestão administrativa usa RPCs Supabase protegidas no banco.
+
+A navegação atual usa `/eventos`, `/evento/:id`, `/plano-de-ensino`, `/sugestoes` e `/admin`. A rota antiga `/segunda-pagina` redireciona. A página de planos é informativa: upload de PDF e parser ainda estão em preparação, apesar da infraestrutura de Storage já criada.
+
+Salvar um evento público não representa inscrição. Notificações de sugestões não implementam lembretes de proximidade. A prioridade de automação acadêmica permanece no ciclo seguinte; os detalhes implementados e as migrações estão em [Atualizações pós-R1](atualizacoes.md).

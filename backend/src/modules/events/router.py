@@ -4,10 +4,11 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, Response
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
 from src.database.connection import get_db
-from src.database.models import Campus, Category, PersonalEvent, PublicEvent
+from src.database.models import Campus, Category, PersonalEvent, PublicEvent, SavedPublicEvent
 from src.middlewares.auth import CurrentUser, get_current_user, require_event_manager
 from src.modules.events.schemas import (
     EventCreate,
@@ -15,7 +16,9 @@ from src.modules.events.schemas import (
     EventUpdate,
     PersonalEventCreate,
     PersonalEventRead,
+    PersonalEventOriginRead,
     PersonalEventUpdate,
+    SavedEventStatus,
 )
 
 router = APIRouter(tags=["events"])
@@ -80,6 +83,16 @@ def _personal_read(event: PersonalEvent) -> PersonalEventRead:
         starts_at=event.starts_at,
         campus=event.campus.nome if event.campus else None,
         category=event.category.nome if event.category else None,
+        origin=(
+            PersonalEventOriginRead(
+                syllabusId=event.origin_syllabus_id,
+                candidateId=event.origin_candidate_id,
+                page=event.origin_page,
+                excerpt=event.origin_excerpt,
+            )
+            if event.origin_syllabus_id and event.origin_candidate_id
+            else None
+        ),
     )
 
 
@@ -178,6 +191,99 @@ def delete_public_event(
         raise HTTPException(status_code=404, detail="Evento não encontrado")
     db.delete(event)
     db.commit()
+    return Response(status_code=204)
+
+
+@router.post("/suggestions", response_model=EventRead, status_code=201)
+def suggest_event(
+    payload: EventCreate,
+    db: Session = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+) -> EventRead:
+    if current_user.role != "student":
+        raise HTTPException(status_code=403, detail="Apenas estudantes enviam sugestões")
+    event = PublicEvent(
+        author_id=current_user.id,
+        title=payload.title,
+        description=payload.description or "",
+        starts_at=payload.starts_at,
+        location=payload.location,
+        external_url=str(payload.external_url) if payload.external_url else None,
+        campus_id=_campus_id(db, payload.campus),
+        category_id=_category_id(db, payload.category),
+        status="pendente",
+    )
+    # O trigger do banco registra a notificação na mesma transação.
+    db.add(event)
+    db.commit()
+    db.refresh(event)
+    return _public_read(event)
+
+
+@router.get("/me/saved-events", response_model=list[EventRead])
+def list_saved_events(
+    current_user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list[EventRead]:
+    events = db.scalars(
+        select(PublicEvent)
+        .join(SavedPublicEvent, SavedPublicEvent.event_id == PublicEvent.id)
+        .where(SavedPublicEvent.user_id == current_user.id, PublicEvent.status == "aprovado")
+        .options(joinedload(PublicEvent.campus), joinedload(PublicEvent.category), joinedload(PublicEvent.author))
+        .order_by(PublicEvent.starts_at.asc(), PublicEvent.id.asc())
+    ).all()
+    return [_public_read(event) for event in events]
+
+
+@router.get("/me/saved-events/{event_id}", response_model=SavedEventStatus)
+def get_saved_event_status(
+    event_id: UUID,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> SavedEventStatus:
+    saved = db.scalar(
+        select(SavedPublicEvent)
+        .join(PublicEvent, PublicEvent.id == SavedPublicEvent.event_id)
+        .where(SavedPublicEvent.user_id == current_user.id,
+               SavedPublicEvent.event_id == event_id, PublicEvent.status == "aprovado")
+    )
+    return SavedEventStatus(saved=saved is not None)
+
+
+@router.put("/me/saved-events/{event_id}", response_model=SavedEventStatus)
+def save_public_event(
+    event_id: UUID,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> SavedEventStatus:
+    event = db.scalar(select(PublicEvent).where(
+        PublicEvent.id == event_id, PublicEvent.status == "aprovado"
+    ))
+    if event is None:
+        raise HTTPException(status_code=404, detail="Evento não encontrado")
+    key = (current_user.id, event_id)
+    if db.get(SavedPublicEvent, key) is None:
+        db.add(SavedPublicEvent(user_id=current_user.id, event_id=event_id))
+        try:
+            db.commit()
+        except IntegrityError:
+            # Duas solicitações simultâneas podem tentar inserir o mesmo vínculo.
+            db.rollback()
+            if db.get(SavedPublicEvent, key) is None:
+                raise
+    return SavedEventStatus(saved=True)
+
+
+@router.delete("/me/saved-events/{event_id}", status_code=204)
+def remove_saved_event(
+    event_id: UUID,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Response:
+    saved = db.get(SavedPublicEvent, (current_user.id, event_id))
+    if saved is not None:
+        db.delete(saved)
+        db.commit()
     return Response(status_code=204)
 
 
