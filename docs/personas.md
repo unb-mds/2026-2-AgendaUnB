@@ -22,8 +22,6 @@ privados para uso pessoal, acessíveis somente a ele. Ele valoriza uma interface
 - Visualizar os detalhes de cada evento.
 - Encontrar oportunidades acadêmicas e de integração.
 - Criar e consultar seus próprios eventos privados.
-- Salvar eventos públicos na agenda e consultar lista ou calendário.
-- Sugerir atividades e acompanhar a decisão pelo sino de notificações.
 
 # 3. Persona 02 — Organizador de Eventos / Administrador
 
@@ -55,8 +53,3 @@ destinados à comunidade universitária.
 
 Os nomes e os perfis descritos são fictícios e devem ser tratados como hipóteses de persona. As características devem ser revisadas conforme a evolução dos requisitos 
 e das funcionalidades do AgendaUnB. Todos esses detalhes estão organizados de uma forma visual em nosso Figma na seção "Persona Básica 1" e "Persona Básica 2".
-
-
-# 6. Permissões na navegação atual
-
-Estudantes gerenciam compromissos privados, salvam públicos aprovados e enviam sugestões. Professores e administradores publicam diretamente e moderam sugestões em `/sugestoes`. Apenas administradores acessam `/admin` para consultar usuários e alterar cargos. A persona organizadora reúne necessidades que, na implementação, são distribuídas entre esses dois papéis. Consulte [Painel administrativo](painel-administrativo.md).
