@@ -20,42 +20,24 @@ async function request(path, { auth = false, ...options } = {}) {
 
   const result = await response.json().catch(() => null);
   if (!response.ok) {
-    let detail = result?.detail;
-    if (Array.isArray(detail)) {
-      detail = detail.map((err) => `${err.loc?.slice(-1)?.[0] || 'campo'}: ${err.msg}`).join('; ');
-    } else if (typeof detail !== 'string') {
-      detail = 'Não foi possível concluir a solicitação.';
-    }
-    throw new Error(detail);
+    const detail = result?.detail;
+    throw new Error(typeof detail === 'string' ? detail : 'Não foi possível concluir a solicitação.');
   }
   return result;
 }
 
 export const eventsApi = {
-  suggest: (event) => request('/suggestions', {
-    method: 'POST', auth: true, body: JSON.stringify(event),
-  }),
-  listPublic: async (filters = {}) => {
+  listPublic: (filters = {}) => {
     const query = new URLSearchParams();
     if (filters.campus) query.set('campus', filters.campus);
     if (filters.category) query.set('category', filters.category);
     if (filters.search) query.set('q', filters.search);
-    const pageSize = 100;
-    const events = new Map();
-    query.set('limit', String(pageSize));
-    for (let offset = 0; ; offset += pageSize) {
-      query.set('offset', String(offset));
-      const page = await request(`/events?${query.toString()}`);
-      for (const event of page) events.set(event.id, event);
-      if (page.length < pageSize) return [...events.values()];
-    }
+    const encodedQuery = query.toString();
+    const suffix = encodedQuery ? `?${encodedQuery}` : '';
+    return request(`/events${suffix}`);
   },
   getPublic: (id) => request(`/events/${encodeURIComponent(id)}`),
   listPersonal: () => request('/me/events', { auth: true }),
-  listSaved: () => request('/me/saved-events', { auth: true }),
-  savedStatus: (id) => request(`/me/saved-events/${encodeURIComponent(id)}`, { auth: true }),
-  savePublic: (id) => request(`/me/saved-events/${encodeURIComponent(id)}`, { auth: true, method: 'PUT' }),
-  removeSaved: (id) => request(`/me/saved-events/${encodeURIComponent(id)}`, { auth: true, method: 'DELETE' }),
   getPersonal: (id) => request(`/me/events/${encodeURIComponent(id)}`, { auth: true }),
   createPublic: (event) => request('/events', {
     method: 'POST',
@@ -109,11 +91,11 @@ export function toApiEvent({ titulo, data, horario, campus, local, area, descric
   }
   return {
     title: titulo.trim(),
-    description: descricao?.trim() || null,
+    description: descricao.trim() || null,
     starts_at: startsAt.toISOString(),
-    campus: campus?.trim() || null,
-    category: area?.trim() || null,
-    location: local?.trim() || null,
-    ...(linkExterno?.trim() ? { external_url: linkExterno.trim() } : {}),
+    campus: campus || null,
+    category: area || null,
+    location: local.trim() || null,
+    ...(linkExterno.trim() ? { external_url: linkExterno.trim() } : {}),
   };
 }
