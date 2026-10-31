@@ -138,7 +138,7 @@ def process_syllabus_upload(
 ) -> Syllabus:
     """
     Coordena o upload físico para o Storage do Supabase e o registro
-    transacional de rastreamento com status inicial 'processing'.
+    transacional de rastreamento com status inicial 'pendente'.
     Compensa a gravação no Storage caso a persistência no banco falhe.
     """
     syllabus_id = uuid4()
@@ -157,13 +157,12 @@ def process_syllabus_upload(
     syllabus_record = Syllabus(
         id=syllabus_id,
         user_id=user_id,
-        professor_id=user_id,
         file_name=filename,
         file_path=full_storage_path,
         arquivo_url=full_storage_path,
         file_size=len(content),
         file_type="pdf",
-        status="processing",
+        status="pendente",
         extracted_events_count=0,
         error_message=None,
         disciplina=disciplina,

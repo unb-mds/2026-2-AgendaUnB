@@ -263,24 +263,7 @@ Funcionalidades atualizadas até o fim da Sprint 05 (18/10)
 
 ### Backend (API)
 
-| Método | Rota | Descrição | Autenticação |
-|--------|------|-----------|:------------:|
-| GET | `/api/v1/events` | Listar eventos públicos aprovados | Não |
-| GET | `/api/v1/events/{id}` | Detalhe de evento público | Não |
-| POST | `/api/v1/events` | Criar evento público | Professor/Admin |
-| DELETE | `/api/v1/events/{id}` | Excluir evento público | Professor/Admin |
-| GET | `/api/v1/me/events` | Listar eventos pessoais | Sim |
-| GET | `/api/v1/me/events/{id}` | Detalhe de evento pessoal | Sim (dono) |
-| POST | `/api/v1/me/events` | Criar evento pessoal | Sim |
-| PUT | `/api/v1/me/events/{id}` | Atualizar evento pessoal | Sim (dono) |
-| DELETE | `/api/v1/me/events/{id}` | Excluir evento pessoal | Sim (dono) |
-| POST | `/api/v1/suggestions` | Enviar sugestão pendente | Estudante |
-| GET | `/api/v1/me/saved-events` | Listar eventos públicos salvos | Sim |
-| GET | `/api/v1/me/saved-events/{id}` | Consultar vínculo com a agenda | Sim |
-| PUT | `/api/v1/me/saved-events/{id}` | Salvar sem duplicar | Sim |
-| DELETE | `/api/v1/me/saved-events/{id}` | Remover vínculo da agenda | Sim |
-| GET | `/health` | Health check | Não |
-
+A API atual reúne 15 operações: catálogo público, CRUD privado, sugestões, eventos salvos e saúde. Dez já existiam na R1. Consulte os [contratos completos](docs/api-specs.md) para rotas, payloads, permissões e códigos HTTP; a administração e a moderação usam RPCs Supabase separadas.
 
 ### Banco de Dados
 
@@ -324,6 +307,8 @@ Toda a documentação do projeto está publicada no GitHub Pages:
 | [Arquitetura](https://unb-mds.github.io/2026-2-AgendaUnB/Architecture/) | Visão arquitetural, stack e modelos de dados |
 | [Requisitos](https://unb-mds.github.io/2026-2-AgendaUnB/requisitos/) | 21 RFs e 13 RNFs especificados |
 | [Padrões](https://unb-mds.github.io/2026-2-AgendaUnB/padroes/) | Glossário, naming conventions e rotas da API |
+| [Contratos do backend](docs/api-specs.md) | API atual e operações originadas na R1 |
+| [Plano de implantação](docs/implantacao.md) | Proposta de hospedagem, CI/CD e homologação; ainda não implantada |
 | [Atualizações pós-R1](docs/atualizacoes.md) | Calendário, eventos salvos, sugestões, moderação e administração |
 | [Release v0.1.0](https://unb-mds.github.io/2026-2-AgendaUnB/release-notes/v0.1.0/) | Release note da primeira entrega |
 | [Sprints](https://unb-mds.github.io/2026-2-AgendaUnB/sprints/sprint-1/) | Acompanhamento ágil por ciclo |

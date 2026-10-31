@@ -70,6 +70,8 @@ Navegue pelas seções através das abas superiores ou pelos links abaixo:
 
 * [Visão do Produto](documento-de-visao.md) — Problema, stakeholders, declaração de posicionamento e priorização.
 * [Arquitetura](Architecture.md) — Visão arquitetural, tecnologias, frontend, backend e modelos de dados.
+* [Contratos do backend](api-specs.md) — Rotas, payloads, respostas e integrações Supabase.
+* [Plano de implantação](implantacao.md) — Proposta de hospedagem, CI/CD e homologação.
 * [Requisitos](requisitos.md) — Especificação completa de Requisitos Funcionais (RF) e Não Funcionais (RNF).
 * [Padrões de Projeto](padroes.md) — Glossário oficial, convenções de código, branches e commits.
 * [Sprints](sprints/sprint-1.md) — Acompanhamento ágil das entregas por ciclo de desenvolvimento.
@@ -90,3 +92,5 @@ A página Plano de Ensino informa que upload e extração ainda estão em prepar
 ## Planejamento e histórico de issues
 
 As páginas de [Sprint 01](sprints/sprint-1.md), [Sprint 02](sprints/sprint-2.md), [Sprint 03](sprints/sprint-3.md), [Sprint 04](sprints/sprint-4.md) e [Sprint 05](sprints/sprint-5.md) registram as issues existentes, seus textos e estados consultados em 19/10/2026. A [Sprint 06](sprints/sprint-6.md) reúne a proposta de planos de ensino com IA e as realocações de #38 e #40, ainda pendentes exclusivamente no backend.
+
+Consolidação técnica de 24/10/2026: [Arquitetura e decisões](Architecture.md), [contratos](api-specs.md) e [implantação proposta](implantacao.md), com referência no commit `e0ecf46` e histórico da tag `R1`.
