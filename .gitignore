@@ -50,3 +50,7 @@ venv/
 env/
 backend/venv/
 backend/bin/
+
+# Frontend browser tests
+frontend/test-results/
+frontend/playwright-report/

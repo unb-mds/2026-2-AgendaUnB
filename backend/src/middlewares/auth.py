@@ -1,5 +1,5 @@
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from uuid import UUID
 
 import httpx
@@ -18,6 +18,7 @@ bearer_scheme = HTTPBearer(auto_error=False)
 class CurrentUser:
     id: UUID
     role: str
+    access_token: str | None = field(default=None, repr=False, compare=False)
 
 
 def get_current_user(
@@ -64,7 +65,7 @@ def get_current_user(
     if role is None:
         raise HTTPException(status_code=403, detail="Perfil da aplicação não encontrado")
 
-    return CurrentUser(id=user_id, role=role)
+    return CurrentUser(id=user_id, role=role, access_token=credentials.credentials)
 
 
 def require_event_manager(
