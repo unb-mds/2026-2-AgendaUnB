@@ -1,13 +1,13 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from src.database.connection import get_db
 from src.database.models import Syllabus
 from src.middlewares.auth import CurrentUser, get_current_user
-from src.modules.syllabus.schemas import SyllabusDetailResponse, SyllabusUploadResponse
+from src.modules.syllabus.schemas import SyllabusDetailResponse, SyllabusListResponse, SyllabusUploadResponse
 from src.modules.syllabus.services import process_syllabus_upload, validate_pdf_file
 from src.services.storage import SupabaseStorageService, get_storage_service
 
@@ -48,16 +48,28 @@ async def upload_syllabus(
         turma=turma,
     )
 
-    return SyllabusUploadResponse(
-        id=syllabus.id,
-        userId=syllabus.user_id,
-        fileName=syllabus.file_name,
-        filePath=syllabus.file_path,
-        fileSize=syllabus.file_size,
-        fileType=syllabus.file_type,
-        status=syllabus.status,
-        createdAt=syllabus.created_at,
-        message="Plano de ensino recebido com sucesso e direcionado para processamento.",
+    return SyllabusUploadResponse.model_validate(syllabus)
+
+
+@router.get("", response_model=SyllabusListResponse, summary="Histórico dos próprios planos de ensino")
+def list_syllabuses(
+    limit: int = Query(10, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    current_user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> SyllabusListResponse:
+    ownership = Syllabus.user_id == current_user.id
+    total = db.scalar(select(func.count()).select_from(Syllabus).where(ownership))
+    plans = db.scalars(
+        select(Syllabus)
+        .where(ownership)
+        .order_by(Syllabus.created_at.desc(), Syllabus.id.desc())
+        .offset(offset)
+        .limit(limit)
+    ).all()
+    return SyllabusListResponse(
+        items=[SyllabusDetailResponse.model_validate(plan) for plan in plans],
+        total=total,
     )
 
 
@@ -88,18 +100,4 @@ def get_syllabus_status(
             detail="Plano de ensino não encontrado.",
         )
 
-    return SyllabusDetailResponse(
-        id=syllabus.id,
-        userId=syllabus.user_id,
-        fileName=syllabus.file_name,
-        filePath=syllabus.file_path,
-        fileSize=syllabus.file_size,
-        fileType=syllabus.file_type,
-        status=syllabus.status,
-        extractedEventsCount=syllabus.extracted_events_count,
-        errorMessage=syllabus.error_message,
-        disciplina=syllabus.disciplina,
-        turma=syllabus.turma,
-        createdAt=syllabus.created_at,
-    )
-
+    return SyllabusDetailResponse.model_validate(syllabus)

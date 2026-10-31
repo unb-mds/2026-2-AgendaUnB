@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class SyllabusUploadResponse(BaseModel):
     """Schema de resposta após upload bem-sucedido de plano de ensino."""
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, from_attributes=True)
 
     id: UUID
     user_id: UUID = Field(alias="userId")
@@ -22,7 +22,7 @@ class SyllabusUploadResponse(BaseModel):
 class SyllabusDetailResponse(BaseModel):
     """Schema para consulta de status de processamento do plano."""
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, from_attributes=True)
 
     id: UUID
     user_id: UUID = Field(alias="userId")
@@ -37,3 +37,8 @@ class SyllabusDetailResponse(BaseModel):
     turma: str | None = None
     created_at: datetime = Field(alias="createdAt")
 
+
+
+class SyllabusListResponse(BaseModel):
+    items: list[SyllabusDetailResponse]
+    total: int

@@ -91,15 +91,12 @@ check-env:
 	fi
 
 check-backend:
-	@if [ ! -d "$(VENV_DIR)" ]; then \
+	@if [ ! -f "$(PYTHON)" ]; then \
 		echo "[INFO] Criando ambiente virtual em $(VENV_DIR)..."; \
-		$(SYS_PYTHON) -m venv $(VENV_DIR) || python -m venv $(VENV_DIR); \
-		echo "[INFO] Instalando dependencias do Backend..."; \
-		$(PIP) install -r $(ROOT_DIR)/backend/requirements.txt; \
-		if [ -f "$(ROOT_DIR)/backend/requirements-dev.txt" ]; then \
-			$(PIP) install -r $(ROOT_DIR)/backend/requirements-dev.txt; \
-		fi \
+		$(SYS_PYTHON) -m venv "$(VENV_DIR)" || python -m venv "$(VENV_DIR)"; \
 	fi
+	@echo "[INFO] Sincronizando dependencias do Backend..."
+	@"$(PYTHON)" -m pip install -r "$(ROOT_DIR)/backend/requirements-dev.txt"
 
 check-frontend:
 	@if [ ! -d "$(ROOT_DIR)/frontend/node_modules" ]; then \
@@ -110,17 +107,8 @@ check-frontend:
 # ------------------------------------------------------------------------------
 # Setup Completo
 # ------------------------------------------------------------------------------
-setup: check-env
+setup: check-env check-backend
 	@echo "[SETUP] Iniciando configuracao completa do ambiente..."
-	@if [ ! -d "$(VENV_DIR)" ]; then \
-		echo "[SETUP] Criando venv do Python..."; \
-		$(SYS_PYTHON) -m venv $(VENV_DIR) || python -m venv $(VENV_DIR); \
-	fi
-	@echo "[SETUP] Instalando dependencias do Backend..."
-	@$(PIP) install -r $(ROOT_DIR)/backend/requirements.txt
-	@if [ -f "$(ROOT_DIR)/backend/requirements-dev.txt" ]; then \
-		$(PIP) install -r $(ROOT_DIR)/backend/requirements-dev.txt; \
-	fi
 	@echo "[SETUP] Instalando dependencias do Frontend..."
 	@cd "$(ROOT_DIR)/frontend" && npm install
 	@echo "[SETUP] Inicializando banco de dados Supabase..."
