@@ -11,6 +11,7 @@ from fastapi.requests import Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from src.modules.admin.router import router as admin_router
 from src.modules.events.router import router as events_router
 from src.modules.syllabus.router import router as syllabus_router
 
@@ -42,7 +43,7 @@ async def handle_database_error(request: Request, exc: SQLAlchemyError) -> JSONR
 
 @app.exception_handler(RequestValidationError)
 async def handle_validation_error(request: Request, exc: RequestValidationError) -> JSONResponse:
-    logger.warning("Validation error on %s %s: %s (body=%s)", request.method, request.url.path, exc.errors(), exc.body)
+    logger.warning("Validation error on %s %s", request.method, request.url.path)
     field_labels = {
         "title": "Título",
         "description": "Descrição",
@@ -66,7 +67,7 @@ async def handle_validation_error(request: Request, exc: RequestValidationError)
         messages.append(f"{label}: {msg}")
     return JSONResponse(
         status_code=422,
-        content={"detail": "; ".join(messages), "errors": exc.errors()},
+        content={"detail": "; ".join(messages), "errors": [{"loc": e["loc"], "msg": e["msg"], "type": e["type"]} for e in exc.errors()]},
     )
 
 default_origins = "http://localhost:5173,http://127.0.0.1:5173"
@@ -79,10 +80,11 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
+app.include_router(admin_router, prefix="/api/v1")
 app.include_router(events_router, prefix="/api/v1")
 app.include_router(syllabus_router, prefix="/api/v1")
 

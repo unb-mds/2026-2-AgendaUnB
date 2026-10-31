@@ -4,6 +4,8 @@
 
 O Agenda UnB reúne eventos públicos dos campi e compromissos privados em uma aplicação web responsiva. Não está previsto aplicativo nativo nem substituição do SIGAA para matrícula oficial, notas ou frequência. A importação futura de atestados usará PDFs enviados pelo estudante, sem integração direta com a API do SIGAA.
 
+Referência da consolidação: **24/10/2026**, commit `e0ecf46`; histórico de operações comparado à tag `R1` (`4a3a07d`). Implementação observada e testes existentes não equivalem a aprovação formal do time. Propostas futuras são identificadas separadamente.
+
 ## 2. Visão geral
 
 ```mermaid
@@ -54,25 +56,31 @@ Meus Eventos combina compromissos privados com vínculos a eventos públicos sal
 
 As rotas de negócio usam `/api/v1`; a sessão é enviada em `Authorization: Bearer <token>`. O backend valida o token com Supabase Auth e consulta o perfil no banco.
 
-| Método e rota | Acesso e resultado |
-| --- | --- |
-| `GET /api/v1/events` | Público; apenas aprovados, com campus, categoria, intervalo de datas, busca e paginação |
-| `GET /api/v1/events/{id}` | Público; detalhe de evento aprovado |
-| `POST /api/v1/events` | Professor/admin; publicação direta aprovada |
-| `DELETE /api/v1/events/{id}` | Professor/admin; exclusão do evento |
-| `POST /api/v1/suggestions` | Estudante; autoria da sessão e status pendente |
-| `GET /api/v1/me/events` | Autenticado; compromissos privados do usuário |
-| `GET /api/v1/me/events/{id}` | Proprietário; detalhe privado |
-| `POST /api/v1/me/events` | Autenticado; criação privada |
-| `PUT /api/v1/me/events/{id}` | Proprietário; atualização privada |
-| `DELETE /api/v1/me/events/{id}` | Proprietário; exclusão privada |
-| `GET /api/v1/me/saved-events` | Autenticado; públicos aprovados salvos pelo usuário |
-| `GET /api/v1/me/saved-events/{id}` | Autenticado; retorna `{ "saved": true/false }` |
-| `PUT /api/v1/me/saved-events/{id}` | Autenticado; salva sem duplicar; 404 para evento ausente/não aprovado |
-| `DELETE /api/v1/me/saved-events/{id}` | Autenticado; remove somente vínculo; retorna 204 |
-| `GET /health` | Público; disponibilidade da API |
+A referência única dos contratos é [api-specs.md](api-specs.md): 15 operações atuais, das quais 10 existiam na R1. Abrange catálogo público, CRUD privado, sugestões, vínculos salvos e saúde, com payloads, filtros, exemplos e erros por operação. Não há edição pública, upload ou rotas FastAPI administrativas implementadas.
 
-PUT e DELETE dos vínculos salvos são idempotentes. O frontend percorre as páginas do catálogo em lotes de 100, reunindo resultados sem duplicação por ID. Filtros de turno são aplicados na interface.
+PUT e DELETE dos vínculos salvos são idempotentes. O frontend percorre as páginas do catálogo em lotes de 100. Filtros de turno são aplicados na interface.
+
+### Fluxo interno do backend
+
+```mermaid
+flowchart TB
+    HTTP[Requisição HTTP] --> APP[FastAPI: CORS e roteamento]
+    APP --> VALID[Validação Pydantic de entrada]
+    APP --> DEP[Dependências de sessão nas rotas protegidas]
+    DEP --> AUTH[Supabase Auth: validação do Bearer]
+    DEP --> PROFILE[Consulta do papel em profiles]
+    VALID --> ROUTE[Rotas do módulo events]
+    DEP --> ROUTE
+    ROUTE --> RULE[Regras de papel, propriedade e visibilidade]
+    RULE --> ORM[SQLAlchemy e sessão por requisição]
+    PROFILE --> ORM
+    ORM --> DB[(PostgreSQL)]
+    DB --> OUT[Schemas de resposta]
+    OUT --> JSON[Resposta JSON ou 204 sem corpo]
+    APP -. exceções .-> ERR[Handlers: validação, conflito e indisponibilidade]
+```
+
+O diagrama representa responsabilidades, não uma ordem estrita de execução das dependências FastAPI. Rotas públicas dispensam a validação de sessão. `get_db` abre e fecha a sessão; as rotas controlam commits. Não existe camada separada de serviços/repositórios: regras e consultas estão concentradas no router. A consulta de papel e as regras de propriedade continuam necessárias mesmo quando a conexão PostgreSQL ignora RLS.
 
 ## 6. Sugestões, moderação e administração
 
@@ -108,10 +116,60 @@ As migrações devem ser aplicadas antes de disponibilizar API/frontend dependen
 
 O backend já recebe uploads de planos e oferece consulta paginada, detalhe com candidatos e confirmação de candidatos revisados na agenda privada. O worker/parser que transforma o PDF em candidatos ainda está planejado; sem ele, os planos permanecem em processamento até uma integração preencher resultados e estado. Também continuam planejados: upload e extração de atestados, vínculo automático com turmas, validação colaborativa, inscrições/cancelamentos, histórico de participação, lembretes de proximidade, exportação `.ics` e coleta externa.
 
-O Modelo Dual prevê planos oficiais de professores com confirmação por colegas de turma e planos particulares revisados pelo estudante antes de salvar datas privadas. O parser deve priorizar PDF com texto selecionável e oferecer tratamento recuperável para arquivos ilegíveis. Estratégia de processamento, serviço de e-mail, fontes/frequência da coleta e hospedagem de produção ainda precisam de definição. O upload grava no Storage privado; o processamento automático ainda depende do worker.
+O Modelo Dual prevê planos oficiais de professores com confirmação por colegas de turma e planos particulares revisados pelo estudante antes de salvar datas privadas. O parser deve priorizar PDF com texto selecionável e oferecer tratamento recuperável para arquivos ilegíveis. Estratégia de processamento, serviço de e-mail e fontes/frequência da coleta ainda precisam de definição. A hospedagem tem proposta documentada, pendente de adoção e implantação. O Storage privado já tem migração, mas o fluxo de upload e o processamento não estão implementados na aplicação.
 
-O GitHub Pages hospeda a documentação. Isso não define hospedagem da SPA ou da API. O backend tem Dockerfile e o desenvolvimento usa Supabase CLI/Docker, FastAPI e Vite.
+O GitHub Pages hospeda a documentação. Isso não define hospedagem da SPA ou da API. O arquivo `backend/Dockerfile` está vazio; não constitui uma imagem executável. O desenvolvimento usa Supabase CLI/Docker, FastAPI e Vite. O [plano de implantação](implantacao.md) propõe Vercel, Render com runtime Python e Supabase separado por ambiente; não há pipeline da aplicação implementado.
 
 ## 9. Verificação
 
 Execute pytest no backend, `npm run build` no frontend e `node --test src/lib/calendar.test.js` na pasta frontend. Os testes de API de eventos salvos usam SQLite e não validam políticas RLS reais. Os testes de moderação no PostgreSQL exigem `TEST_SUPABASE_DB_URL` apontando ao Supabase local; sem essa variável são ignorados. Consulte [Contribuição](CONTRIBUTING.md) para os comandos.
+
+### Registro de validação — 24/10/2026
+
+| Verificação executada | Resultado e limite |
+| --- | --- |
+| `python -m pytest tests -q` no backend | 15 passaram, 7 ignorados por ausência de Supabase local configurado; aviso de depreciação Starlette/httpx |
+| `node --test src/lib/calendar.test.js` no frontend | 3 passaram |
+| `npm run build` no frontend | Passou; aviso de chunk acima de 500 kB |
+| OpenAPI × inventário documental | 15 operações encontradas; nenhuma ausente na especificação |
+| Requisição pessoal com `starts_at` sem fuso, via TestClient | Reproduzido 500 no handler de validação; dívida registrada, código não alterado |
+| `python -m mkdocs build --strict` | Passou; saída temporária fora do repositório |
+| Inspeção visual do site local | Diagramas geral e interno renderizados; páginas de contratos e implantação revisadas |
+
+Não foram executados testes RLS/RPCs em banco remoto, deploy nem homologação hospedada. Os sete testes ignorados permanecem pendentes de Supabase local descartável. O teste isolado do erro de validação usa entrada fictícia e não grava dados.
+
+## 10. Registro de decisões arquiteturais
+
+Registros retrospectivos do código, sem atribuir motivos históricos ou aprovação não documentados. As consequências são uma análise técnica do estado observado. Novas decisões devem registrar data, autoria/revisão e substituições.
+
+| ID / estado | Contexto e solução observada | Consequências | Evidência |
+| --- | --- | --- | --- |
+| DA-01 — implementada | API pequena em aplicação única FastAPI, com módulo `events` concentrando rotas, schemas e regras | Operação simples; crescimento do router pode exigir separação futura | `backend/src/main.py`, `backend/src/modules/events/router.py` |
+| DA-02 — implementada | Interface usa FastAPI para eventos e Supabase diretamente para Auth, RPCs, perfis e notificações | Dois caminhos de integração; autorização deve existir no backend e nas políticas/funções SQL | `frontend/src/lib/api.js`, `frontend/src/lib/moderation.js`, `frontend/src/contexts/AuthContext.jsx` |
+| DA-03 — implementada | Bearer validado por chamada ao Auth; papel lido no banco | Depende da disponibilidade do Auth; timeout de 5 segundos; indisponibilidade resulta em 503 | `backend/src/middlewares/auth.py` |
+| DA-04 — implementada | Papel para ações públicas; propriedade para privados/salvos; RLS e RPCs para acesso pelo SDK | Guards de UI não são segurança; conexão administrativa exige filtros explícitos na API | Router, middleware e migrações RLS |
+| DA-05 — implementada | SQL versionado é referência do schema completo | ORM não documenta todas as tabelas, triggers ou políticas; migrações precedem código dependente | `supabase/migrations/`, `backend/src/database/models.py` |
+| DA-06 — implementada | Agenda combina registros privados e vínculos a públicos | Salvar não duplica dados nem equivale a inscrição; exclusão pública remove vínculos | Migração `20261016000000`, router e `frontend/src/lib/api.js` |
+| DA-07 — proposta | Hospedar SPA/API separadamente e isolar dados por ambiente | Requer configuração de CORS, Auth, segredos e promoção coordenada | [Implantação](implantacao.md) |
+
+## 11. Matriz de regras e evidências
+
+“Cobertura existente” significa cenário presente na suíte, não certificação de execução, homologação hospedada ou aprovação de negócio. A execução desta consolidação é registrada na seção 9. Arquivos de testes abaixo são relativos a `backend/tests/`.
+
+| Regra implementada | Onde é aplicada | Cobertura existente / limite |
+| --- | --- | --- |
+| Catálogo e salvos exibem somente aprovados | Consultas do router | `test_events_api.py::test_list_public_events_filters_and_hides_pending`; `test_saved_events_api.py::test_unapproved_missing_and_deleted_events` |
+| Privados são acessíveis somente pelo dono | Filtro `user_id` na API e RLS SQL | `test_events_api.py::test_personal_event_crud_is_limited_to_its_owner`; SQLite não comprova RLS |
+| Só professor/admin publicam e excluem públicos | `require_event_manager` | `test_events_api.py::test_public_create_and_delete_require_event_manager`; sessão substituída no teste |
+| Sugestão estudantil nasce pendente sem autoria/status forjados | Router e triggers SQL | `test_suggestions_api.py`; `test_moderation_database.py::test_student_rls_submission_and_notifications` |
+| Moderação somente pendente; recusa justificada; avisos atômicos | `moderar_sugestao` e triggers | `test_moderation_database.py::test_moderation_and_atomic_notification`; execução PostgreSQL necessária |
+| Notificações limitadas ao destinatário, atualização só de leitura | RLS e permissões de coluna | `test_moderation_database.py::test_student_rls_submission_and_notifications` |
+| Admin altera terceiros, sem autorrebaixamento; detecta cargo divergente | `admin_definir_papel`, `admin_alterar_papel` | `test_moderation_database.py::test_admin_role_guards_and_professor_isolation`; concorrência simultânea não inferida desse teste |
+| Cadastro/autopromoção professor exige domínio institucional; admin pode atribuir fora dele | Triggers e migração `20261018000100` | `test_moderation_database.py::test_admin_can_promote_personal_email_but_user_cannot` cobre promoção por admin; apesar do nome, não testa explicitamente todas as negativas de cadastro/autopromoção |
+| Salvar/remover vínculo é idempotente e isolado por usuário | Router, chave composta e cascata | `test_saved_events_api.py`, incluindo duplicata e remoção própria; SQLite não comprova RLS |
+
+Limites conhecidos: `location` pessoal não é persistido; o handler de validação pode falhar ao serializar certos contextos Pydantic; `/health` não verifica dependências. Os detalhes estão nos [contratos](api-specs.md). Corrigir essas limitações requer tarefas de código separadas desta consolidação.
+
+## 12. Manutenção documental
+
+Mudanças em rotas, schemas, autorização, regras de negócio, migrações e implantação devem atualizar o documento correspondente no mesmo PR. Contratos ficam em [API](api-specs.md), decisões nesta página, convenções em [Padrões](padroes.md) e operação em [Implantação](implantacao.md). Requisitos e notas de release preservam intenção e histórico; não substituem o contrato atual. Registrar evidências de testes e pendências sem declarar funcionalidades futuras como entregues.

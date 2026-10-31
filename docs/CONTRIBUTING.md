@@ -177,3 +177,7 @@ mkdocs build --strict
 ```
 
 Ao alterar uma funcionalidade, atualize os guias correspondentes e o estado em [Atualizações pós-R1](atualizacoes.md). Notas de versões anteriores são registros históricos. Registre uso relevante de IA em [AI-USAGE.md](AI-USAGE.md), incluindo o que foi efetivamente verificado.
+
+## Manutenção da documentação
+
+No mesmo PR que alterar rotas, schemas, autorização, regras, migrações ou operação, atualizar [API](api-specs.md), [Arquitetura](Architecture.md), [Padrões](padroes.md) e/ou [Implantação](implantacao.md), conforme o assunto. Preservar notas históricas de release e distinguir estado implementado de proposta. Antes da revisão, executar `python -m mkdocs build --strict` na raiz e conferir links e diagramas renderizados. O plano de CI/CD da aplicação ainda não é um workflow existente.

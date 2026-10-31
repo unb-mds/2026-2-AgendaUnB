@@ -44,3 +44,17 @@ python -m pytest tests -q
 ```
 
 Para incluir os testes reais de RLS/RPC/triggers, configure `TEST_SUPABASE_DB_URL` com a conexão PostgreSQL do Supabase local antes de executar pytest. Esses testes aceitam somente localhost/127.0.0.1 e desfazem seus dados ao terminar. Sem a variável, são ignorados.
+
+
+## API REST administrativa
+
+Todas as rotas abaixo exigem `Authorization: Bearer <token>` validado pelo Supabase e cargo atual `admin` no banco. Ausencia de credenciais ou token invalido retorna 401; outro cargo retorna 403.
+
+- `GET /api/v1/admin/events/pending?offset=0&limit=20`: lista somente pendentes, ordenados por criacao e ID. Limite maximo: 100.
+- `PATCH /api/v1/admin/events/{id}/review`: recebe `{"status":"rejeitado","justificativa_recusa":"Motivo"}` ou `{"status":"aprovado"}`. Recusa exige texto de ate 2.000 caracteres. Aprovacao limpa justificativa. Evento inexistente retorna 404; revisao anterior retorna 409. Atualizacao condicional impede sobrescrever decisoes concorrentes e preserva os triggers de notificacao.
+- `GET /api/v1/admin/users?busca=&papel=&confirmado=&offset=0`: reutiliza `admin_buscar_usuarios`, com pagina de 20 e resposta `items`, `total`, `all`, `unconfirmed`. Filtros de confirmacao: vazio, `sim`, `nao`. Retorna identificador, nome, email, papel, criacao, ultimo login e confirmacao; nunca retorna segredos de autenticacao.
+- `PATCH /api/v1/admin/users/{id}/role`: recebe `{"role":"student"}`, `professor` ou `admin`. Campos extras sao rejeitados. Revalida o administrador dentro da transacao; 404 para alvo inexistente e 409 ao rebaixar o ultimo administrador. Permite rebaixar a propria conta quando existe outro administrador. O modelo atual nao possui indicador de administrador ativo; a protecao conta os perfis com papel admin.
+
+A troca de cargo usa bloqueio transacional da tabela profiles no PostgreSQL, serializando inclusive escritores das RPCs existentes. Isso privilegia integridade, podendo aumentar a espera em alteracoes simultaneas de perfis. O usuario de banco do backend precisa das permissoes para esse bloqueio e para atualizar profiles/eventos. A listagem depende das migracoes administrativas existentes e usa identidade definida apenas durante a transacao. As alteracoes emitem logs com autor, alvo e resultado, sem justificativas ou dados pessoais. Nenhuma migracao nova e necessaria.
+
+Os testes de API usam SQLite; a listagem de usuarios simula a RPC. Os testes PostgreSQL de RPC/RLS/triggers e bloqueio exigem `TEST_SUPABASE_DB_URL` local. Sem essa configuracao, sao ignorados e nao comprovam o comportamento concorrente no ambiente de implantacao.
