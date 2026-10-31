@@ -56,6 +56,15 @@ class SavedEventStatus(BaseModel):
     saved: bool
 
 
+class PersonalEventOriginRead(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    syllabus_id: UUID = Field(alias="syllabusId")
+    candidate_id: UUID = Field(alias="candidateId")
+    page: int | None = None
+    excerpt: str | None = None
+
+
 class PersonalEventRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -66,6 +75,7 @@ class PersonalEventRead(BaseModel):
     campus: str | None
     category: str | None
     location: str | None = None
+    origin: PersonalEventOriginRead | None = None
 
 
 class PersonalEventCreate(EventInput):
