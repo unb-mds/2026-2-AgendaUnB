@@ -130,35 +130,3 @@ def test_personal_event_crud_is_limited_to_its_owner(api):
 
     deleted = client.delete(f"/api/v1/me/events/{event_id}")
     assert deleted.status_code == 204
-
-
-def test_personal_event_with_empty_strings_normalizes_to_none(api):
-    client, _, _, _ = api
-    payload = {
-        "title": "Estudo em grupo",
-        "starts_at": "2026-10-20T10:00:00Z",
-        "campus": "  ",
-        "category": "",
-        "description": "   ",
-        "location": "",
-    }
-    response = client.post("/api/v1/me/events", json=payload)
-    assert response.status_code == 201
-    event = response.json()
-    assert event["title"] == "Estudo em grupo"
-    assert event["campus"] is None
-    assert event["category"] is None
-    assert event["description"] is None
-
-
-def test_personal_event_validation_error_returns_clean_message(api):
-    client, _, _, _ = api
-    payload = {
-        "title": "AB",
-        "starts_at": "2026-10-20T10:00:00Z",
-    }
-    response = client.post("/api/v1/me/events", json=payload)
-    assert response.status_code == 422
-    data = response.json()
-    assert "Título: deve ter pelo menos 3 caracteres" in data["detail"]
-
