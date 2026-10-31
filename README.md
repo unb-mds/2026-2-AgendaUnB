@@ -31,7 +31,7 @@ Métodos de Desenvolvimento de Software - 2026/2 - Grupo G8
         - [4. Frontend (React)](#4-frontend-react)
         - [5. Documentação Local (MkDocs)](#5-documentacao-local-mkdocs)
         - [6. Testes Automatizados](#6-testes-automatizados)
-- [Funcionalidades da R1](#funcionalidades)
+- [Funcionalidades Atuais](#funcionalidades)
 - [Equipe](#equipe)
 - [Documentação Oficial](#documentacao)
 
@@ -80,7 +80,7 @@ Certifique-se de possuir instalado em seu ambiente:
 * [GNU Make](https://www.gnu.org/software/make/) *(Recomendado para automação dos comandos em 1 passo)*:
   * **Linux (Ubuntu/Debian):** `sudo apt install make` ou `build-essential`
   * **macOS:** Integrado com as ferramentas de desenvolvedor (`xcode-select --install`)
-  * **Windows:** Disponível via [Chocolatey](https://chocolatey.org/) (`choco install make`), [Scoop](https://scoop.sh/) (`scoop install make`), [winget](https://learn.microsoft.com/pt-br/windows/package-manager/winget/) (`winget install GnuWin32.Make`) ou utilizando o terminal **Git Bash** / **WSL**.
+  * **Windows:** Disponível via [Chocolatey](https://chocolatey.org/install) (`choco install make`), [Scoop](https://scoop.sh/) (`scoop install make`), [winget](https://learn.microsoft.com/pt-br/windows/package-manager/winget/) (`winget install GnuWin32.Make`) ou utilizando o terminal **Git Bash** / **WSL**.
 
 ---
 
@@ -92,7 +92,7 @@ O projeto conta com um [`Makefile`](Makefile) na raiz que automatiza a configura
 > 💡 **Dica para Windows:** No Windows, recomenda-se executar os comandos `make` através do terminal **Git Bash** (instalado junto com o Git) ou **WSL**, garantindo a compatibilidade de execução concorrente dos processos com encerramento seguro via `Ctrl+C`.
 
 #### 1. Configuração completa do ambiente
-Cria o `.env` a partir de `.env.example`, cria o ambiente virtual Python (`backend/venv`), instala as dependências do backend (`requirements.txt` e `requirements-dev.txt`), instala os pacotes do frontend (`npm install`) e inicializa os containers do Supabase local:
+Cria o `.env` a partir de `.env.example`, cria o ambiente virtual Python (`backend/venv`), instala as dependências do backend (`requirements.txt` e `requirements-dev.txt`), instala os pacotes do frontend (`npm install`) e inicializa os containers do Supabase local (para Windows, é importante lembrar de estar com o Docker aberto):
 
 ```bash
 make setup
@@ -164,7 +164,7 @@ O Supabase gerencia o PostgreSQL, autenticação, storage e migrações locais v
 | Ação | Comando (Linux / macOS / Windows) | Equivalente Make | Finalidade |
 |---|---|---|---|
 | **Iniciar containers** | `npx supabase start` | `make db-start` | Sobe PostgreSQL, Supabase Auth, Storage e Studio local |
-| **Resetar banco / Migrações** | `npx supabase db reset` | `make db-reset` | Aplica todas as 5 migrações SQL e o seed inicial |
+| **Resetar banco / Migrações** | `npx supabase db reset` | `make db-reset` | Aplica todas as migrações SQL versionadas e o seed inicial |
 | **Status dos serviços** | `npx supabase status` | `make db-status` | Exibe chaves anon, porta da API e URLs |
 | **Parar containers** | `npx supabase stop` | `make db-stop` | Encerra os serviços locais do Supabase |
 
@@ -232,10 +232,14 @@ Para executar a suíte de testes unitários e de integração do Backend:
 |---|---|---|
 | **Executar testes** | `make test` | `pytest tests/` |
 
+Para o calendário, execute `node --test src/lib/calendar.test.js` em `frontend/`. Os testes de RLS/RPC/triggers exigem `TEST_SUPABASE_DB_URL` apontando para o Supabase local e são ignorados sem essa configuração. Veja [Contribuição](docs/CONTRIBUTING.md).
+
 ---
 
 <a id="funcionalidades"></a>
-## Funcionalidades da R1
+
+## Funcionalidades Atuais 
+Funcionalidades atualizadas até o fim da Sprint 05 (18/10)
 
 ### Frontend
 
@@ -244,7 +248,13 @@ Para executar a suíte de testes unitários e de integração do Backend:
 | Landing Page | Hero section, funcionalidades, sobre e equipe |
 | Cadastro | Modal com seletor Estudante/Professor, validação de @unb.br para professor |
 | Login | Modal de login com e-mail/senha e Google OAuth |
-| Página de Eventos | Listagem pública e pessoal, filtros por área/campus/turno, busca textual |
+| Página de Eventos | `/eventos`: catálogo público e Meus Eventos, busca e filtros por área/campus/turno |
+| Calendário | Visualização mensal e semanal, navegação por período e botão Hoje, com os mesmos filtros da lista |
+| Eventos Públicos Salvos | Adicionar/remover eventos públicos da agenda pessoal sem copiar ou alterar o original |
+| Sugestões | Estudantes enviam propostas pelo formulário Criar Evento; professores e admins analisam em `/sugestoes` |
+| Notificações | Sino para estudantes com confirmação de envio, aprovação e recusa com justificativa |
+| Administração | `/admin`: busca e filtros de usuários, confirmação de e-mail, último acesso e alteração de cargos |
+| Plano de Ensino | `/plano-de-ensino`: página informativa; upload e extração ainda em preparação |
 | Criação de Eventos | Modal com DatePicker e TimePicker customizados, campos completos |
 | Edição e Exclusão | CRUD completo para eventos pessoais |
 | Detalhe do Evento | Página dedicada com descrição, organizador, badges e link externo |
@@ -264,18 +274,27 @@ Para executar a suíte de testes unitários e de integração do Backend:
 | POST | `/api/v1/me/events` | Criar evento pessoal | Sim |
 | PUT | `/api/v1/me/events/{id}` | Atualizar evento pessoal | Sim (dono) |
 | DELETE | `/api/v1/me/events/{id}` | Excluir evento pessoal | Sim (dono) |
+| POST | `/api/v1/suggestions` | Enviar sugestão pendente | Estudante |
+| GET | `/api/v1/me/saved-events` | Listar eventos públicos salvos | Sim |
+| GET | `/api/v1/me/saved-events/{id}` | Consultar vínculo com a agenda | Sim |
+| PUT | `/api/v1/me/saved-events/{id}` | Salvar sem duplicar | Sim |
+| DELETE | `/api/v1/me/saved-events/{id}` | Remover vínculo da agenda | Sim |
 | GET | `/health` | Health check | Não |
+
 
 ### Banco de Dados
 
-7 tabelas criadas com RLS: `profiles`, `campus`, `categories`, `eventos`, `eventos_pessoais`, `planos_ensino`, `avaliacoes`.
+O esquema é versionado em **11 migrações SQL**. Além das tabelas da R1, foram adicionadas `eventos_salvos` e `notificacoes`, regras de sugestões/moderação, RPCs administrativas e o bucket privado `syllabus_files` (PDF, até 10 MB). O bucket prepara a infraestrutura; upload e parser ainda não estão disponíveis na aplicação.
 
 Destaques de segurança:
 
-- Trigger automático de criação de perfil no registro
-- CHECK constraint: professor exige e-mail `@unb.br`
-- E-mail imutável no perfil (impede escalada de privilégios)
-- Eventos pessoais isolados por usuário via RLS
+- Perfil criado automaticamente no cadastro; e-mail imutável no perfil.
+- Cadastro e autopromoção para professor exigem `@unb.br`; admins podem atribuir esse papel a contas de outro domínio.
+- Eventos privados, vínculos salvos e notificações são restritos ao próprio usuário.
+- Sugestões estudantis nascem pendentes; decisões de moderação são atômicas e recusas exigem justificativa.
+- Somente admins alteram cargos de terceiros; não podem remover o próprio acesso administrativo.
+
+Antes de disponibilizar API e frontend atualizados, aplique as migrações pendentes. No ambiente local já inicializado, execute `npx supabase migration up --local`. Consulte os guias de [eventos salvos](docs/eventos-salvos.md) e [moderação](docs/painel-administrativo.md).
 
 ---
 
@@ -305,6 +324,7 @@ Toda a documentação do projeto está publicada no GitHub Pages:
 | [Arquitetura](https://unb-mds.github.io/2026-2-AgendaUnB/Architecture/) | Visão arquitetural, stack e modelos de dados |
 | [Requisitos](https://unb-mds.github.io/2026-2-AgendaUnB/requisitos/) | 21 RFs e 13 RNFs especificados |
 | [Padrões](https://unb-mds.github.io/2026-2-AgendaUnB/padroes/) | Glossário, naming conventions e rotas da API |
+| [Atualizações pós-R1](docs/atualizacoes.md) | Calendário, eventos salvos, sugestões, moderação e administração |
 | [Release v0.1.0](https://unb-mds.github.io/2026-2-AgendaUnB/release-notes/v0.1.0/) | Release note da primeira entrega |
 | [Sprints](https://unb-mds.github.io/2026-2-AgendaUnB/sprints/sprint-1/) | Acompanhamento ágil por ciclo |
 

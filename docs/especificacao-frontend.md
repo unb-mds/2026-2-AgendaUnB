@@ -29,7 +29,7 @@ A identidade visual do AgendaUnB combina diferentes elementos para estabelecer u
 # 2. UI — User Interface (Interface do Usuário)
 A interface do AgendaUnB foi desenvolvida utilizando a biblioteca React, buscando proporcionar uma navegação simples, organizada e intuitiva entre as funcionalidades disponíveis. Na arquitetura de desenvolvimento, a SPA (Single Page Application) foi construída junto à ferramenta **Vite** para otimização de build, operando de forma desacoplada do backend e utilizando o **Supabase JS** para realizar a comunicação direta com serviços de banco e armazenamento.
 
-A aplicação está estruturada em duas páginas principais, cada uma com uma finalidade específica dentro do sistema. Essa divisão permite separar as informações institucionais e de autenticação das funcionalidades relacionadas ao gerenciamento de eventos acadêmicos.
+A aplicação separa a apresentação e autenticação (`/`) do catálogo e agenda (`/eventos`), detalhes (`/evento/:id`), planos (`/plano-de-ensino`), sugestões (`/sugestoes`) e administração (`/admin`). A rota antiga `/segunda-pagina` redireciona para a navegação atual.
 
 ## 2.1. Primeira página — Apresentação e autenticação
 A primeira página tem como finalidade apresentar o AgendaUnB aos visitantes, disponibilizando informações sobre a proposta do projeto, seus objetivos e os desenvolvedores responsáveis.
@@ -38,11 +38,11 @@ Os métodos de autenticação disponibilizados são:
 - E-mail e senha: permite que o usuário realize seu acesso utilizando suas credenciais cadastradas.
 - Google: possibilita a autenticação por meio de uma conta Google (ideal para o fluxo de estudantes).
 - Convidado: possibilita o usuário acessar de forma anônima, mas sem acesso a funcionalidade de criação de eventos privados.
-Além destes perfis, foi estipulada uma verificação rigorosa para Professores e Administração, exigindo validação por e-mail com o domínio oficial `@unb.br` para atestar a veracidade de eventos oficiais.
+O cadastro e a autopromoção para professor exigem e-mail institucional `@unb.br`. Um administrador pode atribuir o perfil de professor a uma conta com outro domínio pelo painel Admin.
 
 A página também disponibiliza o controle de alternância entre os temas claro e escuro, permitindo modificar a aparência visual de toda a aplicação.
 
-## 2.2. Segunda página — Gerenciamento de eventos
+## 2.2. Eventos — Catálogo e agenda pessoal
 A segunda página concentra as principais funcionalidades do AgendaUnB, relacionadas à visualização e ao gerenciamento de eventos acadêmicos.
 Nessa página, os usuários podem visualizar eventos públicos divulgados por professores e administradores, além de criar seus próprios eventos privados.
 Os eventos são apresentados por meio de cards (cartões), permitindo organizar visualmente as informações de cada atividade e facilitar sua identificação.
@@ -52,8 +52,11 @@ Os principais recursos disponíveis nessa página são:
 - Apresentação em cards: organização visual dos eventos em cartões translúcidos (com bordas suaves de 14 a 20px e brilhos interativos de hover), facilitando a leitura e identificação das informações. Categorizações rígidas informam rapidamente a qual campus ou tipo de atividade o evento pertence através de rótulos (badges em formato de pílula).
 - Gerenciamento de eventos: disponibilização das funcionalidades relacionadas à criação e organização dos compromissos pessoais.
 
-## 2.3. Extração de Planos de Ensino (Core Feature pós-R1)
-Para automatizar o preenchimento da agenda, a interface dispõe de um fluxo completo voltado ao envio de Planos de Ensino em PDF. O usuário realiza o upload do arquivo e acompanha o seu status de processamento através de *feedback* visual (estados como *pending* e *processing*). Após o sistema extrair as avaliações, a interface fornece uma tela de revisão ("Human-in-the-loop") para que o aluno possa corrigir nomes, descartar sugestões inconsistentes e aceitar as datas finais de provas e trabalhos antes de adicioná-las efetivamente à sua agenda privada.
+## 2.3. Planos de ensino — Fluxo futuro
+
+A página `/plano-de-ensino` informa que envio de PDFs e extração de avaliações ainda não estão disponíveis e oferece acesso à criação manual de eventos pessoais. O bucket privado já tem migração, mas não há fluxo de upload ou parser implementado na aplicação.
+
+O fluxo planejado prevê envio do documento, acompanhamento do processamento e revisão assistida para corrigir ou descartar datas antes de salvá-las. Planos oficiais terão validação colaborativa por turma; os particulares terão revisão individual.
 
 ## 2.4. Navegação entre páginas
 Para implementar a navegação entre as diferentes páginas da aplicação, a equipe de frontend utilizou a biblioteca React Router DOM.
@@ -67,7 +70,7 @@ A implementação busca proporcionar maior conforto visual e flexibilidade de ut
 
 ## 2.6. Responsividade
 O AgendaUnB foi desenvolvido com uma interface responsiva, permitindo que os elementos visuais se adaptem a diferentes resoluções e tamanhos de tela.
-A estrutura da interface modifica o posicionamento e as dimensões de seus componentes conforme o dispositivo utilizado, buscando preservar a organização e a funcionalidade do sistema (redimensionando, por exemplo, exibições amplas de calendário em formatos de lista mobile e ajustando áreas de toque para as pontas dos dedos).
+A estrutura da interface modifica o posicionamento e as dimensões de seus componentes conforme o dispositivo utilizado, buscando preservar a organização e a funcionalidade do sistema (permitindo alternar entre lista e calendário e oferecendo rolagem horizontal da grade em telas pequenas).
 Dessa forma, a aplicação pode ser utilizada em computadores, tablets e smartphones, proporcionando uma experiência consistente em diferentes dispositivos sem depender de um aplicativo nativo.
 
 # 3. UX — User Experience (Experiência do Usuário)
@@ -98,3 +101,15 @@ Essa característica amplia as possibilidades de utilização do sistema, permit
 ## 3.6. Simplicidade, transparência e intuitividade
 A organização dos elementos visuais, a divisão das funcionalidades e a utilização de componentes padronizados buscam reduzir a complexidade de utilização do sistema.
 O objetivo é permitir que os estudantes realizem suas atividades de maneira simples, sem precisar percorrer caminhos desnecessários para encontrar os recursos desejados. A adoção de indicadores de carregamento e áreas de moderação humana em processos densos (como a leitura dos PDFs) garantem que a pessoa mantenha controle total sem se perder na intuição da plataforma.
+
+
+## Painel administrativo e navegação implementada
+
+Eventos (`/eventos`), Plano de Ensino (`/plano-de-ensino`), Sugestões (`/sugestoes`) e Admin (`/admin`) têm rotas próprias e navegação com indicação sublinhada da página ativa. Sugestões é exclusiva para professores e administradores; Admin, para administradores. Estudantes enviam propostas pelo campo Visibilidade do formulário Criar Evento e acompanham as decisões pelo sino. Consulte [Painel administrativo e sugestões](painel-administrativo.md) para os fluxos, permissões, migração e testes. A importação de planos de ensino permanece em preparação.
+
+
+## Calendário e eventos públicos salvos
+
+Em `/eventos`, as visões Públicos e Meus Eventos permitem alternar entre lista de cards e calendário. O calendário tem modos Mês e Semana, navegação anterior/próximo, botão Hoje e agrupamento cronológico por dia. Busca e filtros de campus, área e turno também afetam o calendário. Datas seguem o fuso local do navegador.
+
+Meus Eventos combina os compromissos privados e os eventos públicos salvos. Nos detalhes de um público aprovado, **Adicionar aos meus eventos** cria um vínculo com o original; **Remover dos meus eventos** desfaz apenas esse vínculo. Públicos salvos não podem ser editados como compromissos privados. A interface apresenta estados de carregamento, erro com nova tentativa e confirmação da operação. Esse vínculo não equivale a inscrição.

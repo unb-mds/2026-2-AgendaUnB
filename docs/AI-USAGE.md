@@ -30,6 +30,24 @@ O campo **verificado** é o mais importante. Sem ele, a entrada declara o uso ma
 
 ## Entradas
 
+### 19/10/2026 — Planejamento da Sprint 06 e histórico de issues por sprint
+
+- **Quem:** Thomas Augusto Amorim de Araujo (solicitante).
+- **Ferramenta:** Codex (OpenAI).
+- **O que foi pedido:** Propor issues de planos de ensino com IA, com pelo menos duas por área, realocar #38/#40 no planejamento e documentar as issues nas respectivas sprints.
+- **O que entrou no repositório:** Histórico e textos das issues em `docs/sprints/sprint-1.md` a `sprint-5.md`; planejamento e oito textos de issues em `sprint-6.md`; navegação e índice atualizados.
+- **O que foi verificado:** Consulta atual de todas as issues/milestones do GitHub, leitura de requisitos, visão, arquitetura, schemas e migrações. Preservados os checklists e estados históricos; #38 e #40 tratadas como backend pendente. Conferidos os 20 registros existentes e os textos/checklists históricos, as seis novas propostas e a distribuição de oito issues (2 frontend, 4 backend, 2 dados). Dependências e links locais validados; `git diff --check` e `mkdocs build --strict` passaram após corrigir links prévios para arquivos da raiz. Testes da aplicação não foram executados nesta alteração documental.
+- **O que foi rejeitado ou corrigido:** A hipótese inicial de duas issues por pessoa foi substituída pela confirmação do solicitante: pelo menos duas por área. A #44 já está fechada; #39/#45 permanecem na Sprint 05. A estrutura atual não suporta o fluxo particular completo e as avaliações têm leitura pública, portanto não foi presumida implementação ou privacidade prontas. Não houve criação ou realocação remota de issues.
+
+### 19/10/2026 — Sincronização da documentação com o estado pós-R1
+
+- **Quem:** Thomas Augusto Amorim de Araujo (solicitante).
+- **Ferramenta:** Codex (OpenAI).
+- **O que foi pedido:** Ler e atualizar a documentação com as mudanças recentes do projeto.
+- **O que entrou no repositório:** Atualização dos guias de produto, arquitetura, requisitos, interface, padrões, contribuição e índice; documento `docs/atualizacoes.md` e navegação MkDocs. Sem alteração na implementação.
+- **O que foi verificado:** Leitura das rotas React e FastAPI, cliente de RPCs, componentes de calendário e eventos salvos e migrações de moderação, cargos e Storage. Validados o YAML do MkDocs, os 17 destinos da navegação, os links locais Markdown e a contagem de 11 migrações.
+- **O que foi rejeitado ou corrigido:** Removidas descrições de moderação como futura e de extração de PDF como pronta; distinguido vínculo salvo de inscrição e notificação de decisão de lembrete de proximidade. Corrigida a regra de domínio de professor e um exemplo de sombra incompatível com a regra de design. A nota v0.1.0 foi preservada como histórico.
+
 ### 18/09/2026 — Ajustes de autenticação, correções de UI e modularização do CSS
 
 - **Quem:** Thomas Augusto Amorim de Araujo

@@ -97,7 +97,7 @@ O sistema depende majoritariamente de **Glassmorphism** e **Neon Glow** em vez d
 
 ### Shadow Vocabulary
 - **Glow Hover** (`0 8px 32px rgba(0,139,255,0.12)`): Aplicado aos cards e botões interativos ao passar o mouse.
-- **Modal Shadow** (`0 20px 50px rgba(0,0,0,0.8), 0 0 35px rgba(0,139,255,0.2)`): Sombreamento forte e misto para isolar completamente o modal do resto do site.
+- **Modal Shadow** (`0 20px 50px rgba(0,0,0,0.2), 0 0 35px rgba(0,139,255,0.2)`): Sombra preta limitada a 20%, combinada com glow e vidro para separar o modal do fundo.
 
 ## Shapes
 
