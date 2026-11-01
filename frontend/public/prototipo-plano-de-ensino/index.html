@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Plano de ensino · Protótipo Agenda UnB</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Orbitron:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<svg class="sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
+  <symbol id="arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+  <symbol id="file" viewBox="0 0 24 24"><path d="M14 3H5v18h14V8zM14 3v5h5M8 12h8M8 16h6"/></symbol>
+  <symbol id="upload" viewBox="0 0 24 24"><path d="M12 16V3m-5 5 5-5 5 5M4 15v6h16v-6"/></symbol>
+  <symbol id="check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+  <symbol id="calendar" viewBox="0 0 24 24"><path d="M4 5h16v16H4zM4 10h16M8 2v6m8-6v6M8 14h2m4 0h2m-8 4h2"/></symbol>
+  <symbol id="search" viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"/><path d="m15 15 6 6"/></symbol>
+  <symbol id="lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V6a4 4 0 0 1 8 0v4m-4 5v2"/></symbol>
+  <symbol id="bell" viewBox="0 0 24 24"><path d="M5 17h14l-2-3V9a5 5 0 0 0-10 0v5zm5 4h4"/></symbol>
+</defs></svg>
+<a class="skip" href="#conteudo">Ir para o conteúdo</a>
+<header class="nav"><a class="brand" href="#conteudo">agenda<span>UnB</span></a><nav aria-label="Principal"><span>Eventos</span><a href="#conteudo" aria-current="page">Plano de ensino</a></nav><div class="nav-user"><svg aria-hidden="true"><use href="#bell"/></svg><span class="avatar" aria-label="Perfil ilustrativo de estudante">E</span></div></header>
+<main id="conteudo">
+  <div class="prototype"><span class="dot"></span> Protótipo visual <span class="prototype-detail">· Dados ilustrativos. Nenhum arquivo é enviado ou evento salvo.</span></div>
+  <header class="page-heading"><div><h1>Seu semestre, organizado.</h1><p>Conecte suas turmas aos planos de ensino e leve as datas importantes para sua agenda.</p></div><span class="semester"><svg aria-hidden="true"><use href="#calendar"/></svg> 2026 · 2º semestre</span></header>
+  <nav class="journey" aria-label="Etapas do planejamento">
+    <a href="#matricula"><span class="step-number done">1</span><span><strong>Vincular matrícula</strong><small>Identifique suas turmas</small></span></a>
+    <a href="#turmas" class="current"><span class="step-number">2</span><span><strong>Conectar planos</strong><small>Complete o que falta</small></span></a>
+    <a href="#revisao"><span class="step-number">3</span><span><strong>Revisar datas</strong><small>Confira antes de incluir</small></span></a>
+    <a href="#agenda"><span class="step-number">4</span><span><strong>Enviar à agenda</strong><small>Planeje seus próximos dias</small></span></a>
+  </nav>
+
+  <section id="matricula" class="enrollment" aria-labelledby="matricula-title">
+    <div class="enrollment-icon"><svg aria-hidden="true"><use href="#file"/></svg></div>
+    <div class="enrollment-copy"><div class="inline-title"><h2 id="matricula-title">Sua matrícula é o ponto de partida</h2><span class="badge success">3 turmas vinculadas</span></div><p>Envie o comprovante de matrícula do SIGAA para identificar disciplina, turma e período.</p><div class="file-meta"><span>comprovante_2026_2.pdf</span><span>Referência visual de matrícula vinculada</span></div><small><svg aria-hidden="true"><use href="#lock"/></svg> Seu comprovante é particular. Apenas os planos revisados serão associados às turmas.</small></div>
+    <div class="enrollment-action"><button type="button" aria-disabled="true"><svg aria-hidden="true"><use href="#upload"/></svg> Enviar comprovante</button><span>Arquivo PDF · controle ilustrativo</span></div>
+  </section>
+
+  <section id="turmas" aria-labelledby="turmas-title">
+    <header class="section-heading"><div><h2 id="turmas-title">Minhas turmas</h2><p>Veja o que já está pronto e onde você pode contribuir.</p></div><a class="text-link" href="#catalogo">Explorar turmas da UnB <svg aria-hidden="true"><use href="#arrow"/></svg></a></header>
+    <div class="next-action"><div><strong>Próximo passo: complete o plano que falta</strong><p>Métodos de Desenvolvimento de Software ainda não tem um plano para esta turma.</p></div><a class="button primary" href="#envio">Enviar plano <svg aria-hidden="true"><use href="#arrow"/></svg></a></div>
+    <div class="course-list">
+      <article class="course"><div class="course-index">MDS</div><div class="course-info"><h3>Métodos de Desenvolvimento de Software</h3><p>Turma A · Faculdade do Gama · 2026.2</p></div><span class="badge warning">Plano ausente</span><a href="#envio" class="text-link">Contribuir <svg aria-hidden="true"><use href="#arrow"/></svg></a></article>
+      <article class="course"><div class="course-index">FAC</div><div class="course-info"><h3>Fundamentos de Arquitetura de Computadores</h3><p>Turma B · Darcy Ribeiro · 2026.2</p></div><span class="badge info">Revisão pendente</span><a href="#revisao" class="text-link">Revisar datas <svg aria-hidden="true"><use href="#arrow"/></svg></a></article>
+      <article class="course"><div class="course-index">C1</div><div class="course-info"><h3>Cálculo 1</h3><p>Turma C · Darcy Ribeiro · 2026.2</p></div><span class="badge success">Plano vinculado</span><a href="#agenda" class="text-link">Ver na seleção <svg aria-hidden="true"><use href="#arrow"/></svg></a></article>
+    </div>
+  </section>
+
+  <section id="envio" class="upload-layout" aria-labelledby="envio-title">
+    <div class="upload-panel"><div class="section-heading"><div><h2 id="envio-title">Complete o plano da turma</h2><p>O arquivo ficará associado à disciplina, turma e período abaixo.</p></div><svg class="section-icon" aria-hidden="true"><use href="#file"/></svg></div>
+      <div class="destination"><span>Turma de destino</span><strong>Métodos de Desenvolvimento de Software</strong><p>Turma A · Faculdade do Gama · 2026.2</p></div>
+      <div class="dropzone"><svg aria-hidden="true"><use href="#upload"/></svg><h3>Traga o plano para cá</h3><p>Use o PDF disponibilizado para esta turma.</p><button type="button" aria-disabled="true">Selecionar plano de ensino</button><small>PDF com texto selecionável · até 10 MB e 10 páginas</small></div>
+      <div class="panel-footer"><span><svg aria-hidden="true"><use href="#lock"/></svg> Nada é publicado sem revisão</span><button class="primary" type="button" disabled>Extrair datas do plano</button></div>
+    </div>
+    <aside class="guidance"><h2>Você acompanha cada passo.</h2><ol><li><strong>Confira a turma</strong><p>Planos de turmas ou semestres diferentes podem ter cronogramas diferentes.</p></li><li><strong>A IA sugere as datas</strong><p>Provas, trabalhos e entregas aparecem com a página e o trecho de onde foram extraídos.</p></li><li><strong>A decisão é sua</strong><p>Corrija o que precisar. Só depois da sua conferência o plano será vinculado à turma.</p></li></ol><div class="quiet-note"><strong>E se o PDF não puder ser lido?</strong><p>A tela deve explicar o problema e permitir trocar o arquivo, preservando a turma escolhida.</p></div></aside>
+  </section>
+
+  <section id="revisao" class="review" aria-labelledby="revisao-title">
+    <header class="section-heading"><div><h2 id="revisao-title">A IA extrai. Você confere.</h2><p>Exemplo de revisão · Fundamentos de Arquitetura de Computadores, turma B.</p></div><span class="badge warning">1 informação para conferir</span></header>
+    <div class="review-context"><svg aria-hidden="true"><use href="#file"/></svg><div><strong>plano_fac_2026_2.pdf</strong><p>2 avaliações sugeridas · ainda não vinculadas à turma</p></div><span class="context-version">2026.2</span></div>
+    <div class="review-items">
+      <article class="review-item"><div class="review-top"><label class="selection"><input type="checkbox" checked disabled> Incluir esta avaliação</label><span class="badge success">Dados encontrados</span></div><div class="fields"><label class="title-field">Título<input value="Prova 1" readonly></label><label>Tipo<input value="Prova" readonly></label><label>Data<input value="12/11/2026" readonly></label><label>Horário<input value="14:00" readonly></label><label>Fuso<input value="UTC−03:00" readonly></label></div><p class="evidence"><strong>Página 4</strong> “12/11 — Primeira avaliação, às 14h, em sala.”</p></article>
+      <article class="review-item"><div class="review-top"><label class="selection"><input type="checkbox" checked disabled> Incluir esta avaliação</label><span class="badge warning">Horário não encontrado</span></div><div class="fields"><label class="title-field">Título<input value="Entrega do projeto final" readonly></label><label>Tipo<input value="Trabalho" readonly></label><label>Data<input value="03/12/2026" readonly></label><label>Horário<input placeholder="Informe o horário" aria-invalid="true" aria-describedby="time-error" readonly></label><label>Fuso<input value="UTC−03:00" readonly></label></div><p id="time-error" class="field-error">Confirme o horário com a turma. Não vamos preencher uma informação que não consta no plano.</p><p class="evidence"><strong>Página 5</strong> “Entrega do projeto final: 03 de dezembro.”</p></article>
+    </div>
+    <div class="review-bottom"><div><label class="selection"><input type="checkbox" disabled> Conferi as avaliações e a turma de destino.</label><p>Ao confirmar, o plano revisado será associado à turma B de FAC, em 2026.2.<br>O envio para sua agenda é uma etapa separada.</p></div><div class="review-actions"><button type="button" aria-disabled="true">Editar informações</button><button type="button" class="primary" disabled>Confirmar e vincular plano</button><small>Resolva o horário pendente para continuar.</small></div></div>
+  </section>
+
+  <section id="agenda" class="agenda-layout" aria-labelledby="agenda-title">
+    <div><h2 id="agenda-title">Agora, leve para o seu calendário.</h2><p class="section-description">Selecione as turmas com planos vinculados. As datas conferidas entrarão como compromissos particulares em Meus Eventos.</p><div class="agenda-choice"><label class="selection"><input type="checkbox" checked disabled><span><strong>Cálculo 1 · Turma C</strong><small>Plano vinculado · 2 avaliações disponíveis</small></span></label><span class="badge success">Pronto</span></div><div class="agenda-choice unavailable"><label class="selection"><input type="checkbox" disabled><span><strong>FAC · Turma B</strong><small>Conclua a revisão antes de selecionar</small></span></label><span class="badge">Pendente</span></div><div class="agenda-summary"><strong>2 avaliações selecionadas</strong><p>Nenhum evento foi enviado neste protótipo.</p><button class="primary" type="button" aria-disabled="true"><svg aria-hidden="true"><use href="#calendar"/></svg> Enviar para Meus Eventos</button></div></div>
+    <aside class="calendar-preview" aria-label="Prévia ilustrativa dos eventos"><header><div><small>Prévia de Meus Eventos</small><h3>Novembro de 2026</h3></div><svg aria-hidden="true"><use href="#calendar"/></svg></header><div class="calendar-event"><time datetime="2026-11-18"><strong>18</strong><span>NOV</span></time><div><h4>Prova 2 · Cálculo 1</h4><p>10:00 · UTC−03:00</p><small>Plano de ensino · Turma C</small></div></div><div class="calendar-event"><time datetime="2026-11-30"><strong>30</strong><span>NOV</span></time><div><h4>Prova final · Cálculo 1</h4><p>10:00 · UTC−03:00</p><small>Plano de ensino · Turma C</small></div></div><footer><svg aria-hidden="true"><use href="#lock"/></svg> Visíveis apenas para você</footer></aside>
+  </section>
+
+  <section id="catalogo" class="catalog" aria-labelledby="catalogo-title"><header class="section-heading"><div><h2 id="catalogo-title">Explore as turmas da UnB</h2><p>Encontre uma turma por disciplina, código ou campus. Sua matrícula define quais aparecem em Minhas turmas.</p></div><span class="badge">Amostra do catálogo</span></header><div class="catalog-filters"><label class="search"><svg aria-hidden="true"><use href="#search"/></svg><input aria-label="Buscar disciplina ou código (ilustrativo)" placeholder="Buscar disciplina ou código" readonly></label><label>Campus<select disabled><option>Todos os campi</option></select></label><label>Período<select disabled><option>2026.2</option></select></label></div><div class="catalog-row"><div><h3>Introdução à Ciência da Computação</h3><p>Turma A · Darcy Ribeiro · 2026.2</p></div><span class="badge success">Plano disponível</span><span class="muted">Fora da sua matrícula</span></div><div class="catalog-row"><div><h3>Engenharia e Ambiente</h3><p>Turma B · Faculdade do Gama · 2026.2</p></div><span class="badge warning">Plano ausente</span><span class="muted">Fora da sua matrícula</span></div><p class="catalog-note">Os filtros e as turmas são ilustrativos; este protótipo não consulta o catálogo da UnB.</p></section>
+  <footer class="page-footer"><span class="brand">agenda<span>UnB</span></span><p>Do plano de ensino ao seu próximo compromisso.</p><a href="#conteudo">Voltar ao início ↑</a></footer>
+</main>
+</body>
+</html>
