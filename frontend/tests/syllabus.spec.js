@@ -53,7 +53,7 @@ test('envio multipart autenticado, clique duplicado, recarga e estado final sem 
     await route.fulfill({ status: 202, json: plan });
   });
   await page.route(`**/api/v1/syllabus/${plan.id}`, route => { details++; return route.fulfill({ json: { ...plan, status: 'concluido', extractedEventsCount: 3 } }); });
-  await page.goto('/plano-de-ensino');
+  await page.goto('/plano-de-ensino?modo=envios');
   await fillUpload(page);
   await page.getByRole('button', { name: 'Enviar para análise' }).evaluate(button => { button.click(); button.click(); });
   await expect(page.getByRole('heading', { name: 'Análise concluída' })).toBeVisible();
@@ -73,7 +73,7 @@ test('envio multipart autenticado, clique duplicado, recarga e estado final sem 
 
 test('paginação, erro recuperável e resultado vazio distintos de falha', async ({ page }) => {
   await setup(page, { items: [plan], total: 11, detail: { ...plan, status: 'falha', errorMessage: 'PDF protegido. Envie uma versão sem senha.' } });
-  await page.goto('/plano-de-ensino');
+  await page.goto('/plano-de-ensino?modo=envios');
   await page.getByRole('button', { name: `Acompanhar ${plan.disciplina}` }).click();
   await expect(page.getByRole('heading', { name: 'Não foi possível analisar o plano' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Cadastrar prazos manualmente' })).toHaveAttribute('href', '/eventos?aba=meus');
@@ -90,7 +90,7 @@ test('paginação, erro recuperável e resultado vazio distintos de falha', asyn
 test('validação de arquivo, erro de envio preserva campos e recuperação do histórico', async ({ page }) => {
   await setup(page, { listStatus: 404 });
   await page.route('**/api/v1/syllabus/upload', route => route.fulfill({ status: 422, json: { detail: 'O PDF deve possuir no máximo 10 páginas.' } }));
-  await page.goto('/plano-de-ensino');
+  await page.goto('/plano-de-ensino?modo=envios');
   await expect(page.getByText('O histórico ainda não está disponível.', { exact: false })).toBeVisible();
   await page.getByLabel('Selecionar PDF', { exact: true }).setInputFiles({ name: 'imagem.png', mimeType: 'image/png', buffer: Buffer.from('image') });
   await expect(page.getByText('Escolha um arquivo no formato PDF (.pdf).')).toBeVisible();
@@ -147,9 +147,10 @@ for (const width of [360, 768, 1365]) {
     test(`layout e teclado ${width}px ${theme}`, async ({ page }, testInfo) => {
       await page.setViewportSize({ width, height: 1000 });
       await setup(page, { items: [{ ...plan, disciplina: 'Disciplina de nome extenso '.repeat(6), status: 'concluido' }] });
-      await page.goto('/plano-de-ensino');
+      await page.goto('/plano-de-ensino?modo=envios');
       if (theme === 'light') await page.getByRole('button', { name: /tema/i }).click();
       await expect(page.getByRole('heading', { name: 'Enviar plano de ensino' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Revisar avaliações' })).toBeVisible();
       await page.evaluate(() => document.fonts.ready);
       await page.getByLabel('Disciplina', { exact: true }).focus();
       await page.keyboard.press('Tab');
@@ -172,3 +173,38 @@ test('visitante não consulta endpoints privados', async ({ page }) => {
   await expect(page.getByRole('link', { name: 'Entrar para enviar um plano' })).toBeVisible();
   expect(calls).toBe(0);
 });
+
+test('revisão aparece na rota real, explica limites e acompanha abertura e fechamento', async ({ page }) => {
+  await setup(page, { items: [plan], detail: { ...plan, status: 'concluido', extractedEventsCount: 3 } });
+  let confirmations = 0;
+  page.on('request', request => { if (request.url().includes('/confirm')) confirmations++; });
+  await page.goto('/plano-de-ensino?modo=envios');
+  const review = page.getByRole('region', { name: 'Revisar avaliações' });
+  await expect(review).toContainText('Abra um plano');
+  await page.getByText('O que poderei revisar?', { exact: true }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByText('A edição das avaliações e a inclusão na agenda ainda não estão disponíveis nesta página.')).toBeVisible();
+  await page.getByRole('button', { name: `Acompanhar ${plan.disciplina}` }).click();
+  await expect(review).toContainText('os detalhes das avaliações ainda não estão disponíveis');
+  await expect(page.getByRole('button', { name: 'Conferir selecionados' })).toHaveCount(0);
+  await page.reload();
+  await expect(review).toContainText('os detalhes das avaliações ainda não estão disponíveis');
+  await page.getByRole('button', { name: 'Fechar acompanhamento' }).click();
+  await expect(review).toContainText('Abra um plano');
+  expect(confirmations).toBe(0);
+});
+
+for (const [status, count, text] of [
+  ['pendente', null, 'aguarda processamento'],
+  ['processando', null, 'análise está em andamento'],
+  ['falha', null, 'análise deste plano falhou'],
+  ['concluido', 0, 'terminou sem avaliações'],
+  ['concluido', null, 'detalhes das avaliações ainda não estão disponíveis'],
+  ['desconhecido', null, 'identificar o estado da análise'],
+]) {
+  test(`disponibilidade da revisão: ${status}, contagem ${count}`, async ({ page }) => {
+    await setup(page, { detail: { ...plan, status, extractedEventsCount: count } });
+    await page.goto(`/plano-de-ensino?plano=${plan.id}`);
+    await expect(page.getByRole('region', { name: 'Revisar avaliações' })).toContainText(text);
+  });
+}
