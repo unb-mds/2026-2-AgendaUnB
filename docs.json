@@ -6,7 +6,7 @@
     "light": "#4DAEFF",
     "dark": "#005FD2"
   },
-  "favicon": "/images/logo-agendaunb.png",
+  "favicon": "/docs/images/logo-agendaunb.png",
   "navbar": {
     "links": [
       {
@@ -49,39 +49,39 @@
       {
         "group": "Produto",
         "pages": [
-          "produto/visao",
-          "produto/personas",
-          "produto/requisitos"
+          "docs/produto/visao",
+          "docs/produto/personas",
+          "docs/produto/requisitos"
         ]
       },
       {
         "group": "Arquitetura e especificações",
         "pages": [
-          "arquitetura/visao-geral",
-          "arquitetura/modelo-de-dados",
-          "arquitetura/banco-de-dados",
-          "arquitetura/frontend",
-          "arquitetura/padroes"
+          "docs/arquitetura/visao-geral",
+          "docs/arquitetura/modelo-de-dados",
+          "docs/arquitetura/banco-de-dados",
+          "docs/arquitetura/frontend",
+          "docs/arquitetura/padroes"
         ]
       },
       {
         "group": "Processo",
         "pages": [
-          "processo/contribuindo",
-          "processo/uso-de-ia",
+          "docs/processo/contribuindo",
+          "docs/processo/uso-de-ia",
           {
             "group": "Sprints",
             "pages": [
-              "processo/sprints/sprint-1",
-              "processo/sprints/sprint-2",
-              "processo/sprints/sprint-3",
-              "processo/sprints/sprint-4"
+              "docs/processo/sprints/sprint-1",
+              "docs/processo/sprints/sprint-2",
+              "docs/processo/sprints/sprint-3",
+              "docs/processo/sprints/sprint-4"
             ]
           },
           {
             "group": "Release notes",
             "pages": [
-              "processo/release-notes/v0-1-0"
+              "docs/processo/release-notes/v0-1-0"
             ]
           }
         ]
@@ -106,5 +106,23 @@
       "family": "Inter",
       "weight": 400
     }
-  }
+  },
+  "redirects": [
+    {
+      "source": "/produto/:slug*",
+      "destination": "/docs/produto/:slug*"
+    },
+    {
+      "source": "/processo/:slug*",
+      "destination": "/docs/processo/:slug*"
+    },
+    {
+      "source": "/arquitetura/:slug*",
+      "destination": "/docs/arquitetura/:slug*"
+    },
+    {
+      "source": "/images/:slug*",
+      "destination": "/docs/images/:slug*"
+    }
+  ]
 }
