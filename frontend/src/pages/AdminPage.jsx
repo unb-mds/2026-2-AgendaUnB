@@ -78,7 +78,6 @@ export default function AdminPage() {
         </tr>)}</tbody>
       </table></div>}
     {!error && <Pagination page={page} total={result.total} onPage={setPage} busy={loading} />}
-    <aside className="management-help"><Icon>info</Icon><p><strong>Sobre os acessos.</strong> Professores podem publicar e moderar eventos. Administradores também gerenciam contas. Um e-mail não confirmado pode impedir o login; a pessoa deve conferir sua caixa de entrada e spam.</p></aside>
     {change && <Modal title="Alterar perfil de acesso" busy={busy} onClose={() => setChange(null)}><form onSubmit={submit}>
       <p className="dialog-event-title">{change.user.nome_completo}</p><p className="management-muted">{change.user.email}</p>
       <p className="role-change-summary">{ROLE_LABELS[change.user.papel]} <Icon>arrow_forward</Icon> <strong>{ROLE_LABELS[change.role]}</strong></p>

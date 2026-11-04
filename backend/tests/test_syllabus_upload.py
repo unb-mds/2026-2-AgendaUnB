@@ -1,4 +1,5 @@
 import io
+from datetime import datetime, timedelta, timezone
 from unittest.mock import create_autospec
 from uuid import UUID, uuid4
 
@@ -120,6 +121,40 @@ def test_upload_syllabus_success(api, storage_mock):
         assert record.disciplina == "Métodos de Desenvolvimento de Software"
         assert record.turma == "01"
 
+
+def test_upload_syllabus_limits_body_before_storage(api, storage_mock):
+    client, _, _, _ = api
+    oversized = make_valid_pdf_bytes() + b"x" * (10 * 1024 * 1024 + 65 * 1024)
+    response = client.post(
+        "/api/v1/syllabus/upload",
+        files={"file": ("plano.pdf", io.BytesIO(oversized), "application/pdf")},
+        headers={"content-length": "1"},
+    )
+    assert response.status_code == 413
+    storage_mock.upload_file.assert_not_called()
+
+
+def test_upload_syllabus_quota_is_ten_in_five_days(api, storage_mock):
+    client, sessions, authenticated_user, _ = api
+    user_id = authenticated_user["value"].id
+    with sessions() as db:
+        db.add(Profile(id=user_id, papel="student", nome_completo="Aluno Teste"))
+        db.add(Syllabus(
+            user_id=user_id, file_name="antigo.pdf", file_path=f"syllabus_files/{user_id}/antigo.pdf",
+            status="pendente", created_at=datetime.now(timezone.utc) - timedelta(days=6),
+        ))
+        db.commit()
+
+    for _ in range(10):
+        response = client.post("/api/v1/syllabus/upload", files={
+            "file": ("plano.pdf", io.BytesIO(make_valid_pdf_bytes()), "application/pdf")
+        })
+        assert response.status_code == 202
+    response = client.post("/api/v1/syllabus/upload", files={
+        "file": ("plano.pdf", io.BytesIO(make_valid_pdf_bytes()), "application/pdf")
+    })
+    assert response.status_code == 429
+    assert storage_mock.upload_file.call_count == 10
 
 def test_upload_syllabus_unauthenticated(api):
     client, _, _, _ = api

@@ -107,7 +107,7 @@ As tabelas da base R1 são `profiles`, `campus`, `categories`, `eventos`, `event
 - Apenas eventos aprovados aparecem no catálogo e nas consultas de públicos salvos. A exclusão de um público remove seus vínculos em cascata.
 - Cadastro e autopromoção para professor exigem `@unb.br`. A migração `20261018000100` removeu a constraint global de domínio: administradores podem atribuir professor a outro endereço pela RPC protegida. E-mail do perfil continua imutável.
 - A alteração de papéis pelo navegador é protegida por trigger; não há cadastro livre como admin.
-- O bucket privado `syllabus_files` aceita PDF até 10 MB. As políticas exigem a pasta `<user_id>/<arquivo>.pdf` e restringem envio/leitura ao dono. Chaves de serviço nunca devem ser expostas em variáveis `VITE_`.
+- O bucket privado `syllabus_files` aceita PDF até 10 MB. O navegador lê apenas arquivos da própria pasta; o envio direto pelo SDK foi desativado para que a API aplique validação e a cota de 10 uploads por usuário em 5 dias. O backend usa `SUPABASE_SERVICE_ROLE_KEY` apenas no servidor. Essa chave nunca deve ser exposta em variáveis `VITE_`.
 - HTTPS é requisito de produção; `.env` guarda configurações locais fora do versionamento.
 
 As migrações devem ser aplicadas antes de disponibilizar API/frontend dependentes delas. No Supabase local iniciado, use `npx supabase migration up --local`. `make db-reset` recria o banco com migrações e seed; não é o procedimento para preservar dados existentes. Veja os guias de [eventos salvos](eventos-salvos.md) e [painel](painel-administrativo.md).

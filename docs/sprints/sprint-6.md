@@ -84,16 +84,7 @@ Os textos de #38 e #40 abaixo são propostas de atualização das mesmas issues,
 
 **Dependências:** RPCs e políticas administrativas já existentes (#42).
 
-**Concluir as rotas REST do painel administrativo, reaproveitando as RPCs e regras de moderação já entregues. A realocação da Sprint 05 envolve somente backend; não exige refazer telas ou migrações administrativas.**
-
-Tasks:
-
-- [ ] Implementar `GET /api/v1/admin/events/pending` e `PATCH /api/v1/admin/events/{id}/review`, permitindo moderação por professores e administradores.
-- [ ] Implementar `GET /api/v1/admin/users` e `PATCH /api/v1/admin/users/{id}/role`, exclusivos de administradores.
-- [ ] Reaproveitar as regras das RPCs: justificativa obrigatória na recusa, bloqueio de decisões concorrentes e impedimento de remover o próprio cargo de admin.
-- [ ] Preservar a exceção de atribuição de professor por admin a outro domínio, sem permitir autopromoção indevida.
-- [ ] Permitir PATCH no CORS para as origens configuradas e documentar payloads e respostas na OpenAPI.
-- [ ] Testar 401/403, perfis permitidos, concorrência e preservação das notificações transacionais, sem refazer o frontend.
+**Decisão posterior:** o painel mantém as RPCs Supabase existentes como interface única. As rotas REST duplicadas foram removidas. A proposta deste item foi substituída; o contrato vigente e os testes de autorização estão descritos em [Contratos do backend](../api-specs.md#contratos-supabase-separados-da-api-fastapi) e [Painel administrativo](../painel-administrativo.md).
 
 ### #40 — Endpoint Base de Upload de Plano de Ensino
 
