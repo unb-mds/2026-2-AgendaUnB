@@ -1,0 +1,171 @@
+/*
+ * Agenda UnB: estilização da documentação
+ * Baseada no Design System "The Neon Campus" (DESIGN.md)
+ */
+
+:root {
+  --aunb-primary: #008bff;
+  --aunb-primary-deep: rgba(0, 95, 210, 1);
+  --aunb-bg: #050508;
+  --aunb-glass: rgba(8, 12, 22, 0.78);
+  --aunb-glass-card: rgba(8, 12, 22, 0.65);
+  --aunb-border: rgba(0, 139, 255, 0.12);
+  --aunb-border-hover: rgba(0, 139, 255, 0.5);
+  --aunb-glow: 0 8px 32px rgba(0, 139, 255, 0.12);
+  --aunb-glow-strong: 0 4px 20px rgba(0, 139, 255, 0.35);
+  --aunb-text-medium: rgba(255, 255, 255, 0.55);
+  --aunb-radius-sm: 10px;
+  --aunb-radius-md: 14px;
+  --aunb-radius-lg: 20px;
+  --aunb-radius-pill: 999px;
+}
+
+/* ---------- Tipografia ---------- */
+
+#page-title,
+.mdx-content h1,
+.mdx-content h2,
+.mdx-content h3 {
+  font-family: 'Orbitron', sans-serif;
+  letter-spacing: 0.03em;
+}
+
+.eyebrow,
+.sidebar-group-header {
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* ---------- Navbar em vidro ---------- */
+
+.dark [data-layout-item="topbar"] {
+  background: var(--aunb-glass) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--aunb-border);
+}
+
+/* Botão primário (GitHub) e busca em formato pílula */
+#topbar-cta-button a,
+#topbar-cta-button > div,
+[data-search-item="trigger"] {
+  border-radius: var(--aunb-radius-pill) !important;
+}
+
+.dark [data-search-item="trigger"] {
+  background: rgba(0, 15, 35, 0.6);
+  border: 1px solid var(--aunb-border);
+}
+
+/* ---------- Sidebar ---------- */
+
+.dark [data-layout-item="sidebar"] {
+  border-right: 1px solid var(--aunb-border);
+}
+
+#sidebar-content li[data-active] a {
+  border-radius: var(--aunb-radius-sm);
+}
+
+/* ---------- Cards (Feature Cards) ---------- */
+
+.card {
+  border-radius: var(--aunb-radius-md) !important;
+  border: 1px solid var(--aunb-border) !important;
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.dark .card {
+  background: var(--aunb-glass-card) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+a.card:hover,
+.card:has(a):hover {
+  transform: translateY(-4px);
+  border-color: var(--aunb-border-hover) !important;
+  box-shadow: var(--aunb-glow);
+}
+
+[data-component-part="card-title"] {
+  font-weight: 600;
+}
+
+.dark [data-component-part="card-content"] {
+  color: var(--aunb-text-medium);
+}
+
+/* ---------- Callouts, código, tabelas ---------- */
+
+.callout,
+.code-block,
+.code-group,
+.accordion,
+.frame {
+  border-radius: var(--aunb-radius-md) !important;
+}
+
+.dark .callout,
+.dark .accordion {
+  border: 1px solid var(--aunb-border) !important;
+}
+
+.dark .mdx-content table {
+  border: 1px solid var(--aunb-border);
+  border-radius: var(--aunb-radius-md);
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+}
+
+.dark .mdx-content th {
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+  color: var(--aunb-primary);
+}
+
+/* ---------- Badges e pílulas ---------- */
+
+[data-badge],
+.nav-tag-pill {
+  border-radius: var(--aunb-radius-pill) !important;
+}
+
+/* ---------- Modal de busca em vidro ---------- */
+
+.dark [data-search-item="dialog"] {
+  background: var(--aunb-glass) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--aunb-border);
+  border-radius: var(--aunb-radius-lg);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2), 0 0 35px rgba(0, 139, 255, 0.2);
+}
+
+.dark [data-search-item="item"][data-highlighted] {
+  border-radius: var(--aunb-radius-sm);
+  box-shadow: inset 0 0 0 1px var(--aunb-border-hover);
+}
+
+/* ---------- Links ---------- */
+
+.mdx-content a.link:hover {
+  text-shadow: 0 0 12px rgba(0, 139, 255, 0.35);
+}
+
+/* ---------- Paginação ---------- */
+
+.dark #pagination a {
+  border-radius: var(--aunb-radius-md);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.dark #pagination a:hover {
+  border-color: var(--aunb-border-hover);
+  box-shadow: var(--aunb-glow);
+}

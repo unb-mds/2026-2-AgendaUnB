@@ -4,7 +4,7 @@
   "colors": {
     "primary": "#008BFF",
     "light": "#4DAEFF",
-    "dark": "#0070CC"
+    "dark": "#005FD2"
   },
   "favicon": "/images/logo-agendaunb.png",
   "navbar": {
@@ -87,5 +87,24 @@
         ]
       }
     ]
+  },
+  "appearance": {
+    "default": "dark"
+  },
+  "background": {
+    "color": {
+      "light": "#F7F9FC",
+      "dark": "#050508"
+    }
+  },
+  "fonts": {
+    "heading": {
+      "family": "Orbitron",
+      "weight": 700
+    },
+    "body": {
+      "family": "Inter",
+      "weight": 400
+    }
   }
 }
