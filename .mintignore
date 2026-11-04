@@ -1,3 +1,10 @@
-# O CSS global da aplicação React redefine margens e preenchimentos do Mintlify.
-# Mantenha apenas o style.css da raiz como folha de estilo da documentação.
+# Publique somente os arquivos MDX e recursos da documentação Mintlify.
+# O CSS global da aplicação React zera margens e preenchimentos do tema.
 frontend/
+backend/
+supabase/
+.agent/
+.impeccable/
+/*.md
+/docs/**/*.md
+/mkdocs.yml

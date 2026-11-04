@@ -11,7 +11,7 @@ description: "Documento de visão do produto Agenda UnB, descrevendo propósito,
 
 ### 1.1 Propósito
 
-Este documento descreve a visão do produto Agenda UnB: qual problema ele resolve, para quem, e quais capacidades ele deve ter. Serve de referência comum para a equipe e de base para o backlog. Não detalha os requisitos funcionais e não funcionais, que estão em [requisitos](/produto/requisitos), nem os padrões de código, dados e API, que estão em [padrões](/arquitetura/padroes). As decisões técnicas de arquitetura e infraestrutura estão consolidadas em [Architecture](/arquitetura/visao-geral). A identidade visual e as especificações de interface e design system estão em [DESIGN.md](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/DESIGN.md), [PRODUCT.md](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/PRODUCT.md) e [especificacao-frontend](/arquitetura/frontend). O planejamento ágil por sprint está em [sprints](/processo/sprints/sprint-1), as entregas e notas de versão em [release-notes](/processo/release-notes/v0-1-0), e o registro de uso de IA em [AI-USAGE](/processo/uso-de-ia).
+Este documento descreve a visão do produto Agenda UnB: qual problema ele resolve, para quem, e quais capacidades ele deve ter. Serve de referência comum para a equipe e de base para o backlog. Não detalha os requisitos funcionais e não funcionais, que estão em [requisitos](/docs/produto/requisitos), nem os padrões de código, dados e API, que estão em [padrões](/docs/arquitetura/padroes). As decisões técnicas de arquitetura e infraestrutura estão consolidadas em [Architecture](/docs/arquitetura/visao-geral). A identidade visual e as especificações de interface e design system estão em [DESIGN.md](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/DESIGN.md), [PRODUCT.md](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/PRODUCT.md) e [especificacao-frontend](/docs/arquitetura/frontend). O planejamento ágil por sprint está em [sprints](/docs/processo/sprints/sprint-1), as entregas e notas de versão em [release-notes](/docs/processo/release-notes/v0-1-0), e o registro de uso de IA em [AI-USAGE](/docs/processo/uso-de-ia).
 
 ### 1.2 Escopo
 
@@ -104,7 +104,7 @@ Aplicação web responsiva (SPA), de uso público para consulta do catálogo de 
 
 ## 5. Recursos do produto
 
-O detalhamento completo dos 21 requisitos funcionais está em [requisitos](/produto/requisitos).
+O detalhamento completo dos 21 requisitos funcionais está em [requisitos](/docs/produto/requisitos).
 
 | # | Recurso | Descrição |
 | --- | --- | --- |
@@ -131,7 +131,7 @@ O detalhamento completo dos 21 requisitos funcionais está em [requisitos](/prod
 
 **De front-end** — SPA construída em React 19 com Vite 6 e React Router 7. A interface segue estritamente o Design System "The Neon Campus" ([DESIGN.md](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/DESIGN.md) e [PRODUCT.md](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/PRODUCT.md)): uso da cor primária Azul Glow `#008bff`, tipografia Orbitron (display) e Inter (body/labels), iconografia padronizada em Material Symbols, preenchimentos sólidos (flat) ou glassmorphism neutro, e proibição explícita de _linear gradients_ e sombras com opacidade superior a 20%.
 
-**De back-end e API** — API REST desenvolvida em Python 3.12 com FastAPI, SQLAlchemy 2 para ORM, Pydantic 2 para validação e httpx para comunicação assíncrona. Os endpoints seguem o padrão RESTful com prefixo `/api/v1` documentado em [padrões](/arquitetura/padroes).
+**De back-end e API** — API REST desenvolvida em Python 3.12 com FastAPI, SQLAlchemy 2 para ORM, Pydantic 2 para validação e httpx para comunicação assíncrona. Os endpoints seguem o padrão RESTful com prefixo `/api/v1` documentado em [padrões](/docs/arquitetura/padroes).
 
 **De banco de dados e persistência** — PostgreSQL 15+ gerenciado via Supabase, estruturado por migrações SQL versionadas em `supabase/migrations/` e com políticas de Row Level Security (RLS) ativas em todas as tabelas. Arquivos de planos de ensino e atestados armazenados no Supabase Storage com acesso privado.
 
