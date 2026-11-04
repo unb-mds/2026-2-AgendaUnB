@@ -119,10 +119,6 @@
     {
       "source": "/arquitetura/:slug*",
       "destination": "/docs/arquitetura/:slug*"
-    },
-    {
-      "source": "/images/:slug*",
-      "destination": "/docs/images/:slug*"
     }
   ]
 }
