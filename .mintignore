@@ -1,0 +1,3 @@
+# O CSS global da aplicação React redefine margens e preenchimentos do Mintlify.
+# Mantenha apenas o style.css da raiz como folha de estilo da documentação.
+frontend/
