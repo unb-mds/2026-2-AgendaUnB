@@ -1,0 +1,91 @@
+{
+  "theme": "mint",
+  "name": "Agenda UnB",
+  "colors": {
+    "primary": "#008BFF",
+    "light": "#4DAEFF",
+    "dark": "#0070CC"
+  },
+  "favicon": "/images/logo-agendaunb.png",
+  "navbar": {
+    "links": [
+      {
+        "href": "https://www.figma.com/board/RlZe9FgO3Bz3gPkxevs8UJ/AGENDA-UNB?node-id=1-217&t=USKjIQh4OXxQVwsG-1",
+        "label": "Figma"
+      }
+    ],
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/unb-mds/2026-2-AgendaUnB"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/unb-mds/2026-2-AgendaUnB"
+    }
+  },
+  "contextual": {
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "perplexity",
+      "mcp",
+      "cursor",
+      "vscode"
+    ],
+    "display": "header"
+  },
+  "navigation": {
+    "pages": [
+      {
+        "group": "Início",
+        "pages": [
+          "index",
+          "quickstart"
+        ]
+      },
+      {
+        "group": "Produto",
+        "pages": [
+          "produto/visao",
+          "produto/personas",
+          "produto/requisitos"
+        ]
+      },
+      {
+        "group": "Arquitetura e especificações",
+        "pages": [
+          "arquitetura/visao-geral",
+          "arquitetura/modelo-de-dados",
+          "arquitetura/banco-de-dados",
+          "arquitetura/frontend",
+          "arquitetura/padroes"
+        ]
+      },
+      {
+        "group": "Processo",
+        "pages": [
+          "processo/contribuindo",
+          "processo/uso-de-ia",
+          {
+            "group": "Sprints",
+            "pages": [
+              "processo/sprints/sprint-1",
+              "processo/sprints/sprint-2",
+              "processo/sprints/sprint-3",
+              "processo/sprints/sprint-4"
+            ]
+          },
+          {
+            "group": "Release notes",
+            "pages": [
+              "processo/release-notes/v0-1-0"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
