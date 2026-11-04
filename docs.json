@@ -43,8 +43,7 @@
         "group": "Início",
         "pages": [
           "index",
-          "quickstart",
-          ".mintignore"
+          "quickstart"
         ]
       },
       {
