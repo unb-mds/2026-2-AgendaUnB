@@ -13,12 +13,11 @@ from src.services.storage import SupabaseStorageService, get_storage_service
 def storage():
     return SupabaseStorageService(
         supabase_url="https://storage.example.test",
-        supabase_key="public-key",
-        auth_token="validated-user-token",
+        supabase_key="service-role-key",
     )
 
 
-def test_storage_uses_user_session_for_upload_and_compensation(storage, monkeypatch):
+def test_storage_uses_server_key_for_upload_and_compensation(storage, monkeypatch):
     calls = []
 
     def record(url, **kwargs):
@@ -31,27 +30,26 @@ def test_storage_uses_user_session_for_upload_and_compensation(storage, monkeypa
     assert storage.delete_file("owner/plano.pdf")
     for url, options in calls:
         assert url.endswith("/storage/v1/object/syllabus_files/owner/plano.pdf")
-        assert options["headers"]["Authorization"] == "Bearer validated-user-token"
-        assert options["headers"]["apikey"] == "public-key"
+        assert options["headers"]["Authorization"] == "Bearer service-role-key"
+        assert options["headers"]["apikey"] == "service-role-key"
     assert calls[0][1]["headers"]["x-upsert"] == "false"
 
 
-def test_dependency_forwards_only_validated_session(monkeypatch):
+def test_dependency_uses_only_server_key(monkeypatch):
     monkeypatch.setenv("SUPABASE_URL", "https://storage.example.test")
     monkeypatch.setenv("SUPABASE_ANON_KEY", "public-key")
-    monkeypatch.setenv("SUPABASE_SERVICE_ROLE_KEY", "must-not-use-service-role")
+    monkeypatch.setenv("SUPABASE_SERVICE_ROLE_KEY", "server-key")
     user = CurrentUser(id=uuid4(), role="student", access_token="user-token")
     assert "user-token" not in repr(user)
-    assert get_storage_service(user)._headers()["Authorization"] == "Bearer user-token"
+    assert get_storage_service(user)._headers()["Authorization"] == "Bearer server-key"
 
 
-@pytest.mark.parametrize("url,key,token,expected", [
-    ("", "key", "token", 503),
-    ("https://storage.example.test", "", "token", 503),
-    ("https://storage.example.test", "key", None, 401),
+@pytest.mark.parametrize("url,key,expected", [
+    ("", "key", 503),
+    ("https://storage.example.test", "", 503),
 ])
-def test_storage_requires_configuration_and_session(url, key, token, expected):
-    service = SupabaseStorageService(supabase_url=url, supabase_key=key, auth_token=token)
+def test_storage_requires_configuration(url, key, expected):
+    service = SupabaseStorageService(supabase_url=url, supabase_key=key)
     with pytest.raises(HTTPException) as error:
         service.upload_file("owner/file.pdf", b"pdf")
     assert error.value.status_code == expected

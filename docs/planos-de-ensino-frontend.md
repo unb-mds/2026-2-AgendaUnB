@@ -86,13 +86,8 @@ Os testes de frontend simulam a API. Separadamente, upload, listagem, detalhe e 
 
 ## Autenticação no Storage e migrações locais
 
-O backend preserva o token depois de validá-lo em `/auth/v1/user`. A dependência do Storage recebe essa sessão e envia:
+O backend valida o token em `/auth/v1/user`, aplica o limite de corpo e a cota de 10 uploads por usuário em uma janela móvel de 5 dias. A gravação no Storage usa `SUPABASE_SERVICE_ROLE_KEY` somente no servidor; o navegador não pode enviar diretamente ao bucket. Sem essa configuração, o upload retorna erro de serviço. Respostas internas do Storage não são expostas ao cliente.
 
-- `apikey`: `SUPABASE_ANON_KEY` (chave pública do projeto);
-- `Authorization`: `Bearer <token do usuário validado>`.
+A migração `20261026120000_upload_planos_ensino.sql` prepara o rastreamento. A migração `20261026130000_storage_compensacao_planos.sql` acrescentou DELETE para o dono no bucket; `20261104000000_upload_apenas_backend.sql` remove a política de INSERT direto, fechando o contorno da cota. O backend compensa o arquivo se o banco rejeitar o registro.
 
-Uma chave pública sozinha no header Bearer não representa o usuário e causa a rejeição RLS observada. O upload não usa `service_role` e não simula sucesso quando falta configuração. Respostas internas do Storage não são expostas ao cliente.
-
-A migração `20261026120000_upload_planos_ensino.sql` prepara o rastreamento. A migração `20261026130000_storage_compensacao_planos.sql` acrescenta DELETE apenas para `authenticated`, no bucket `syllabus_files`, quando a primeira pasta corresponde a `auth.uid()`. Isso permite compensar o arquivo se o banco rejeitar o registro, sem liberar acesso anônimo ou entre usuários. Ambas foram aplicadas no banco local e registradas em `supabase_migrations.schema_migrations`, sem reset.
-
-As migrações S6-D02 de 29/10 ainda referenciam nomes incompatíveis com S6-D01 (`proprietario_id`, `candidatos_eventos` e bucket `planos`). Não foram aplicadas nem modificadas por esta correção de envio/listagem; precisam de alinhamento antes de uma aplicação geral de todas as migrações.
+As migrações S6-D02 de 29/10 foram alinhadas ao esquema de candidatos e planos. A política de Storage para o bucket `planos` é distinta da política de `syllabus_files` usada neste upload.

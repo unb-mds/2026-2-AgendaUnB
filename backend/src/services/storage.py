@@ -11,32 +11,28 @@ logger = logging.getLogger("agenda_unb.storage")
 
 
 class SupabaseStorageService:
-    """Acessa o bucket privado com a sessão do usuário, preservando a RLS."""
+    """Acessa o bucket privado somente após a API autenticar o usuário."""
 
     def __init__(
         self,
         supabase_url: str | None = None,
         supabase_key: str | None = None,
         bucket_name: str = "syllabus_files",
-        auth_token: str | None = None,
     ):
         self.supabase_url = (
             supabase_url if supabase_url is not None else os.getenv("SUPABASE_URL", "")
         ).rstrip("/")
         self.supabase_key = (
-            supabase_key if supabase_key is not None else os.getenv("SUPABASE_ANON_KEY", "")
+            supabase_key if supabase_key is not None else os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
         )
         self.bucket_name = bucket_name
-        self._auth_token = auth_token
 
     def _headers(self) -> dict[str, str]:
         if not self.supabase_url or not self.supabase_key:
             raise HTTPException(status_code=503, detail="Armazenamento Supabase não configurado no backend.")
-        if not self._auth_token:
-            raise HTTPException(status_code=401, detail="Sessão necessária para acessar o armazenamento.")
         return {
             "apikey": self.supabase_key,
-            "Authorization": f"Bearer {self._auth_token}",
+            "Authorization": f"Bearer {self.supabase_key}",
         }
 
     def _object_url(self, path: str) -> str:
@@ -85,4 +81,4 @@ class SupabaseStorageService:
 
 
 def get_storage_service(current_user: CurrentUser = Depends(get_current_user)) -> SupabaseStorageService:
-    return SupabaseStorageService(auth_token=current_user.access_token)
+    return SupabaseStorageService()

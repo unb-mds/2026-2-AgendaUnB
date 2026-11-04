@@ -173,11 +173,13 @@ def create_public_event(
 def delete_public_event(
     event_id: UUID,
     db: Session = Depends(get_db),
-    _current_user: CurrentUser = Depends(require_event_manager),
+    current_user: CurrentUser = Depends(require_event_manager),
 ) -> Response:
     event = db.get(PublicEvent, event_id)
     if event is None:
         raise HTTPException(status_code=404, detail="Evento não encontrado")
+    if current_user.role != "admin" and event.author_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Apenas o autor ou um administrador pode excluir este evento")
     db.delete(event)
     db.commit()
     return Response(status_code=204)

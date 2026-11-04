@@ -1,6 +1,7 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
+from starlette.concurrency import run_in_threadpool
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -36,9 +37,9 @@ async def upload_syllabus(
     Gera um registro na tabela de rastreamento com status inicial 'pendente'
     e retorna HTTP 202 Accepted.
     """
-    content = await validate_pdf_file(file)
+    content = await run_in_threadpool(validate_pdf_file, file)
 
-    syllabus = process_syllabus_upload(
+    syllabus = await run_in_threadpool(process_syllabus_upload,
         user_id=current_user.id,
         filename=file.filename or "syllabus.pdf",
         content=content,
