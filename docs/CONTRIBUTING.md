@@ -42,7 +42,7 @@ make dev
 ```
 
 > 💡 **Encerramento limpo:** Pressione `Ctrl+C` no terminal para parar o Backend e o Frontend ao mesmo tempo. Para encerrar os containers do banco de dados, execute `make stop`.  
-> 💡 **Nota para Windows:** Recomenda-se utilizar o terminal **Git Bash** ou **WSL** para executar os comandos do Makefile com suporte a execução concorrente de subprocessos.
+> 💡 **Nota para Windows:** Com o **Git for Windows** instalado no caminho padrao, o Makefile seleciona seu Bash automaticamente, inclusive ao executar `make` pelo PowerShell ou CMD. Para uma instalacao personalizada, informe o executavel: `make SHELL="C:/caminho/Git/bin/bash.exe" dev`. No WSL, utilize as ferramentas e dependencias instaladas dentro do Linux.
 
 #### Comandos Úteis do Makefile:
 * `make dev` (ou `make run`) — Inicia Banco (Supabase), Backend e Frontend juntos

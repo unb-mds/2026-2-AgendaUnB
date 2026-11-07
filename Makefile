@@ -1,4 +1,19 @@
-SHELL := /bin/bash
+# As receitas usam Bash. No Windows, /bin/bash pode fazer o Make cair no
+# cmd.exe; prefira o Bash do Git e nao o launcher do WSL presente no PATH.
+ifeq ($(OS),Windows_NT)
+    GIT_BASH := $(wildcard C:/Program\ Files/Git/bin/bash.exe)
+    ifeq ($(GIT_BASH),)
+        GIT_BASH := $(wildcard $(subst \,/,$(LOCALAPPDATA))/Programs/Git/bin/bash.exe)
+    endif
+    ifneq ($(GIT_BASH),)
+        SHELL := $(GIT_BASH)
+    else
+        SHELL := bash.exe
+    endif
+else
+    SHELL := /bin/bash
+endif
+.SHELLFLAGS := -c
 
 # Diretorio raiz do projeto (caminho absoluto)
 ROOT_DIR            := $(CURDIR)
@@ -123,8 +138,8 @@ dev: check-env check-backend check-frontend db-start
 	@echo " Pressione [Ctrl+C] para encerrar o Backend e o Frontend."
 	@echo "======================================================================"
 	@echo ""
-	@bash -c '\
-		(cd "$(ROOT_DIR)/backend" && $(UVICORN) src.main:app --reload --port $(BACKEND_PORT)) & \
+	@"$(SHELL)" -c '\
+		(cd "$(ROOT_DIR)/backend" && "$(UVICORN)" src.main:app --reload --port $(BACKEND_PORT)) & \
 		BACK_PID=$$!; \
 		(cd "$(ROOT_DIR)/frontend" && npm run dev -- --port $(FRONTEND_PORT)) & \
 		FRONT_PID=$$!; \
@@ -136,7 +151,7 @@ dev: check-env check-backend check-frontend db-start
 # ------------------------------------------------------------------------------
 backend: check-env check-backend
 	@echo "[INFO] Iniciando Backend FastAPI na porta $(BACKEND_PORT)..."
-	@cd "$(ROOT_DIR)/backend" && $(UVICORN) src.main:app --reload --port $(BACKEND_PORT)
+	@cd "$(ROOT_DIR)/backend" && "$(UVICORN)" src.main:app --reload --port $(BACKEND_PORT)
 
 frontend: check-frontend
 	@echo "[INFO] Iniciando Frontend React na porta $(FRONTEND_PORT)..."
