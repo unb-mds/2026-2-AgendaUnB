@@ -101,7 +101,7 @@ Triggers registram notificações de submissão, aprovação e recusa na mesma t
 
 ## 7. Persistência, privacidade e migrações
 
-As tabelas da base R1 são `profiles`, `campus`, `categories`, `eventos`, `eventos_pessoais`, `planos_ensino` e `avaliacoes`. As novas migrações adicionam `eventos_salvos`, `notificacoes`, campos de sugestões/recusa e contador de interessados, funções administrativas e políticas de Storage. A criação das estruturas de planos e avaliações não comprova a existência do parser.
+As tabelas da base R1 são `profiles`, `campus`, `categories`, `eventos`, `eventos_pessoais`, `planos_ensino` e `avaliacoes`. As novas migrações adicionam `eventos_salvos`, `notificacoes`, campos de sugestões/recusa e contador de interessados, funções administrativas e políticas de Storage. A migração `20261029160000` acrescenta procedência aos candidatos e eventos pessoais, restringe a leitura de avaliações e impede confirmar o mesmo candidato mais de uma vez. A criação das estruturas não comprova a existência do parser.
 
 - Eventos privados e vínculos salvos são limitados ao dono. A API também verifica propriedade, pois conexões administrativas podem ignorar RLS.
 - Apenas eventos aprovados aparecem no catálogo e nas consultas de públicos salvos. A exclusão de um público remove seus vínculos em cascata.
@@ -114,7 +114,7 @@ As migrações devem ser aplicadas antes de disponibilizar API/frontend dependen
 
 ## 8. Funcionalidades futuras e implantação
 
-Continuam planejados: upload e extração de planos de ensino/atestados, vínculo automático com turmas, validação colaborativa, revisão individual, inscrições/cancelamentos, histórico de participação, lembretes de proximidade, exportação `.ics` e coleta externa. As rotas propostas em [Padrões](padroes.md) não são endpoints disponíveis.
+O backend já recebe uploads de planos e oferece consulta paginada, detalhe com candidatos e confirmação de candidatos revisados na agenda privada. O worker/parser que transforma o PDF em candidatos ainda está planejado; sem ele, os planos permanecem em processamento até uma integração preencher resultados e estado. Também continuam planejados: upload e extração de atestados, vínculo automático com turmas, validação colaborativa, inscrições/cancelamentos, histórico de participação, lembretes de proximidade, exportação `.ics` e coleta externa.
 
 O Modelo Dual prevê planos oficiais de professores com confirmação por colegas de turma e planos particulares revisados pelo estudante antes de salvar datas privadas. O parser deve priorizar PDF com texto selecionável e oferecer tratamento recuperável para arquivos ilegíveis. Estratégia de processamento, serviço de e-mail e fontes/frequência da coleta ainda precisam de definição. A hospedagem tem proposta documentada, pendente de adoção e implantação. O Storage privado já tem migração, mas o fluxo de upload e o processamento não estão implementados na aplicação.
 
