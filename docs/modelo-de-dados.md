@@ -10,6 +10,7 @@ O diagrama abaixo ilustra as relações entre as tabelas centrais do banco de da
 
 ---
 
+```plantuml
 @startuml
 skinparam handwritten false
 skinparam linetype ortho
@@ -144,3 +145,4 @@ PLANOS_ENSINO ||--o{ CANDIDATOS_AVALIACAO : "IA sugere"
 PLANOS_ENSINO |o--o{ PLANOS_ENSINO : "plano_oficial_id"
 CANDIDATOS_AVALIACAO |o--o| EVENTOS_PESSOAIS : "confirmado vira"
 @enduml
+```

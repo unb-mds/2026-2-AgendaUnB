@@ -1,4 +1,7 @@
-# Sprint 06 - Planos de ensino com IA e revisão assistida
+---
+title: "Sprint 06 - Planos de ensino com IA e revisão assistida"
+sidebarTitle: "Sprint 6"
+---
 
 **Período proposto:** 19/10/2026 - 01/11/2026
 

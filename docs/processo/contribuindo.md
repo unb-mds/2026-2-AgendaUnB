@@ -123,7 +123,7 @@ npm run dev
 
 ```bash
 pip install mkdocs-material
-mkdocs serve -a 127.0.0.1:8008
+mkdocs serve -f .github/mkdocs.yml -a 127.0.0.1:8008
 ```
 
 - 📚 Documentação local: [http://127.0.0.1:8008](http://127.0.0.1:8008)
@@ -135,6 +135,14 @@ Com o ambiente virtual ativado na pasta `backend/`:
 ```bash
 pytest tests/
 ```
+
+---
+
+## Adicionar uma página de documentação
+
+Crie a página em `docs/` como `.md` para Markdown comum ou `.mdx` se usar componentes do Mintlify. Para incluí-la no menu do Mintlify, adicione a rota sem extensão ao `docs.json`. As sprints usam a mesma fonte em `docs/sprints/` para o Mintlify e o MkDocs.
+
+Para incluir uma página compartilhada no menu do MkDocs, adicione o caminho com extensão à navegação de `.github/mkdocs.yml`. As pastas `docs/arquitetura/` e `docs/produto/` mantêm as páginas organizadas para o Mintlify.
 
 ---
 

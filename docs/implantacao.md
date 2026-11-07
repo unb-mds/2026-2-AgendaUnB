@@ -110,4 +110,4 @@ Aceitar a implantação apenas com evidências registradas de migrações, build
 | Adicionar `VITE_API_URL` ao exemplo de ambiente e fixar dependências/ferramentas | Frontend e Backend |
 | Atualizar este documento com evidências e URLs efetivas | Responsável pela release |
 
-Nenhum desses papéis representa atribuição nominal já aprovada. Mudanças de hospedagem, variáveis, migrações ou pipeline devem atualizar este documento no mesmo PR. Ver [Arquitetura](Architecture.md), [Contratos](api-specs.md) e [Contribuição](CONTRIBUTING.md).
+Nenhum desses papéis representa atribuição nominal já aprovada. Mudanças de hospedagem, variáveis, migrações ou pipeline devem atualizar este documento no mesmo PR. Ver [Arquitetura](Architecture.md), [Contratos](api-specs.md) e [Contribuição](processo/contribuindo.md).

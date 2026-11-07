@@ -1,4 +1,8 @@
-# Sprint 02 - Requisitos, arquitetura e documentação
+---
+title: "Sprint 02 - Requisitos, arquitetura e documentação"
+description: "Requisitos, arquitetura e documentação da segunda sprint do Agenda UnB."
+sidebarTitle: "Sprint 2"
+---
 
 **Período:** 24/08/2026 - 06/09/2026
 
@@ -33,3 +37,21 @@
 - Front-end da primeira página sendo implementado.
 - Documentação de requisitos.
 - Estrutura inicial para gerenciamento do projeto.
+
+## Issues da sprint
+
+Consulta ao GitHub em **19/10/2026**. Estado e checklists abaixo reproduzem o registro das issues nessa consulta; uma issue fechada não representa verificação independente de todos os critérios. As atribuições históricas foram preservadas.
+
+| Issue | Estado no GitHub | Responsáveis |
+| --- | --- | --- |
+| [#8 — Sprint 02 concluída](https://github.com/unb-mds/2026-2-AgendaUnB/issues/8) | Fechada | Não informado |
+
+## Texto das issues registradas
+
+### #8 — Sprint 02 concluída
+
+**Origem:** [Issue #8](https://github.com/unb-mds/2026-2-AgendaUnB/issues/8).
+
+**Estado:** Fechada.
+
+**Labels:** Nenhuma.

@@ -159,7 +159,7 @@ frontend: check-frontend
 
 docs:
 	@echo "[INFO] Iniciando servidor MkDocs em http://127.0.0.1:8008..."
-	@mkdocs serve -a 127.0.0.1:8008
+	@mkdocs serve -f .github/mkdocs.yml -a 127.0.0.1:8008
 
 # ------------------------------------------------------------------------------
 # Banco de Dados (Supabase)
