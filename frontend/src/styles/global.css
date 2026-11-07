@@ -202,7 +202,7 @@ body, #root { width:100%; min-height:100%; background:#050508; font-family:'Inte
   position: fixed; inset: 0; top: 0; left: 0; width: 100vw; height: 100vh;
   background: rgba(2, 6, 16, 0.88);
   backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-  z-index: 99999; display: flex; justify-content: center; align-items: center;
+  z-index: 99999; display: flex; justify-content: center; align-items: center;  
   padding: 20px; animation: fadeIn 0.25s ease-out;
 }
 @keyframes fadeIn {
@@ -210,7 +210,7 @@ body, #root { width:100%; min-height:100%; background:#050508; font-family:'Inte
   to { opacity: 1; transform: scale(1); }
 }
 .modal-box {
-  background:rgba(8, 12, 22, 0.78); border:1px solid rgba(0, 140, 255, 0.38);
+  background:rgb(8, 12, 22); border:1px solid rgba(0, 140, 255, 0.836);
   border: 1px solid rgba(0, 139, 255, 0.35);
   border-radius: 20px;
   width: 100%; max-width: 520px;
@@ -584,7 +584,11 @@ body.light .btn-toggle-group { background: #e2e8f0; }
   padding: 10px 24px; border-radius: 999px; border: none; cursor: pointer; font-weight: 600; transition: all 0.3s; background: transparent; color: var(--text-muted);
 }
 .btn-toggle-item.active {
-  background: var(--accent-color); color: #fff; box-shadow: 0 4px 10px rgba(0, 139, 255, 0.3);
+  background: var(--accent-color); color: #fff;
+}
+
+body.light .btn-toggle-item.active {
+  background: var(--accent-color); color: #fff;
 }
 
 .save-event-controls { display: grid; gap: 12px; }
@@ -723,6 +727,9 @@ body.light .event-error-signup:hover { background: #008cffbb; }
   min-height: 44px;
 }
 .events-view-toggle .btn-toggle-item.active {
+  box-shadow: none;
+}
+body.light .events-view-toggle .btn-toggle-item.active {
   box-shadow: none;
 }
 .events-view-toggle .btn-toggle-item:hover:not(.active) {
