@@ -14,6 +14,13 @@ class EventInput(BaseModel):
     category: str | None = Field(default=None, min_length=2, max_length=80)
     location: str | None = Field(default=None, max_length=250)
 
+    @field_validator("campus", "category", "location", "description", mode="before")
+    @classmethod
+    def empty_str_to_none(cls, value: str | None) -> str | None:
+        if isinstance(value, str) and not value.strip():
+            return None
+        return value
+
     @field_validator("starts_at")
     @classmethod
     def require_timezone(cls, value: datetime) -> datetime:
@@ -45,6 +52,19 @@ class EventRead(BaseModel):
     organizer_avatar: str | None = None
 
 
+class SavedEventStatus(BaseModel):
+    saved: bool
+
+
+class PersonalEventOriginRead(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    syllabus_id: UUID = Field(alias="syllabusId")
+    candidate_id: UUID = Field(alias="candidateId")
+    page: int | None = None
+    excerpt: str | None = None
+
+
 class PersonalEventRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -55,6 +75,7 @@ class PersonalEventRead(BaseModel):
     campus: str | None
     category: str | None
     location: str | None = None
+    origin: PersonalEventOriginRead | None = None
 
 
 class PersonalEventCreate(EventInput):
