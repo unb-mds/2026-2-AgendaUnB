@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { eventsApi, toApiEvent, toUiEvent } from '../lib/api';
 import NavBar from '../components/NavBar';
 import EventCalendar from '../components/EventCalendar';
+import EventsLoading from '../components/EventsLoading';
 import { Feedback, Modal } from '../components/ManagementUI';
 
 function EventError({ message, compact = false }) {
@@ -757,7 +758,7 @@ export default function SegundaPagina() {
         {modoVisualizacao === 'calendario' ? (
           <EventCalendar events={eventosFiltrados} loading={carregandoEventos} error={Boolean(erroEventos)} />
         ) : carregandoEventos ? (
-          <p role="status" style={{ textAlign: 'center', padding: '3rem', color: textMuted }}>Carregando eventos…</p>
+          <EventsLoading />
         ) : erroEventos ? null : eventosFiltrados.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '4rem 2rem', background: cardBg, borderRadius: '24px', border: `1px dashed ${borderColor}` }}>
             <span className="material-symbols-outlined" style={{ fontSize: '3rem', color: textMuted, marginBottom: '1rem' }}>event_busy</span>
