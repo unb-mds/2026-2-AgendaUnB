@@ -596,10 +596,12 @@ body.light .btn-toggle-group { background: #e2e8f0; }
 .event-error { margin-bottom: 1rem; padding: 1rem; border-radius: 12px; color: #8f1f17; background: #fee4e2; line-height: 1.45; }
 .event-error p { margin: 0; }
 .event-error-compact { padding: .75rem 1rem; font-size: .85rem; font-weight: 500; }
-.event-error-auth { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem 1rem; background: rgb(0 139 255); color: #080c16; }
+.event-error-auth { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem 1rem; background: var(--card-bg); color: var(--text-color); }
 .event-error-signup { display: inline-block; max-width: 100%; padding: 3px 9px; margin-left: auto; border-radius: 6px; background: #fefefe; color: #080c16; font-weight: 700; text-decoration: none; white-space: nowrap; }
 .event-error-signup:hover { background: #eaf5ff; }
-.event-error-signup:focus-visible { outline: 3px solid #071a2d; outline-offset: 3px; }
+.event-error-signup:focus-visible { outline: 3px solid var(--text-color); outline-offset: 3px; }
+body.light .event-error-signup { background: #008BFF; color: #fefefe; }
+body.light .event-error-signup:hover { background: #008cffbb; }
 @media (max-width: 480px) {
   .event-error-signup { margin-left: 0; }
 }
