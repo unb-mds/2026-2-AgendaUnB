@@ -1,4 +1,6 @@
 import io
+from datetime import datetime, timedelta, timezone
+from unittest.mock import create_autospec
 from uuid import UUID, uuid4
 
 import pypdf
@@ -10,6 +12,15 @@ from src.database.models import Profile, Syllabus
 from src.main import app
 from src.middlewares.auth import CurrentUser, get_current_user
 from src.services.storage import SupabaseStorageService, get_storage_service
+
+
+@pytest.fixture(autouse=True)
+def storage_mock(api, monkeypatch):
+    """Keep API tests independent of real Storage credentials and network access."""
+    storage = create_autospec(SupabaseStorageService, instance=True)
+    storage.upload_file.side_effect = lambda path, content, content_type: f"syllabus_files/{path}"
+    monkeypatch.setitem(app.dependency_overrides, get_storage_service, lambda: storage)
+    return storage
 
 
 BASE_VALID_PDF = b"""%PDF-1.4
@@ -67,7 +78,7 @@ def make_encrypted_pdf_bytes() -> bytes:
     return buf.getvalue()
 
 
-def test_upload_syllabus_success(api):
+def test_upload_syllabus_success(api, storage_mock):
     client, TestSession, authenticated_user, _ = api
     user_id = authenticated_user["value"].id
 
@@ -94,6 +105,11 @@ def test_upload_syllabus_success(api):
     assert str(user_id) in body["filePath"]
     assert body["fileType"] == "pdf"
     assert body["fileSize"] == len(pdf_bytes)
+    storage_mock.upload_file.assert_called_once()
+    uploaded = storage_mock.upload_file.call_args.kwargs
+    assert uploaded["path"].startswith(f"{user_id}/")
+    assert uploaded["content"] == pdf_bytes
+    assert uploaded["content_type"] == "application/pdf"
 
     # Verifica no banco se o registro foi salvo com status 'pendente'
     with TestSession() as session:
@@ -105,6 +121,40 @@ def test_upload_syllabus_success(api):
         assert record.disciplina == "Métodos de Desenvolvimento de Software"
         assert record.turma == "01"
 
+
+def test_upload_syllabus_limits_body_before_storage(api, storage_mock):
+    client, _, _, _ = api
+    oversized = make_valid_pdf_bytes() + b"x" * (10 * 1024 * 1024 + 65 * 1024)
+    response = client.post(
+        "/api/v1/syllabus/upload",
+        files={"file": ("plano.pdf", io.BytesIO(oversized), "application/pdf")},
+        headers={"content-length": "1"},
+    )
+    assert response.status_code == 413
+    storage_mock.upload_file.assert_not_called()
+
+
+def test_upload_syllabus_quota_is_ten_in_five_days(api, storage_mock):
+    client, sessions, authenticated_user, _ = api
+    user_id = authenticated_user["value"].id
+    with sessions() as db:
+        db.add(Profile(id=user_id, papel="student", nome_completo="Aluno Teste"))
+        db.add(Syllabus(
+            user_id=user_id, file_name="antigo.pdf", file_path=f"syllabus_files/{user_id}/antigo.pdf",
+            status="pendente", created_at=datetime.now(timezone.utc) - timedelta(days=6),
+        ))
+        db.commit()
+
+    for _ in range(10):
+        response = client.post("/api/v1/syllabus/upload", files={
+            "file": ("plano.pdf", io.BytesIO(make_valid_pdf_bytes()), "application/pdf")
+        })
+        assert response.status_code == 202
+    response = client.post("/api/v1/syllabus/upload", files={
+        "file": ("plano.pdf", io.BytesIO(make_valid_pdf_bytes()), "application/pdf")
+    })
+    assert response.status_code == 429
+    assert storage_mock.upload_file.call_count == 10
 
 def test_upload_syllabus_unauthenticated(api):
     client, _, _, _ = api
@@ -324,3 +374,43 @@ def test_get_syllabus_status_forbidden_for_other_user(api):
     # O usuário logado atual tenta acessar o plano de outro usuário
     response = client.get(f"/api/v1/syllabus/{syllabus_id}")
     assert response.status_code == 404
+
+
+def test_list_syllabus_owned_paginated_and_stable(api):
+    from datetime import datetime, timezone
+
+    client, TestSession, authenticated_user, _ = api
+    owner = authenticated_user["value"].id
+    other = uuid4()
+    created_at = datetime(2026, 10, 31, tzinfo=timezone.utc)
+    ids = [UUID(int=value) for value in (1, 2, 3)]
+    with TestSession() as session:
+        session.add_all([Profile(id=owner, papel="student"), Profile(id=other, papel="student")])
+        session.add_all([
+            Syllabus(id=id, user_id=owner, file_name=f"{id}.pdf", file_path=f"syllabus_files/{owner}/{id}.pdf", created_at=created_at)
+            for id in ids
+        ])
+        session.add(Syllabus(user_id=other, file_name="private.pdf", file_path=f"syllabus_files/{other}/private.pdf"))
+        session.commit()
+    response = client.get("/api/v1/syllabus?limit=2&offset=0")
+    assert response.status_code == 200
+    assert response.json()["total"] == 3
+    assert [item["id"] for item in response.json()["items"]] == [str(ids[2]), str(ids[1])]
+    assert all(item["userId"] == str(owner) for item in response.json()["items"])
+    second = client.get("/api/v1/syllabus?limit=2&offset=2").json()
+    assert second["total"] == 3
+    assert [item["id"] for item in second["items"]] == [str(ids[0])]
+    assert client.get("/api/v1/syllabus?offset=20").json() == {"items": [], "total": 3}
+
+
+@pytest.mark.parametrize("query", ["limit=0", "limit=101", "offset=-1", "limit=invalid"])
+def test_list_syllabus_validates_pagination(api, query):
+    client, *_ = api
+    assert client.get(f"/api/v1/syllabus?{query}").status_code == 422
+
+
+def test_list_syllabus_empty_and_unauthenticated(api):
+    client, *_ = api
+    assert client.get("/api/v1/syllabus").json() == {"items": [], "total": 0}
+    app.dependency_overrides.pop(get_current_user)
+    assert client.get("/api/v1/syllabus").status_code == 401

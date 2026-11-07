@@ -224,10 +224,6 @@ body.light .management-feedback.error > .material-symbols-outlined { color: #b32
 }
 .event-create-dialog .custom-picker-popup { background: var(--manage-surface); }
 .event-create-dialog button:disabled { opacity: .6; cursor: not-allowed; }
-.teaching-plan-empty { display: grid; justify-items: start; gap: 16px; border-block: 1px solid var(--manage-border); padding: 36px 0; }
-.teaching-plan-empty > .material-symbols-outlined { font-size: 32px; color: var(--manage-muted); }
-.teaching-plan-empty h2 { font-size: 1.2rem; }
-.teaching-plan-empty p { max-width: 68ch; line-height: 1.7; color: var(--manage-muted); }
 @media (max-width: 540px) {
   .event-create-dialog .modal-form > div[style*="grid"] { grid-template-columns: minmax(0, 1fr) !important; }
   .event-create-dialog .modal-form > div:last-child { flex-wrap: wrap; }

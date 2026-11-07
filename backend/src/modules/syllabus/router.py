@@ -97,9 +97,9 @@ async def upload_syllabus(
     Gera um registro na tabela de rastreamento com status inicial 'pendente'
     e retorna HTTP 202 Accepted.
     """
-    content = await validate_pdf_file(file)
+    content = await run_in_threadpool(validate_pdf_file, file)
 
-    syllabus = process_syllabus_upload(
+    syllabus = await run_in_threadpool(process_syllabus_upload,
         user_id=current_user.id,
         filename=file.filename or "syllabus.pdf",
         content=content,
@@ -109,16 +109,28 @@ async def upload_syllabus(
         turma=turma,
     )
 
-    return SyllabusUploadResponse(
-        id=syllabus.id,
-        userId=syllabus.user_id,
-        fileName=syllabus.file_name,
-        filePath=syllabus.file_path,
-        fileSize=syllabus.file_size,
-        fileType=syllabus.file_type,
-        status=syllabus.status,
-        createdAt=syllabus.created_at,
-        message="Plano de ensino recebido com sucesso e direcionado para processamento.",
+    return SyllabusUploadResponse.model_validate(syllabus)
+
+
+@router.get("", response_model=SyllabusListResponse, summary="Histórico dos próprios planos de ensino")
+def list_syllabuses(
+    limit: int = Query(10, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    current_user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> SyllabusListResponse:
+    ownership = Syllabus.user_id == current_user.id
+    total = db.scalar(select(func.count()).select_from(Syllabus).where(ownership))
+    plans = db.scalars(
+        select(Syllabus)
+        .where(ownership)
+        .order_by(Syllabus.created_at.desc(), Syllabus.id.desc())
+        .offset(offset)
+        .limit(limit)
+    ).all()
+    return SyllabusListResponse(
+        items=[SyllabusDetailResponse.model_validate(plan) for plan in plans],
+        total=total,
     )
 
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext'
 import NavBar from './components/NavBar'
 import './styles/global.css'
@@ -58,9 +58,21 @@ const teamMembers = [
 // ............................
 export default function App() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const authIntent = searchParams.get('auth');
   const { user, profile, signInWithGoogle, signOut, signUpWithEmail, signInWithEmail } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+
+  useEffect(() => {
+    if (authIntent === 'signup') {
+      setIsMenuOpen(true);
+      setIsLoginOpen(false);
+    } else if (authIntent === 'login') {
+      setIsLoginOpen(true);
+      setIsMenuOpen(false);
+    }
+  }, [authIntent]);
 
   // Formulário de cadastro
   const [cadNome, setCadNome] = useState('');

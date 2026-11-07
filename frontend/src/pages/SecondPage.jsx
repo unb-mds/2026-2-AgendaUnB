@@ -6,6 +6,14 @@ import NavBar from '../components/NavBar';
 import EventCalendar from '../components/EventCalendar';
 import { Feedback, Modal } from '../components/ManagementUI';
 
+function EventError({ message, compact = false }) {
+  const needsAccount = message.includes('Entre na sua conta');
+  return <div role="alert" className={`event-error${needsAccount ? ' event-error-auth' : ''}${compact ? ' event-error-compact' : ''}`}>
+    <p>{message}</p>
+    {needsAccount && <Link className="event-error-signup" to="/?auth=signup">Criar conta</Link>}
+  </div>;
+}
+
 const CustomSelect = ({ value, onChange, options, placeholder, dropUp = false, className, wrapperWidth, ariaLabel }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
@@ -743,9 +751,7 @@ export default function SegundaPagina() {
         </div>
 
         {erroEventos && (
-          <div role="alert" style={{ marginBottom: '1rem', padding: '1rem', borderRadius: '12px', color: '#b42318', background: '#fee4e2' }}>
-            {erroEventos}
-          </div>
+          <EventError message={erroEventos} />
         )}
 
         {modoVisualizacao === 'calendario' ? (
@@ -846,9 +852,7 @@ export default function SegundaPagina() {
           onClose={() => { setIsModalOpen(false); resetModal(); }}>
             <form onSubmit={handleAdicionarEvento} className="modal-form">
               {erroEventos && (
-                <div role="alert" style={{ padding: '0.75rem 1rem', borderRadius: '12px', color: '#b42318', background: '#fee4e2', fontSize: '0.85rem', fontWeight: 500, lineHeight: 1.4 }}>
-                  {erroEventos}
-                </div>
+                <EventError message={erroEventos} compact />
               )}
               
               <div>

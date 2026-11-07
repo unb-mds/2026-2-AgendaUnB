@@ -2,10 +2,12 @@ import io
 import logging
 import os
 import re
+from datetime import datetime, timedelta, timezone
 from uuid import UUID, uuid4
 
 import pypdf
 from fastapi import HTTPException, UploadFile
+from sqlalchemy import func, select, text as sql_text
 from sqlalchemy.orm import Session
 
 from src.database.models import Syllabus
@@ -26,7 +28,7 @@ def sanitize_filename(filename: str) -> str:
     return clean or "syllabus.pdf"
 
 
-async def validate_pdf_file(file: UploadFile) -> bytes:
+def validate_pdf_file(file: UploadFile) -> bytes:
     """
     Executa validação rigorosa de extensão, MIME Type, tamanho de payload,
     assinatura binária e integridade estrutural do arquivo PDF.
@@ -49,7 +51,7 @@ async def validate_pdf_file(file: UploadFile) -> bytes:
 
     # 3. Leitura do conteúdo em memória e validação de tamanho de payload
     try:
-        content = await file.read()
+        content = file.file.read(MAX_FILE_SIZE_BYTES + 1)
     except Exception as exc:
         raise HTTPException(
             status_code=400,
@@ -141,6 +143,20 @@ def process_syllabus_upload(
     transacional de rastreamento com status inicial 'pendente'.
     Compensa a gravação no Storage caso a persistência no banco falhe.
     """
+    # Serialize uploads for this user across API workers before counting the
+    # rolling window. The lock lasts until the plan and its file are committed.
+    if db.bind.dialect.name == "postgresql":
+        db.execute(sql_text("SELECT pg_advisory_xact_lock(hashtextextended(:user_id, 0))"),
+                   {"user_id": str(user_id)})
+    cutoff = datetime.now(timezone.utc) - timedelta(days=5)
+    recent_uploads = db.scalar(
+        select(func.count()).select_from(Syllabus).where(
+            Syllabus.user_id == user_id, Syllabus.created_at >= cutoff
+        )
+    )
+    if recent_uploads >= 10:
+        raise HTTPException(status_code=429, detail="Limite de 10 planos enviados em 5 dias. Tente novamente mais tarde.")
+
     syllabus_id = uuid4()
     safe_name = sanitize_filename(filename)
 
