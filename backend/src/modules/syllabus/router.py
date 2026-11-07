@@ -3,8 +3,8 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import joinedload
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
+from starlette.concurrency import run_in_threadpool
 
 from src.database.connection import get_db
 from src.database.models import PersonalEvent, Syllabus, SyllabusCandidate
@@ -55,20 +55,7 @@ def list_syllabi(
         .offset(offset)
     ).all()
     return SyllabusListResponse(
-        items=[
-            SyllabusListItem(
-                id=record.id,
-                fileName=record.file_name,
-                fileSize=record.file_size,
-                status=record.status,
-                extractedEventsCount=record.extracted_events_count,
-                errorMessage=record.error_message,
-                disciplina=record.disciplina,
-                turma=record.turma,
-                createdAt=record.created_at,
-            )
-            for record in records
-        ],
+        items=[SyllabusListItem.model_validate(record) for record in records],
         total=total,
         limit=limit,
         offset=offset,
@@ -85,6 +72,8 @@ async def upload_syllabus(
     file: UploadFile = File(..., description="Arquivo PDF do plano de ensino"),
     disciplina: str | None = Form(None, description="Nome da disciplina (opcional)"),
     turma: str | None = Form(None, description="Turma da disciplina (opcional)"),
+    ano: int | None = Form(None, ge=2000, le=2100, description="Ano de referência"),
+    semestre: int | None = Form(None, ge=1, le=2, description="Semestre de referência"),
     current_user: CurrentUser = Depends(get_current_user),
     db: Session = Depends(get_db),
     storage: SupabaseStorageService = Depends(get_storage_service),
@@ -99,7 +88,8 @@ async def upload_syllabus(
     """
     content = await run_in_threadpool(validate_pdf_file, file)
 
-    syllabus = await run_in_threadpool(process_syllabus_upload,
+    syllabus = await run_in_threadpool(
+        process_syllabus_upload,
         user_id=current_user.id,
         filename=file.filename or "syllabus.pdf",
         content=content,
@@ -107,31 +97,11 @@ async def upload_syllabus(
         storage=storage,
         disciplina=disciplina,
         turma=turma,
+        ano=ano,
+        semestre=semestre,
     )
 
     return SyllabusUploadResponse.model_validate(syllabus)
-
-
-@router.get("", response_model=SyllabusListResponse, summary="Histórico dos próprios planos de ensino")
-def list_syllabuses(
-    limit: int = Query(10, ge=1, le=100),
-    offset: int = Query(0, ge=0),
-    current_user: CurrentUser = Depends(get_current_user),
-    db: Session = Depends(get_db),
-) -> SyllabusListResponse:
-    ownership = Syllabus.user_id == current_user.id
-    total = db.scalar(select(func.count()).select_from(Syllabus).where(ownership))
-    plans = db.scalars(
-        select(Syllabus)
-        .where(ownership)
-        .order_by(Syllabus.created_at.desc(), Syllabus.id.desc())
-        .offset(offset)
-        .limit(limit)
-    ).all()
-    return SyllabusListResponse(
-        items=[SyllabusDetailResponse.model_validate(plan) for plan in plans],
-        total=total,
-    )
 
 
 @router.get(
@@ -179,6 +149,8 @@ def get_syllabus_status(
         errorMessage=syllabus.error_message,
         disciplina=syllabus.disciplina,
         turma=syllabus.turma,
+        ano=syllabus.ano,
+        semestre=syllabus.semestre,
         createdAt=syllabus.created_at,
         candidates=[_candidate_read(candidate) for candidate in candidates],
     )

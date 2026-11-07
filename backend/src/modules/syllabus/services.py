@@ -137,6 +137,8 @@ def process_syllabus_upload(
     storage: SupabaseStorageService,
     disciplina: str | None = None,
     turma: str | None = None,
+    ano: int | None = None,
+    semestre: int | None = None,
 ) -> Syllabus:
     """
     Coordena o upload físico para o Storage do Supabase e o registro
@@ -183,6 +185,8 @@ def process_syllabus_upload(
         error_message=None,
         disciplina=disciplina,
         turma=turma,
+        ano=ano,
+        semestre=semestre,
     )
 
     try:

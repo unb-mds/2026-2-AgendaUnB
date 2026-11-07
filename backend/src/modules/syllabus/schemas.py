@@ -17,19 +17,21 @@ class SyllabusUploadResponse(BaseModel):
     file_size: int | None = Field(default=None, alias="fileSize")
     file_type: str = Field(default="pdf", alias="fileType")
     status: str = Field(default="pendente")
+    ano: int | None = None
+    semestre: int | None = None
     created_at: datetime = Field(alias="createdAt")
     message: str = "Plano de ensino recebido com sucesso e direcionado para processamento."
 
 
-class SyllabusDetailResponse(BaseModel):
-    """Schema para consulta de status de processamento do plano."""
+class SyllabusListItem(BaseModel):
+    """Dados do plano no histórico, inclusive de planos anteriores ao upload."""
 
     model_config = ConfigDict(populate_by_name=True, from_attributes=True)
 
     id: UUID
     user_id: UUID = Field(alias="userId")
-    file_name: str = Field(alias="fileName")
-    file_path: str = Field(alias="filePath")
+    file_name: str | None = Field(alias="fileName")
+    file_path: str | None = Field(alias="filePath")
     file_size: int | None = Field(default=None, alias="fileSize")
     file_type: str = Field(default="pdf", alias="fileType")
     status: str
@@ -37,8 +39,9 @@ class SyllabusDetailResponse(BaseModel):
     error_message: str | None = Field(default=None, alias="errorMessage")
     disciplina: str | None = None
     turma: str | None = None
+    ano: int | None = None
+    semestre: int | None = None
     created_at: datetime = Field(alias="createdAt")
-    candidates: list["SyllabusCandidateRead"] = Field(default_factory=list)
 
 
 class SyllabusCandidateRead(BaseModel):
@@ -54,18 +57,8 @@ class SyllabusCandidateRead(BaseModel):
     status: str
 
 
-class SyllabusListItem(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
-
-    id: UUID
-    file_name: str = Field(alias="fileName")
-    file_size: int | None = Field(alias="fileSize")
-    status: str
-    extracted_events_count: int = Field(alias="extractedEventsCount")
-    error_message: str | None = Field(alias="errorMessage")
-    disciplina: str | None = None
-    turma: str | None = None
-    created_at: datetime = Field(alias="createdAt")
+class SyllabusDetailResponse(SyllabusListItem):
+    candidates: list[SyllabusCandidateRead] = Field(default_factory=list)
 
 
 class SyllabusListResponse(BaseModel):
@@ -115,9 +108,3 @@ class ConfirmSyllabusResponse(BaseModel):
 
     syllabus_id: UUID = Field(alias="syllabusId")
     events: list[PersonalEventRead]
-
-
-
-class SyllabusListResponse(BaseModel):
-    items: list[SyllabusDetailResponse]
-    total: int
