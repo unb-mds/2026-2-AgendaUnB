@@ -4,3 +4,5 @@ sqlalchemy
 psycopg[binary]
 python-dotenv
 httpx
+python-multipart
+pypdf

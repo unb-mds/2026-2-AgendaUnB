@@ -3,7 +3,8 @@ INSERT INTO public.campus (nome) VALUES
   ('Faculdade do Gama (FCTE)'),
   ('Faculdade de Ceilândia (FCTS)'),
   ('Faculdade de Planaltina (FUP)'),
-  ('Fazenda Água Limpa (FAL)');
+  ('Fazenda Água Limpa (FAL)')
+ON CONFLICT (nome) DO NOTHING;
 
 INSERT INTO public.categories (nome) VALUES
   ('Acadêmico'),     
@@ -12,4 +13,5 @@ INSERT INTO public.categories (nome) VALUES
   ('Extensão'), 
   ('Lazer'), 
   ('Comunicado'),
-  ('Reunião');
+  ('Reunião')
+ON CONFLICT (nome) DO NOTHING;
