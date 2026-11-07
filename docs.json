@@ -1,0 +1,124 @@
+{
+  "theme": "mint",
+  "name": "Agenda UnB",
+  "colors": {
+    "primary": "#008BFF",
+    "light": "#4DAEFF",
+    "dark": "#005FD2"
+  },
+  "favicon": "/docs/images/logo-agendaunb.png",
+  "navbar": {
+    "links": [
+      {
+        "href": "https://www.figma.com/board/RlZe9FgO3Bz3gPkxevs8UJ/AGENDA-UNB?node-id=1-217&t=USKjIQh4OXxQVwsG-1",
+        "label": "Figma"
+      }
+    ],
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/unb-mds/2026-2-AgendaUnB"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/unb-mds/2026-2-AgendaUnB"
+    }
+  },
+  "contextual": {
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "perplexity",
+      "mcp",
+      "cursor",
+      "vscode"
+    ],
+    "display": "header"
+  },
+  "navigation": {
+    "pages": [
+      {
+        "group": "Início",
+        "pages": [
+          "index",
+          "quickstart"
+        ]
+      },
+      {
+        "group": "Produto",
+        "pages": [
+          "docs/produto/visao",
+          "docs/produto/personas",
+          "docs/produto/requisitos"
+        ]
+      },
+      {
+        "group": "Arquitetura e especificações",
+        "pages": [
+          "docs/arquitetura/visao-geral",
+          "docs/arquitetura/modelo-de-dados",
+          "docs/arquitetura/banco-de-dados",
+          "docs/arquitetura/frontend",
+          "docs/arquitetura/padroes"
+        ]
+      },
+      {
+        "group": "Processo",
+        "pages": [
+          "docs/processo/contribuindo",
+          "docs/processo/uso-de-ia",
+          {
+            "group": "Sprints",
+            "pages": [
+              "docs/processo/sprints/sprint-1",
+              "docs/processo/sprints/sprint-2",
+              "docs/processo/sprints/sprint-3",
+              "docs/processo/sprints/sprint-4"
+            ]
+          },
+          {
+            "group": "Release notes",
+            "pages": [
+              "docs/processo/release-notes/v0-1-0"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "appearance": {
+    "default": "dark"
+  },
+  "background": {
+    "color": {
+      "light": "#F7F9FC",
+      "dark": "#050508"
+    }
+  },
+  "fonts": {
+    "heading": {
+      "family": "Orbitron",
+      "weight": 700
+    },
+    "body": {
+      "family": "Inter",
+      "weight": 400
+    }
+  },
+  "redirects": [
+    {
+      "source": "/produto/:slug*",
+      "destination": "/docs/produto/:slug*"
+    },
+    {
+      "source": "/processo/:slug*",
+      "destination": "/docs/processo/:slug*"
+    },
+    {
+      "source": "/arquitetura/:slug*",
+      "destination": "/docs/arquitetura/:slug*"
+    }
+  ]
+}

@@ -174,7 +174,7 @@ export default function App() {
     }
 
     setIsMenuOpen(false);
-    navigate('/eventos');
+    navigate('/segunda-pagina');
   };
 
   const handleEntrar = async () => {
@@ -194,7 +194,7 @@ export default function App() {
     }
 
     setIsLoginOpen(false);
-    navigate('/eventos');
+    navigate('/segunda-pagina');
   };
 
   // ............................
@@ -483,7 +483,7 @@ export default function App() {
 
           {/* Botão Login */}
           <button
-            onClick={() => navigate('/eventos')}
+            onClick={() => navigate('/segunda-pagina')}
             style={{
               cursor:'pointer', display:'flex', alignItems:'center', gap:'12px',
               padding:'13px 30px', borderRadius:'999px',
