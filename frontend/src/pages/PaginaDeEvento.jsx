@@ -3,6 +3,7 @@ import { useParams, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { eventsApi, toUiEvent } from '../lib/api';
 import NavBar from '../components/NavBar';
+import SaveEventButton from '../components/SaveEventButton';
 import '../styles/global.css';
 
 export default function PaginaDeEvento() {
@@ -61,11 +62,11 @@ export default function PaginaDeEvento() {
   }, [id, user?.id, eventoState]);
 
   const getOrganizadorInfo = () => {
-    if (eventoState?.organizadorNome) {
+    if (eventoCarregado?.organizadorNome) {
       return {
-        nome: eventoState.organizadorNome,
-        foto: eventoState.organizadorFoto,
-        iniciais: eventoState.organizadorNome.charAt(0).toUpperCase()
+        nome: eventoCarregado.organizadorNome,
+        foto: eventoCarregado.organizadorFoto,
+        iniciais: eventoCarregado.organizadorNome.charAt(0).toUpperCase()
       };
     }
     if (user) {
@@ -151,7 +152,7 @@ export default function PaginaDeEvento() {
       <main role="alert" style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: '2rem', textAlign: 'center' }}>
         <div>
           <p>{erroEvento}</p>
-          <Link to="/segunda-pagina">Voltar aos eventos</Link>
+          <Link to="/eventos">Voltar aos eventos</Link>
         </div>
       </main>
     );
@@ -240,6 +241,9 @@ export default function PaginaDeEvento() {
             </div>
             
             <div className="event-actions">
+              {dataEvento.visibilidade === 'Público' && (
+                <SaveEventButton key={`${user?.id || 'guest'}-${id}`} eventId={id} user={user} />
+              )}
               {evento.linkOriginal && <button className="ds-btn-primary" onClick={handleConferir} style={{
                 background: 'rgba(0, 95, 210, 1)',
                 height: '56px',

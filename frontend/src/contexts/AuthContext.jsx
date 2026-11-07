@@ -20,45 +20,37 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      } else {
-        setLoading(false);
+    let active = true;
+    let currentId = null;
+    let generation = 0;
+    const fetchProfile = async userId => {
+      const version = ++generation;
+      try {
+        const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
+        if (active && currentId === userId && version === generation) setProfile(error ? null : data);
+      } catch {
+        if (active && currentId === userId && version === generation) setProfile(null);
+      } finally {
+        if (active && version === generation) setLoading(false);
       }
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    };
+    const update = session => {
+      if (!active) return;
+      const nextId = session?.user?.id ?? null;
+      if (currentId !== nextId) { setProfile(null); setLoading(!!nextId); }
+      currentId = nextId;
       setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      } else {
-        setProfile(null);
-        setLoading(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
+      if (nextId) {
+        // Supabase calls must run outside the Auth callback's internal lock.
+        setTimeout(() => { if (active && currentId === nextId) fetchProfile(nextId); }, 0);
+      } else { ++generation; setProfile(null); setLoading(false); }
+    };
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => update(session));
+    const refresh = () => { if (active && currentId && !document.hidden) fetchProfile(currentId); };
+    const timer = setInterval(refresh, 30000);
+    window.addEventListener('focus', refresh);
+    return () => { active = false; subscription.unsubscribe(); clearInterval(timer); window.removeEventListener('focus', refresh); };
   }, []);
-
-  const fetchProfile = async (userId) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (!error && data) {
-        setProfile(data);
-      }
-    } catch (err) {
-      console.error('Erro ao buscar perfil:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // -----------------------------------------------------------
   // Cadastro com e-mail e senha (RF01, RF02, RF04)
@@ -138,7 +130,7 @@ export const AuthProvider = ({ children }) => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/segunda-pagina`,
+        redirectTo: `${window.location.origin}/eventos`,
         queryParams: {
           access_type: 'offline',
           prompt: 'consent',
