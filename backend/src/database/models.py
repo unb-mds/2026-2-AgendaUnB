@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import BigInteger, DateTime, ForeignKey, Integer, String, Text, Uuid, func
+from sqlalchemy import BigInteger, DateTime, ForeignKey, Integer, SmallInteger, String, Text, Uuid, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -130,8 +130,8 @@ class Syllabus(Base):
     professor_id: Mapped[UUID | None] = mapped_column(
         "professor_id", Uuid(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), nullable=True
     )
-    file_name: Mapped[str] = mapped_column("nome_arquivo", String, nullable=False)
-    file_path: Mapped[str] = mapped_column("caminho_arquivo", String, nullable=False)
+    file_name: Mapped[str | None] = mapped_column("nome_arquivo", String, nullable=True)
+    file_path: Mapped[str | None] = mapped_column("caminho_arquivo", String, nullable=True)
     arquivo_url: Mapped[str | None] = mapped_column("arquivo_url", String, nullable=True)
     file_size: Mapped[int | None] = mapped_column("tamanho_bytes", BigInteger, nullable=True)
     file_type: Mapped[str] = mapped_column("tipo_arquivo", String, default="pdf", nullable=False)
@@ -142,6 +142,8 @@ class Syllabus(Base):
     error_message: Mapped[str | None] = mapped_column("erro", Text, nullable=True)
     disciplina: Mapped[str | None] = mapped_column(String, nullable=True)
     turma: Mapped[str | None] = mapped_column(String, nullable=True)
+    ano: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
+    semestre: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         "criado_em", DateTime(timezone=True), server_default=func.now(), nullable=False
     )

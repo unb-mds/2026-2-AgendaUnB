@@ -93,6 +93,8 @@ def test_upload_syllabus_success(api, storage_mock):
     data = {
         "disciplina": "Métodos de Desenvolvimento de Software",
         "turma": "01",
+        "ano": "2026",
+        "semestre": "2",
     }
 
     response = client.post("/api/v1/syllabus/upload", files=files, data=data)
@@ -105,6 +107,7 @@ def test_upload_syllabus_success(api, storage_mock):
     assert str(user_id) in body["filePath"]
     assert body["fileType"] == "pdf"
     assert body["fileSize"] == len(pdf_bytes)
+    assert (body["ano"], body["semestre"]) == (2026, 2)
     storage_mock.upload_file.assert_called_once()
     uploaded = storage_mock.upload_file.call_args.kwargs
     assert uploaded["path"].startswith(f"{user_id}/")
@@ -120,6 +123,24 @@ def test_upload_syllabus_success(api, storage_mock):
         assert record.file_name == "plano_de_ensino.pdf"
         assert record.disciplina == "Métodos de Desenvolvimento de Software"
         assert record.turma == "01"
+        assert (record.ano, record.semestre) == (2026, 2)
+
+    detail = client.get(f"/api/v1/syllabus/{body['id']}").json()
+    assert (detail["ano"], detail["semestre"]) == (2026, 2)
+    history = client.get("/api/v1/syllabus").json()["items"]
+    assert (history[0]["ano"], history[0]["semestre"]) == (2026, 2)
+
+
+@pytest.mark.parametrize("period", [{"ano": "1999"}, {"semestre": "3"}])
+def test_upload_syllabus_rejects_invalid_period(api, storage_mock, period):
+    client, *_ = api
+    response = client.post(
+        "/api/v1/syllabus/upload",
+        files={"file": ("plano.pdf", io.BytesIO(make_valid_pdf_bytes()), "application/pdf")},
+        data=period,
+    )
+    assert response.status_code == 422
+    storage_mock.upload_file.assert_not_called()
 
 
 def test_upload_syllabus_limits_body_before_storage(api, storage_mock):
@@ -400,7 +421,29 @@ def test_list_syllabus_owned_paginated_and_stable(api):
     second = client.get("/api/v1/syllabus?limit=2&offset=2").json()
     assert second["total"] == 3
     assert [item["id"] for item in second["items"]] == [str(ids[0])]
-    assert client.get("/api/v1/syllabus?offset=20").json() == {"items": [], "total": 3}
+    assert client.get("/api/v1/syllabus?offset=20").json() == {
+        "items": [], "total": 3, "limit": 20, "offset": 20,
+    }
+
+
+def test_legacy_plan_without_upload_metadata_is_readable(api):
+    client, TestSession, authenticated_user, _ = api
+    owner = authenticated_user["value"].id
+    with TestSession() as session:
+        session.add(Profile(id=owner, papel="professor"))
+        plan = Syllabus(user_id=owner, professor_id=owner, turma="01", status="concluido")
+        session.add(plan)
+        session.flush()
+        plan_id = plan.id
+        session.commit()
+
+    for path in ("/api/v1/syllabus", f"/api/v1/syllabus/{plan_id}"):
+        response = client.get(path)
+        assert response.status_code == 200
+        body = response.json()
+        plan = body["items"][0] if "items" in body else body
+        assert plan["id"] == str(plan_id)
+        assert plan["fileName"] is None and plan["filePath"] is None
 
 
 @pytest.mark.parametrize("query", ["limit=0", "limit=101", "offset=-1", "limit=invalid"])
@@ -411,6 +454,8 @@ def test_list_syllabus_validates_pagination(api, query):
 
 def test_list_syllabus_empty_and_unauthenticated(api):
     client, *_ = api
-    assert client.get("/api/v1/syllabus").json() == {"items": [], "total": 0}
+    assert client.get("/api/v1/syllabus").json() == {
+        "items": [], "total": 0, "limit": 20, "offset": 0,
+    }
     app.dependency_overrides.pop(get_current_user)
     assert client.get("/api/v1/syllabus").status_code == 401
