@@ -1,10 +1,8 @@
-# Publique somente os arquivos MDX e recursos da documentação Mintlify.
-# O CSS global da aplicação React zera margens e preenchimentos do tema.
+# Publique os arquivos Markdown, MDX e recursos da documentação Mintlify.
 frontend/
 backend/
 supabase/
 .agent/
 .impeccable/
 /*.md
-/docs/**/*.md
-/mkdocs.yml
+/.github/

@@ -75,7 +75,7 @@ Navegue pelas seções através das abas superiores ou pelos links abaixo:
 * [Requisitos](requisitos.md) — Especificação completa de Requisitos Funcionais (RF) e Não Funcionais (RNF).
 * [Padrões de Projeto](padroes.md) — Glossário oficial, convenções de código, branches e commits.
 * [Sprints](sprints/sprint-1.md) — Acompanhamento ágil das entregas por ciclo de desenvolvimento.
-* [Como Contribuir](CONTRIBUTING.md) — Guia de instalação e ambiente de desenvolvimento local.
+* [Como Contribuir](processo/contribuindo.md) — Guia de instalação e ambiente de desenvolvimento local.
 
 
 ## Estado atual

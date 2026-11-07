@@ -107,7 +107,7 @@ npm run dev
 #### 2.3.5 Executar a Documentação (MkDocs — Opcional)
 ```bash
 pip install mkdocs-material
-mkdocs serve -a 127.0.0.1:8008
+mkdocs serve -f .github/mkdocs.yml -a 127.0.0.1:8008
 ```
 * 📚 Documentação local: [http://127.0.0.1:8008](http://127.0.0.1:8008)
 
@@ -173,11 +173,11 @@ Os testes de API usam SQLite. Para exercitar RLS, RPCs e triggers reais, configu
 Para conferir o site de documentação, com MkDocs Material instalado:
 
 ```bash
-mkdocs build --strict
+mkdocs build -f .github/mkdocs.yml --strict
 ```
 
 Ao alterar uma funcionalidade, atualize os guias correspondentes e o estado em [Atualizações pós-R1](atualizacoes.md). Notas de versões anteriores são registros históricos. Registre uso relevante de IA em [AI-USAGE.md](AI-USAGE.md), incluindo o que foi efetivamente verificado.
 
 ## Manutenção da documentação
 
-No mesmo PR que alterar rotas, schemas, autorização, regras, migrações ou operação, atualizar [API](api-specs.md), [Arquitetura](Architecture.md), [Padrões](padroes.md) e/ou [Implantação](implantacao.md), conforme o assunto. Preservar notas históricas de release e distinguir estado implementado de proposta. Antes da revisão, executar `python -m mkdocs build --strict` na raiz e conferir links e diagramas renderizados. O plano de CI/CD da aplicação ainda não é um workflow existente.
+No mesmo PR que alterar rotas, schemas, autorização, regras, migrações ou operação, atualizar [API](api-specs.md), [Arquitetura](Architecture.md), [Padrões](padroes.md) e/ou [Implantação](implantacao.md), conforme o assunto. Preservar notas históricas de release e distinguir estado implementado de proposta. Antes da revisão, executar `python -m mkdocs build -f .github/mkdocs.yml --strict` na raiz e conferir links e diagramas renderizados. O plano de CI/CD da aplicação ainda não é um workflow existente.
