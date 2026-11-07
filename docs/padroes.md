@@ -6,7 +6,7 @@ Este documento estabelece as convenções de código, terminologia oficial e pad
 
 ## 1. Glossário de Domínio (Entidades Principais)
 
-Utilizaremos o **Inglês** como idioma padrão para código, variáveis, entidades, rotas e banco de dados. Os textos da interface com o usuário (UI) permanecem em Português.
+Utilizamos **Inglês** para os nomes de domínio da API e rotas. O banco existente mantém nomes em português com `snake_case`, mapeados pela API. Os textos da interface com o usuário (UI) permanecem em Português.
 
 | Termo (PT-BR) | Termo Oficial (Código) | Descrição / Uso |
 | :--- | :--- | :--- |
@@ -16,7 +16,8 @@ Utilizaremos o **Inglês** como idioma padrão para código, variáveis, entidad
 | **Plano de Ensino** | `Syllabus` | Arquivo (PDF ou texto) enviado para extração automática de datas acadêmicas. |
 | **Calendário / Agenda** | `Calendar` | Coleção/agrupamento de eventos de um usuário ou do campus. |
 | **Categoria / Etiqueta** | `Category` | Classificação do evento (ex: *Prova*, *Trabalho*, *Seminário*, *Cultural*, *Palestra*). |
-| **Notificação / Lembrete** | `Reminder` | Alerta programado antes do início de um evento. |
+| **Notificação** | `Notification` | Aviso persistido de submissão, aprovação ou recusa de sugestão. |
+| **Lembrete** | `Reminder` | Alerta futuro programado antes do início de um evento. |
 | **Inscrição / Participante** | `Attendee` | Registro de presença/inscrição direta de um usuário em um evento público. |
 | **Moderação / Submissão** | `Review` / `Submission` | Fluxo de validação de eventos propostos por usuários antes de entrarem na agenda pública. |
 
@@ -26,10 +27,12 @@ Utilizaremos o **Inglês** como idioma padrão para código, variáveis, entidad
 
 | Elemento | Padrão | Exemplo |
 | :--- | :--- | :--- |
-| **Variáveis e Funções** | `camelCase` | `eventId`, `getEventsByDate()`, `isAvailable`, `extractedEvents` |
+| **Python: variáveis e funções** | `snake_case` | `event_id`, `get_current_user`, `list_public_events` |
+| **JavaScript: variáveis e funções** | `camelCase` | `eventId`, `toUiEvent`, `listPublic` |
 | **Classes, Componentes e Schemas** | `PascalCase` | `EventController`, `CalendarGrid.jsx`, `RegisterModal.jsx`, `UserModel` |
-| **Arquivos de Código** | `kebab-case` ou `PascalCase` | `event-service.js` ou `EventCard.jsx` |
-| **Rotas da API (URLs)** | `kebab-case` | `/api/v1/user-settings`, `/api/v1/syllabus/upload` |
+| **Arquivos Python/JS utilitários** | Nomes existentes, Python em `snake_case` | `router.py`, `test_events_api.py`, `api.js`, `moderation.js` |
+| **Componentes React** | `PascalCase` | `SaveEventButton.jsx`, `NotificationBell.jsx` |
+| **Rotas da API (URLs)** | `kebab-case` | `/api/v1/events`, `/api/v1/me/saved-events` |
 | **Campos do Banco de Dados** | `snake_case` (PT-BR) no PostgreSQL | `criado_em`, `data_evento`, `data_hora`, `autor_id`, `user_id` |
 | **Constantes Globais e Enums** | `UPPER_SNAKE_CASE` | `MAX_EVENTS_PER_DAY`, `DEFAULT_PORT`, `ROLE_STUDENT` |
 | **Classes CSS** | `kebab-case` | `.modal-btn-primary`, `.role-selector`, `.nav-items` |
@@ -72,7 +75,9 @@ Utilizaremos o **Inglês** como idioma padrão para código, variáveis, entidad
 * `category_id`: ID da categoria associada (opcional)
 * `criado_em`: Data de criação
 
-### 📄 `Syllabus` / `planos_ensino` (Plano de Ensino — Modelo Dual R2)
+### 📄 `Syllabus` / `planos_ensino` (Modelo Dual planejado)
+
+Os campos abaixo são uma proposta para o processamento futuro; não descrevem integralmente a tabela já criada nas migrações. O parser e as rotas de upload não estão implementados.
 * `id`: Identificador único do arquivo/processamento (`UUID`)
 * `usuario_id` / `professor_id`: ID do usuário que enviou o arquivo
 * `disciplina`: Nome ou código da disciplina
@@ -82,7 +87,7 @@ Utilizaremos o **Inglês** como idioma padrão para código, variáveis, entidad
 * `status`: Status do processamento (`"pendente"`, `"processando"`, `"concluido"`, `"falha"`)
 * `criado_em`: Data e hora do envio
 
-### 📋 `EnrollmentCertificate` / `atestados_matricula` (Atestado de Matrícula — R2)
+### 📋 `EnrollmentCertificate` / `atestados_matricula` (Atestado de Matrícula — modelo planejado)
 * `id`: Identificador único (`UUID`)
 * `usuario_id`: ID do estudante (`UUID`)
 * `arquivo_url`: URL do PDF do atestado no Supabase Storage
@@ -90,7 +95,7 @@ Utilizaremos o **Inglês** como idioma padrão para código, variáveis, entidad
 * `status`: Status da extração (`"pendente"`, `"processando"`, `"concluido"`, `"falha"`)
 * `criado_em`: Data do upload
 
-### ✅ `AssessmentConfirmation` / `confirmacoes_avaliacao` (Validação Colaborativa — R2)
+### ✅ `AssessmentConfirmation` / `confirmacoes_avaliacao` (Validação Colaborativa — modelo planejado)
 * `id`: Identificador do voto/confirmação (`UUID`)
 * `avaliacao_id`: ID da avaliação extraída (`UUID`)
 * `usuario_id`: ID do aluno matriculado que votou (`UUID`)
@@ -104,65 +109,24 @@ Utilizaremos o **Inglês** como idioma padrão para código, variáveis, entidad
 
 ---
 
-## 4. Padronização de Rotas da API REST (`Endpoints`)
+## 4. Contratos e rotas disponíveis
 
-Todas as rotas da API backend iniciam com o prefixo `/api/v1`.
+A referência única é [Contratos do backend](api-specs.md), com inventário, payloads, filtros, acesso, respostas, exemplos e RPCs. As rotas de negócio usam `/api/v1`; `/health` é exceção. Autenticação/cadastro usam Supabase Auth diretamente; moderação/administração usam RPCs, não endpoints FastAPI `/admin`.
 
-### 🔑 Autenticação e Sessão
-A autenticação de usuários é realizada pelo **Supabase Auth SDK** diretamente no frontend (`@supabase/supabase-js`), provendo cadastro, login por senha e Google OAuth com emissão de tokens JWT. O backend FastAPI atua como validador de recursos, recebendo o cabeçalho `Authorization: Bearer <token>` através do middleware `get_current_user`.
+A API usa campos em inglês, geralmente `snake_case` (`starts_at`, `external_url`); os filtros de data usam os aliases existentes `startDate` e `endDate`. Papéis são `student`, `professor`, `admin`; status de eventos são `pendente`, `aprovado`, `rejeitado`. Preservar esses valores na integração.
 
-### 📅 Eventos Públicos (`/api/v1/events`) — *Implementado (R1)*
-* `GET /api/v1/events` — Listar eventos públicos aprovados (filtros: `campus`, `category`, `startDate`, `endDate`, `q`, `limit`, `offset`)
-* `GET /api/v1/events/:id` — Obter detalhes de um evento público aprovado
-* `POST /api/v1/events` — Criar novo evento público (restrito a `professor` e `admin`, status inicial `"aprovado"`)
-* `DELETE /api/v1/events/:id` — Excluir evento público (restrito a `professor` e `admin`)
+As propostas de upload de planos/atestados, inscrições, validação colaborativa e categorias REST não têm rotas disponíveis. Modelos planejados da seção 3 não são contratos executáveis.
 
-### 📅 Agenda Pessoal do Usuário (`/api/v1/me/events`) — *Implementado (R1)*
-* `GET /api/v1/me/events` — Listar compromissos privados do usuário autenticado
-* `GET /api/v1/me/events/:id` — Obter detalhes de um compromisso pessoal (restrito ao dono)
-* `POST /api/v1/me/events` — Criar compromisso particular na agenda pessoal
-* `PUT /api/v1/me/events/:id` — Atualizar compromisso pessoal (restrito ao dono)
-* `DELETE /api/v1/me/events/:id` — Excluir compromisso pessoal (restrito ao dono)
+## 5. Respostas e manutenção
 
-### 🏥 Verificação do Servidor — *Implementado (R1)*
-* `GET /health` — Health check do servidor API
+Usar os códigos e envelopes documentados por operação em [API](api-specs.md#erros-fastapi). Não presumir que exemplos futuros com 202, inscrições ou parsing já existem. A API possui erros globais próprios; RPCs retornam erros Supabase/PostgreSQL por outro caminho.
 
-### 📋 Atestado de Matrícula (`/api/v1/enrollment`) — *Planejado (R2)*
-* `POST /api/v1/enrollment/upload` — Enviar PDF do atestado de matrícula do SIGAA para alocação automática de turmas
+Mudanças de contratos e convenções devem atualizar esta documentação no mesmo PR. Registrar limitações observadas em vez de alterar o comportamento descrito para o comportamento desejado. Decisões e evidências ficam em [Arquitetura](Architecture.md); hospedagem proposta fica em [Implantação](implantacao.md).
 
-### 📄 Processamento de Planos de Ensino (`/api/v1/syllabus`) — *Planejado (R2)*
-* `POST /api/v1/syllabus/upload` — Enviar arquivo PDF ou texto bruto de plano de ensino (Modelo Dual)
-* `GET /api/v1/syllabus` — Listar planos de ensino enviados pelo usuário
-* `GET /api/v1/syllabus/:id` — Obter status do processamento e eventos/prazos extraídos
+## 6. Entidades adicionadas após a R1
 
-### ✅ Validação Colaborativa (`/api/v1/assessments`) — *Planejado (R2)*
-* `POST /api/v1/assessments/:id/confirm` — Votar para confirmar ou contestar data de avaliação extraída de plano compartilhado
+- `SavedPublicEvent` / `eventos_salvos`: chave composta `(user_id, event_id)`, `criado_em`, referências com exclusão em cascata e RLS por proprietário; sem política de UPDATE.
+- `notificacoes`: `id`, `usuario_id`, `evento_id`, `tipo` (`submissao`, `aprovacao`, `recusa`), `titulo_evento`, `justificativa`, `criado_em`, `lida_em`. Somente o destinatário lê e marca como lida.
+- `eventos`: acrescenta `justificativa_recusa`, `interessados_count` e `sugestao_estudante`. Status persistidos continuam em português: `pendente`, `aprovado`, `rejeitado`.
 
-### 🛡️ Painel Administrativo e Moderação (`/api/v1/admin`) — *Planejado (R2)*
-* `GET /api/v1/admin/events/pending` — Listar eventos submetidos aguardando aprovação (acesso: Professores e Admins)
-* `PATCH /api/v1/admin/events/:id/review` — Aprovar ou rejeitar publicação de evento público (acesso: Professores e Admins)
-* `PATCH /api/v1/admin/users/:id/role` — Alterar papel/cargo do usuário (`student`, `professor`, `admin`) (acesso: apenas Admins)
-
-### 🎟️ Inscrição Direta em Eventos (`/api/v1/events/:id/attend`) — *Planejado (R2)*
-* `POST /api/v1/events/:id/attend` — Inscrever o usuário autenticado no evento
-* `DELETE /api/v1/events/:id/attend` — Cancelar inscrição no evento
-* `GET /api/v1/events/:id/attendees` — Listar participantes do evento (para organizadores/admin)
-
-### 🏷️ Categorias (`/api/v1/categories`) — *Planejado (R2)*
-* `GET /api/v1/categories` — Listar todas as categorias de eventos
-* `POST /api/v1/categories` — Criar uma nova categoria (apenas administradores)
-* `DELETE /api/v1/categories/:id` — Remover uma categoria
-
----
-
-## 5. Códigos de Resposta HTTP Padronizados
-
-* `200 OK`: Requisição processada com sucesso.
-* `201 Created`: Recurso (evento/usuário/inscrição) criado com sucesso.
-* `202 Accepted`: Arquivo de plano de ensino recebido e em processamento assíncrono.
-* `400 Bad Request`: Dados inválidos enviados pelo frontend (ex: formato de arquivo não suportado, datas inconsistentes).
-* `401 Unauthorized`: Usuário não autenticado ou token inválido/expirado.
-* `403 Forbidden`: Usuário não possui permissão para esta ação (ex: não administrador tentando moderar eventos).
-* `404 Not Found`: Recurso não encontrado (ex: evento ou plano de ensino inexistente).
-* `409 Conflict`: Conflito de regras de negócio (ex: usuário já inscrito no evento).
-* `500 Internal Server Error`: Erro inesperado no servidor.
+A existência de colunas de contagem ou entidades de planejamento não implica endpoints ou fluxos de inscrição implementados. O estado atual está em [Atualizações pós-R1](atualizacoes.md).
