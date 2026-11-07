@@ -8,7 +8,7 @@ from src.modules.events.schemas import PersonalEventRead
 class SyllabusUploadResponse(BaseModel):
     """Schema de resposta após upload bem-sucedido de plano de ensino."""
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, from_attributes=True)
 
     id: UUID
     user_id: UUID = Field(alias="userId")
@@ -24,7 +24,7 @@ class SyllabusUploadResponse(BaseModel):
 class SyllabusDetailResponse(BaseModel):
     """Schema para consulta de status de processamento do plano."""
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, from_attributes=True)
 
     id: UUID
     user_id: UUID = Field(alias="userId")
@@ -116,3 +116,8 @@ class ConfirmSyllabusResponse(BaseModel):
     syllabus_id: UUID = Field(alias="syllabusId")
     events: list[PersonalEventRead]
 
+
+
+class SyllabusListResponse(BaseModel):
+    items: list[SyllabusDetailResponse]
+    total: int

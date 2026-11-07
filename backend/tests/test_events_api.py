@@ -4,6 +4,12 @@ from uuid import uuid4
 from src.database.models import PublicEvent
 
 
+def test_admin_operations_are_not_exposed_by_fastapi(api):
+    client, _, _, _ = api
+    paths = client.get("/openapi.json").json()["paths"]
+    assert not any(path.startswith("/api/v1/admin") for path in paths)
+
+
 def make_public_event(ids, **overrides):
     values = {
         "author_id": uuid4(),
@@ -97,6 +103,24 @@ def test_public_create_and_delete_require_event_manager(api):
 
     deleted = client.delete(f"/api/v1/events/{event_id}")
     assert deleted.status_code == 204
+    assert client.get(f"/api/v1/events/{event_id}").status_code == 404
+
+
+def test_professor_cannot_delete_another_authors_public_event_but_admin_can(api):
+    client, session_factory, authenticated_user, ids = api
+    with session_factory() as db:
+        event = make_public_event(ids)
+        db.add(event)
+        db.commit()
+        event_id = event.id
+
+    actor = authenticated_user["value"]
+    authenticated_user["value"] = actor.__class__(id=actor.id, role="professor")
+    assert client.delete(f"/api/v1/events/{event_id}").status_code == 403
+    assert client.get(f"/api/v1/events/{event_id}").status_code == 200
+
+    authenticated_user["value"] = actor.__class__(id=actor.id, role="admin")
+    assert client.delete(f"/api/v1/events/{event_id}").status_code == 204
     assert client.get(f"/api/v1/events/{event_id}").status_code == 404
 
 

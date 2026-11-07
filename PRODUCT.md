@@ -10,7 +10,7 @@ web
 Alunos e professores da Universidade de Brasília (UnB) que precisam descobrir eventos extracurriculares, divulgar atividades e organizar suas demandas acadêmicas diárias.
 
 ## Product Purpose
-O produto atua como um organizador central da vida acadêmica de toda a comunidade da UnB. Ele acaba com a dispersão de informações ao unificar eventos acadêmicos, culturais e esportivos, e oferece ferramentas robustas como a extração de Planos de Ensino para mapeamento automático de provas e trabalhos.
+O produto atua como um organizador central da vida acadêmica de toda a comunidade da UnB. Ele acaba com a dispersão de informações ao unificar eventos acadêmicos, culturais e esportivos. A extração de planos de ensino para mapeamento automático de provas e trabalhos está prevista como funcionalidade futura e ainda não está disponível.
 
 ## Positioning
 É o único hub digital que une a vivência extraclasse (eventos, extensão, lazer) com as obrigações acadêmicas (planos de ensino), criando uma experiência unificada e essencial para a sobrevivência e aproveitamento do estudante na Universidade.
