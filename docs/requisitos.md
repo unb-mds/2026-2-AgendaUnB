@@ -28,7 +28,7 @@ Este documento reúne os **Requisitos Funcionais (RF)** e **Requisitos Não Func
 | **RF18** | **Histórico de Participação** | O sistema deve disponibilizar um histórico dos eventos dos quais o usuário participou, separando eventos públicos e privados. |
 | **RF19** | **Filtros e Busca de Eventos** | O sistema deve permitir filtrar e classificar eventos por categoria (prova, trabalho, palestra, cultural), campus/instituto e intervalo de datas. |
 | **RF20** | **Alternância de Tema (Dark / Light)** | O sistema deve disponibilizar alternância de tema visual entre modo escuro (*Dark Mode*) e modo claro (*Light Mode*). |
-| **RF21** | **Exportação de Calendário** | O sistema deve permitir a exportação dos eventos da agenda para arquivo `.ics`, permitindo sincronização com Google Calendar, Apple Calendar e Outlook. |
+| **RF21** | **Exportação de Calendário** | O sistema deve permitir selecionar período e eventos e exportá-los diretamente para uma agenda secundária Agenda UnB na conta Google autorizada, via Google Calendar API e consentimento OAuth adicional. Deve controlar duplicações e falhas parciais, permitir reexportação explícita para atualização e desconexão. A exportação ICS complementa a compatibilidade com Apple Calendar e Outlook. Sincronização automática bidirecional exige escopo próprio. |
 
 ---
 

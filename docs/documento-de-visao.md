@@ -115,7 +115,7 @@ O detalhamento completo dos 21 requisitos funcionais está em [`requisitos.md`](
 | R7 | Validação Colaborativa e Revisão Assistida | Alunos da mesma turma votam para confirmar ou contestar datas extraídas de planos compartilhados (validação colaborativa ativa), além de revisão assistida individual ("Human-in-the-loop") para uploads privados (RF07) |
 | R8 | Inscrição Direta e Participação | Inscrição em eventos públicos com um clique, cancelamento e histórico de participação (RF12, RF13, RF18) |
 | R9 | Notificações de Proximidade | Alertas prévios sobre provas, trabalhos e eventos com data próxima (RF17) |
-| R10 | Exportação de Calendário | Geração de arquivo `.ics` para sincronização com Google Calendar, Outlook e Apple Calendar (RF21) |
+| R10 | Exportação de Calendário | Exportação direta pela Google Calendar API com autorização adicional, controle de duplicatas e atualização solicitada pelo usuário. ICS complementar para Apple Calendar/Outlook (RF21) |
 | R11 | Design System e Bivalência de Temas | Alternância entre modo escuro (*Dark*) e claro (*Light*), ancorado na identidade "The Neon Campus" com estilo *halftone*, *glassmorphism* e *glow* em Azul `#008bff` (RF20, DESIGN.md, PRODUCT.md) |
 | R12 | Coleta Automática Externa | Foco primário em notícias e feeds institucionais da UnB; fontes adicionais (SIGAA e Instagram) mantidas condicionadas à viabilidade técnica de scraping (RF16) |
 
@@ -167,5 +167,5 @@ A ordem de prioridade segue o planejamento por ciclos acordado pela equipe:
 **Fase 3 — Desejável / Expansão**
 - R8: Inscrição direta e cancelamento em eventos com 1 clique (RF12, RF13) e histórico (RF18)
 - R9: Lembretes e notificações de proximidade (RF17)
-- R10: Exportação de calendário para `.ics` (RF21)
+- R10: Exportação direta para Google Agenda via API e OAuth adicional, com ICS complementar (RF21)
 - R12: Coleta externa em portais institucionais (com fontes adicionais como SIGAA e Instagram se viável) (RF16)

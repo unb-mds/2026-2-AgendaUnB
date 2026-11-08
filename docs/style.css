@@ -129,6 +129,12 @@ a.card:hover,
   color: var(--aunb-primary);
 }
 
+.mdx-content .tech-stack-table :is(th, td) {
+  padding-block: 0.75rem;
+  padding-inline: clamp(0.75rem, 2vw, 1.25rem);
+  vertical-align: top;
+}
+
 /* ---------- Badges e pílulas ---------- */
 
 [data-badge],

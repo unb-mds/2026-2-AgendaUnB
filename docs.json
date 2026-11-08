@@ -1,12 +1,15 @@
 {
   "theme": "mint",
+  "icons": {
+    "library": "lucide"
+  },
   "name": "Agenda UnB",
   "colors": {
     "primary": "#008BFF",
     "light": "#4DAEFF",
     "dark": "#005FD2"
   },
-  "favicon": "/docs/images/logo-agendaunb.png",
+  "favicon": "/frontend/public/Logo-AgendaUnB1.png",
   "navbar": {
     "links": [
       {
@@ -42,7 +45,7 @@
       {
         "group": "Início",
         "pages": [
-          "index",
+          "docs/introducao",
           "docs/quickstart"
         ]
       },
@@ -78,7 +81,9 @@
               "docs/sprints/sprint-3",
               "docs/sprints/sprint-4",
               "docs/sprints/sprint-5",
-              "docs/sprints/sprint-6"
+              "docs/sprints/sprint-6",
+              "docs/sprints/sprint-7",
+              "docs/sprints/sprint-8"
             ]
           },
           {
@@ -111,6 +116,8 @@
     }
   },
   "redirects": [
+    { "source": "/", "destination": "/docs/introducao" },
+    { "source": "/index", "destination": "/docs/introducao" },
     { "source": "/docs/processo/sprints/sprint-1", "destination": "/docs/sprints/sprint-1" },
     { "source": "/docs/processo/sprints/sprint-2", "destination": "/docs/sprints/sprint-2" },
     { "source": "/docs/processo/sprints/sprint-3", "destination": "/docs/sprints/sprint-3" },
