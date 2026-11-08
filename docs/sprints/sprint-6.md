@@ -21,7 +21,7 @@ sidebarTitle: "Sprint 6"
 
 A entrega cobre **planos particulares**, PDF de até **10 MB e 10 páginas**, com texto selecionável. O limite de tamanho acompanha o bucket existente; a referência de 5 MB no texto original da #40 era um exemplo. PDF corrompido, protegido ou escaneado sem texto deve gerar erro recuperável e orientação para organização manual.
 
-O Modelo Dual permanece como visão do produto. Planos oficiais por turma, upload de atestados do SIGAA, alocação automática, validação colaborativa, OCR e entrada por texto bruto ficam para uma etapa seguinte. O esquema deve permitir evolução sem prometer esses fluxos na Sprint 06. O provedor/modelo de IA será escolhido e registrado na S6-B01, sem pressupor uma integração já existente.
+O Modelo Dual permanece como visão do produto. Planos oficiais por turma, upload de atestados do SIGAA, alocação automática, validação colaborativa, OCR e entrada por texto bruto ficam para uma etapa seguinte. O esquema deve permitir evolução sem prometer esses fluxos na Sprint 06. O provedor/modelo de IA será escolhido e registrado na S7-B01 (#51), sem pressupor uma integração já existente.
 
 ## Distribuição da equipe
 
@@ -31,8 +31,8 @@ Há **oito issues: seis novas e duas realocadas**, com pelo menos duas por área
 | --- | --- | --- |
 | Front-end | Thomas Araujo (@Thomas4ugust0) | S6-F01 — Envio e acompanhamento |
 | Front-end | Gabriel Escramin (@Bielziin07) | S6-F02 — Revisão e agenda |
-| Back-end | Heitor Monteiro (@heitormontt) | #40 — Upload; S6-B01 — Extração com IA |
-| Back-end | Thomaz Marra (@marrathomaz) | #38 — Painel; S6-B02 — Consulta e confirmação |
+| Back-end | Heitor Monteiro (@heitormontt) | #40 — Upload; S7-B01 (#51) — Extração com IA, realocada |
+| Back-end | Thomaz Marra (@marrathomaz) | #38 — Painel; S6-B01 — Consulta e confirmação, concluída |
 | Banco de dados | Felipe Couto (@felipecduque7) | S6-D01 — Modelagem e candidatos |
 | Banco de dados | Luis Davi (@pontesluis) | S6-D02 — Privacidade e confirmação |
 
@@ -40,9 +40,9 @@ O backend recebe quatro issues porque absorve #38 e #40. Ambas já tinham os doi
 
 ## Ordem de execução e dependências
 
-1. Alinhar exemplos de payloads/estados e os contratos de #40 e S6-B02 com as duas issues de dados. O frontend começa com respostas simuladas desses contratos.
+1. Alinhar exemplos de payloads/estados e os contratos de #40 e S6-B01 com as duas issues de dados. O frontend começa com respostas simuladas desses contratos.
 2. Executar S6-D01 e S6-D02 para liberar esquema, isolamento e operação de confirmação. #38 avança com as RPCs existentes, sem trabalho novo de frontend/banco administrativo.
-3. Concluir #40 e S6-B01; conectar acompanhamento e revisão. A S6-B02 pode implementar listagem/detalhe antes de integrar a confirmação final.
+3. Concluir #40 e S7-B01 (#51); conectar acompanhamento e revisão. A S6-B01 podia implementar listagem/detalhe antes de integrar a confirmação final.
 4. Integrar confirmação na agenda e executar os cenários de privacidade, repetição e falhas. Cada issue inclui seus testes e documentação; não há issue genérica reservando a validação apenas para o final.
 
 ## Entregas/resultados esperados
@@ -72,8 +72,8 @@ Os textos de #38 e #40 abaixo são propostas de atualização das mesmas issues,
 | #40 | Endpoint Base de Upload de Plano de Ensino | Back-end | Heitor Monteiro | Realocada, aberta no GitHub |
 | S6-F01 | Envio e Acompanhamento de Planos de Ensino | Front-end | Thomas Araujo | Proposta, ainda sem número no GitHub |
 | S6-F02 | Revisão Assistida por IA e Importação na Agenda | Front-end | Gabriel Escramin | Proposta, ainda sem número no GitHub |
-| S6-B01 | Extração Assíncrona de Avaliações com IA | Back-end | Heitor Monteiro | Proposta, ainda sem número no GitHub |
-| S6-B02 | Consulta, Revisão e Confirmação de Planos na API | Back-end | Thomaz Marra | Proposta, ainda sem número no GitHub |
+| S7-B01 (#51) | Extração Assíncrona de Avaliações com IA | Back-end | Heitor Monteiro | Originalmente S6-B01; realocada para sprint 7, inconclusa |
+| S6-B01 | Consulta, Revisão e Confirmação de Planos na API | Back-end | Thomaz Marra | Originalmente S6-B02; concluída e renomeada |
 | S6-D01 | Modelagem de Planos Particulares e Resultados da IA | Banco de dados | Felipe Couto | Proposta, ainda sem número no GitHub |
 | S6-D02 | Privacidade e Confirmação Transacional dos Planos | Banco de dados | Luis Davi | Proposta, ainda sem número no GitHub |
 
@@ -114,7 +114,7 @@ Tasks:
 
 **Labels propostas:** Front-end; 03. ALTA PRIORIDADE.
 
-**Dependências:** Contratos de #40 e S6-B02; o frontend pode começar com respostas simuladas.
+**Dependências:** Contratos de #40 e S6-B01; o frontend pode começar com respostas simuladas.
 
 **Implementar o envio autenticado de planos particulares e o histórico de processamento em `/plano-de-ensino`, substituindo o aviso atual por um fluxo utilizável e responsivo (RF05, RF06, RNF07 e RNF09).**
 
@@ -133,7 +133,7 @@ Tasks:
 
 **Labels propostas:** Front-end; 03. ALTA PRIORIDADE.
 
-**Dependências:** S6-F01 e contrato de confirmação de S6-B02.
+**Dependências:** S6-F01 e contrato de confirmação de S6-B01.
 
 **Permitir ao estudante revisar, corrigir e selecionar as avaliações extraídas pela IA e confirmar sua inclusão em Meus Eventos, em lista e calendário (RF07, RF08 e RF09).**
 
@@ -146,7 +146,9 @@ Tasks:
 - [ ] Exibir a procedência do plano retornada pela API e preservar a edição/exclusão de privados e o comportamento dos públicos salvos.
 - [ ] Verificar a jornada PDF → acompanhamento → revisão → agenda, inclusive revisão parcial, recarga, erros e confirmação repetida, nos dois temas e com teclado.
 
-### S6-B01 — Extração Assíncrona de Avaliações com IA
+### S7-B01 (#51) — Extração Assíncrona de Avaliações com IA
+
+**Atualização:** originalmente S6-B01; inconclusa na sprint 6 e realocada para a sprint 7. Os critérios abaixo permanecem pendentes.
 
 **Responsável principal:** Heitor Monteiro (@heitormontt).
 
@@ -165,13 +167,15 @@ Tasks:
 - [ ] Tratar falhas do provedor e documentos sem cronograma, registrando `falha` ou resultado vazio conforme o caso.
 - [ ] Criar amostras anonimizadas com referência esperada e medir extrações corretas, omissões, datas inventadas e tempo total; verificar a meta de menos de 20s para PDFs de até 10 páginas e registrar desvios.
 
-### S6-B02 — Consulta, Revisão e Confirmação de Planos na API
+### S6-B01 — Consulta, Revisão e Confirmação de Planos na API
+
+**Atualização:** originalmente S6-B02; concluída na sprint 6 e renomeada para S6-B01. A lista de tarefas abaixo preserva o planejamento histórico e não representa pendências atuais desta issue.
 
 **Responsável principal:** Thomaz Marra (@marrathomaz).
 
 **Labels propostas:** Back-end; 03. ALTA PRIORIDADE.
 
-**Dependências:** #40, S6-B01, S6-D02.
+**Dependências planejadas originalmente:** #40, extração de avaliações (agora S7-B01/#51) e S6-D02. A conclusão da consulta/confirmação não significa que a extração tenha sido entregue.
 
 **Disponibilizar o resultado do processamento somente ao dono e confirmar avaliações revisadas na agenda pessoal, com transação e proteção contra duplicação (RF07 e RF09).**
 
@@ -190,7 +194,7 @@ Tasks:
 
 **Labels propostas:** Banco de dados; 03. ALTA PRIORIDADE.
 
-**Dependências:** Contrato alinhado com #40 e S6-B01; reaproveita #43.
+**Dependências:** Contrato alinhado com #40 e S7-B01 (#51); reaproveita #43.
 
 **Evoluir o esquema de planos e avaliações para uploads particulares de estudantes e candidatos extraídos com procedência, preservando dados existentes e separando sugestões da IA dos compromissos confirmados (RF05–RF07).**
 
@@ -202,7 +206,7 @@ Tasks:
 - [ ] Distinguir candidato pendente, descartado e confirmado, sem criar eventos pessoais automaticamente; evitar duplicação na repetição da mesma execução.
 - [ ] Definir vínculo entre candidato e evento pessoal confirmado, com unicidade e comportamento documentado para posterior edição/exclusão do evento.
 - [ ] Criar constraints e índices, preparar referência opcional a planos oficiais futuros e testar a migração com dados existentes, sem implementar turmas/matrículas nesta sprint.
-- [ ] Atualizar DER e dicionário de dados, alinhando contratos com #40, S6-B01 e S6-B02.
+- [ ] Atualizar DER e dicionário de dados, alinhando contratos com #40, S7-B01 (#51) e S6-B01.
 
 ### S6-D02 — Privacidade e Confirmação Transacional dos Planos
 
@@ -210,7 +214,7 @@ Tasks:
 
 **Labels propostas:** Banco de dados; 03. ALTA PRIORIDADE.
 
-**Dependências:** S6-D01, contrato de confirmação de S6-B02 e bucket/RLS existentes da #43.
+**Dependências:** S6-D01, contrato de confirmação de S6-B01 e bucket/RLS existentes da #43.
 
 **Proteger planos particulares e resultados extraídos e disponibilizar a confirmação atômica na agenda privada, sem duplicação. Corrigir a leitura pública de avaliações e reaproveitar o bucket já entregue (RF07, RF09, RNF02 e RNF04).**
 
