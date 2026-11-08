@@ -2,14 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { canConfirm, demoReducer, initialDemoState } from './teachingPlanDemo.js';
 
-test('etapas dependentes ficam bloqueadas antes da matrícula', () => {
+test('etapas dependentes ficam bloqueadas antes da seleção de turmas', () => {
   const state = initialDemoState();
   for (const action of [{ type: 'STEP', step: 4 }, { type: 'PROCESS', name: 'plano.pdf' }, { type: 'OPEN', id: 'mds' }, { type: 'SELECT_COURSE', id: 'cal', selected: true }, { type: 'IMPORT' }]) {
     assert.deepEqual(demoReducer(state, action), state);
   }
 });
 test('revisão parcial exige conferência, data, horário e fuso; editar revoga conferência', () => {
-  let state = demoReducer(initialDemoState(), { type: 'ENROLL', name: 'exemplo.pdf' });
+  let state = demoReducer(initialDemoState(), { type: 'ENROLL', ids: ['mds', 'fac', 'cal'] });
   state = demoReducer(state, { type: 'PROCESS', name: 'plano.pdf' });
   assert.equal(state.plans.mds.status, 'processing');
   assert.equal(demoReducer(state, { type: 'PROCESS', name: 'duplicado.pdf' }), state);
@@ -32,7 +32,7 @@ test('revisão parcial exige conferência, data, horário e fuso; editar revoga 
   assert.deepEqual(demoReducer(state, { type: 'RESET' }), initialDemoState());
 });
 test('voltar etapas preserva edições e não vincula outra turma', () => {
-  let state = demoReducer(initialDemoState(), { type: 'ENROLL', name: 'exemplo.pdf' });
+  let state = demoReducer(initialDemoState(), { type: 'ENROLL', ids: ['mds', 'fac', 'cal'] });
   state = demoReducer(state, { type: 'PROCESS', name: 'mds.pdf' });
   state = demoReducer(state, { type: 'PROCESSED', id: 'mds' });
   state = demoReducer(state, { type: 'EDIT', id: 'first', field: 'title', value: 'Prova editada' });
@@ -41,4 +41,14 @@ test('voltar etapas preserva edições e não vincula outra turma', () => {
   state = demoReducer(state, { type: 'OPEN', id: 'mds' });
   assert.equal(state.plans.mds.candidates[0].title, 'Prova editada');
   assert.equal(state.plans.mds.status, 'review');
+});
+
+test('vínculo autodeclarado limita acesso às turmas escolhidas', () => {
+  const initial = initialDemoState();
+  assert.equal(demoReducer(initial, { type: 'ENROLL', ids: ['inexistente'] }), initial);
+  const state = demoReducer(initial, { type: 'ENROLL', ids: ['icc', 'icc'] });
+  assert.deepEqual(state.followedCourses, ['icc']);
+  assert.equal(state.activeCourse, 'icc');
+  assert.equal(demoReducer(state, { type: 'OPEN', id: 'mds' }), state);
+  assert.equal(demoReducer(state, { type: 'SELECT_COURSE', id: 'cal', selected: true }), state);
 });
