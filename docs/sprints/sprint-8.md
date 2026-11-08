@@ -9,12 +9,14 @@ Planejamento aprovado para 16–23/11/2026. Entrega final em 25/11/2026. As tare
 
 ## Decisões da entrega
 
+Consulte os [contratos](../atualizacoes.md#contratos-da-release-2) e a [matriz de aceite](../matriz-release-2.md) para os critérios vigentes.
+
 - Seleção manual de turmas pelo catálogo público Followw, com vínculo autodeclarado.
-- Planos privados por padrão e compartilhamento voluntário de versões revisadas.
+- Planos privados por padrão, com edição conforme papel e visibilidade. Compartilhamento voluntário de conteúdo revisado. O PDF original é descartado após a extração local.
 - IA limitada a provas e trabalhos, com revisão do texto antes do envio e confirmação antes da criação de eventos.
-- Coleta inicial pela Agenda UnB Notícias e participação registrada localmente.
+- A Agenda UnB Notícias alimenta o catálogo. Eventos completos são publicados automaticamente e exceções seguem para revisão. Adicionar aos meus eventos e Conferir evento são ações independentes.
 - Professores e administradores moderam eventos. Administradores gerenciam papéis e categorias.
-- Lembretes persistidos na plataforma e exportação direta ao Google Agenda via Calendar API com consentimento adicional, usando agenda secundária criada pelo aplicativo. ICS permanece como opção complementar para Apple Calendar/Outlook.
+- Lembretes na plataforma 24 horas antes de eventos da própria agenda. Exportação direta ao Google Agenda com consentimento adicional e e-mail verificado correspondente. ICS complementa Apple Calendar e Outlook.
 - Primeira URL Vercel até 12/11 e ambiente integrado até 15/11. Congelamento funcional em 20/11, homologação até 23/11, ensaio em 24/11 e aceite em 25/11.
 
 ## Organização
@@ -42,8 +44,8 @@ Permitir que usuários autenticados que seguem uma oferta consultem, avaliem e i
 
 #### Tasks
 
-- [ ] Implementar publicação e retirada explícitas de uma versão revisada pelo autor/professor/admin conforme a regra registrada. Manter planos privados por padrão e restringir a leitura a usuários autenticados que seguem a turma.
-- [ ] Compartilhar por padrão apenas conteúdo revisado. Explicar o que é publicado e exigir autorização específica para incluir o PDF. Autorizar efetivamente downloads privados e evitar URLs públicas permanentes.
+- [ ] Autor publica voluntariamente conteúdo revisado. Autor ou admin pode retirar uma versão. Autor pode editar o próprio plano. Professor e admin podem editar versões compartilhadas conforme o contrato.
+- [ ] Explicar o conteúdo compartilhado e restringir leitura a seguidores autenticados da turma. O PDF original é descartado após extração local.
 - [ ] Criar voto único ativo por conta/candidato/versão, editável pelo autor do voto. Mostrar contagem e divergência, sem alterar datas automaticamente ou tratar votação como prova.
 - [ ] Gerar nova versão a cada revisão sem alterar calendários pessoais. Deduplicar importações por usuário/candidato/versão e aplicar a política de retirada.
 
@@ -91,13 +93,13 @@ Dar acesso à biblioteca de planos por oferta de turma, incluindo versões, vota
 - [ ] Registrar o nome do revisor e a revisão dos contratos, permissões e dados afetados por esta entrega.
 
 
-### S8-B02 - Implementar participação local, cancelamento e histórico
+### S8-B02 - Consolidar eventos salvos, redirecionamento e histórico
 
 [Issue #79](https://github.com/unb-mds/2026-2-AgendaUnB/issues/79)
 
 #### Objetivo
 
-Registrar interesse/participação no Agenda UnB e exibir histórico separado para eventos públicos e compromissos privados.
+Consolidar a distinção entre adicionar evento à agenda pessoal e conferir a fonte. Exibir históricos separados para públicos salvos e compromissos privados.
 
 - **Sprint** [Sprint 08](https://github.com/unb-mds/2026-2-AgendaUnB/milestone/8)
 - **Janela** 16–19/11/2026
@@ -109,15 +111,15 @@ Registrar interesse/participação no Agenda UnB e exibir histórico separado pa
 
 #### Tasks
 
-- [ ] Persistir vínculo único usuário/evento com estado e timestamps. Autorizar inscrição/cancelamento e tornar as operações idempotentes.
-- [ ] Ligar a participação aos eventos públicos na agenda. Registrar a proposta de novas inscrições somente em eventos publicados ainda não encerrados. Disponibilizar cancelamento conforme RF13.
-- [ ] Separar no histórico eventos públicos inscritos e compromissos privados passados. Exibir estado de cancelamento sem certificar presença.
-- [ ] Exibir aviso sobre eventual inscrição externa com o link oficial. Cancelar lembretes futuros, em integração com S8-B03 ([#81](https://github.com/unb-mds/2026-2-AgendaUnB/issues/81)).
+- [ ] Reutilizar o vínculo de evento salvo com unicidade por conta e evento. Adicionar e remover são operações idempotentes.
+- [ ] Registrar métricas agregadas de redirecionamento em Conferir evento, sem alterar os vínculos. A inscrição externa, quando exigida, ocorre no canal do organizador.
+- [ ] Mostrar eventos públicos salvos passados e compromissos privados passados em históricos separados. Remover o vínculo cancela lembretes futuros ([#81](https://github.com/unb-mds/2026-2-AgendaUnB/issues/81)).
 
 #### Critérios de aceite
 
-- [ ] Registrar com um clique, repetir sem duplicar, cancelar e verificar persistência e supressão de lembretes futuros. Agenda e histórico refletem a mudança sem duplicar eventos.
-- [ ] Recusar inscrição em evento rejeitado ou inexistente e alterações feitas por outro usuário. Diferenciar claramente participação local, inscrição externa e presença.
+- [ ] Repetir adição e remoção sem duplicar vínculo. Verificar histórico, agenda e cancelamento de lembrete futuro.
+- [ ] Abrir o link oficial, verificar incremento do redirecionamento e ausência de mudança na agenda. Repetir a mesma requisição sem duplicar o contador.
+- [ ] Recusar adição de evento indisponível e alteração de vínculo de outra conta.
 
 #### Evidências para fechamento
 
@@ -166,21 +168,21 @@ Completar e homologar agenda, eventos, filtros e moderação nos fluxos existent
 
 #### Objetivo
 
-Notificar dentro do Agenda UnB sobre provas, trabalhos e eventos públicos inscritos, inclusive após retorno do usuário offline.
+Notificar dentro do Agenda UnB 24 horas antes do início de eventos da própria agenda, incluindo compromissos privados e eventos públicos adicionados.
 
 - **Sprint** [Sprint 08](https://github.com/unb-mds/2026-2-AgendaUnB/milestone/8)
 - **Janela** 16–19/11/2026
 - **Responsável principal** @heitormontt
 - **Corresponsável** @pontesluis
-- **Apoio adicional** Gabriel apoia a central de notificações e as preferências de antecedência.
+- **Apoio adicional** Gabriel apoia a central de notificações.
 - **Dependências** S7-B02 ([#68](https://github.com/unb-mds/2026-2-AgendaUnB/issues/68)), S7-B04 ([#72](https://github.com/unb-mds/2026-2-AgendaUnB/issues/72)) e S8-B02 ([#79](https://github.com/unb-mds/2026-2-AgendaUnB/issues/79)).
 - **Requisitos** RF13, RF17 e RNF02.
 
 #### Tasks
 
-- [ ] Permitir escolher antecedência, com padrão explícito e editável. Registrar 24 h como proposta inicial e definir horário de referência local para dia inteiro.
+- [ ] Agendar lembrete 24 horas antes do início. Para dia inteiro, usar meia-noite no primeiro dia local. Itens incluídos após o disparo previsto seguem sem aviso retroativo.
 - [ ] Criar scheduler persistente e chave idempotente por usuário/evento/antecedência/versão relevante. Criar central simples com estados lida/não lida.
-- [ ] Reprogramar pendências ao alterar horário e cancelar notificações futuras ao excluir compromisso ou cancelar inscrição. Delimitar a comunicação a avisos na plataforma.
+- [ ] Reprogramar pendências quando o início mudar e cancelar notificações futuras ao excluir compromisso ou remover o vínculo da agenda. Persistir os avisos na plataforma.
 
 #### Critérios de aceite
 
@@ -211,9 +213,9 @@ Exportar eventos selecionados diretamente para uma agenda secundária “Agenda 
 
 #### Tasks
 
-- [ ] Implementar “Conectar Google Agenda” e consentimento adicional com o escopo `calendar.app.created`. Disponibilizar a conexão tanto para login Google quanto para e-mail/senha, aproveitando a autorização implementada em [#74](https://github.com/unb-mds/2026-2-AgendaUnB/issues/74).
+- [ ] Implementar “Conectar Google Agenda” com consentimento adicional e escopo `calendar.app.created`. Aceitar apenas conta Google com e-mail verificado correspondente ao da conta Agenda UnB. Integrar com [#74](https://github.com/unb-mds/2026-2-AgendaUnB/issues/74).
 - [ ] Criar uma agenda secundária “Agenda UnB” após autorização e persistir seu calendarId associado ao usuário e à conta Google. Reutilizar essa agenda nas próximas exportações.
-- [ ] Permitir selecionar período/eventos e confirmar o envio. Exportar provas, trabalhos e eventos públicos inscritos com título, descrição selecionada, local, início/fim, dia inteiro e fuso America/Sao_Paulo. Excluir PDFs, texto integral dos planos, caminhos de Storage, tokens e dados de terceiros.
+- [ ] Permitir selecionar período e eventos da própria agenda e confirmar o envio de título, descrição selecionada, local e datas em `America/Sao_Paulo`. Incluir compromissos privados e eventos públicos adicionados. Manter PDF, texto integral, dados de terceiros e segredos fora do payload.
 - [ ] Persistir mapeamento usuário/evento local/calendarId/eventId e versão exportada. Usar identificador de criação estável aceito pela API para reconciliar timeout após envio, retries e concorrência. Registrar resultado individual e retomar somente itens pendentes ou falhos.
 - [ ] Na reexportação explícita, atualizar o evento previamente exportado mediante confirmação de sobrescrita dos campos geridos pelo Agenda UnB. Exibir quais itens serão criados/atualizados. Exclusões locais não removem automaticamente cópias no Google. Tratar destino apagado e conta desconectada com orientação e confirmação para recriação.
 - [ ] Usar tokens Google pelo servidor e renovação da [#74](https://github.com/unb-mds/2026-2-AgendaUnB/issues/74). Tratar permissão recusada/revogada, expiração, 401/403, 429 com espera limitada e falhas parciais. Apresentar estado por item, sucesso e opção de tentar novamente.
@@ -263,7 +265,7 @@ Alinhar tratamento e documentação aos fluxos reais e demonstrar o exercício d
 
 #### Critérios de aceite
 
-- [ ] Demonstrar acesso e exclusão ponta a ponta, incluindo PDFs e tarefas pendentes. Explicar retenções e cópias independentes já importadas.
+- [ ] Demonstrar acesso e exclusão ponta a ponta. Verificar descarte do PDF após extração local, eliminação de originais legados e tratamento de tarefas pendentes e cópias independentes.
 - [ ] Verificar que conteúdo acadêmico e tokens não aparecem em logs. Anexar evidência da revisão técnica e documental e registrar seu escopo.
 
 #### Evidências para fechamento
@@ -325,7 +327,7 @@ Homologar a Release 2 com testes integrados, medições reproduzíveis e evidên
 #### Tasks
 
 - [ ] Executar na URL Vercel a jornada conectar Google → autorizar Calendar → selecionar eventos → exportar → abrir a agenda Google. Testar usuário com login Google e com e-mail/senha, reexportação repetida/concorrente, timeout após criação, falha parcial, 429, token expirado, consentimento recusado e revogado. Anexar evidências com contas sintéticas para [#82](https://github.com/unb-mds/2026-2-AgendaUnB/issues/82).
-- [ ] Executar testes unitários e de integração das regras de cada issue. Testar E2E cadastro → turma → plano → importação, publicação → voto → importação por colega e evento coletado → inscrição → lembrete → histórico → exportação direta para o Google Agenda.
+- [ ] Exercitar cadastro → turma → plano → importação, compartilhamento → voto → importação por colega e evento coletado → adicionar à agenda → lembrete → histórico → exportação Google. Testar também o redirecionamento independente da agenda.
 - [ ] Definir a carga de uso normal antes de medir. Registrar dataset, concorrência, infraestrutura, cache e metodologia. Medir `GET /events` em p95 ≤ 300 ms e parser < 20 s conforme S7-B01 ([#51](https://github.com/unb-mds/2026-2-AgendaUnB/issues/51)). Ajustar índices, paginação ou consultas conforme resultados.
 - [ ] Verificar WCAG 2.1 AA, contraste nos dois temas, teclado, foco, labels, largura de 360 px e demais resoluções principais.
 - [ ] Homologar versões atuais de Chrome, Firefox, Edge e Safari real e registrar navegador/versão.
@@ -377,3 +379,15 @@ Consolidar a documentação canônica e preparar a operação, demonstração e 
 - [ ] Registrar o nome do revisor e a revisão dos contratos, permissões e dados afetados por esta entrega.
 
 
+
+## Esclarecimentos de contrato — 08/11/2026
+
+O RNF11 cobre exclusivamente a indisponibilidade do Followw. Referências anteriores deste planejamento a RNF11 em coleta de notícias, exportação ou infraestrutura geral não ampliam essa garantia; permanecem os contratos específicos dessas funcionalidades.
+
+Toda data extraída começa como candidata. Somente a confirmação explícita do usuário a transforma em avaliação efetiva na sua agenda; em versões compartilhadas, essa decisão pertence a cada conta. A revisão deve ser breve: mostrar candidatos em uma lista, permitir selecionar vários e confirmar o lote em uma única ação, destacar apenas campos ambíguos que exigem correção e preservar as escolhas durante ajustes. Não exigir uma sequência de confirmações por item nem importar automaticamente. Avaliar a fluidez na homologação com o tempo e as dificuldades observadas, sem inventar um limite numérico ainda não acordado.
+
+Retirar o compartilhamento da versão original não retira nem exclui suas revisões: elas mantêm sua própria visibilidade e continuam disponíveis quando compartilhadas. Cópias já importadas na agenda também permanecem. Essa regra trata da retirada de compartilhamento, não define a política de exclusão de conta.
+
+Uma revisão feita por professor ou admin mantém a procedência institucional já validada da versão de origem. Registrar a versão de origem, a evidência institucional herdada, o autor da revisão e seu papel no momento da alteração. A interface distingue documento institucional de origem e alterações posteriores da comunidade. Papel professor/admin não cria procedência institucional quando a origem não a possuía; revisões estudantis não recebem essa herança automaticamente.
+
+A confirmação e reimportação devem seguir a chave por ação descrita nos [contratos da R2](../atualizacoes.md#confirmacao-rapida-e-reimportacao). Professor/admin publicam diretamente suas revisões de conteúdo já compartilhado.
