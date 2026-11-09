@@ -30,6 +30,15 @@ O campo **verificado** é o mais importante. Sem ele, a entrada declara o uso ma
 
 ## Entradas
 
+### 09/11/2026 — Integração HTTP local e preparação da entrega à equipe
+
+- **Quem:** Heitor Gomes Monteiro (solicitante).
+- **Ferramenta:** Codex (OpenAI), Supabase local e Gemini API com PDF inteiramente sintético.
+- **O que foi pedido:** Continuar desenvolvendo e testando localmente; levar as migrações ao projeto Supabase preparado por Felipe Couto Duque quando estiver disponível.
+- **O que entrou no repositório:** Testes HTTP de Auth/Storage/PostgREST com JWT real, fluxo FastAPI/worker/PostgreSQL, teste de revisão explícita/idempotência, executor restrito à instância local descartável, relatório de métricas sem segredos e orientação de transição para o projeto da equipe.
+- **O que foi verificado:** **121 testes passaram, nenhum ignorado**, com uma chamada real ao Gemini somente com PDF sintético. Download público/cruzado e upload em pasta alheia/subpasta/MIME inválido foram negados. Processamento Gemini total de 16,917s, incluindo fila, e última tentativa de 5,340s. O fluxo completo de checagens/revisão levou 20,563s e foi registrado separadamente. Zero eventos antes da revisão e um após confirmação; repetição não duplicou. Contas/objetos de teste foram removidos ao final.
+- **O que foi rejeitado ou corrigido:** A aprovação SQL de RLS não foi tratada como aprovação do transporte HTTP. As chaves locais foram lidas do CLI só em memória, sem `.env` nem saída com valores; a suíte rejeita hosts remotos e exige opção explícita para Gemini real. Não houve vínculo/alteração em projeto na nuvem nem migração do banco da aplicação 14322.
+
 ### 09/11/2026 — Liberação condicionada à verificação do banco S6-D02
 
 - **Quem:** Heitor Gomes Monteiro (solicitante).
