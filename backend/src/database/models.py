@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import BigInteger, DateTime, ForeignKey, Integer, SmallInteger, String, Text, UniqueConstraint, Uuid, func
+from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Integer, SmallInteger, String, Text, UniqueConstraint, Uuid, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -229,6 +229,8 @@ class ClassOffering(Base):
     class_number: Mapped[str] = mapped_column("turma", String, nullable=False)
     year: Mapped[int] = mapped_column("ano", SmallInteger, nullable=False)
     semester: Mapped[int] = mapped_column("semestre", SmallInteger, nullable=False)
+    teacher: Mapped[str | None] = mapped_column("professor", String, nullable=True)
+    schedule: Mapped[str | None] = mapped_column("horarios", String, nullable=True)
     source_updated_at: Mapped[datetime | None] = mapped_column(
         "atualizado_na_origem_em", DateTime(timezone=True), nullable=True
     )
@@ -275,6 +277,13 @@ class SyllabusVersion(Base):
     number: Mapped[int] = mapped_column("numero", SmallInteger, nullable=False)
     author_id: Mapped[UUID] = mapped_column(
         "autor_id", Uuid(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False
+    )
+    author_role: Mapped[str] = mapped_column("autor_papel", String, default="student", nullable=False)
+    source_version_id: Mapped[UUID | None] = mapped_column(
+        "versao_origem_id", Uuid(as_uuid=True), ForeignKey("versoes_plano.id", ondelete="SET NULL"), nullable=True
+    )
+    institutional_provenance: Mapped[bool] = mapped_column(
+        "procedencia_institucional", Boolean, default=False, nullable=False
     )
     visibility: Mapped[str] = mapped_column("visibilidade", String, default="privada", nullable=False)
     shared_at: Mapped[datetime | None] = mapped_column("compartilhada_em", DateTime(timezone=True), nullable=True)
