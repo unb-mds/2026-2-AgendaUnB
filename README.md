@@ -193,6 +193,16 @@ Abra um terminal, acesse a pasta `backend/`, configure o ambiente virtual Python
 > ```
 > E em seguida execute novamente `.\venv\Scripts\Activate.ps1`.
 
+> 💡 **Nota para Windows (mais de um Python instalado):** se `python -m venv venv` terminar sem erro mas a pasta `venv\Scripts\python.exe` não existir, o `python` do terminal provavelmente é outro (por exemplo, o do MSYS2). Confira com `where.exe python` e crie o ambiente com o Python correto, informando o caminho completo:
+> ```powershell
+> & "C:\caminho\do\python.exe" -m venv venv
+> ```
+> Também é possível usar o ambiente sem ativá-lo, chamando o Python dele diretamente:
+> ```powershell
+> .\venv\Scripts\python.exe -m pip install -r requirements.txt -r requirements-dev.txt
+> .\venv\Scripts\python.exe -m uvicorn src.main:app --reload
+> ```
+
 ---
 
 <a id="4-frontend-react"></a>
