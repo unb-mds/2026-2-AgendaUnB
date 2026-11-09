@@ -374,3 +374,28 @@ def test_model_change_uses_explicit_reservation_prices(monkeypatch):
     monkeypatch.setenv("GEMINI_OUTPUT_USD_PER_MILLION", "2")
     config = ProcessingConfig.from_env()
     assert config.attempt_reservation == Decimal("0.064192")
+
+
+@pytest.mark.parametrize("failure", ["missing_policies", "connection_error"])
+def test_ready_flags_do_not_bypass_database_verification(job, monkeypatch, capsys, failure):
+    import src.modules.syllabus.worker as module
+    _, sessions, sid = job
+    for key in ("SYLLABUS_WORKER_ENABLED", "SYLLABUS_PRIVACY_READY"):
+        monkeypatch.setenv(key,"true")
+    monkeypatch.setenv("GEMINI_API_KEY","test-secret")
+    monkeypatch.setenv("SUPABASE_SERVICE_ROLE_KEY","test-service-secret")
+    monkeypatch.setenv("SUPABASE_URL","https://example.invalid")
+    monkeypatch.setattr("sys.argv",["worker","--once"])
+    if failure == "connection_error":
+        def unavailable():
+            raise RuntimeError("PRIVATE_CONNECTION_DETAIL")
+        monkeypatch.setattr(module,"SessionLocal",unavailable)
+    else:
+        monkeypatch.setattr(module,"SessionLocal",sessions)
+    with pytest.raises(SystemExit) as caught:
+        module.main()
+    assert caught.value.code == 2
+    output = capsys.readouterr().err
+    assert "PRIVATE_CONNECTION_DETAIL" not in output and "test-secret" not in output
+    with sessions() as db:
+        assert db.get(Syllabus,sid).status == "pendente"

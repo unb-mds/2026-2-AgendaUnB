@@ -254,7 +254,7 @@ Funcionalidades atualizadas até o fim da Sprint 05 (18/10)
 | Sugestões | Estudantes enviam propostas pelo formulário Criar Evento; professores e admins analisam em `/sugestoes` |
 | Notificações | Sino para estudantes com confirmação de envio, aprovação e recusa com justificativa |
 | Administração | `/admin`: busca e filtros de usuários, confirmação de e-mail, último acesso e alteração de cargos |
-| Plano de Ensino | `/plano-de-ensino`: página informativa; backend tem upload e worker Gemini de candidatos, com ativação para dados reais aguardando S6-D02 |
+| Plano de Ensino | `/plano-de-ensino`: página informativa; backend tem upload/worker Gemini e políticas/revisão transacional S6-D02 validadas em PostgreSQL isolado; ativação depende de homologar o ambiente de destino |
 | Criação de Eventos | Modal com DatePicker e TimePicker customizados, campos completos |
 | Edição e Exclusão | CRUD completo para eventos pessoais |
 | Detalhe do Evento | Página dedicada com descrição, organizador, badges e link externo |

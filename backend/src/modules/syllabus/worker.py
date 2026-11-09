@@ -16,6 +16,7 @@ from src.modules.syllabus.extraction import VERSION
 from src.modules.syllabus.gemini import GeminiProvider
 from src.modules.syllabus.processing_config import ERROR_MESSAGES, ProcessingConfig, ProcessingError
 from src.modules.syllabus.processing_task import run_isolated
+from src.modules.syllabus.privacy import privacy_checks
 from src.modules.syllabus.timing import duration_ms as elapsed_ms
 from src.services.storage import SupabaseStorageService
 
@@ -164,6 +165,14 @@ def main():
     storage = SupabaseStorageService()
     if not storage.supabase_url or not (os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_SERVICE_KEY")):
         parser.exit(2, "Worker exige Storage persistente e credencial de servidor.\n")
+    try:
+        with SessionLocal() as db:
+            checks = privacy_checks(db.connection())
+    except Exception:
+        parser.exit(2, "Não foi possível verificar a privacidade. Confira o banco e as migrações S6-D02.\n")
+    missing = [name for name, passed in checks.items() if not passed]
+    if missing:
+        parser.exit(2, "Pré-requisitos de privacidade ausentes: " + ", ".join(missing) + ".\n")
     worker = SyllabusWorker(SessionLocal, storage, GeminiProvider(config), config)
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
     try:

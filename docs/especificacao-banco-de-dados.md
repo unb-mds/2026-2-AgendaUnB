@@ -104,6 +104,7 @@ PDFs de plano de ensino. Um plano é `particular` (enviado por um usuário para 
     *   `status` (TEXT, Not Null, padrão `pendente`): `pendente`, `processando`, `concluido` ou `falha`. Os valores em inglês aceitos pela #40 (`processing`, `failed`, `completed`) foram convertidos e não são mais aceitos.
     *   `quantidade_eventos` (INT ≥ 0): quantidade de candidatos extraídos.
     *   `execucao_atual` (SMALLINT, Not Null, padrão 0): número da execução mais recente. Cada novo processamento incrementa; os candidatos válidos são os desta execução.
+    *   S6-B01 (`20261109120000`): `token_processamento` (UUID) protege o lease contra worker antigo; `proxima_tentativa_em` (TIMESTAMPTZ) agenda retentativa; `custo_reservado_usd` (NUMERIC ≥ 0) mantém reserva conservadora acumulada; `duracao_processamento_ms` (INT ≥ 0) mede a última tentativa. Tempo total é derivado de `criado_em`/`processado_em`.
     *   `provedor_ia`, `modelo_ia`, `versao_processamento` (TEXT): da execução mais recente.
     *   `erro_codigo` (TEXT): obrigatório se, e somente se, `status = 'falha'`. Valores: `pdf_invalido`, `pdf_protegido`, `pdf_sem_texto`, `limite_paginas`, `falha_ia`, `tempo_esgotado`, `erro_interno`.
     *   `erro` (TEXT, até 500): mensagem curta e segura para o usuário, só em `falha`. Nunca guarda stack trace, texto do PDF ou resposta bruta da IA.
@@ -111,7 +112,7 @@ PDFs de plano de ensino. Um plano é `particular` (enviado por um usuário para 
     *   **Resultado vazio** é `concluido` sem candidatos, e não `falha`.
 *   **Dados anteriores:** linhas sem `caminho_arquivo` (anteriores à #40) viraram `oficial`, com o professor como dono e `status = 'concluido'`. Linhas criadas pela #40 continuam `particular`; `professor_id` foi limpo e `processing` virou `pendente`. Nada foi apagado.
 *   **Índices:** histórico do usuário `(user_id, criado_em desc, id)`; fila do worker `(status, processamento_iniciado_em)` parcial em `pendente`/`processando`, usada para retomar tarefas interrompidas; `plano_oficial_id` parcial; e os índices da #40 em `user_id` e `status`.
-*   **Políticas RLS:** RLS habilitado. A #40 criou leitura e inserção pelo próprio dono (`user_id = auth.uid()`). As demais políticas são da S6-D02.
+*   **Políticas RLS:** RLS habilitado. S6-D02 preserva SELECT pelo dono (`user_id = auth.uid()`) e remove escritas diretas do cliente; estado, lease e orçamento são exclusivos do servidor. Trigger impede trocar o dono. Ver [privacidade dos planos](privacidade-planos.md).
 
 ### 4.2. Tabela `candidatos_avaliacao`
 Avaliações sugeridas pela IA. São sugestões: só viram compromisso após confirmação do estudante.
@@ -127,13 +128,13 @@ Avaliações sugeridas pela IA. São sugestões: só viram compromisso após con
     *   `status` (TEXT, padrão `pendente`): `pendente`, `descartado` ou `confirmado`. `revisado_em` é preenchido se, e somente se, o status não for `pendente`.
     *   `evento_pessoal_id` (UUID, Unique): FK para `eventos_pessoais(id)` (`ON DELETE SET NULL`). Só em candidato `confirmado`.
     *   `criado_em` (TIMESTAMPTZ, Not Null).
-*   **Sem duplicação:** `(plano_id, execucao, ordem)` é único. O worker grava com `ON CONFLICT (plano_id, execucao, ordem) DO NOTHING`, então repetir a mesma execução não duplica. Reprocessar gera nova execução e mantém as anteriores como histórico.
+*   **Sem duplicação:** `(plano_id, execucao, ordem)` é único. O worker grava candidatos e conclusão atomicamente, com fencing por token; uma execução concluída não é retomada. Reprocessar gera nova execução e mantém as anteriores como histórico. A confirmação S6-D02 serializa a revisão com lock do plano.
 *   **Vínculo com a agenda:**
     *   Um candidato gera no máximo um evento, e um evento vem de no máximo um candidato (unicidade de `evento_pessoal_id`).
     *   Editar o evento pessoal não altera o candidato: o candidato guarda o que a IA extraiu, e o evento guarda o que o estudante decidiu.
     *   Excluir o evento pessoal deixa `evento_pessoal_id` nulo; o candidato continua `confirmado` e não é recriado em nova confirmação.
     *   Procedência de um evento: `eventos_pessoais` → `candidatos_avaliacao.evento_pessoal_id` → `planos_ensino`.
-*   **Políticas RLS:** RLS habilitado, sem políticas nesta migração (S6-D02).
+*   **Políticas RLS:** S6-D02 permite SELECT somente pelo dono do plano. Cliente não insere/altera candidatos diretamente; a RPC `revisar_candidatos_plano` confirma/descarta a seleção revisada de modo atômico. Trigger impede vincular evento de outro dono.
 
 ### 4.3. Tabela `avaliacoes`
 Avaliações de planos oficiais, anteriores à S6. Mantida sem mudança de estrutura; recebeu índice em `plano_id`. Os resultados da IA para planos particulares ficam em `candidatos_avaliacao`.
@@ -144,4 +145,4 @@ Avaliações de planos oficiais, anteriores à S6. Mantida sem mudança de estru
     *   `data_avaliacao` (TIMESTAMPTZ, Not Null): Data programada.
     *   `criado_em` (TIMESTAMPTZ, Not Null).
 *   **Políticas RLS:** Segurança em Nível de Linha habilitada.
-    *   **Leitura (SELECT):** Pública. Política: *"avaliacoes sao publicas"* (`USING true`). A substituição por acesso vinculado ao dono é tarefa da S6-D02.
+    *   **Leitura (SELECT):** S6-D02 remove `avaliacoes sao publicas` e permite somente o dono do plano correspondente. Escritas diretas por `anon`/`authenticated` são negadas.

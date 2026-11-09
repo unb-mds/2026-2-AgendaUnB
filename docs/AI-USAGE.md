@@ -30,6 +30,15 @@ O campo **verificado** é o mais importante. Sem ele, a entrada declara o uso ma
 
 ## Entradas
 
+### 09/11/2026 — Liberação condicionada à verificação do banco S6-D02
+
+- **Quem:** Heitor Gomes Monteiro (solicitante).
+- **Ferramenta:** Codex (OpenAI).
+- **O que foi pedido:** Verificar o que falta para liberar a integração e rodar PostgreSQL local, mantendo commits na `feat/geminiapi`.
+- **O que entrou no repositório:** Checagem de migração/RLS/privilégios/políticas/triggers/RPC/bucket antes de iniciar o worker, comando de auditoria local sem IA, testes de regressão e recuperação nativa com `SKIP LOCKED`/fencing, documentação atualizada para distinguir implementação local de implantação no destino.
+- **O que foi verificado:** Suíte completa com **118 testes passando, nenhum ignorado**, incluindo 28 PostgreSQL na instância isolada 15322. O auditor retornou `ready: true` com oito verificações aprovadas nesse banco. Consulta somente de leitura no banco da aplicação 14322 identificou duas migrações pendentes: `20261109120000` e `20261109130000`. Documentação estrita e diff passaram. Não houve chamadas Gemini, habilitação de flags, alteração do banco da aplicação ou implantação remota.
+- **O que foi rejeitado ou corrigido:** A flag `SYLLABUS_PRIVACY_READY` sozinha não bastava para detectar banco sem políticas. O worker agora recusa pré-requisitos ausentes, inclusive permissões indevidas por coluna ou RPC/política de Storage exposta a anônimos. A auditoria de metadados foi documentada como complemento, não substituta dos testes comportamentais de RLS.
+
 ### 09/11/2026 — Políticas e revisão transacional S6-D02
 
 - **Quem:** Heitor Gomes Monteiro (solicitante).

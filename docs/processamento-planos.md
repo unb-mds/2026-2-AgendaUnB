@@ -2,8 +2,8 @@
 
 Implementação de RF06/RNF06 para planos particulares em PDF com texto selecionável.
 O processamento gera **candidatos**, nunca compromissos, notificações ou registros
-na tabela legada `avaliacoes`. Consulta/revisão de candidatos e confirmação na
-agenda pertencem à S6-B02/S6-D02 e não são implementadas aqui.
+na tabela legada `avaliacoes`. A [S6-D02](privacidade-planos.md) fornece políticas
+e revisão transacional; a tela e os endpoints de revisão pertencem à S6-B02.
 
 ## Dependências e limite de ativação
 
@@ -11,14 +11,18 @@ agenda pertencem à S6-B02/S6-D02 e não são implementadas aqui.
 - S6-D01: migração `20261027120000`, candidatos, procedência e estados em português.
 - S6-B01: migração `20261109120000_fila_processamento_planos.sql` para lease,
   próxima tentativa, orçamento acumulado e duração.
-- **S6-D02 ainda não está nesta cópia do repositório.** Antes de usar dados reais,
-  aplicar e testar as políticas de planos/candidatos/Storage, impedir escrita do
-  cliente sobre estado/lease/orçamento e corrigir a leitura pública de avaliações.
-  Testar dono, outro estudante, professor, `anon` e `authenticated` no PostgreSQL.
+- S6-D02: migração `20261109130000_privacidade_e_revisao_planos.sql`, validada em
+  PostgreSQL isolado. Aplicá-la e testar as políticas no ambiente de destino antes
+  de usar dados reais. Nenhuma flag foi habilitada automaticamente.
 
 O worker nasce desativado. `SYLLABUS_PRIVACY_READY=true` é uma declaração operacional
 de que as políticas foram implantadas e verificadas, não substitui esses testes.
 Não ativar essa configuração apenas porque a chave Gemini funciona.
+Mesmo com as duas flags habilitadas, o processo consulta os catálogos do PostgreSQL
+e recusa iniciar se faltar migração, RLS, privilégios restritos, políticas do dono,
+triggers de autoria/vínculo, RPC restrita ou bucket privado. Essa checagem detecta
+pré-requisitos/regressões comuns; não substitui testes comportamentais nem prova
+equivalência de expressões arbitrárias de políticas.
 
 ## Arquitetura e recuperação
 
@@ -120,7 +124,7 @@ para o estudante.
   do sistema. Não recebe chave no prompt, ferramentas, busca, URLs de Storage ou
   poderes de execução. `store=false` desativa persistência de Interactions; isso
   **não substitui** a análise dos termos de tratamento de dados do provedor para o
-  tier contratado. Dados reais continuam bloqueados pela dependência S6-D02.
+  tier contratado. Dados reais dependem da aplicação/homologação da S6-D02 no destino.
 - O esquema enviado à API é simplificado para o decodificador do provedor. O
   Pydantic local mantém todas as restrições, rejeita campos extras, tipos/datas
   inválidos, páginas inexistentes e trechos que não aparecem na página citada.
@@ -200,8 +204,8 @@ recuperações podem exceder a meta e precisam ser registradas, não ocultadas.
 Os [resultados com Gemini](benchmarks/syllabus-gemini-2026-11-09.json) e a
 [referência sem rede](benchmarks/syllabus-reference-2026-11-09.json) registram a
 execução desta entrega. O teste PostgreSQL opt-in exige `TEST_SUPABASE_DB_URL`
-local com todas as migrações; ele verifica constraints/tipos e transação, não as
-políticas S6-D02 ainda pendentes.
+local com todas as migrações; a suíte verifica constraints, RLS, revisão,
+concorrência, rollback e recuperação do worker no PostgreSQL. Ver [S6-D02](privacidade-planos.md).
 
 ### Resultado de 09/11/2026 — `syllabus-v2`, com subprocessos
 

@@ -264,4 +264,6 @@ do registro ao término, incluindo fila/retentativas, e é nulo antes de finaliz
 O [worker independente](processamento-planos.md) consome a fila. Ele fica
 desativado até a configuração explícita e a validação das políticas S6-D02.
 Nenhuma chamada deste contrato cria compromissos ou expõe candidatos. Listagem,
-revisão de candidatos e confirmação continuam no escopo S6-B02/S6-D02.
+revisão de candidatos e confirmação por HTTP continuam no escopo S6-B02.
+O contrato transacional de banco S6-D02 já está disponível em
+[`revisar_candidatos_plano`](privacidade-planos.md#contrato-transacional-para-s6-b02).

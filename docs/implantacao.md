@@ -25,12 +25,16 @@ da API e reiniciar após interrupções. O ciclo de requisição HTTP não execu
 Configurar `GEMINI_API_KEY` como segredo do servidor, nunca no frontend; demais
 limites, preços e comandos estão em [Processamento de planos](processamento-planos.md).
 
-Aplicar #40, S6-D01 e a migração `20261109120000_fila_processamento_planos.sql`.
+Aplicar #40, S6-D01, `20261109120000_fila_processamento_planos.sql` e
+`20261109130000_privacidade_e_revisao_planos.sql` (S6-D02).
 Manter `SYLLABUS_WORKER_ENABLED=false` e `SYLLABUS_PRIVACY_READY=false` até
 implantar/verificar as políticas de S6-D02 no PostgreSQL com os papéis reais.
 Somente então habilitar os dois parâmetros no ambiente correspondente. A avaliação
 sintética com Gemini não homologa privacidade, Storage remoto ou fila em produção.
 Esta entrega não provisiona serviço nem aplica migrações remotas.
+O worker também verifica pré-requisitos nos catálogos do banco e recusa configuração
+incompleta, mesmo com as flags ativas. Consultar o [guia S6-D02](privacidade-planos.md)
+para conferir o banco local antes de ativar o processo.
 
 | Ambiente | Aplicação e dados | Uso e publicação |
 | --- | --- | --- |
