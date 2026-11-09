@@ -59,17 +59,17 @@ class SupabaseStorageService:
         try:
             response = httpx.post(url, headers=headers, content=content, timeout=10.0)
         except httpx.RequestError as exc:
-            logger.error("Erro de conexão ao enviar arquivo para o Storage: %s", exc)
+            logger.error("Erro de conexão ao enviar arquivo para o Storage")
             raise HTTPException(
                 status_code=503,
                 detail="Falha na conexão com o serviço de armazenamento (Supabase Storage).",
             ) from exc
 
         if response.status_code not in (200, 201):
-            logger.error("Erro retornado pelo Supabase Storage: %s (%s)", response.status_code, response.text)
+            logger.error("Erro retornado pelo Supabase Storage: HTTP %s", response.status_code)
             raise HTTPException(
                 status_code=502,
-                detail=f"Erro ao salvar arquivo no bucket de armazenamento: {response.text}",
+                detail="Erro ao salvar arquivo no bucket de armazenamento.",
             )
 
         return full_path
@@ -97,9 +97,30 @@ class SupabaseStorageService:
         try:
             response = httpx.delete(url, headers=headers, timeout=10.0)
             return response.status_code in (200, 204)
-        except Exception as exc:
-            logger.warning("Falha na compensação/deleção do arquivo %s no Storage: %s", path, exc)
+        except Exception:
+            logger.warning("Falha na compensação/deleção do arquivo no Storage")
             return False
+
+    def download_file(self, path: str, *, max_bytes: int = 10 * 1024 * 1024) -> bytes:
+        """Lê um objeto privado, com limite de memória, somente no servidor."""
+        if not self.supabase_url:
+            if path not in self._mock_storage:
+                raise HTTPException(status_code=503, detail="Arquivo indisponível no armazenamento.")
+            return self._mock_storage[path]
+        headers = {"Authorization": f"Bearer {self.supabase_key}", "apikey": self.supabase_key}
+        url = f"{self.supabase_url}/storage/v1/object/{self.bucket_name}/{path}"
+        try:
+            with httpx.stream("GET", url, headers=headers, timeout=10.0, follow_redirects=False) as response:
+                if response.status_code != 200:
+                    raise HTTPException(status_code=503, detail="Arquivo indisponível no armazenamento.")
+                content = bytearray()
+                for chunk in response.iter_bytes():
+                    content.extend(chunk)
+                    if len(content) > max_bytes:
+                        raise HTTPException(status_code=413, detail="Arquivo excede o limite de processamento.")
+                return bytes(content)
+        except httpx.RequestError:
+            raise HTTPException(status_code=503, detail="Armazenamento indisponível.") from None
 
 
 def get_storage_service() -> SupabaseStorageService:

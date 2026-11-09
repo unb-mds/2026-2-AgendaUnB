@@ -33,6 +33,12 @@ class SyllabusDetailResponse(BaseModel):
     status: str
     extracted_events_count: int = Field(default=0, alias="extractedEventsCount")
     error_message: str | None = Field(default=None, alias="errorMessage")
+    error_code: str | None = Field(default=None, alias="errorCode")
+    page_count: int | None = Field(default=None, alias="pageCount")
+    attempts: int = 0
+    processing_started_at: datetime | None = Field(default=None, alias="processingStartedAt")
+    processed_at: datetime | None = Field(default=None, alias="processedAt")
+    processing_duration_ms: int | None = Field(default=None, alias="processingDurationMs")
     disciplina: str | None = None
     turma: str | None = None
     created_at: datetime = Field(alias="createdAt")

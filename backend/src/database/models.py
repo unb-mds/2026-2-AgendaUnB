@@ -1,7 +1,9 @@
-from datetime import datetime
+from datetime import date, datetime, time
+from decimal import Decimal
 from uuid import UUID, uuid4
 
-from sqlalchemy import BigInteger, DateTime, ForeignKey, Integer, String, Text, Uuid, func
+from sqlalchemy import BigInteger, Date, DateTime, ForeignKey, Integer, JSON, Numeric, String, Text, Time, UniqueConstraint, Uuid, func
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -139,3 +141,48 @@ class Syllabus(Base):
     )
 
     user: Mapped[Profile] = relationship(foreign_keys=[user_id])
+    tipo: Mapped[str] = mapped_column(String, default="particular", nullable=False)
+    paginas: Mapped[int | None] = mapped_column(Integer)
+    ano: Mapped[int | None] = mapped_column(Integer)
+    semestre: Mapped[int | None] = mapped_column(Integer)
+    execucao_atual: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    provedor_ia: Mapped[str | None] = mapped_column(String)
+    modelo_ia: Mapped[str | None] = mapped_column(String)
+    versao_processamento: Mapped[str | None] = mapped_column(String)
+    erro_codigo: Mapped[str | None] = mapped_column(String)
+    processamento_iniciado_em: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    processado_em: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    processing_token: Mapped[UUID | None] = mapped_column("token_processamento", Uuid(as_uuid=True))
+    next_attempt_at: Mapped[datetime | None] = mapped_column("proxima_tentativa_em", DateTime(timezone=True))
+    cost_reserved_usd: Mapped[Decimal] = mapped_column("custo_reservado_usd", Numeric(12, 6), default=0, nullable=False)
+    processing_duration_ms: Mapped[int | None] = mapped_column("duracao_processamento_ms", Integer)
+
+
+class AssessmentCandidate(Base):
+    """Sugestões privadas; o worker nunca grava eventos_pessoais ou avaliacoes."""
+
+    __tablename__ = "candidatos_avaliacao"
+    __table_args__ = (UniqueConstraint("plano_id", "execucao", "ordem"),)
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    plano_id: Mapped[UUID] = mapped_column(ForeignKey("planos_ensino.id", ondelete="CASCADE"))
+    execucao: Mapped[int] = mapped_column(Integer)
+    ordem: Mapped[int] = mapped_column(Integer)
+    titulo: Mapped[str] = mapped_column(String)
+    tipo: Mapped[str] = mapped_column(String)
+    data_sugerida: Mapped[date | None] = mapped_column(Date)
+    hora_sugerida: Mapped[time | None] = mapped_column(Time)
+    campos_ambiguos: Mapped[list[str]] = mapped_column(JSON().with_variant(ARRAY(Text), "postgresql"), default=list)
+    pagina_origem: Mapped[int] = mapped_column(Integer)
+    trecho_origem: Mapped[str] = mapped_column(Text)
+    provedor_ia: Mapped[str] = mapped_column(String)
+    modelo_ia: Mapped[str] = mapped_column(String)
+    versao_processamento: Mapped[str] = mapped_column(String)
+    status: Mapped[str] = mapped_column(String, default="pendente")
+    revisado_em: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    evento_pessoal_id: Mapped[UUID | None] = mapped_column(ForeignKey("eventos_pessoais.id", ondelete="SET NULL"), unique=True)
+    criado_em: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    @property
+    def ambiguo(self) -> bool:
+        return bool(self.campos_ambiguos)
