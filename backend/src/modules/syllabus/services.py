@@ -80,7 +80,7 @@ async def validate_pdf_file(file: UploadFile) -> bytes:
     try:
         reader = pypdf.PdfReader(io.BytesIO(content))
     except Exception as exc:
-        logger.warning("Falha ao analisar a estrutura do PDF: %s", exc)
+        logger.warning("Falha ao analisar a estrutura do PDF")
         raise HTTPException(
             status_code=400,
             detail="Arquivo PDF corrompido ou malformado. Verifique o arquivo ou realize o cadastro manual.",
@@ -116,7 +116,7 @@ async def validate_pdf_file(file: UploadFile) -> bytes:
                 has_text = True
                 break
     except Exception as exc:
-        logger.warning("Erro ao tentar extrair texto das páginas do PDF: %s", exc)
+        logger.warning("Erro ao tentar extrair texto das páginas do PDF")
 
     if not has_text:
         raise HTTPException(
@@ -175,7 +175,7 @@ def process_syllabus_upload(
         db.refresh(syllabus_record)
     except Exception as exc:
         db.rollback()
-        logger.error("Falha ao registrar envio no banco de dados. Compensando arquivo no Storage: %s", exc)
+        logger.error("Falha ao registrar envio; compensando arquivo no Storage")
         # Compensação: remove o arquivo físico já enviado
         storage.delete_file(storage_relative_path)
         raise HTTPException(
