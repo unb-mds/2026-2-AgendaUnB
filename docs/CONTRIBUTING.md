@@ -78,8 +78,8 @@ Com o Docker em execução, execute na raiz do repositório:
 npx supabase start      # Inicia PostgreSQL, Auth e Studio
 npx supabase db reset   # Aplica migrações e seed
 ```
-* Studio local: [http://localhost:54323](http://localhost:54323)
-* API Local: `http://127.0.0.1:54321`
+* Studio local: [http://localhost:14323](http://localhost:14323)
+* API Local: `http://127.0.0.1:14321`
 
 #### 2.3.3 Executar o Backend (FastAPI)
 Navegue até a pasta `backend/` e prepare o ambiente virtual:
