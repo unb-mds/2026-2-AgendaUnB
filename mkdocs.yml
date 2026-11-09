@@ -9,6 +9,7 @@ nav:
   - Arquitetura: Architecture.md
   - Contratos do Backend: api-specs.md
   - Processamento de Planos: processamento-planos.md
+  - Privacidade dos Planos: privacidade-planos.md
   - Plano de Implantação: implantacao.md
   - Modelo de Dados: modelo-de-dados.md
   - Especificação do Banco: especificacao-banco-de-dados.md
