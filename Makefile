@@ -21,7 +21,7 @@ ROOT_DIR            := $(CURDIR)
 # Configuracoes de Portas
 BACKEND_PORT        ?= 8000
 FRONTEND_PORT       ?= 5173
-SUPABASE_STUDIO_PORT?= 54323
+SUPABASE_STUDIO_PORT?= 14323
 
 # Diretorio do venv Python
 VENV_DIR            := $(ROOT_DIR)/backend/venv

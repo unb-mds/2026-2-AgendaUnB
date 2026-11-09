@@ -33,9 +33,9 @@ A identidade visual do AgendaUnB combina diferentes elementos para estabelecer u
 
 ## 2. UI — User Interface (Interface do Usuário)
 
-A interface do AgendaUnB foi desenvolvida utilizando a biblioteca React, buscando proporcionar uma navegação simples, organizada e intuitiva entre as funcionalidades disponíveis. Na arquitetura de desenvolvimento, a SPA (Single Page Application) foi construída junto à ferramenta **Vite** para otimização de build, operando de forma desacoplada do backend e utilizando o **Supabase JS** para realizar a comunicação direta com serviços de banco e armazenamento.
+A interface usa React e Vite. A FastAPI atende os fluxos de eventos e planos de ensino. O SDK do Supabase atende autenticação, leitura de perfis, notificações e operações de moderação. [Arquitetura](visao-geral.md)
 
-A aplicação está estruturada em duas páginas principais, cada uma com uma finalidade específica dentro do sistema. Essa divisão permite separar as informações institucionais e de autenticação das funcionalidades relacionadas ao gerenciamento de eventos acadêmicos.
+A página inicial reúne a apresentação e a autenticação. O catálogo e a agenda ficam em `/eventos`, com páginas próprias para detalhes, planos e administração.
 
 ### 2.1. Primeira página — Apresentação e autenticação
 
@@ -43,7 +43,9 @@ A primeira página tem como finalidade apresentar o AgendaUnB aos visitantes, di
 
 - E-mail e senha: permite que o usuário realize seu acesso utilizando suas credenciais cadastradas.
 - Google: possibilita a autenticação por meio de uma conta Google (ideal para o fluxo de estudantes).
-- Convidado: possibilita o usuário acessar de forma anônima, mas sem acesso a funcionalidade de criação de eventos privados. Além destes perfis, foi estipulada uma verificação rigorosa para Professores e Administração, exigindo validação por e-mail com o domínio oficial `@unb.br` para atestar a veracidade de eventos oficiais.
+- Convidado: pode consultar o catálogo público. A agenda privada exige uma conta.
+
+O cadastro e a autopromoção para professor exigem e-mail institucional. A atribuição de papéis pela administração segue as permissões do servidor. [Painel administrativo](../painel-administrativo.md)
 
 A página também disponibiliza o controle de alternância entre os temas claro e escuro, permitindo modificar a aparência visual de toda a aplicação.
 
@@ -58,7 +60,7 @@ A segunda página concentra as principais funcionalidades do AgendaUnB, relacion
 
 ### 2.3. Extração de Planos de Ensino (Core Feature pós-R1)
 
-Para automatizar o preenchimento da agenda, a interface dispõe de um fluxo completo voltado ao envio de Planos de Ensino em PDF. O usuário realiza o upload do arquivo e acompanha o seu status de processamento através de _feedback_ visual (estados como _pending_ e _processing_). Após o sistema extrair as avaliações, a interface fornece uma tela de revisão ("Human-in-the-loop") para que o aluno possa corrigir nomes, descartar sugestões inconsistentes e aceitar as datas finais de provas e trabalhos antes de adicioná-las efetivamente à sua agenda privada.
+A página de planos oferece envio e histórico. O estado da revisão e as limitações da interface estão no [guia de planos de ensino](../planos-de-ensino-frontend.md). A jornada planejada inclui seleção de oferta, revisão do texto antes da extração e confirmação das avaliações antes de adicioná-las à agenda. [Contratos da Release 2](../atualizacoes.md#contratos-da-release-2)
 
 ### 2.4. Navegação entre páginas
 

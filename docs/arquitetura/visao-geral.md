@@ -3,155 +3,180 @@ title: "Arquitetura"
 description: "Documento que registra a arquitetura de software do Agenda UnB, detalhando stack, componentes, fluxos e decisões de design."
 ---
 
-Este documento registra a arquitetura para o Agenda UnB. Ele detalha como a aplicação pode evoluir a partir do frontend existente e dos requisitos em [`requisitos.md`](/docs/produto/requisitos), seguindo os termos e as rotas definidos em [`padroes.md`](/docs/arquitetura/padroes).
-
 ## 1. Objetivo e escopo
 
-A Agenda UnB reúne duas agendas que hoje ficam separadas: eventos públicos dos campi e compromissos acadêmicos privados dos estudantes. A aplicação deve permitir consultar eventos, organizar avaliações de turmas e, na evolução prevista, extrair datas de planos de ensino para revisão pelo estudante.
+O Agenda UnB reúne eventos públicos dos campi e compromissos privados em uma aplicação web responsiva. A Release 2 prevê seleção manual de ofertas no catálogo público do Followw e vínculo autodeclarado. A plataforma organiza compromissos e eventos da comunidade. Matrícula oficial, notas e frequência seguem no sistema acadêmico.
 
-O produto é uma aplicação web responsiva. A interface para celular é a mesma aplicação web adaptada à tela; não está previsto um aplicativo nativo. A plataforma não substitui o SIGAA e não controla matrícula, notas ou frequência. Conforme o documento de visão, o estudante informa as próprias turmas, pois não há integração de matrícula com o SIGAA definida.
+Referência da consolidação: **24/10/2026**, commit `e0ecf46`; histórico de operações comparado à tag `R1` (`4a3a07d`). Implementação observada e testes existentes não equivalem a aprovação formal do time. Propostas futuras são identificadas separadamente.
 
 ## 2. Visão geral
 
 ```mermaid
 flowchart LR
-    U[Estudante, organizador ou administrador] --> WEB[Frontend responsivo<br/>React + Vite]
-    WEB --> API[API REST<br/>Python + FastAPI]
-    API --> DB[(PostgreSQL)]
-    API --> FILES[Armazenamento privado<br/>dos planos de ensino]
-    API --> GOOGLE[Google OAuth]
-    API --> EMAIL[Serviço de e-mail<br/>lembretes e notificações]
-    COLLECTOR[Coleta de fontes públicas<br/>de eventos] --> API
+    U[Visitante, estudante, professor ou administrador] --> WEB[SPA React + Vite]
+    WEB -->|Eventos, sugestões e vínculos salvos| API[FastAPI /api/v1]
+    WEB -->|Sessão| AUTH[Supabase Auth]
+    WEB -->|RPCs e notificações| DATA[Supabase Data API]
+    API -->|Validação da sessão| AUTH
+    API -->|SQLAlchemy| DB[(PostgreSQL)]
+    DATA -->|RPCs, RLS e triggers| DB
+    API -->|Upload de planos| STORAGE[Supabase Storage privado]
 ```
 
-O frontend envia e recebe dados JSON pela API. A API aplica as regras de negócio, valida a identidade e as permissões do usuário, consulta ou atualiza o banco e coordena integrações externas. O banco guarda dados estruturados; os PDFs ficam em armazenamento de arquivos com acesso restrito, e o banco mantém os metadados e a referência ao arquivo.
+A comunicação tem dois caminhos: eventos, sugestões e agenda usam a API FastAPI; autenticação, RPCs de moderação/administração e notificações usam o SDK Supabase no navegador. As RPCs conferem o papel real no banco. A proteção das páginas React não substitui essa autorização.
 
-Eventos públicos aprovados podem ser consultados sem login. A agenda pessoal, planos enviados, datas extraídas ainda não confirmadas e preferências do estudante exigem autenticação e verificação de propriedade. A coleta externa de eventos deve ser isolada: a indisponibilidade de uma fonte não pode impedir a consulta aos eventos já armazenados.
+## 3. Stack e organização
 
-## 3. Stack consolidada
-
-| Camada | Tecnologia | Uso previsto | Situação |
-| --- | --- | --- | --- |
-| Interface web | JavaScript, React 19, Vite 6 e React Router 7 | SPA responsiva; landing page, catálogo de eventos, formulários e detalhes | Em uso; implementado em `frontend/src/` com páginas `/`, `/segunda-pagina` e `/evento/:id` |
-| Ferramentas do frontend | Node.js e npm | Instalar dependências, executar Vite em desenvolvimento e gerar os arquivos estáticos de produção | Em uso; build configurado via npm/Vite |
-| API | Python 3.12, FastAPI, SQLAlchemy 2 e Pydantic 2 | Endpoints REST, validação de schemas, autorização e coordenação dos módulos | Em uso; implementado em `backend/src/` com suite de testes em `backend/tests/` |
-| Persistência | PostgreSQL 15+ (via Supabase) | Dados relacionais de usuários, eventos públicos, eventos pessoais e referências | Em uso; banco gerenciado pelo Supabase com RLS ativo em todas as tabelas |
-| Acesso ao banco | Supabase JS SDK (`@supabase/supabase-js`) e SQLAlchemy | Frontend acessa Auth e dados públicos via SDK; API Python acessa o PostgreSQL via SQLAlchemy | Em uso; SDK em `src/lib/supabase.js` e SQLAlchemy em `backend/src/database/` |
-| Migrações | Supabase Migrations (SQL) | Versionar mudanças no esquema do banco com arquivos SQL em `supabase/migrations/` | Em uso; cinco migrações SQL aplicadas e versionadas |
-| Ambiente local | Supabase CLI | Subir PostgreSQL, Auth, Storage e Studio localmente via `supabase start` (usa Docker internamente) | Em uso; `supabase/config.toml` configurado |
-| Arquivos | Supabase Storage | Guardar PDFs de planos de ensino com controle de acesso privado | Em uso/configurado no `config.toml` |
-
-O backend implementa o prefixo `/api/v1` para os recursos de negócio, desacoplado do frontend SPA. A comunicação utiliza tokens JWT gerados pelo Supabase Auth e validados pelo backend via middleware.
-
-Docker é utilizado no ambiente de desenvolvimento local via Supabase CLI e para empacotar a API Python (`backend/Dockerfile`).
-
-## 4. Componentes da aplicação
-
-### 4.1 Frontend web
-
-O frontend React apresenta a vitrine institucional, o catálogo público de eventos e, após autenticação, a gestão de compromissos privados. Funciona em computadores, tablets e smartphones por meio de layout responsivo e do Design System "The Neon Campus".
-
-Responsabilidades principais:
-
-- apresentar landing page com shaders WebGL em estilo halftone e apresentação do projeto;
-- consultar eventos públicos por intervalo de datas, categoria, campus e turno com busca textual;
-- gerenciar eventos pessoais do estudante (criar, editar e excluir compromissos privados);
-- permitir autenticação via e-mail/senha, Google OAuth ou navegação anônima como visitante;
-- apresentar tela dedicada de detalhes do evento (`/evento/:id`);
-- suportar alternância global entre temas claro e escuro;
-- preparar fluxos para upload de planos de ensino e revisão de datas extraídas (Release 2).
-
-### 4.2 API e módulos de domínio
-
-A API FastAPI expõe recursos HTTP JSON e separa entrada/saída HTTP das regras de negócio. Os controllers/routers recebem a requisição, verificam autenticação e permissão, validam os dados e chamam os serviços correspondentes. Os serviços aplicam regras e acessam repositórios ou integrações.
-
-| Módulo | Responsabilidades |
+| Camada | Tecnologia e localização |
 | --- | --- |
-| **Autenticação e governança** | Sessão via Supabase Auth, perfil e papéis `student`, `professor` e `admin`; alteração de cargos exclusiva para administradores |
-| **Agenda e eventos** | Consultar eventos públicos, criar/editar eventos pessoais, filtros, inscrições e calendário unificado |
-| **Submissão e moderação** | Receber propostas de eventos com status `pending`, permitir aprovação/rejeição por professores e administradores |
-| **Turmas e Matrículas** | Processar upload de atestados de matrícula (PDF do SIGAA) para alocar automaticamente estudantes em suas disciplinas e turmas |
-| **Planos de ensino (Modelo Dual)** | Receber planos oficiais (professores) e uploads particulares (estudantes), extrair datas e gerenciar validação colaborativa e individual |
-| **Notificações e exportação** | Programar lembretes e gerar arquivo `.ics` para calendários externos |
-| **Coleta de eventos** | Importar eventos de portais de notícias e canais institucionais da UnB (SIGAA e redes sociais condicionadas à viabilidade) |
+| Frontend | React 19, Vite 6, React Router 7; `frontend/src/` |
+| API | Python, FastAPI, SQLAlchemy 2, Pydantic 2 e httpx; `backend/src/` |
+| Dados e sessão | PostgreSQL via Supabase, Supabase Auth e SDK JavaScript |
+| Migrações | SQL versionado em `supabase/migrations/` e aplicado em ordem de timestamp |
+| Ambiente local | Supabase CLI e Docker; serviços coordenados pelo Makefile |
+| Documentação | Markdown compartilhado entre o MkDocs, publicado no GitHub Pages, e o Mintlify |
+| Testes | pytest em `backend/tests/`; testes de calendário via `node --test` |
 
-Os módulos operam como componentes lógicos da API FastAPI única, mantendo o acoplamento baixo sem a complexidade operacional de microsserviços.
+A API é uma aplicação única, sem microsserviços. O módulo de eventos concentra rotas, schemas e regras dos eventos públicos, privados, salvos e sugestões. `database/models.py` mapeia as tabelas usadas pela API; as migrações SQL são a referência para o esquema completo, triggers, funções e políticas.
 
-### 4.3 Processamento de planos e atestados de matrícula
+## 4. Frontend e navegação
 
-O upload de documentos acadêmicos opera de forma assíncrona com os seguintes fluxos:
+| Rota | Comportamento |
+| --- | --- |
+| `/` | Apresentação, cadastro e login |
+| `/eventos` | Catálogo público e Meus Eventos; lista de cards ou calendário mensal/semanal |
+| `/evento/:id` | Detalhes de evento público aprovado ou compromisso privado do proprietário |
+| `/plano-de-ensino` | Envio e histórico de planos. A jornada integrada de extração e revisão está planejada para a Release 2 |
+| `/sugestoes` | Fila e histórico de sugestões; professores e administradores |
+| `/admin` | Busca e filtros de usuários, confirmação de e-mail, último acesso e cargos; somente admins |
+| `/segunda-pagina` | Redirecionamento legado para `/eventos`, preservando query e fragmento; `#plano-de-ensino` leva à página de planos |
 
-#### Fluxo 1: Atestado de Matrícula (Alocação Automática em Turmas)
+O calendário usa os mesmos eventos filtrados da lista, com navegação por mês/semana, botão Hoje e horários ordenados por dia. As datas civis seguem o fuso local do navegador. Em telas pequenas, a grade permite rolagem horizontal.
 
-1. O estudante envia o PDF do atestado de matrícula emitido pelo SIGAA (`POST /api/v1/enrollment/upload`).
-2. O parser extrai códigos de disciplinas, nomes de matérias, turmas e professores.
-3. O sistema cria ou vincula o estudante às respectivas turmas no banco relacional (`matriculas`), dispensando inserção manual.
+Meus Eventos combina compromissos privados com vínculos a eventos públicos salvos. Os dados do público são lidos do original; remover o vínculo não altera o evento. Somente os compromissos privados podem ser editados nessa agenda.
 
-#### Fluxo 2: Planos de Ensino — Modelo Dual
+## 5. API REST implementada
 
-1. **Planos Oficiais de Turmas (Docentes):**
-   - O professor envia o plano de ensino da disciplina.
-   - O parser identifica as datas de avaliações, provas e trabalhos.
-   - As avaliações são vinculadas à turma e ficam disponíveis para consulta dos matriculados.
-   - **Validação Colaborativa Ativa:** Alunos da mesma turma podem confirmar ou contestar as datas sugeridas pelo parser.
-2. **Uploads Particulares de Estudo (Estudantes):**
-   - O estudante envia um plano de ensino diretamente para sua organização pessoal.
-   - As datas extraídas passam por uma tela de revisão assistida ("Human-in-the-loop"), onde o discente pode editar ou descartar itens antes de salvá-los como compromissos privados na sua agenda.
+As rotas de negócio usam `/api/v1`; a sessão é enviada em `Authorization: Bearer <token>`. O backend valida o token com Supabase Auth e consulta o perfil no banco.
 
-## 5. Fluxos principais e rotas
+O [inventário da API](../api-specs.md) detalha as rotas disponíveis de catálogo público, compromissos privados, sugestões, vínculos salvos, planos de ensino e saúde. As ações administrativas usam RPCs do Supabase.
 
-A arquitetura organiza os endpoints REST da aplicação com prefixo `/api/v1`. Os fluxos abaixo separam o que foi **entregue na Release 1** do que está **planejado para a Release 2** e etapas seguintes:
+PUT e DELETE dos vínculos salvos são idempotentes. O frontend percorre as páginas do catálogo em lotes de 100. Filtros de turno são aplicados na interface.
 
-### 5.1 Endpoints Implementados (Release 1)
+### Fluxo interno do backend
 
-| Fluxo | Método e Rota | Descrição e Acesso |
+```mermaid
+flowchart TB
+    HTTP[Requisição HTTP] --> APP[FastAPI: CORS e roteamento]
+    APP --> VALID[Validação Pydantic de entrada]
+    APP --> DEP[Dependências de sessão nas rotas protegidas]
+    DEP --> AUTH[Supabase Auth: validação do Bearer]
+    DEP --> PROFILE[Consulta do papel em profiles]
+    VALID --> ROUTE[Rotas do módulo events]
+    DEP --> ROUTE
+    ROUTE --> RULE[Regras de papel, propriedade e visibilidade]
+    RULE --> ORM[SQLAlchemy e sessão por requisição]
+    PROFILE --> ORM
+    ORM --> DB[(PostgreSQL)]
+    DB --> OUT[Schemas de resposta]
+    OUT --> JSON[Resposta JSON ou 204 sem corpo]
+    APP -. exceções .-> ERR[Handlers: validação, conflito e indisponibilidade]
+```
+
+O diagrama representa responsabilidades, não uma ordem estrita de execução das dependências FastAPI. Rotas públicas dispensam a validação de sessão. `get_db` abre e fecha a sessão; as rotas controlam commits. Não existe camada separada de serviços/repositórios: regras e consultas estão concentradas no router. A consulta de papel e as regras de propriedade continuam necessárias mesmo quando a conexão PostgreSQL ignora RLS.
+
+## 6. Sugestões, moderação e administração
+
+O estudante escolhe **Sugerir evento** no formulário Criar Evento. `POST /api/v1/suggestions` persiste a proposta pendente. O banco força o status para autoria estudantil e registra `sugestao_estudante`, preservando essa origem mesmo após mudança de cargo.
+
+O frontend chama as seguintes RPCs pelo SDK Supabase, sem endpoints FastAPI `/admin`:
+
+| RPC | Responsabilidade e acesso |
+| --- | --- |
+| `listar_sugestoes` | Pendentes e histórico aprovado/rejeitado, busca e paginação de 20; professor/admin |
+| `moderar_sugestao` | Decide somente sugestões pendentes; professor/admin; recusa exige justificativa de até 2.000 caracteres |
+| `admin_buscar_usuarios` | Busca por nome/e-mail, filtros de papel e confirmação, último acesso e paginação de 20; admin |
+| `admin_definir_papel` | Verifica cargo anterior e chama `admin_alterar_papel`; somente admin |
+
+Decisões concorrentes de moderação não sobrescrevem uma decisão anterior. Mudanças de cargo detectam divergência do papel esperado, e um administrador não pode remover o próprio cargo de admin.
+
+Triggers registram notificações de submissão, aprovação e recusa na mesma transação do evento. A tabela `notificacoes` guarda título e justificativa; o sino dos estudantes consulta ao enviar sugestão, ao voltar à janela e a cada 30 segundos. A leitura e a marcação como lida são limitadas ao destinatário por RLS e permissões de coluna. Esses avisos não são lembretes de proximidade.
+
+## 7. Persistência, privacidade e migrações
+
+As tabelas da base R1 são `profiles`, `campus`, `categories`, `eventos`, `eventos_pessoais`, `planos_ensino` e `avaliacoes`. As novas migrações adicionam `eventos_salvos`, `notificacoes`, campos de sugestões/recusa e contador de interessados, funções administrativas e políticas de Storage. A migração `20261029160000` acrescenta procedência aos candidatos e eventos pessoais, restringe a leitura de avaliações e impede confirmar o mesmo candidato mais de uma vez. A criação das estruturas não comprova a existência do parser.
+
+- Eventos privados e vínculos salvos são limitados ao dono. A API também verifica propriedade, pois conexões administrativas podem ignorar RLS.
+- Apenas eventos aprovados aparecem no catálogo e nas consultas de públicos salvos. A exclusão de um público remove seus vínculos em cascata.
+- Cadastro e autopromoção para professor exigem `@unb.br`. A migração `20261018000100` removeu a constraint global de domínio: administradores podem atribuir professor a outro endereço pela RPC protegida. E-mail do perfil continua imutável.
+- A alteração de papéis pelo navegador é protegida por trigger; não há cadastro livre como admin.
+- O bucket privado `syllabus_files` aceita PDF até 10 MB. A migração `20261107000000` remove permissões de escrita direta que contornavam a API. O navegador lê apenas os próprios arquivos e planos. O backend valida o PDF, aplica a cota de 10 uploads por usuário em 5 dias e grava o arquivo com `SUPABASE_SERVICE_ROLE_KEY`, exclusiva do servidor.
+- HTTPS é requisito de produção; `.env` guarda configurações locais fora do versionamento.
+
+As migrações devem ser aplicadas antes de disponibilizar API/frontend dependentes delas. No Supabase local iniciado, use `npx supabase migration up`. Se a migração `20261029160000` entrou no repositório após o banco já ter versões posteriores, use `npx supabase migration up --include-all` para incluir a versão pendente. `make db-reset` recria o banco com migrações e seed. Veja o [diagrama de dados](modelo-de-dados.md), a [especificação física](banco-de-dados.md) e os guias de [eventos salvos](../eventos-salvos.md) e [painel](../painel-administrativo.md).
+
+## 8. Funcionalidades futuras e implantação
+
+O backend atual recebe uploads de planos, oferece histórico paginado, detalhe com candidatos e confirmação de avaliações na agenda privada. A seleção de ofertas, o worker de extração e o compartilhamento de versões fazem parte do fluxo planejado para a Release 2.
+
+O fluxo previsto descarta o PDF após a extração local. O usuário revisa o texto minimizado e autoriza o processamento externo. Os candidatos só viram eventos após confirmação. O autor pode compartilhar uma versão revisada para que seguidores da oferta votem e importem avaliações para a própria agenda.
+
+A entrega também prevê coleta da Agenda UnB Notícias, métricas de redirecionamento independentes da agenda, lembretes e exportação Google/ICS. A coleta deve operar separadamente das consultas à agenda para que falhas da fonte preservem os dados já armazenados. [Contratos da Release 2](../atualizacoes.md#contratos-da-release-2) · [Matriz de aceite](../matriz-release-2.md)
+
+O GitHub Pages hospeda a documentação. Isso não define hospedagem da SPA ou da API. O arquivo `backend/Dockerfile` está vazio; não constitui uma imagem executável. O desenvolvimento usa Supabase CLI/Docker, FastAPI e Vite. O [plano de implantação](../implantacao.md) propõe Vercel, Render com runtime Python e Supabase separado por ambiente; não há pipeline da aplicação implementado.
+
+## 9. Verificação
+
+Execute pytest no backend, `npm run build` no frontend e `node --test src/lib/calendar.test.js` na pasta frontend. Os testes de API de eventos salvos usam SQLite e não validam políticas RLS reais. Os testes de moderação no PostgreSQL exigem `TEST_SUPABASE_DB_URL` apontando ao Supabase local; sem essa variável são ignorados. Consulte [Contribuição](../processo/contribuindo.md) para os comandos.
+
+### Registro de validação — 24/10/2026
+
+| Verificação executada | Resultado e limite |
+| --- | --- |
+| `python -m pytest tests -q` no backend | 15 passaram, 7 ignorados por ausência de Supabase local configurado; aviso de depreciação Starlette/httpx |
+| `node --test src/lib/calendar.test.js` no frontend | 3 passaram |
+| `npm run build` no frontend | Passou; aviso de chunk acima de 500 kB |
+| OpenAPI × inventário documental | 15 operações encontradas; nenhuma ausente na especificação |
+| Requisição pessoal com `starts_at` sem fuso, via TestClient | Reproduzido 500 no handler de validação; dívida registrada, código não alterado |
+| `python -m mkdocs build --strict` | Passou; saída temporária fora do repositório |
+| Inspeção visual do site local | Diagramas geral e interno renderizados; páginas de contratos e implantação revisadas |
+
+Não foram executados testes RLS/RPCs em banco remoto, deploy nem homologação hospedada. Os sete testes ignorados permanecem pendentes de Supabase local descartável. O teste isolado do erro de validação usa entrada fictícia e não grava dados.
+
+## 10. Registro de decisões arquiteturais
+
+O [índice de ADRs](adrs/index.md) reúne as decisões implementadas, as aceitas para a Release 2 e as propostas, com fontes, consequências e orientações de verificação. Consulte-o antes de alterar a arquitetura. Os IDs DA preservam o histórico da consolidação anterior.
+
+| Registro anterior | ADR correspondente |
+| --- | --- |
+| DA-01 — aplicação única | [ADR-004](adrs/adr-004-api-monolitica.md) |
+| DA-02 — integração FastAPI/Supabase | [ADR-001](adrs/adr-001-integracao-fastapi-supabase.md) |
+| DA-03 — sessão e papel | [ADR-005](adrs/adr-005-validacao-de-sessao.md) |
+| DA-04 — autorização | [ADR-006](adrs/adr-006-autorizacao-em-camadas.md) |
+| DA-05 — migrações | [ADR-007](adrs/adr-007-migracoes-sql.md) |
+| DA-06 — eventos salvos | [ADR-008](adrs/adr-008-vinculos-de-eventos-publicos.md) |
+| DA-07 — hospedagem proposta | [ADR-002](adrs/adr-002-separar-hospedagem-e-ambientes.md) |
+
+As decisões da R2 estão nas ADRs 003 e 009–013. Seu estado não comprova implementação nem homologação.
+
+## 11. Matriz de regras e evidências
+
+“Cobertura existente” significa cenário presente na suíte, não certificação de execução, homologação hospedada ou aprovação de negócio. A execução desta consolidação é registrada na seção 9. Arquivos de testes abaixo são relativos a `backend/tests/`.
+
+| Regra implementada | Onde é aplicada | Cobertura existente / limite |
 | --- | --- | --- |
-| Autenticação (Client SDK) | `Supabase Auth SDK` | Cadastro, login com senha e Google OAuth gerenciados no frontend com tokens JWT |
-| Catálogo de eventos | `GET /api/v1/events` | Listagem pública com filtros (`campus`, `category`, `startDate`, `endDate`, `q`, `limit`, `offset`) |
-| Detalhe de evento público | `GET /api/v1/events/{id}` | Consulta aberta aos detalhes do evento aprovado |
-| Criar evento público | `POST /api/v1/events` | Criação restrita a `professor` e `admin`; nasce aprovado |
-| Excluir evento público | `DELETE /api/v1/events/{id}` | Exclusão restrita a `professor` e `admin` |
-| Listar eventos pessoais | `GET /api/v1/me/events` | Compromissos e prazos privados do usuário autenticado |
-| Detalhe de evento pessoal | `GET /api/v1/me/events/{id}` | Consulta restrita ao proprietário (`user_id`) |
-| Criar evento pessoal | `POST /api/v1/me/events` | Criação de compromisso na agenda particular |
-| Atualizar evento pessoal | `PUT /api/v1/me/events/{id}` | Atualização restrita ao proprietário |
-| Excluir evento pessoal | `DELETE /api/v1/me/events/{id}` | Exclusão restrita ao proprietário |
-| Health check | `GET /health` | Verificação de disponibilidade da API |
+| Catálogo e salvos exibem somente aprovados | Consultas do router | `test_events_api.py::test_list_public_events_filters_and_hides_pending`; `test_saved_events_api.py::test_unapproved_missing_and_deleted_events` |
+| Privados são acessíveis somente pelo dono | Filtro `user_id` na API e RLS SQL | `test_events_api.py::test_personal_event_crud_is_limited_to_its_owner`; SQLite não comprova RLS |
+| Só professor/admin publicam e excluem públicos | `require_event_manager` | `test_events_api.py::test_public_create_and_delete_require_event_manager`; sessão substituída no teste |
+| Sugestão estudantil nasce pendente sem autoria/status forjados | Router e triggers SQL | `test_suggestions_api.py`; `test_moderation_database.py::test_student_rls_submission_and_notifications` |
+| Moderação somente pendente; recusa justificada; avisos atômicos | `moderar_sugestao` e triggers | `test_moderation_database.py::test_moderation_and_atomic_notification`; execução PostgreSQL necessária |
+| Notificações limitadas ao destinatário, atualização só de leitura | RLS e permissões de coluna | `test_moderation_database.py::test_student_rls_submission_and_notifications` |
+| Admin altera terceiros, sem autorrebaixamento; detecta cargo divergente | `admin_definir_papel`, `admin_alterar_papel` | `test_moderation_database.py::test_admin_role_guards_and_professor_isolation`; concorrência simultânea não inferida desse teste |
+| Cadastro/autopromoção professor exige domínio institucional; admin pode atribuir fora dele | Triggers e migração `20261018000100` | `test_moderation_database.py::test_admin_can_promote_personal_email_but_user_cannot` cobre promoção por admin; apesar do nome, não testa explicitamente todas as negativas de cadastro/autopromoção |
+| Salvar/remover vínculo é idempotente e isolado por usuário | Router, chave composta e cascata | `test_saved_events_api.py`, incluindo duplicata e remoção própria; SQLite não comprova RLS |
 
-### 5.2 Endpoints Planejados (Release 2 e Futuro)
+Limites conhecidos: `location` pessoal não é persistido; o handler de validação pode falhar ao serializar certos contextos Pydantic; `/health` não verifica dependências. Os detalhes estão nos [contratos](../api-specs.md). Corrigir essas limitações requer tarefas de código separadas desta consolidação.
 
-| Fluxo | Rotas planejadas | Descrição e Permissões |
-| --- | --- | --- |
-| Atestado de Matrícula | `POST /api/v1/enrollment/upload` | Envio de atestado do SIGAA e alocação automática em turmas |
-| Planos de ensino | `POST /api/v1/syllabus/upload`, `GET /api/v1/syllabus` | Upload e acompanhamento no Modelo Dual (oficial docente e privado aluno) |
-| Validação Colaborativa | `POST /api/v1/assessments/{id}/confirm` | Votação/confirmação de datas de avaliações por colegas de turma |
-| Moderação de Eventos | `GET /api/v1/admin/events/pending`, `PATCH /api/v1/admin/events/{id}/review` | Visualização e aprovação de eventos por Professores e Admins |
-| Gestão de Papéis | `PATCH /api/v1/admin/users/{id}/role` | Alteração de cargos (`student`, `professor`, `admin`) exclusiva para Admins |
-| Inscrição em evento | `POST/DELETE /api/v1/events/{id}/attend` | Inscrição direta e cancelamento em eventos do campus |
-| Categorias | `GET/POST /api/v1/categories` | Consulta e gestão de categorias de eventos |
+## 12. Manutenção documental
 
-O backend verifica autorização em cada operação através de middlewares (`get_current_user`, `require_event_manager`) e políticas de RLS no PostgreSQL, assegurando que nenhum dado acadêmico privado seja exposto.
-
-## 6. Segurança, privacidade e confiabilidade
-
-- Senhas locais, caso esse modo de autenticação seja aprovado, devem ser armazenadas como hash seguro; nunca em texto simples.
-- Tokens e segredos de OAuth devem permanecer no servidor e fora do repositório. A restrição por domínio de e-mail precisa ser decidida antes de configurar Google OAuth.
-- A API deve aplicar autorização por papel e por propriedade do recurso. Dados acadêmicos, arquivos e datas privadas não podem ser expostos em consultas públicas.
-- PDFs devem ser armazenados em local privado, com validação de formato/tamanho e acesso autorizado. A API não deve publicar o caminho interno do arquivo.
-- Comunicação externa em produção deve usar HTTPS. Erros de leitura de PDF ou indisponibilidade de fontes externas devem produzir estados recuperáveis e mensagens claras.
-- A coleta externa deve ser desacoplada das consultas normais à agenda para que uma falha de scraping não interrompa o serviço.
-
-## 7. Implantação e ambiente
-
-O repositório publica a **documentação** com MkDocs pelo workflow `.github/workflows/docs.yml`. Isso não define onde a aplicação Agenda UnB será hospedada. A hospedagem da SPA, da API, do banco e dos arquivos continua em aberto.
-
-No desenvolvimento, a proposta é executar a API Python e o PostgreSQL em containers Docker; o frontend continua usando npm/Vite. Arquivos `.env` locais devem guardar configurações e credenciais fora do controle de versão, usando `.env.example` apenas para documentar os nomes das variáveis necessárias.
-
-## 8. Decisões pendentes e escopo
-
-1. **Armazenamento e e-mail:** escolher provedores e definir como guardar PDFs e enviar notificações.
-2. **Extração:** verificar se os planos de ensino têm texto selecionável; decidir se OCR é necessário. Definir também como datas ambíguas serão revisadas.
-3. **Coleta de eventos:** escolher fontes públicas suportadas, frequência de atualização e tratamento de duplicatas. A coleta de redes sociais exige validação técnica e de disponibilidade das fontes.
-4. **Prioridade do pré-MVP:** a visão prioriza primeiro autenticação, catálogo público e agenda de eventos; upload, extração automática, lembretes e exportação podem entrar em etapas posteriores.
-
-Até essas decisões serem aprovadas, este documento deve ser lido como uma arquitetura de referência para discussão, e não como um registro de componentes já entregues.
+Atualize no mesmo PR os documentos afetados por mudanças em rotas, schemas, autorização, regras de negócio, migrações ou implantação. Consulte a [referência da API](../api-specs.md), o [índice de decisões](#10-registro-de-decisoes-arquiteturais), os [padrões](../produto/padroes.md) e o [plano de implantação](../implantacao.md). Registre evidências de testes e identifique o que ainda está planejado.

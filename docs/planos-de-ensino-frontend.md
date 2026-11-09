@@ -1,6 +1,12 @@
 # Planos de ensino — S6-F01
 
+Este guia registra a integração da Sprint 6. Para a evolução planejada, consulte os [contratos da Release 2](atualizacoes.md#contratos-da-release-2) e a decisão sobre tratamento de PDFs no [ADR-003](arquitetura/adrs/adr-003-minimizar-dados-de-planos.md).
+
 A rota `/plano-de-ensino` oferece envio autenticado, acompanhamento por ID e histórico paginado de planos particulares. Usa a sessão Supabase pelo cliente compartilhado da API, sem chave de serviço nem URLs de arquivos. Visitantes recebem uma chamada para login e não fazem consultas privadas.
+
+## Demonstração e envios reais
+
+A página abre uma demonstração interativa com catálogo ilustrativo. A primeira etapa permite selecionar manualmente as turmas e declarar o vínculo, sem comprovante de matrícula ou verificação institucional. Somente as turmas escolhidas aparecem nas etapas de planos e agenda. O fluxo permanece local e reinicia ao recarregar; não consulta o Followw. O modo **Envios reais de PDF** é separado, exige autenticação e usa a API descrita abaixo.
 
 ## Escopo e dependências reais
 
@@ -79,7 +85,7 @@ npm run test:e2e
 npm run build
 ```
 
-Os testes de navegador interceptam o módulo Supabase **apenas no teste** e respondem à API com fixtures. Nenhum modo simulado, credencial ou bypass de autenticação é incorporado ao produto. Cobrem multipart/autorização, duplo clique, erros, preservação dos campos, paginação, recarga, distinção vazio/falha, polling, aba oculta, logout, visitante, teclado e ausência de overflow em 360/768/1365 px nos dois temas. Screenshots são gravadas em `frontend/test-results/` (ignorado pelo Git).
+Os testes de navegador interceptam o módulo Supabase **apenas no teste** e respondem à API com fixtures. Os mocks de autenticação são exclusivos dos testes. A demonstração interativa do produto usa exemplos locais explicitamente identificados e não contorna a autenticação dos envios reais. Cobrem multipart/autorização, duplo clique, erros, preservação dos campos, paginação, recarga, distinção vazio/falha, polling, aba oculta, logout, visitante, teclado e ausência de overflow em 360/768/1365 px nos dois temas. Screenshots são gravadas em `frontend/test-results/` (ignorado pelo Git).
 
 Os testes de frontend simulam a API. Separadamente, upload, listagem, detalhe e privacidade foram verificados com duas contas temporárias no Supabase local: upload 202, listagem/detalhe 200, detalhe de outro usuário 404, exclusão cruzada sem efeito e exclusão pelo dono bem-sucedida. Contas e PDFs de teste foram removidos. Extração por IA e gravação de semestre/ano continuam fora dessa validação.
 
