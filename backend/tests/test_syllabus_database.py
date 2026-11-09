@@ -14,7 +14,9 @@ from sqlalchemy.orm import sessionmaker
 from src.database.models import AssessmentCandidate, Syllabus
 from src.modules.syllabus.processing_config import ProcessingConfig
 from src.modules.syllabus.processing_task import process_document
+from src.modules.syllabus.privacy import privacy_checks
 from src.modules.syllabus.worker import SyllabusWorker
+from src.modules.syllabus.processing_config import ProcessingError
 from syllabus_samples import make_pdf
 from test_moderation_database import assume, database
 
@@ -184,7 +186,7 @@ def committed_plan():
     if not url:
         pytest.skip('TEST_SUPABASE_DB_URL not configured')
     assert make_url(url).host in ('localhost','127.0.0.1'), 'Local database only'
-    engine = create_engine(url)
+    engine = create_engine(url, connect_args={"options":"-c statement_timeout=10000"})
     owner = str(uuid4())
     with engine.begin() as conn:
         conn.execute(text("insert into auth.users(id,email,raw_user_meta_data) values (:id,:email,:meta)"),
@@ -215,6 +217,52 @@ def test_concurrent_confirmation_returns_one_event(committed_plan):
     assert results[0] == results[1] and results[0] is not None
     with engine.connect() as conn:
         assert conn.execute(text('select count(*) from public.eventos_pessoais where user_id=:id'),{'id':owner}).scalar() == 1
+
+
+def test_worker_privacy_prerequisites_detect_permission_or_policy_regression(database):
+    conn, _ = database
+    checks = privacy_checks(conn)
+    assert all(checks.values()), checks
+    with conn.begin_nested() as savepoint:
+        conn.execute(text('grant update(status) on public.planos_ensino to authenticated'))
+        assert privacy_checks(conn)['client_privileges'] is False
+        savepoint.rollback()
+    with conn.begin_nested() as savepoint:
+        conn.execute(text('alter policy "dono le avaliacoes legadas" on public.avaliacoes using (true)'))
+        assert privacy_checks(conn)['owner_policies'] is False
+        savepoint.rollback()
+    with conn.begin_nested() as savepoint:
+        conn.execute(text('grant execute on function public.revisar_candidatos_plano(uuid,jsonb) to anon'))
+        assert privacy_checks(conn)['review_privileges'] is False
+        savepoint.rollback()
+    with conn.begin_nested() as savepoint:
+        conn.execute(text('alter policy "planos: back-end le todos os arquivos" on storage.objects to anon'))
+        assert privacy_checks(conn)['storage_policies'] is False
+        savepoint.rollback()
+    assert all(privacy_checks(conn).values())
+
+
+def test_postgres_worker_skips_locked_job_and_recovers_expired_lease(committed_plan):
+    engine,owner,sid,_ = committed_plan
+    with engine.begin() as conn:
+        conn.execute(text("update public.planos_ensino set status='pendente',processado_em=null where id=:id"),{'id':sid})
+        second = plan(conn,owner,status='pendente',execution=0)
+    worker = SyllabusWorker(sessionmaker(bind=engine), None, None,
+                            ProcessingConfig(max_attempts=3))
+    with engine.begin() as locked:
+        locked.execute(text('select id from public.planos_ensino where id=:id for update'),{'id':sid})
+        lease_second = worker.claim()
+        assert str(lease_second.id) == second
+    lease_first = worker.claim()
+    assert str(lease_first.id) == sid and lease_first.execution == 2
+    with engine.begin() as conn:
+        conn.execute(text("update public.planos_ensino set processamento_iniciado_em=now()-interval '120 seconds' where id=:id"),{'id':sid})
+    recovered = worker.claim()
+    assert recovered.id == lease_first.id and recovered.execution == 3
+    assert recovered.token != lease_first.token
+    worker.fail(lease_first,ProcessingError('erro_interno'),1)
+    with engine.connect() as conn:
+        assert conn.execute(text('select token_processamento from public.planos_ensino where id=:id'),{'id':sid}).scalar() == recovered.token
 
 
 def test_worker_postgres_constraints_and_candidate_array(database):

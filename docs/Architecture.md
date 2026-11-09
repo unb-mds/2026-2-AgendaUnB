@@ -116,7 +116,7 @@ As migrações devem ser aplicadas antes de disponibilizar API/frontend dependen
 
 Continuam planejados: atestados de matrícula, vínculo automático com turmas, validação colaborativa, revisão individual, inscrições/cancelamentos, histórico de participação, lembretes de proximidade, exportação `.ics` e coleta externa. Upload particular e worker de extração foram implementados no backend; ver atualização S6-B01 abaixo. As demais rotas propostas em [Padrões](padroes.md) não são endpoints disponíveis.
 
-O Modelo Dual prevê planos oficiais de professores com confirmação por colegas de turma e planos particulares revisados pelo estudante antes de salvar datas privadas. O worker particular prioriza PDF com texto selecionável; a revisão e a confirmação ainda dependem de S6-B02/S6-D02. Serviço de e-mail e fontes/frequência da coleta ainda precisam de definição. A hospedagem tem proposta documentada, pendente de adoção e implantação.
+O Modelo Dual prevê planos oficiais de professores com confirmação por colegas de turma e planos particulares revisados pelo estudante antes de salvar datas privadas. O worker particular prioriza PDF com texto selecionável; a persistência da revisão está na S6-D02 e a interface/rotas ainda dependem da S6-B02. Serviço de e-mail e fontes/frequência da coleta ainda precisam de definição. A hospedagem tem proposta documentada, pendente de adoção e implantação.
 
 ### Atualização S6-B01 — 09/11/2026
 
@@ -129,8 +129,11 @@ são atômicos; não há escrita em eventos pessoais. Metadados de estado são
 consultados pelo dono via GET existente. [Operação, limites e avaliação](processamento-planos.md).
 
 As migrações #40/S6-D01 são pré-requisitos e a nova migração `20261109120000`
-acrescenta os campos da fila. S6-D02 ainda está pendente nesta cópia: integração
-com dados reais permanece desativada por padrão. O frontend de planos continua
+acrescenta os campos da fila. A S6-D02 (`20261109130000`) protege planos/candidatos/
+avaliações/Storage e fornece revisão transacional, validada em PostgreSQL isolado.
+O worker checa os pré-requisitos no banco antes de iniciar, além das flags.
+Integração com dados reais permanece desativada por padrão até homologar o destino.
+Ver [privacidade](privacidade-planos.md). O frontend de planos continua
 informativo; não se presume que o fluxo de revisão esteja disponível.
 
 O GitHub Pages hospeda a documentação. Isso não define hospedagem da SPA ou da API. O arquivo `backend/Dockerfile` está vazio; não constitui uma imagem executável. O desenvolvimento usa Supabase CLI/Docker, FastAPI e Vite. O [plano de implantação](implantacao.md) propõe Vercel, Render com runtime Python e Supabase separado por ambiente; não há pipeline da aplicação implementado.

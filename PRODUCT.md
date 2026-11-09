@@ -23,7 +23,7 @@ A plataforma será utilizada tanto de forma pontual (para descobrir o que está 
 - Categorização rígida atrelada aos campi da UnB e aos tipos de atividades.
 - Lista e calendário mensal/semanal; agenda pessoal reúne eventos privados e públicos salvos por vínculo.
 - Sugestões estudantis, moderação por professores/admins, notificações de decisão e gestão de cargos exclusiva de admins.
-- Backend possui upload particular e worker Gemini para candidatos com procedência, desativado até validar as políticas S6-D02. Revisão/confirmação, integração na página `/plano-de-ensino` e leitura de atestados continuam pendentes.
+- Backend possui upload particular, worker Gemini e políticas/revisão transacional S6-D02 validadas em PostgreSQL isolado. Ativação exige homologar o destino; tela e endpoints de revisão S6-B02, integração na página `/plano-de-ensino` e leitura de atestados continuam pendentes.
 - Obrigatório suporte fluido a temas (Claro e Escuro).
 
 ## Brand Commitments

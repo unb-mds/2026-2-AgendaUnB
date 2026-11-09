@@ -100,9 +100,42 @@ escritas diretas, política do Storage, alteração de autoria, vínculo cruzado
 confirmação parcial, rollback, idempotência, exclusão/edição posterior e duas
 confirmações simultâneas usando conexões PostgreSQL diferentes.
 
+Validação final após a checagem do worker e testes de recuperação: **118 testes
+passaram na suíte completa, nenhum ignorado**, incluindo 28 testes no PostgreSQL.
+Foram testados `SKIP LOCKED`, lease expirado, fencing e regressões de privilégios,
+políticas de leitura, função de revisão e papel da política de Storage.
+
 Os testes comuns usam transações com rollback. O teste concorrente cria somente
 usuário/plano sintéticos confirmados entre conexões e remove esses registros no
 final. Nenhum teste envia PDF real ao Gemini nem altera as flags do worker.
+
+### Verificação de pré-requisitos sem ativar processamento
+
+Na pasta `backend`, usando somente a variável de teste local:
+
+```powershell
+$env:TEST_SUPABASE_DB_URL = "postgresql+psycopg://postgres:postgres@127.0.0.1:15322/postgres"
+.\venv\Scripts\python.exe scripts/check_syllabus_privacy.py
+.\venv\Scripts\python.exe -m pytest tests -q
+```
+
+A senha acima é o padrão do ambiente local descartável, não uma credencial de
+produção. A checagem não mostra credenciais, não chama Gemini e não habilita flags.
+O script rejeita hosts remotos. No banco isolado, retornou `ready: true` para:
+migração, RLS, privilégios do cliente, políticas do dono, privilégios da revisão,
+triggers de autoria/vínculo, bucket privado e políticas do Storage.
+
+O worker executa a mesma verificação de metadados no banco configurado antes de
+iniciar. As flags sozinhas não liberam banco sem migração/permissões corretas.
+Ela detecta pré-requisitos e regressões comuns; não substitui os testes de acesso
+nem prova equivalência de expressões arbitrárias de políticas. A checagem é
+estrita para o conjunto atual de políticas: políticas novas legítimas exigem
+revisar os testes e esse contrato, em vez de presumir liberação automática.
+
+Uma consulta somente de leitura em 09/11/2026 encontrou **duas migrações pendentes
+no banco da aplicação, porta 14322**: `20261109120000_fila_processamento_planos.sql`
+e `20261109130000_privacidade_e_revisao_planos.sql`. Elas foram aplicadas somente
+no banco isolado 15322 nesta entrega; o banco da aplicação não foi migrado/resetado.
 
 ## O que ainda falta para habilitar dados reais
 
