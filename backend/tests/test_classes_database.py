@@ -241,3 +241,24 @@ def test_parallel_candidate_model_was_removed(database):
     # A função da S6-D02 dependia da tabela removida e não pode ficar exposta e quebrada.
     assert conn.execute(text(
         "select to_regprocedure('public.confirmar_candidatos_transacional(uuid[], integer)')")).scalar() is None
+
+
+def test_versions_record_author_role_and_origin(database):
+    """ADR-010: papel do autor e versão de origem; professor/horário atualizáveis (ADR-009)."""
+    conn, users = database
+    conn.execute(text("update public.profiles set papel='professor' where id=:u"), {'u': users['carla']})
+    plan_id = syllabus(conn, users['carla'])
+    version_id = version_of(conn, plan_id)
+    row = conn.execute(text('select autor_papel, procedencia_institucional, versao_origem_id from public.versoes_plano where id=:v'),
+                       {'v': version_id}).one()
+    assert (row.autor_papel, row.procedencia_institucional, row.versao_origem_id) == ('professor', False, None)
+
+    revision = conn.execute(text("""insert into public.versoes_plano(plano_id, numero, autor_id, autor_papel, versao_origem_id)
+        values (:p, 2, :u, 'student', :v) returning id"""), {'p': plan_id, 'u': users['ana'], 'v': version_id}).scalar_one()
+    assert str(revision) != version_id
+    denied(conn, 'update public.versoes_plano set versao_origem_id=id where id=:v', {'v': version_id})
+    denied(conn, "update public.versoes_plano set autor_papel='reitor' where id=:v", {'v': version_id})
+
+    offering_id = offering(conn, subject(conn), number='007')
+    conn.execute(text("update public.ofertas_turma set professor='Profa. Nova', horarios='35T23' where id=:o"), {'o': offering_id})
+    assert conn.execute(text('select turma from public.ofertas_turma where id=:o'), {'o': offering_id}).scalar_one() == '007'

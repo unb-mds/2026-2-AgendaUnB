@@ -64,6 +64,9 @@ create table public.ofertas_turma (
   turma                     text not null check (char_length(btrim(turma)) between 1 and 20),
   ano                       smallint not null check (ano between 2000 and 2100),
   semestre                  smallint not null check (semestre in (1, 2)),
+  -- ADR-009: professor e horário são atributos atualizáveis, fora da identidade.
+  professor                 text check (professor is null or char_length(btrim(professor)) between 1 and 300),
+  horarios                  text check (horarios is null or char_length(btrim(horarios)) between 1 and 500),
   atualizado_na_origem_em   timestamptz,
   sincronizado_em           timestamptz,
   criado_em                 timestamptz not null default now(),
@@ -91,6 +94,8 @@ comment on table public.disciplinas is
   'Disciplina abstrata do catálogo público. Não confundir com a oferta em um semestre.';
 comment on table public.ofertas_turma is
   'Oferta de uma disciplina em um período (turma + ano + semestre). Ofertas de semestres diferentes são registros distintos.';
+comment on column public.ofertas_turma.turma is
+  'Número da turma como texto, preservando zeros à esquerda (ADR-009).';
 comment on column public.ofertas_turma.sincronizado_em is
   'Última sincronização bem-sucedida com a origem. Permite avisar catálogo desatualizado.';
 
@@ -140,6 +145,12 @@ create table public.versoes_plano (
   plano_id          uuid not null references public.planos_ensino(id) on delete cascade,
   numero            smallint not null check (numero >= 1),
   autor_id          uuid not null references public.profiles(id) on delete cascade,
+  -- ADR-010: papel do autor no momento da alteração, versão de origem de
+  -- uma revisão e procedência institucional herdada.
+  autor_papel       text not null default 'student'
+                    check (autor_papel in ('student', 'professor', 'admin')),
+  versao_origem_id  uuid references public.versoes_plano(id) on delete set null,
+  procedencia_institucional boolean not null default false,
   visibilidade      text not null default 'privada'
                     check (visibilidade in ('privada', 'compartilhada')),
   compartilhada_em  timestamptz,
@@ -148,7 +159,9 @@ create table public.versoes_plano (
   constraint versoes_plano_numero_unico unique (plano_id, numero),
   constraint versoes_plano_do_plano unique (plano_id, id),
   constraint versoes_plano_compartilhamento
-    check ((visibilidade = 'compartilhada') = (compartilhada_em is not null))
+    check ((visibilidade = 'compartilhada') = (compartilhada_em is not null)),
+  constraint versoes_plano_origem_diferente
+    check (versao_origem_id is null or versao_origem_id <> id)
 );
 
 create index idx_versoes_plano_compartilhadas
@@ -156,12 +169,17 @@ create index idx_versoes_plano_compartilhadas
   where visibilidade = 'compartilhada';
 
 comment on table public.versoes_plano is
-  'Versões de um plano de ensino. Privadas por padrão; uma nova revisão cria nova versão e não sobrescreve calendários pessoais.';
+  'Versões de um plano de ensino. Privadas por padrão; uma nova revisão cria nova versão e não sobrescreve calendários pessoais (ADR-010).';
+comment on column public.versoes_plano.autor_papel is
+  'Papel do autor quando a versão foi criada. Não é evidência institucional.';
+comment on column public.versoes_plano.procedencia_institucional is
+  'Herdada da versão de origem; o papel professor/admin não a cria sozinho (ADR-010).';
 
 -- Planos existentes ganham a versão 1, de autoria do dono.
-insert into public.versoes_plano (plano_id, numero, autor_id, criado_em)
-select id, 1, user_id, criado_em
-  from public.planos_ensino;
+insert into public.versoes_plano (plano_id, numero, autor_id, autor_papel, criado_em)
+select p.id, 1, p.user_id, coalesce(pr.papel, 'student'), p.criado_em
+  from public.planos_ensino p
+  left join public.profiles pr on pr.id = p.user_id;
 
 -- Novos planos também nascem com a versão 1, sem exigir mudança
 -- no upload atual do back-end.
@@ -172,8 +190,9 @@ security definer
 set search_path = ''
 as $$
 begin
-  insert into public.versoes_plano (plano_id, numero, autor_id)
-  values (new.id, 1, new.user_id);
+  insert into public.versoes_plano (plano_id, numero, autor_id, autor_papel)
+  select new.id, 1, new.user_id, coalesce(
+    (select papel from public.profiles where id = new.user_id), 'student');
   return new;
 end;
 $$;
