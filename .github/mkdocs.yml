@@ -53,6 +53,7 @@ nav:
     - Atualizações e contratos da R2: atualizacoes.md
   - Uso de IA: processo/uso-de-ia.md
   - Como Contribuir: processo/contribuindo.md
+  - Verificação de segurança: processo/seguranca.md
 
 plugins:
   - search
