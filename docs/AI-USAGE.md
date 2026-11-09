@@ -30,6 +30,42 @@ O campo **verificado** é o mais importante. Sem ele, a entrada declara o uso ma
 
 ## Entradas
 
+### 09/11/2026 — S7-D01: turmas, vínculos, versões e isolamento dos planos (#69)
+
+- **Quem:** Felipe Couto Duque
+- **Ferramenta:** Claude (Anthropic)
+- **O que foi pedido:** leitura da documentação do projeto (visão, requisitos, padrões, arquitetura e planejamento da R2) e modelagem das ofertas de turma, vínculos, versões de plano e regras de isolamento, com testes e documentação.
+- **O que entrou no repositório:** migração `20261109120000_turmas_vinculos_versoes.sql`, modelos em `backend/src/database/models.py`, `backend/tests/test_classes_database.py`, dicionário de dados, DER e `padroes.md` (PR #88).
+- **O que foi verificado:** a migração foi aplicada sobre dados já existentes (plano, candidatos e evento importado), e confirmei que todos ganharam a versão 1. Os 6 testes novos passam no PostgreSQL e falham num banco sem a migração. A suíte completa passou com o banco local (71 testes), e o `supabase start` subiu do zero.
+- **O que foi rejeitado ou corrigido:** a decisão de manter `avaliacoes` como tabela de candidatos e remover `candidatos_avaliacao` foi minha, confirmada com o Thomas e o Thomaz. Não aceitei deixar a unicidade de importação global, porque bloquearia colegas ao importar uma versão compartilhada. O compartilhamento do PDF ficou para a S8-B01, como diz o planejamento.
+
+### 04/11/2026 — Correção das migrações da S6-D02 que impediam o `supabase start` (PR #63)
+
+- **Quem:** Felipe Couto Duque
+- **Ferramenta:** Claude (Anthropic)
+- **O que foi pedido:** descobrir por que a `dev` não subia o banco e corrigir.
+- **O que entrou no repositório:** correção de nomes de coluna, tabela e bucket em `20261029153745_s6_d02_parte1_rls_tabelas.sql` e `20261029154524_s6_d02_parte2_rls_storage.sql`.
+- **O que foi verificado:** reproduzi o erro (`column "proprietario_id" does not exist`), apliquei todas as migrações sem erro e testei que o dono vê os próprios planos, candidatos e PDFs, enquanto outro usuário e o visitante não veem nada.
+- **O que foi rejeitado ou corrigido:** a função `confirmar_candidatos_transacional` também aponta para uma tabela inexistente, mas não a alterei, porque é do escopo do Luis. Registrei no PR para decisão do grupo.
+
+### 28/10/2026 — S6-D01: planos particulares e candidatos (#53, PR #56) e compatibilização com o upload (#40)
+
+- **Quem:** Felipe Couto Duque
+- **Ferramenta:** Claude (Anthropic)
+- **O que foi pedido:** modelagem dos planos particulares, estados de processamento e candidatos com procedência; depois, a correção do conflito com a migração do upload (#40), que quebrava o `supabase start`.
+- **O que entrou no repositório:** migração `20261027120000_planos_particulares_e_candidatos.sql`, ajustes de status e `professor_id` no módulo de upload e seus testes, DER e dicionário de dados.
+- **O que foi verificado:** apliquei as migrações com dados anteriores à #40 e com uma linha criada pelo código da #40; as constraints, a conversão de status e a idempotência foram testadas, e o pytest do back-end continuou passando.
+- **O que foi rejeitado ou corrigido:** a primeira versão criava colunas próprias (`proprietario_id`, `arquivo_caminho`) que duplicavam as da #40; adotei os nomes que o back-end já usava. Mantive os status em português, como no plano da Sprint 6, em vez dos valores em inglês.
+
+### 14/10/2026 — Issues #41, #42 e #43: sugestão de eventos, RLS do painel admin e bucket de planos
+
+- **Quem:** Felipe Couto Duque
+- **Ferramenta:** Claude (Anthropic)
+- **O que foi pedido:** migrações para as três issues.
+- **O que entrou no repositório:** `20261014120000`, `20261014120100` e `20261014120200`.
+- **O que foi verificado:** 50 testes em PostgreSQL simulando cada papel (visitante, aluno, professor, admin e back-end), e `supabase start` local antes do PR.
+- **O que foi rejeitado ou corrigido:** durante a revisão, encontramos uma falha da minha migração de `profiles`: qualquer usuário logado podia se promover a admin pelo navegador. Ela foi fechada na #42 e reproduzida antes e depois da correção.
+
 ### 18/09/2026 — Ajustes de autenticação, correções de UI e modularização do CSS
 
 - **Quem:** Thomas Augusto Amorim de Araujo
