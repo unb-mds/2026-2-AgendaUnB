@@ -30,6 +30,15 @@ O campo **verificado** é o mais importante. Sem ele, a entrada declara o uso ma
 
 ## Entradas
 
+### 09/11/2026 — Políticas e revisão transacional S6-D02
+
+- **Quem:** Heitor Gomes Monteiro (solicitante).
+- **Ferramenta:** Codex (OpenAI).
+- **O que foi pedido:** Identificar/corrigir as pendências S6-D02, executar PostgreSQL local e continuar commits na `feat/geminiapi`.
+- **O que entrou no repositório:** Migração de privacidade de planos, candidatos, avaliações e Storage, proteção de autoria/vínculo, RPC de revisão explícita e atômica, testes reais de acesso/rollback/idempotência/concorrência e guia de operação/contrato S6-B02.
+- **O que foi verificado:** 26 testes PostgreSQL passaram em uma instância Supabase isolada na porta 15322, com todas as migrações aplicadas do zero. Testes incluem `anon`, dono, outro usuário, professor/admin, RLS de objetos do Storage, rollback e duas confirmações simultâneas sem duplicação. O banco já existente na porta 14322 foi preservado.
+- **O que foi rejeitado ou corrigido:** A leitura pública de avaliações foi removida e a inserção direta de planos pelo cliente foi fechada para impedir metadados forjados. A inicialização ampla foi bloqueada pela revisão automática; a alternativa mais restrita `supabase db start`, somente PostgreSQL isolado, foi aceita. A aprovação local não foi tratada como implantação de políticas no ambiente real; flags continuam desativadas.
+
 ### 09/11/2026 — Medição de fila/retentativas e orçamento por modelo
 
 - **Quem:** Heitor Gomes Monteiro (solicitante).
