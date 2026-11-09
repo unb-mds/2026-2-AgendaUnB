@@ -64,8 +64,13 @@ class ProcessingConfig:
 
     @classmethod
     def from_env(cls):
+        model = os.getenv("GEMINI_MODEL", cls.model)
+        if model != cls.model and not all(os.getenv(name) for name in (
+            "GEMINI_INPUT_USD_PER_MILLION", "GEMINI_OUTPUT_USD_PER_MILLION"
+        )):
+            raise ValueError("Ao alterar GEMINI_MODEL, configure os dois preços por milhão de tokens.")
         return cls(
-            model=os.getenv("GEMINI_MODEL", cls.model),
+            model=model,
             api_key=os.getenv("GEMINI_API_KEY", ""),
             timeout_seconds=float(os.getenv("SYLLABUS_AI_TIMEOUT_SECONDS", "12")),
             attempt_timeout_seconds=float(os.getenv("SYLLABUS_ATTEMPT_TIMEOUT_SECONDS", "18")),

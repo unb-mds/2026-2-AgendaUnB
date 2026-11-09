@@ -39,6 +39,7 @@ class SyllabusDetailResponse(BaseModel):
     processing_started_at: datetime | None = Field(default=None, alias="processingStartedAt")
     processed_at: datetime | None = Field(default=None, alias="processedAt")
     processing_duration_ms: int | None = Field(default=None, alias="processingDurationMs")
+    total_duration_ms: int | None = Field(default=None, alias="totalDurationMs")
     disciplina: str | None = None
     turma: str | None = None
     created_at: datetime = Field(alias="createdAt")

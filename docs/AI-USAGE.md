@@ -30,6 +30,15 @@ O campo **verificado** é o mais importante. Sem ele, a entrada declara o uso ma
 
 ## Entradas
 
+### 09/11/2026 — Medição de fila/retentativas e orçamento por modelo
+
+- **Quem:** Heitor Gomes Monteiro (solicitante).
+- **Ferramenta:** Codex (OpenAI).
+- **O que foi pedido:** Continuar o fechamento dos critérios de processamento e registrar commits incrementais.
+- **O que entrou no repositório:** `totalDurationMs` na consulta privada, medição de desvios em logs usando o tempo desde o envio, verificação de orçamento antes de reagendar uma falha e exigência de preços explícitos para modelo não padrão.
+- **O que foi verificado:** Suíte completa com 88 testes passando e nove PostgreSQL ignorados sem banco local, incluindo espera de 31s na fila com tentativa rápida, preservação do erro de timeout quando o orçamento termina e cálculo de reserva com tarifas específicas do modelo. Documentação estrita, HTML gerado (tabelas/diagrama e parâmetros), diff e ausência de credenciais nos arquivos alterados foram conferidos. Nenhuma chamada ao provedor foi necessária nesta correção.
+- **O que foi rejeitado ou corrigido:** Usar apenas a duração da última tentativa ocultava fila/retentativas na meta de 20s. Reagendar sem saldo substituía a causa original por erro genérico; agora a falha é finalizada com a causa correta.
+
 ### 09/11/2026 — Prazo total e encerramento de tentativas travadas
 
 - **Quem:** Heitor Gomes Monteiro (solicitante).

@@ -16,6 +16,7 @@ from src.modules.syllabus.extraction import VERSION
 from src.modules.syllabus.gemini import GeminiProvider
 from src.modules.syllabus.processing_config import ERROR_MESSAGES, ProcessingConfig, ProcessingError
 from src.modules.syllabus.processing_task import run_isolated
+from src.modules.syllabus.timing import duration_ms as elapsed_ms
 from src.services.storage import SupabaseStorageService
 
 logger = logging.getLogger("agenda_unb.syllabus.worker")
@@ -32,6 +33,7 @@ class Lease:
     execution: int
     user_id: UUID
     file_path: str
+    created_at: datetime
     terminal: bool = False
 
 
@@ -72,15 +74,21 @@ class SyllabusWorker:
                               error_message=None, next_attempt_at=None, provedor_ia="google",
                               modelo_ia=self.config.model, versao_processamento=VERSION,
                               cost_reserved_usd=job.cost_reserved_usd + self.config.attempt_reservation)
-            lease = Lease(job.id, token, attempt, job.user_id, job.file_path, terminal=exhausted)
+            lease = Lease(job.id, token, attempt, job.user_id, job.file_path, job.created_at, terminal=exhausted)
             changed = db.execute(update(Syllabus).where(*condition).values(**values),
                                  execution_options={"synchronize_session": False}).rowcount
             db.commit()
             return lease if changed == 1 else None
 
     def fail(self, lease: Lease, error: ProcessingError, duration_ms: int):
-        retry = error.retryable and lease.execution < self.config.max_attempts
         with self.sessions() as db:
+            active = db.scalar(select(Syllabus).where(
+                Syllabus.id == lease.id, Syllabus.processing_token == lease.token,
+                Syllabus.status == "processando").with_for_update())
+            if active is None:
+                return  # Não registrar uma falha atribuída a um lease antigo.
+            retry = (error.retryable and lease.execution < self.config.max_attempts and
+                     active.cost_reserved_usd + self.config.attempt_reservation <= self.config.max_file_cost_usd)
             db.execute(update(Syllabus).where(Syllabus.id == lease.id, Syllabus.processing_token == lease.token,
                                              Syllabus.status == "processando").values(
                 status="pendente" if retry else "falha", processing_token=None,
@@ -90,14 +98,17 @@ class SyllabusWorker:
                 processado_em=None if retry else utcnow(), processing_duration_ms=duration_ms,
             ))
             db.commit()
-        logger.info("syllabus_attempt execution=%d code=%s retry=%s duration_ms=%d",
-                    lease.execution, error.code, retry, duration_ms)
+        total = elapsed_ms(lease.created_at, utcnow())
+        logger.info("syllabus_attempt execution=%d code=%s retry=%s duration_ms=%d total_duration_ms=%d over_target=%s",
+                    lease.execution, error.code, retry, duration_ms, total, total >= 20000)
 
     def run_once(self) -> bool:
         lease = self.claim()
         if lease is None:
             return False
         if lease.terminal:
+            total = elapsed_ms(lease.created_at, utcnow())
+            logger.info("syllabus_exhausted total_duration_ms=%d over_target=%s", total, total >= 20000)
             return True
         started = time.monotonic()
         try:
@@ -127,8 +138,9 @@ class SyllabusWorker:
                         versao_processamento=VERSION, status="pendente",
                     ))
                 db.commit()  # Candidatos + estado final são uma única transação.
-            logger.info("syllabus_completed candidates=%d unsupported_dates=%d duration_ms=%d over_target=%s",
-                        len(result.candidates), result.unsupported_dates, duration, duration >= 20000)
+            total = elapsed_ms(lease.created_at, utcnow())
+            logger.info("syllabus_completed candidates=%d unsupported_dates=%d duration_ms=%d total_duration_ms=%d over_target=%s",
+                        len(result.candidates), result.unsupported_dates, duration, total, total >= 20000)
         except ProcessingError as error:
             self.fail(lease, error, round((time.monotonic() - started) * 1000))
         except Exception:

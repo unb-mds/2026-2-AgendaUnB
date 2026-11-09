@@ -100,6 +100,10 @@ continua consumida após timeout, erro ou interrupção, porque o provedor pode 
 cobrado. Se não houver orçamento restante, o arquivo falha antes de nova chamada.
 Revisar preços no provedor ao mudar modelo/tarifa; não extrapolar essa garantia a
 ferramentas ou modalidades novas. O tier gratuito não é pressuposto no orçamento.
+Ao trocar `GEMINI_MODEL`, os dois preços precisam estar explicitamente configurados;
+o worker não usa silenciosamente a tarifa padrão para outro modelo. Se o orçamento
+não comportar mais uma tentativa, a falha atual é finalizada com sua causa original,
+sem reagendar uma chamada que não pode ser custeada.
 
 429, 5xx selecionados, timeout e falha de conexão permitem nova tentativa, após
 dois segundos; erros de autenticação, resposta inválida ou PDF inválido não.
@@ -158,6 +162,11 @@ servidor ao PostgreSQL/Storage. API e worker compartilham a fila, não a memóri
 O Storage em memória só serve aos testes; o comando de produção o rejeita.
 A consulta autenticada existente `GET /api/v1/syllabus/{id}` permite polling
 do estado; resposta não contém candidatos ou credenciais. Ver [API](api-specs.md).
+`processingDurationMs` é a duração da última tentativa. `totalDurationMs` usa
+os timestamps persistidos de criação/término, incluindo fila e retentativas;
+antes do término, retorna nulo. Logs de sucesso/falha usam esse total para indicar
+desvios de 20s, mesmo se a tentativa final foi rápida. Recuperações sem orçamento
+ou tentativas restantes também registram a duração total.
 
 ## Avaliação reproduzível
 

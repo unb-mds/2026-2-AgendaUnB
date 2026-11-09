@@ -254,10 +254,12 @@ excesso de bytes; 502/503 indisponibilidade de Storage ou banco.
 Autenticado e restrito ao proprietário: UUID válido de outro dono ou inexistente
 retorna **404**. Retorna metadados do upload e `status`, `extractedEventsCount`,
 `errorMessage`, `errorCode`, `pageCount`, `attempts`, `processingStartedAt`,
-`processedAt`, `processingDurationMs`, `disciplina` e `turma`. Campos ainda não
+`processedAt`, `processingDurationMs`, `totalDurationMs`, `disciplina` e `turma`. Campos ainda não
 disponíveis são nulos; `attempts` começa em zero. Estados: `pendente`,
 `processando`, `concluido` e `falha`. Erros são mensagens fixas e códigos da S6-D01.
 Concluído com contagem zero significa documento sem cronograma identificado.
+`processingDurationMs` mede a última tentativa; `totalDurationMs` mede da criação
+do registro ao término, incluindo fila/retentativas, e é nulo antes de finalizar.
 
 O [worker independente](processamento-planos.md) consome a fila. Ele fica
 desativado até a configuração explícita e a validação das políticas S6-D02.

@@ -1,4 +1,5 @@
 import json
+import logging
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
@@ -327,3 +328,49 @@ def test_whole_attempt_timeout_is_persisted_and_retries_stop(job):
         assert record.execucao_atual == 2
         assert record.cost_reserved_usd == worker.config.attempt_reservation * 2
         assert db.scalar(select(func.count()).select_from(AssessmentCandidate)) == 0
+
+
+def test_total_duration_includes_queue_wait_in_api_and_logs(job, api, caplog):
+    worker, sessions, sid = job
+    assert api[0].get(f"/api/v1/syllabus/{sid}").json()["totalDurationMs"] is None
+    with sessions() as db:
+        db.get(Syllabus, sid).created_at = datetime.now(timezone.utc) - timedelta(seconds=31)
+        db.commit()
+    with caplog.at_level(logging.INFO, logger="agenda_unb.syllabus.worker"):
+        worker.run_once()
+    response = api[0].get(f"/api/v1/syllabus/{sid}").json()
+    assert response["totalDurationMs"] >= 30000
+    assert response["processingDurationMs"] < response["totalDurationMs"]
+    assert "over_target=True" in caplog.text
+
+
+def test_timeout_with_insufficient_retry_budget_preserves_cause(job):
+    worker, sessions, sid = job
+    worker.config = replace(worker.config, max_file_cost_usd=Decimal("0.03"))
+    def expire(*args):
+        raise ProcessingError("tempo_esgotado", retryable=True)
+    worker.runner = expire
+    assert worker.run_once() and not worker.run_once()
+    with sessions() as db:
+        plan = db.get(Syllabus, sid)
+        assert plan.status == "falha" and plan.erro_codigo == "tempo_esgotado"
+        assert plan.execucao_atual == 1 and plan.cost_reserved_usd == worker.config.attempt_reservation
+
+
+@pytest.mark.parametrize("present_prices", [[], ["GEMINI_INPUT_USD_PER_MILLION"], ["GEMINI_OUTPUT_USD_PER_MILLION"]])
+def test_model_change_requires_explicit_prices(monkeypatch, present_prices):
+    monkeypatch.setenv("GEMINI_MODEL", "gemini-custom-text-model")
+    for name in ["GEMINI_INPUT_USD_PER_MILLION", "GEMINI_OUTPUT_USD_PER_MILLION"]:
+        monkeypatch.delenv(name, raising=False)
+    for name in present_prices:
+        monkeypatch.setenv(name, "1")
+    with pytest.raises(ValueError, match="preços"):
+        ProcessingConfig.from_env()
+
+
+def test_model_change_uses_explicit_reservation_prices(monkeypatch):
+    monkeypatch.setenv("GEMINI_MODEL", "gemini-custom-text-model")
+    monkeypatch.setenv("GEMINI_INPUT_USD_PER_MILLION", "1")
+    monkeypatch.setenv("GEMINI_OUTPUT_USD_PER_MILLION", "2")
+    config = ProcessingConfig.from_env()
+    assert config.attempt_reservation == Decimal("0.064192")
