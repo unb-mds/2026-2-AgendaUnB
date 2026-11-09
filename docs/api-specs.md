@@ -14,6 +14,8 @@ Fontes: `backend/src/main.py`, `modules/events/router.py`, `modules/events/schem
 - Corpos JSON usam `Content-Type: application/json`. Rotas autenticadas exigem `Authorization: Bearer <token>` do Supabase Auth.
 - Papéis persistidos: `student`, `professor`, `admin`. O servidor obtém o ID da sessão e consulta o papel em `profiles`; o cliente não escolhe a identidade.
 - `{event_id}` é UUID. UUID malformado gera falha de validação; UUID válido ausente recebe o comportamento indicado em cada operação.
+- Toda resposta leva cabeçalhos de proteção (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Content-Security-Policy`); respostas com dados da conta levam `Cache-Control: no-store`. O CORS aceita somente as origens de `CORS_ORIGINS` e os cabeçalhos `Authorization`, `Content-Type`, `Accept` e `Idempotency-Key`. Detalhes em [Verificação de segurança](processo/seguranca.md).
+- A busca `q` trata `%` e `_` como texto.
 - GET e DELETE não têm corpo definido; PUT de evento salvo também não. Listas de eventos retornam arrays, e listas vazias retornam `[]`. O histórico de planos usa um envelope de paginação.
 - Os schemas ignoram campos extras; enviar `status` ou `author_id` não altera os valores definidos pelo servidor. Isso não equivale a rejeitar esses campos com 422.
 
@@ -156,11 +158,13 @@ O histórico e o detalhe retornam `ano` e `semestre`. Planos antigos podem ter e
 | HTTP | Situação | Formato |
 | --- | --- | --- |
 | 401 | Bearer ausente, sessão expirada/inválida ou identidade inválida retornada pelo Auth | `{"detail":"mensagem"}` |
-| 403 | Perfil não encontrado ou papel sem permissão | `{"detail":"mensagem"}` |
+| 403 | Perfil não encontrado, papel sem permissão ou conta com e-mail não confirmado | `{"detail":"mensagem"}` |
 | 404 | Recurso não disponível conforme as regras da operação | `{"detail":"mensagem"}` |
 | 409 | `IntegrityError` não recuperado pela operação | `{"detail":"A operação conflita com os dados existentes."}` |
 | 422 | Validação automática de payload/path/query | `detail` textual e array `errors` de erros Pydantic |
 | 422 | Regra explícita: campus/categoria desconhecido ou intervalo inválido | Somente `detail` textual |
+| 413 | Corpo acima de 256 KiB fora do upload de planos (`MAX_JSON_BODY_BYTES`) | `{"detail":"mensagem"}` |
+| 429 | Limite de requisições por cliente (cabeçalho `Retry-After`) ou mais de 10 sugestões pendentes da mesma conta | `{"detail":"mensagem"}` |
 | 503 | Falha SQLAlchemy ou comunicação/configuração do Auth | `{"detail":"mensagem"}` |
 
 Exemplo de validação de título curto:

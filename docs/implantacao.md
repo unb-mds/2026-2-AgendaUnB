@@ -60,6 +60,9 @@ URLs, IDs dos projetos, região e responsáveis nominais serão preenchidos quan
 | `SUPABASE_ANON_KEY` | Runtime Render | Chave anon usada na validação do token pelo Auth |
 | `CORS_ORIGINS` | Runtime Render | Origens exatas da SPA, separadas por vírgula, sem caminho; evitar curingas |
 | `PORT` | Runtime Render | Fornecida pelo provedor; usada pelo comando de início |
+| `API_DOCS_ENABLED` | Runtime Render | `false` em homologação e produção: desliga `/docs`, `/redoc` e `/openapi.json` |
+| `TRUSTED_PROXY_HOPS` | Runtime Render | Proxies da hospedagem à frente da API, para o limite de taxa identificar o cliente; conferir nos logs |
+| `RATE_LIMIT_PER_MINUTE` / `RATE_LIMIT_WRITE_PER_MINUTE` | Runtime Render | Limite de requisições por cliente; padrões `240` e `60` |
 | `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID` / `SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET` | Supabase local/configuração do provedor OAuth hospedado | Client ID e segredo do Google; segredo nunca enviado ao bundle |
 | `TEST_SUPABASE_DB_URL` | Job de teste | Somente conexão do Supabase local descartável; testes rejeitam host remoto |
 | Tokens Vercel/Render/Supabase e senha de migração | GitHub Environments/Secrets | Segredos exclusivos da automação; provisionar somente na implementação do pipeline |

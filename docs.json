@@ -96,6 +96,7 @@
         "pages": [
           "docs/processo/contribuindo",
           "docs/processo/uso-de-ia",
+          "docs/processo/seguranca",
           "docs/atualizacoes",
           {
             "group": "Sprints",
