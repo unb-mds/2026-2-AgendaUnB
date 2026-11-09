@@ -119,6 +119,9 @@ para o estudante.
   aparecer no trecho e dependem de data válida, conforme a constraint da S6-D01.
   Ausência de horário permanece nula, sem assumir meia-noite. Hora é local, sem
   fuso: a confirmação futura deverá exigir o fuso explícito do estudante.
+  Dois horários distintos no mesmo trecho (alternativa ou intervalo) deixam a
+  hora nula e ambígua; o servidor não escolhe o início de um intervalo. Horários
+  que o próprio modelo declarou incertos também precisam de revisão.
 - Documento sem cronograma conclui com zero candidatos. JSON malformado, saída
   truncada ou evidência inválida causam `falha`, sem persistência parcial.
 - Logs próprios contêm apenas contagens, códigos, duração e indicador de desvio
