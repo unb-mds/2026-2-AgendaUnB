@@ -76,6 +76,12 @@ allowed_origins = [
     for origin in os.getenv("CORS_ORIGINS", default_origins).split(",")
     if origin.strip()
 ]
+vercel_url = os.getenv("VERCEL_URL")
+if vercel_url:
+    allowed_origins.append(f"https://{vercel_url}")
+vercel_prod_url = os.getenv("VERCEL_PROJECT_PRODUCTION_URL")
+if vercel_prod_url:
+    allowed_origins.append(f"https://{vercel_prod_url}")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
@@ -90,5 +96,6 @@ app.include_router(syllabus_router, prefix="/api/v1")
 
 
 @app.get("/health", tags=["health"])
+@app.get("/api/health", tags=["health"])
 def health_check() -> dict[str, str]:
     return {"status": "ok"}
