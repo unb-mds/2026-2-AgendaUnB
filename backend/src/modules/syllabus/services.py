@@ -2,9 +2,11 @@ import logging
 import math
 import os
 import re
+from datetime import datetime, timedelta, timezone
 from uuid import UUID, uuid4
 
 from fastapi import HTTPException, UploadFile
+from sqlalchemy import func, select, text as sql_text
 from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
 
@@ -110,12 +112,28 @@ def process_syllabus_upload(
     storage: SupabaseStorageService,
     disciplina: str | None = None,
     turma: str | None = None,
+    ano: int | None = None,
+    semestre: int | None = None,
 ) -> Syllabus:
     """
     Coordena o upload físico para o Storage do Supabase e o registro
     transacional de rastreamento com status inicial 'pendente'.
     Compensa a gravação no Storage caso a persistência no banco falhe.
     """
+    # Serialize uploads for this user across API workers before counting the
+    # rolling window. The lock lasts until the plan and its file are committed.
+    if db.bind.dialect.name == "postgresql":
+        db.execute(sql_text("SELECT pg_advisory_xact_lock(hashtextextended(:user_id, 0))"),
+                   {"user_id": str(user_id)})
+    cutoff = datetime.now(timezone.utc) - timedelta(days=5)
+    recent_uploads = db.scalar(
+        select(func.count()).select_from(Syllabus).where(
+            Syllabus.user_id == user_id, Syllabus.created_at >= cutoff
+        )
+    )
+    if recent_uploads >= 10:
+        raise HTTPException(status_code=429, detail="Limite de 10 planos enviados em 5 dias. Tente novamente mais tarde.")
+
     syllabus_id = uuid4()
     safe_name = sanitize_filename(filename)
 
@@ -142,6 +160,8 @@ def process_syllabus_upload(
         error_message=None,
         disciplina=disciplina,
         turma=turma,
+        ano=ano,
+        semestre=semestre,
     )
 
     try:

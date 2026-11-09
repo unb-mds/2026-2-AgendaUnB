@@ -1,4 +1,8 @@
-# Sprint 04 - Arquitetura, concepção do protótipo e entrega de MVP
+---
+title: "Sprint 04 - Arquitetura, concepção do protótipo e entrega de MVP"
+description: "Arquitetura, concepção do protótipo e entrega de MVP da quarta sprint do Agenda UnB."
+sidebarTitle: "Sprint 4"
+---
 
 **Período:** 21/09/2026 - 05/10/2026
 

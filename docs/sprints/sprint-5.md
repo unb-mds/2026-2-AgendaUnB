@@ -1,4 +1,7 @@
-# Sprint 05 - Calendário, administração e preparação para planos de ensino
+---
+title: "Sprint 05 - Calendário, administração e preparação para planos de ensino"
+sidebarTitle: "Sprint 5"
+---
 
 **Período:** 05/10/2026 - 18/10/2026
 

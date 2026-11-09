@@ -101,22 +101,22 @@ Triggers registram notificações de submissão, aprovação e recusa na mesma t
 
 ## 7. Persistência, privacidade e migrações
 
-As tabelas da base R1 são `profiles`, `campus`, `categories`, `eventos`, `eventos_pessoais`, `planos_ensino` e `avaliacoes`. As novas migrações adicionam `eventos_salvos`, `notificacoes`, campos de sugestões/recusa e contador de interessados, funções administrativas e políticas de Storage. A criação das estruturas de planos e avaliações não comprova a existência do parser.
+As tabelas da base R1 são `profiles`, `campus`, `categories`, `eventos`, `eventos_pessoais`, `planos_ensino` e `avaliacoes`. As novas migrações adicionam `eventos_salvos`, `notificacoes`, campos de sugestões/recusa e contador de interessados, funções administrativas e políticas de Storage. A migração `20261029160000` acrescenta procedência aos candidatos e eventos pessoais, restringe a leitura de avaliações e impede confirmar o mesmo candidato mais de uma vez. A criação das estruturas não comprova a existência do parser.
 
 - Eventos privados e vínculos salvos são limitados ao dono. A API também verifica propriedade, pois conexões administrativas podem ignorar RLS.
 - Apenas eventos aprovados aparecem no catálogo e nas consultas de públicos salvos. A exclusão de um público remove seus vínculos em cascata.
 - Cadastro e autopromoção para professor exigem `@unb.br`. A migração `20261018000100` removeu a constraint global de domínio: administradores podem atribuir professor a outro endereço pela RPC protegida. E-mail do perfil continua imutável.
 - A alteração de papéis pelo navegador é protegida por trigger; não há cadastro livre como admin.
-- O bucket privado `syllabus_files` aceita PDF até 10 MB. As políticas exigem a pasta `<user_id>/<arquivo>.pdf` e restringem envio/leitura ao dono. Chaves de serviço nunca devem ser expostas em variáveis `VITE_`.
+- O bucket privado `syllabus_files` aceita PDF até 10 MB. A migração `20261107000000` remove permissões de escrita direta que contornavam a API. O navegador lê apenas os próprios arquivos e planos. O backend valida o PDF, aplica a cota de 10 uploads por usuário em 5 dias e grava o arquivo com `SUPABASE_SERVICE_ROLE_KEY`, exclusiva do servidor.
 - HTTPS é requisito de produção; `.env` guarda configurações locais fora do versionamento.
 
-As migrações devem ser aplicadas antes de disponibilizar API/frontend dependentes delas. No Supabase local iniciado, use `npx supabase migration up --local`. `make db-reset` recria o banco com migrações e seed; não é o procedimento para preservar dados existentes. Veja os guias de [eventos salvos](eventos-salvos.md) e [painel](painel-administrativo.md).
+As migrações devem ser aplicadas antes de disponibilizar API/frontend dependentes delas. No Supabase local iniciado, use `npx supabase migration up`. Se a migração `20261029160000` entrou no repositório após o banco já ter versões posteriores, use `npx supabase migration up --include-all` para incluir a versão pendente. `make db-reset` recria o banco com migrações e seed. Veja os guias de [eventos salvos](eventos-salvos.md) e [painel](painel-administrativo.md).
 
 ## 8. Funcionalidades futuras e implantação
 
-Continuam planejados: atestados de matrícula, vínculo automático com turmas, validação colaborativa, revisão individual, inscrições/cancelamentos, histórico de participação, lembretes de proximidade, exportação `.ics` e coleta externa. Upload particular e worker de extração foram implementados no backend; ver atualização S6-B01 abaixo. As demais rotas propostas em [Padrões](padroes.md) não são endpoints disponíveis.
+Continuam planejados: atestados de matrícula, vínculo automático com turmas, validação colaborativa, inscrições/cancelamentos, histórico de participação, lembretes de proximidade, exportação `.ics` e coleta externa. Upload particular e worker de extração foram implementados no backend; ver atualização S6-B01 abaixo. As demais rotas propostas em [Padrões](padroes.md) não são endpoints disponíveis.
 
-O Modelo Dual prevê planos oficiais de professores com confirmação por colegas de turma e planos particulares revisados pelo estudante antes de salvar datas privadas. O worker particular prioriza PDF com texto selecionável; a persistência da revisão está na S6-D02 e a interface/rotas ainda dependem da S6-B02. Serviço de e-mail e fontes/frequência da coleta ainda precisam de definição. A hospedagem tem proposta documentada, pendente de adoção e implantação.
+O Modelo Dual prevê planos oficiais de professores com confirmação por colegas de turma e planos particulares revisados pelo estudante antes de salvar datas privadas. O worker particular prioriza PDF com texto selecionável; a persistência da revisão está na S6-D02. A interface e as rotas já existentes usam avaliações legadas e ainda precisam ser conectadas aos candidatos privados do worker. Serviço de e-mail e fontes/frequência da coleta ainda precisam de definição. A hospedagem tem proposta documentada, pendente de adoção e implantação.
 
 ### Atualização S6-B01 — 09/11/2026
 
@@ -133,14 +133,15 @@ acrescenta os campos da fila. A S6-D02 (`20261109130000`) protege planos/candida
 avaliações/Storage e fornece revisão transacional, validada em PostgreSQL isolado.
 O worker checa os pré-requisitos no banco antes de iniciar, além das flags.
 Integração com dados reais permanece desativada por padrão até homologar o destino.
-Ver [privacidade](privacidade-planos.md). O frontend de planos continua
-informativo; não se presume que o fluxo de revisão esteja disponível.
+Ver [privacidade](privacidade-planos.md). O frontend e a API de revisão existentes
+foram preservados; a conciliação entre avaliações legadas e candidatos privados
+permanece pendente da integração com o ambiente da equipe.
 
 O GitHub Pages hospeda a documentação. Isso não define hospedagem da SPA ou da API. O arquivo `backend/Dockerfile` está vazio; não constitui uma imagem executável. O desenvolvimento usa Supabase CLI/Docker, FastAPI e Vite. O [plano de implantação](implantacao.md) propõe Vercel, Render com runtime Python e Supabase separado por ambiente; não há pipeline da aplicação implementado.
 
 ## 9. Verificação
 
-Execute pytest no backend, `npm run build` no frontend e `node --test src/lib/calendar.test.js` na pasta frontend. Os testes de API de eventos salvos usam SQLite e não validam políticas RLS reais. Os testes de moderação no PostgreSQL exigem `TEST_SUPABASE_DB_URL` apontando ao Supabase local; sem essa variável são ignorados. Consulte [Contribuição](CONTRIBUTING.md) para os comandos.
+Execute pytest no backend, `npm run build` no frontend e `node --test src/lib/calendar.test.js` na pasta frontend. Os testes de API de eventos salvos usam SQLite e não validam políticas RLS reais. Os testes de moderação no PostgreSQL exigem `TEST_SUPABASE_DB_URL` apontando ao Supabase local; sem essa variável são ignorados. Consulte [Contribuição](processo/contribuindo.md) para os comandos.
 
 ### Registro de validação — 24/10/2026
 

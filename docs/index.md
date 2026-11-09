@@ -75,7 +75,7 @@ Navegue pelas seções através das abas superiores ou pelos links abaixo:
 * [Requisitos](requisitos.md) — Especificação completa de Requisitos Funcionais (RF) e Não Funcionais (RNF).
 * [Padrões de Projeto](padroes.md) — Glossário oficial, convenções de código, branches e commits.
 * [Sprints](sprints/sprint-1.md) — Acompanhamento ágil das entregas por ciclo de desenvolvimento.
-* [Como Contribuir](CONTRIBUTING.md) — Guia de instalação e ambiente de desenvolvimento local.
+* [Como Contribuir](processo/contribuindo.md) — Guia de instalação e ambiente de desenvolvimento local.
 
 
 ## Estado atual
@@ -94,3 +94,7 @@ A página Plano de Ensino informa que upload e extração ainda estão em prepar
 As páginas de [Sprint 01](sprints/sprint-1.md), [Sprint 02](sprints/sprint-2.md), [Sprint 03](sprints/sprint-3.md), [Sprint 04](sprints/sprint-4.md) e [Sprint 05](sprints/sprint-5.md) registram as issues existentes, seus textos e estados consultados em 19/10/2026. A [Sprint 06](sprints/sprint-6.md) reúne a proposta de planos de ensino com IA e as realocações de #38 e #40, ainda pendentes exclusivamente no backend.
 
 Consolidação técnica de 24/10/2026: [Arquitetura e decisões](Architecture.md), [contratos](api-specs.md) e [implantação proposta](implantacao.md), com referência no commit `e0ecf46` e histórico da tag `R1`.
+
+## Planejamento da Release 2
+
+As [Sprint 7](sprints/sprint-7.md) e [Sprint 8](sprints/sprint-8.md) registram as decisões aprovadas, as issues publicadas, os responsáveis e os critérios de aceite para a entrega de 25/11/2026.

@@ -1,4 +1,8 @@
-# Sprint 02 - Requisitos, arquitetura e documentação
+---
+title: "Sprint 02 - Requisitos, arquitetura e documentação"
+description: "Requisitos, arquitetura e documentação da segunda sprint do Agenda UnB."
+sidebarTitle: "Sprint 2"
+---
 
 **Período:** 24/08/2026 - 06/09/2026
 
@@ -51,4 +55,3 @@ Consulta ao GitHub em **19/10/2026**. Estado e checklists abaixo reproduzem o re
 **Estado:** Fechada.
 
 **Labels:** Nenhuma.
-

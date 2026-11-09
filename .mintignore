@@ -1,0 +1,11 @@
+# Publique os arquivos Markdown, MDX e recursos da documentação Mintlify.
+/frontend/*
+!/frontend/public/
+/frontend/public/*
+!/frontend/public/Logo-AgendaUnB1.png
+backend/
+supabase/
+.agent/
+.impeccable/
+/*.md
+/.github/

@@ -3,6 +3,16 @@ site_description: Documentação oficial do projeto Agenda UnB — Métodos de D
 repo_name: unb-mds/G8-2026-2
 repo_url: https://github.com/unb-mds/2026-2-AgendaUnB
 
+docs_dir: ../docs
+site_dir: ../site
+
+# Páginas com estrutura e links próprios do Mintlify.
+exclude_docs: |
+  /arquitetura/
+  /processo/release-notes/
+  /processo/uso-de-ia.md
+  /produto/
+
 nav:
   - Início: index.md
   - Visão do Produto: documento-de-visao.md
@@ -24,8 +34,11 @@ nav:
     - Sprint 4: sprints/sprint-4.md
     - Sprint 5: sprints/sprint-5.md
     - Sprint 6: sprints/sprint-6.md
+    - Sprint 7: sprints/sprint-7.md
+    - Sprint 8: sprints/sprint-8.md
   - Release Notes:
     - v0.1.0: release-notes/v0.1.0.md
+    - Atualizações pós-Release 1: atualizacoes.md
   - Como Contribuir: CONTRIBUTING.md
 
 theme:

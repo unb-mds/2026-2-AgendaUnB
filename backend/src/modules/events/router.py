@@ -16,6 +16,7 @@ from src.modules.events.schemas import (
     EventUpdate,
     PersonalEventCreate,
     PersonalEventRead,
+    PersonalEventOriginRead,
     PersonalEventUpdate,
     SavedEventStatus,
 )
@@ -82,6 +83,16 @@ def _personal_read(event: PersonalEvent) -> PersonalEventRead:
         starts_at=event.starts_at,
         campus=event.campus.nome if event.campus else None,
         category=event.category.nome if event.category else None,
+        origin=(
+            PersonalEventOriginRead(
+                syllabusId=event.origin_syllabus_id,
+                candidateId=event.origin_candidate_id,
+                page=event.origin_page,
+                excerpt=event.origin_excerpt,
+            )
+            if event.origin_syllabus_id and event.origin_candidate_id
+            else None
+        ),
     )
 
 
@@ -173,11 +184,13 @@ def create_public_event(
 def delete_public_event(
     event_id: UUID,
     db: Session = Depends(get_db),
-    _current_user: CurrentUser = Depends(require_event_manager),
+    current_user: CurrentUser = Depends(require_event_manager),
 ) -> Response:
     event = db.get(PublicEvent, event_id)
     if event is None:
         raise HTTPException(status_code=404, detail="Evento não encontrado")
+    if current_user.role != "admin" and event.author_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Apenas o autor ou um administrador pode excluir este evento")
     db.delete(event)
     db.commit()
     return Response(status_code=204)

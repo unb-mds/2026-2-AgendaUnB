@@ -1,17 +1,19 @@
-# Configuracao do Shell de execucao (compatibilidade Windows e Unix)
+# As receitas usam Bash. No Windows, /bin/bash pode fazer o Make cair no
+# cmd.exe; prefira o Bash do Git e nao o launcher do WSL presente no PATH.
 ifeq ($(OS),Windows_NT)
-    ifneq ($(wildcard C:/Program\ Files/Git/bin/bash.exe),)
-        SHELL := C:/Program Files/Git/bin/bash.exe
-    else ifneq ($(wildcard C:/Program\ Files\ \(x86\)/Git/bin/bash.exe),)
-        SHELL := C:/Program Files (x86)/Git/bin/bash.exe
-    else ifneq ($(wildcard $(LOCALAPPDATA)/Programs/Git/bin/bash.exe),)
-        SHELL := $(LOCALAPPDATA)/Programs/Git/bin/bash.exe
+    GIT_BASH := $(wildcard C:/Program\ Files/Git/bin/bash.exe)
+    ifeq ($(GIT_BASH),)
+        GIT_BASH := $(wildcard $(subst \,/,$(LOCALAPPDATA))/Programs/Git/bin/bash.exe)
+    endif
+    ifneq ($(GIT_BASH),)
+        SHELL := $(GIT_BASH)
     else
         SHELL := bash.exe
     endif
 else
     SHELL := /bin/bash
 endif
+.SHELLFLAGS := -c
 
 # Diretorio raiz do projeto (caminho absoluto)
 ROOT_DIR            := $(CURDIR)
@@ -91,15 +93,12 @@ check-env:
 	fi
 
 check-backend:
-	@if [ ! -d "$(VENV_DIR)" ]; then \
+	@if [ ! -f "$(PYTHON)" ]; then \
 		echo "[INFO] Criando ambiente virtual em $(VENV_DIR)..."; \
-		$(SYS_PYTHON) -m venv $(VENV_DIR) || python -m venv $(VENV_DIR); \
-		echo "[INFO] Instalando dependencias do Backend..."; \
-		$(PIP) install -r $(ROOT_DIR)/backend/requirements.txt; \
-		if [ -f "$(ROOT_DIR)/backend/requirements-dev.txt" ]; then \
-			$(PIP) install -r $(ROOT_DIR)/backend/requirements-dev.txt; \
-		fi \
+		$(SYS_PYTHON) -m venv "$(VENV_DIR)" || python -m venv "$(VENV_DIR)"; \
 	fi
+	@echo "[INFO] Sincronizando dependencias do Backend..."
+	@"$(PYTHON)" -m pip install -r "$(ROOT_DIR)/backend/requirements-dev.txt"
 
 check-frontend:
 	@if [ ! -d "$(ROOT_DIR)/frontend/node_modules" ]; then \
@@ -110,17 +109,8 @@ check-frontend:
 # ------------------------------------------------------------------------------
 # Setup Completo
 # ------------------------------------------------------------------------------
-setup: check-env
+setup: check-env check-backend
 	@echo "[SETUP] Iniciando configuracao completa do ambiente..."
-	@if [ ! -d "$(VENV_DIR)" ]; then \
-		echo "[SETUP] Criando venv do Python..."; \
-		$(SYS_PYTHON) -m venv $(VENV_DIR) || python -m venv $(VENV_DIR); \
-	fi
-	@echo "[SETUP] Instalando dependencias do Backend..."
-	@$(PIP) install -r $(ROOT_DIR)/backend/requirements.txt
-	@if [ -f "$(ROOT_DIR)/backend/requirements-dev.txt" ]; then \
-		$(PIP) install -r $(ROOT_DIR)/backend/requirements-dev.txt; \
-	fi
 	@echo "[SETUP] Instalando dependencias do Frontend..."
 	@cd "$(ROOT_DIR)/frontend" && npm install
 	@echo "[SETUP] Inicializando banco de dados Supabase..."
@@ -148,8 +138,8 @@ dev: check-env check-backend check-frontend db-start
 	@echo " Pressione [Ctrl+C] para encerrar o Backend e o Frontend."
 	@echo "======================================================================"
 	@echo ""
-	@$(SHELL) -c '\
-		(cd "$(ROOT_DIR)/backend" && $(UVICORN) src.main:app --reload --port $(BACKEND_PORT)) & \
+	@"$(SHELL)" -c '\
+		(cd "$(ROOT_DIR)/backend" && "$(UVICORN)" src.main:app --reload --port $(BACKEND_PORT)) & \
 		BACK_PID=$$!; \
 		(cd "$(ROOT_DIR)/frontend" && npm run dev -- --port $(FRONTEND_PORT)) & \
 		FRONT_PID=$$!; \
@@ -161,7 +151,7 @@ dev: check-env check-backend check-frontend db-start
 # ------------------------------------------------------------------------------
 backend: check-env check-backend
 	@echo "[INFO] Iniciando Backend FastAPI na porta $(BACKEND_PORT)..."
-	@cd "$(ROOT_DIR)/backend" && $(UVICORN) src.main:app --reload --port $(BACKEND_PORT)
+	@cd "$(ROOT_DIR)/backend" && "$(UVICORN)" src.main:app --reload --port $(BACKEND_PORT)
 
 frontend: check-frontend
 	@echo "[INFO] Iniciando Frontend React na porta $(FRONTEND_PORT)..."
@@ -169,7 +159,7 @@ frontend: check-frontend
 
 docs:
 	@echo "[INFO] Iniciando servidor MkDocs em http://127.0.0.1:8008..."
-	@mkdocs serve -a 127.0.0.1:8008
+	@mkdocs serve -f .github/mkdocs.yml -a 127.0.0.1:8008
 
 # ------------------------------------------------------------------------------
 # Banco de Dados (Supabase)

@@ -5,7 +5,7 @@ const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api
 
 async function request(path, { auth = false, ...options } = {}) {
   const headers = new Headers(options.headers || {});
-  if (options.body) headers.set('Content-Type', 'application/json');
+  if (options.body && !(options.body instanceof FormData)) headers.set('Content-Type', 'application/json');
 
   if (auth) {
     const { data: { session }, error } = await supabase.auth.getSession();
@@ -26,10 +26,15 @@ async function request(path, { auth = false, ...options } = {}) {
     } else if (typeof detail !== 'string') {
       detail = 'Não foi possível concluir a solicitação.';
     }
-    throw new Error(detail);
+    const error = new Error(detail);
+    error.status = response.status;
+    throw error;
   }
   return result;
 }
+
+// Exported for feature clients that share authentication and error handling.
+export { request };
 
 export const eventsApi = {
   suggest: (event) => request('/suggestions', {
