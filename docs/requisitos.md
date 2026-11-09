@@ -68,7 +68,7 @@ Os requisitos não funcionais estão divididos de acordo com a norma **ISO/IEC 2
 | RF08–RF11 | Lista e calendário mensal/semanal, CRUD privado, publicação direta, sugestões estudantis e moderação implementados. |
 | RF14, RF15, RF20 | Detalhes, catálogo multi-campus e temas implementados. |
 | RF19 | Busca e filtros de categoria/campus/turno na interface; intervalo de datas disponível na API. |
-| RF05–RF07 | Planejados. Bucket privado preparado; a página de planos informa que upload e extração ainda não estão disponíveis. |
+| RF05–RF07 | Upload particular disponível no backend e worker S6-B01 implementado com candidatos/evidência, limites e recuperação. Ativação para dados reais aguarda S6-D02; revisão/confirmação e integração visual continuam pendentes. Ver [avaliação do parser](processamento-planos.md). |
 | RF12, RF13, RF16–RF18, RF21 | Planejados: inscrição/cancelamento, coleta externa, lembretes, histórico de participação e exportação. |
 
 O vínculo de um evento público salvo em Meus Eventos não representa inscrição ou confirmação de participação (RF12/RF13). As notificações atuais são de envio e decisão de sugestões; lembretes por proximidade (RF17) continuam planejados. Essas extensões estão detalhadas em [Eventos salvos](eventos-salvos.md) e [Painel administrativo](painel-administrativo.md).

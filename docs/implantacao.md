@@ -17,6 +17,21 @@ Fontes oficiais consultadas para a proposta: [Vite na Vercel](https://vercel.com
 
 ## Ambientes e configuração
 
+### Processo de extração de planos (S6-B01)
+
+Além da API, provisionar processo independente com comando, na pasta `backend`,
+`python -m src.modules.syllabus.worker`. Deve usar o mesmo banco e Storage privado
+da API e reiniciar após interrupções. O ciclo de requisição HTTP não executa IA.
+Configurar `GEMINI_API_KEY` como segredo do servidor, nunca no frontend; demais
+limites, preços e comandos estão em [Processamento de planos](processamento-planos.md).
+
+Aplicar #40, S6-D01 e a migração `20261109120000_fila_processamento_planos.sql`.
+Manter `SYLLABUS_WORKER_ENABLED=false` e `SYLLABUS_PRIVACY_READY=false` até
+implantar/verificar as políticas de S6-D02 no PostgreSQL com os papéis reais.
+Somente então habilitar os dois parâmetros no ambiente correspondente. A avaliação
+sintética com Gemini não homologa privacidade, Storage remoto ou fila em produção.
+Esta entrega não provisiona serviço nem aplica migrações remotas.
+
 | Ambiente | Aplicação e dados | Uso e publicação |
 | --- | --- | --- |
 | Local | Vite/FastAPI + Supabase CLI/Docker | Desenvolvimento e testes; dados descartáveis |

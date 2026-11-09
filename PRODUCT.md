@@ -23,7 +23,7 @@ A plataforma será utilizada tanto de forma pontual (para descobrir o que está 
 - Categorização rígida atrelada aos campi da UnB e aos tipos de atividades.
 - Lista e calendário mensal/semanal; agenda pessoal reúne eventos privados e públicos salvos por vínculo.
 - Sugestões estudantis, moderação por professores/admins, notificações de decisão e gestão de cargos exclusiva de admins.
-- Extração/leitura de planos de ensino e atestados permanece futura; `/plano-de-ensino` informa esse estado.
+- Backend possui upload particular e worker Gemini para candidatos com procedência, desativado até validar as políticas S6-D02. Revisão/confirmação, integração na página `/plano-de-ensino` e leitura de atestados continuam pendentes.
 - Obrigatório suporte fluido a temas (Claro e Escuro).
 
 ## Brand Commitments
