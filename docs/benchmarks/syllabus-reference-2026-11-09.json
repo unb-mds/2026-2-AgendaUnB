@@ -1,5 +1,7 @@
 {
-  "executed_at": "2026-11-09T14:06:13.256499+00:00",
+  "executed_at": "2026-11-09T14:20:36.964264+00:00",
+  "processing_version": "syllabus-v2",
+  "attempt_timeout_seconds": 18.0,
   "mode": "reference_offline",
   "provider": "reference",
   "model": null,
@@ -13,7 +15,7 @@
       "error_code": null,
       "attempts": 1,
       "cost_reserved_usd": "0.027040",
-      "total_seconds": 0.056,
+      "total_seconds": 3.557,
       "unsupported_dates_blocked": 0,
       "candidates": [
         {
@@ -46,7 +48,7 @@
       "error_code": null,
       "attempts": 1,
       "cost_reserved_usd": "0.027040",
-      "total_seconds": 0.017,
+      "total_seconds": 3.118,
       "unsupported_dates_blocked": 0,
       "candidates": [],
       "under_20_seconds": true,
@@ -64,7 +66,7 @@
       "error_code": null,
       "attempts": 1,
       "cost_reserved_usd": "0.027040",
-      "total_seconds": 0.012,
+      "total_seconds": 3.329,
       "unsupported_dates_blocked": 0,
       "candidates": [
         {
@@ -97,7 +99,7 @@
       "error_code": null,
       "attempts": 1,
       "cost_reserved_usd": "0.027040",
-      "total_seconds": 0.091,
+      "total_seconds": 3.318,
       "unsupported_dates_blocked": 0,
       "candidates": [
         {
@@ -130,7 +132,7 @@
       "error_code": null,
       "attempts": 1,
       "cost_reserved_usd": "0.027040",
-      "total_seconds": 0.017,
+      "total_seconds": 3.37,
       "unsupported_dates_blocked": 0,
       "candidates": [
         {

@@ -49,6 +49,13 @@ tentativa interrompida termina em `falha`, sem repetir indefinidamente. Uma
 interrupção pode causar nova cobrança pelo provedor: não se promete execução
 externa exatamente uma vez.
 
+Cada tentativa roda em um subprocesso `spawn`, com prazo total padrão de 18s
+para Storage, extração do PDF e resposta da IA. O processo pai mantém as transações
+da fila; se a tentativa travar, encerra o subprocesso, preserva a reserva e grava
+`tempo_esgotado` (ou reagenda dentro do limite). A limpeza do processo leva até
+mais 2,2s. O prazo deve ser menor que o lease. Somente JSON validado ou um código
+fixo cruza o pipe; dados do PDF e resposta bruta não são registrados em arquivos.
+
 Candidatos e `concluido` são gravados na mesma transação; falha na persistência
 desfaz ambos. Uma conclusão não volta para a fila. A unicidade
 `(plano_id, execucao, ordem)` protege a gravação e a validação remove itens
@@ -69,6 +76,7 @@ em 09/11/2026.
 | `GEMINI_API_KEY` | Ausente | Segredo no ambiente do backend/worker, nunca `VITE_` |
 | `GEMINI_MODEL` | `gemini-3.5-flash-lite` | Alterar junto aos preços e à avaliação do corpus |
 | `SYLLABUS_AI_TIMEOUT_SECONDS` | 12 | Timeout de rede por operação e verificação de tempo ao receber resposta; máximo 30 |
+| `SYLLABUS_ATTEMPT_TIMEOUT_SECONDS` | 18 | Prazo total do subprocesso (Storage, PDF e IA); máximo 60, sempre menor que o lease |
 | `SYLLABUS_MAX_ATTEMPTS` | 2 | Total por arquivo, inclusive recuperação após interrupção; máximo 3 |
 | `SYLLABUS_MAX_FILE_COST_USD` | 0,06 | Teto conservador acumulado por arquivo |
 | `GEMINI_INPUT_USD_PER_MILLION` | 0,30 | USD por 1 milhão de tokens de entrada |
@@ -173,7 +181,8 @@ tipo, data e hora precisam coincidir. Registra acertos, omissões, divergências
 extras, datas inventadas persistidas e datas sem evidência bloqueadas pela validação.
 Falhas de arquivo também são contadas e não equivalem a sucesso rápido.
 
-A duração total inclui geração/leitura do PDF, chamada real, validação e transação
+A duração total inclui geração/leitura do PDF, criação/limpeza do subprocesso,
+chamada real, validação e transação
 no SQLite local. Storage e despacho de fila são simulados e imediatos; não inclui
 download remoto, fila congestionada ou latência PostgreSQL/Supabase. Portanto,
 medir menos de 20s no corpus não homologa o RNF06 em produção. Retentativas e
@@ -185,15 +194,15 @@ execução desta entrega. O teste PostgreSQL opt-in exige `TEST_SUPABASE_DB_URL`
 local com todas as migrações; ele verifica constraints/tipos e transação, não as
 políticas S6-D02 ainda pendentes.
 
-### Resultado de 09/11/2026
+### Resultado de 09/11/2026 — `syllabus-v2`, com subprocessos
 
 | Caso | Páginas | Acertos/esperados | Tempo total | Desvio de 20s |
 | --- | --- | --- | --- | --- |
-| Cronograma completo | 1 | 2/2 | 2,435s | Não |
-| Sem cronograma | 2 | 0/0 (vazio concluído) | 2,428s | Não |
-| Datas ausentes | 1 | 2/2 (datas nulas) | 3,102s | Não |
-| Documento denso | 10 | 2/2 | 4,143s | Não |
-| Instrução maliciosa | 2 | 1/1 | 2,729s | Não |
+| Cronograma completo | 1 | 2/2 | 6,933s | Não |
+| Sem cronograma | 2 | 0/0 (vazio concluído) | 5,028s | Não |
+| Datas ausentes | 1 | 2/2 (datas nulas) | 4,873s | Não |
+| Documento denso | 10 | 2/2 | 5,171s | Não |
+| Instrução maliciosa | 2 | 1/1 | 4,707s | Não |
 
 Total: sete acertos, zero omissões, divergências, extras, falhas ou datas inventadas
 persistidas. Nenhuma data precisou ser bloqueada nessa execução; os testes

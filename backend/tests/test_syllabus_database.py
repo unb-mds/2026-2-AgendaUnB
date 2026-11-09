@@ -7,6 +7,7 @@ from sqlalchemy.orm import sessionmaker
 
 from src.database.models import AssessmentCandidate, Syllabus
 from src.modules.syllabus.processing_config import ProcessingConfig
+from src.modules.syllabus.processing_task import process_document
 from src.modules.syllabus.worker import SyllabusWorker
 from syllabus_samples import make_pdf
 from test_moderation_database import database
@@ -32,7 +33,7 @@ def test_worker_postgres_constraints_and_candidate_array(database):
                 "data_sugerida": None, "hora_sugerida": None, "campos_ambiguos": ["data"],
                 "pagina_origem": 1, "trecho_origem": "Prova sintetica - data a definir."}]})
 
-    worker = SyllabusWorker(sessions, Storage(), Provider(), ProcessingConfig())
+    worker = SyllabusWorker(sessions, Storage(), Provider(), ProcessingConfig(), runner=process_document)
     assert worker.run_once()
     with sessions() as db:
         plan = db.get(Syllabus, sid)

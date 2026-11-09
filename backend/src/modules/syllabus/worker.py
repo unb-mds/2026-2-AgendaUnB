@@ -12,9 +12,10 @@ from sqlalchemy import or_, select, update
 
 from src.database.connection import SessionLocal
 from src.database.models import AssessmentCandidate, Syllabus
-from src.modules.syllabus.extraction import VERSION, extract_pages, validate_candidates
+from src.modules.syllabus.extraction import VERSION
 from src.modules.syllabus.gemini import GeminiProvider
 from src.modules.syllabus.processing_config import ERROR_MESSAGES, ProcessingConfig, ProcessingError
+from src.modules.syllabus.processing_task import run_isolated
 from src.services.storage import SupabaseStorageService
 
 logger = logging.getLogger("agenda_unb.syllabus.worker")
@@ -35,11 +36,12 @@ class Lease:
 
 
 class SyllabusWorker:
-    def __init__(self, session_factory, storage, provider, config: ProcessingConfig):
+    def __init__(self, session_factory, storage, provider, config: ProcessingConfig, *, runner=run_isolated):
         self.sessions = session_factory
         self.storage = storage
         self.provider = provider
         self.config = config
+        self.runner = runner
 
     def claim(self) -> Lease | None:
         now = utcnow()
@@ -106,16 +108,14 @@ class SyllabusWorker:
             filename = relative.split("/")[1:]
             if len(filename) != 1 or not re.fullmatch(r"[A-Za-z0-9_.-]+\.pdf", filename[0], flags=re.IGNORECASE):
                 raise ProcessingError("pdf_invalido")
-            content = self.storage.download_file(relative)
-            pages = extract_pages(content, self.config)
-            raw = self.provider.extract(pages)
-            result = validate_candidates(raw, pages)
+            document = self.runner(relative, self.storage, self.provider, self.config)
+            result = document.extraction
             with self.sessions() as db:
                 duration = round((time.monotonic() - started) * 1000)
                 changed = db.execute(update(Syllabus).where(
                     Syllabus.id == lease.id, Syllabus.status == "processando", Syllabus.processing_token == lease.token,
                 ).values(status="concluido", processing_token=None, processado_em=utcnow(),
-                         paginas=len(pages), extracted_events_count=len(result.candidates),
+                         paginas=document.page_count, extracted_events_count=len(result.candidates),
                          processing_duration_ms=duration), execution_options={"synchronize_session": False}).rowcount
                 if changed != 1:
                     db.rollback()  # Um worker com lease mais novo já assumiu.

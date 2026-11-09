@@ -12,6 +12,7 @@ from src.database.models import AssessmentCandidate, PersonalEvent, Profile, Syl
 from src.modules.syllabus.extraction import TextPage, extract_pages, validate_candidates
 from src.modules.syllabus.gemini import GeminiProvider
 from src.modules.syllabus.processing_config import ProcessingConfig, ProcessingError
+from src.modules.syllabus.processing_task import process_document
 from src.modules.syllabus.worker import SyllabusWorker
 from syllabus_samples import cases, make_pdf
 
@@ -135,7 +136,7 @@ def job(api):
         db.add(Syllabus(id=syllabus_id, user_id=owner, file_name="sintetico.pdf",
                         file_path=f"syllabus_files/{owner}/{syllabus_id}.pdf", status="pendente"))
         db.commit()
-    worker = SyllabusWorker(sessions, Storage(), Provider(), replace(ProcessingConfig(), retry_delay_seconds=0))
+    worker = SyllabusWorker(sessions, Storage(), Provider(), replace(ProcessingConfig(), retry_delay_seconds=0), runner=process_document)
     return worker, sessions, syllabus_id
 
 
@@ -178,7 +179,7 @@ def test_retry_and_recovery_are_bounded_and_keep_budget(job):
         reservation = record.cost_reserved_usd
         record.processamento_iniciado_em = datetime.now(timezone.utc) - timedelta(seconds=120)
         db.commit()
-    worker = SyllabusWorker(sessions, worker.storage, worker.provider, worker.config)
+    worker = SyllabusWorker(sessions, worker.storage, worker.provider, worker.config, runner=process_document)
     assert worker.run_once()
     with sessions() as db:
         record = db.get(Syllabus, sid)
@@ -312,3 +313,17 @@ def test_worker_entrypoint_stays_blocked_before_privacy_policies(monkeypatch, ca
         main()
     assert caught.value.code == 2
     assert "S6-D02" in capsys.readouterr().err
+
+
+def test_whole_attempt_timeout_is_persisted_and_retries_stop(job):
+    worker, sessions, sid = job
+    def expire(*args):
+        raise ProcessingError("tempo_esgotado", retryable=True)
+    worker.runner = expire
+    assert worker.run_once() and worker.run_once() and not worker.run_once()
+    with sessions() as db:
+        record = db.get(Syllabus, sid)
+        assert record.status == "falha" and record.erro_codigo == "tempo_esgotado"
+        assert record.execucao_atual == 2
+        assert record.cost_reserved_usd == worker.config.attempt_reservation * 2
+        assert db.scalar(select(func.count()).select_from(AssessmentCandidate)) == 0

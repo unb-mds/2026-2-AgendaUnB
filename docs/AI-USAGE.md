@@ -30,6 +30,15 @@ O campo **verificado** é o mais importante. Sem ele, a entrada declara o uso ma
 
 ## Entradas
 
+### 09/11/2026 — Prazo total e encerramento de tentativas travadas
+
+- **Quem:** Heitor Gomes Monteiro (solicitante).
+- **Ferramenta:** Codex (OpenAI) e Gemini API com PDFs sintéticos.
+- **O que foi pedido:** Retomar a implementação e continuar realizando commits na `feat/geminiapi`.
+- **O que entrou no repositório:** Subprocesso por tentativa com prazo total de 18s, limpeza/encerramento após timeout, comunicação JSON validada e sem logs de conteúdo; benchmark atualizado para incluir a criação do subprocesso.
+- **O que foi verificado:** Suíte completa com 82 testes passando e nove PostgreSQL ignorados sem banco local, incluindo subprocessos reais travados em Storage/parser/provedor, limpeza sem processos órfãos, exceções sanitizadas e persistência de timeout com tentativas/orçamento limitados. Nova execução Gemini identificou sete candidatos corretos em cinco PDFs sintéticos, sem omissões, extras ou datas inventadas persistidas. O documento de dez páginas levou 5,171s e o caso mais lento 6,933s, incluindo subprocessos. Documentação estrita e verificação do diff passaram.
+- **O que foi rejeitado ou corrigido:** Timeout de rede por operação não limitava a leitura do PDF nem a tentativa inteira. A transação da fila permanece no processo pai e somente o trabalho sem banco roda no subprocesso; isso mantém a recuperação por lease e impede que o encerramento deixe uma transação de candidatos incompleta.
+
 ### 09/11/2026 — Ambiguidade de horários no extrator Gemini
 
 - **Quem:** Heitor Gomes Monteiro (solicitante).
