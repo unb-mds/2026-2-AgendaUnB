@@ -113,7 +113,7 @@ Após iniciar, os serviços estarão disponíveis nos seguintes endereços:
 | **Backend API** | [http://localhost:8000](http://localhost:8000) | Servidor FastAPI |
 | **Swagger / OpenAPI** | [http://localhost:8000/docs](http://localhost:8000/docs) | Documentação interativa dos endpoints |
 | **Health Check** | [http://localhost:8000/health](http://localhost:8000/health) | Verificação de integridade da API |
-| **Supabase Studio** | [http://localhost:54323](http://localhost:54323) | Dashboard visual do PostgreSQL e Auth |
+| **Supabase Studio** | [http://localhost:14323](http://localhost:14323) | Dashboard visual do PostgreSQL e Auth |
 
 > **Para encerrar:** Pressione `Ctrl+C` no terminal. O script encerra simultaneamente o Backend e o Frontend de forma limpa. Para parar os containers do banco de dados, execute `make stop`.
 
@@ -168,8 +168,8 @@ O Supabase gerencia o PostgreSQL, autenticação, storage e migrações locais v
 | **Status dos serviços** | `npx supabase status` | `make db-status` | Exibe chaves anon, porta da API e URLs |
 | **Parar containers** | `npx supabase stop` | `make db-stop` | Encerra os serviços locais do Supabase |
 
-> **Supabase Studio (Dashboard Local):** [http://localhost:54323](http://localhost:54323)  
-> **API URL Local:** `http://127.0.0.1:54321`
+> **Supabase Studio (Dashboard Local):** [http://localhost:14323](http://localhost:14323)  
+> **API URL Local:** `http://127.0.0.1:14321`
 
 ---
 
