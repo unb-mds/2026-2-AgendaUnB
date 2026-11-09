@@ -9,6 +9,7 @@ from src.database.models import Syllabus
 from src.middlewares.auth import CurrentUser, get_current_user
 from src.modules.syllabus.schemas import SyllabusDetailResponse, SyllabusUploadResponse
 from src.modules.syllabus.services import process_syllabus_upload, validate_pdf_file
+from src.modules.syllabus.timing import duration_ms
 from src.services.storage import SupabaseStorageService, get_storage_service
 
 router = APIRouter(prefix="/syllabus", tags=["syllabus"])
@@ -104,6 +105,7 @@ def get_syllabus_status(
         processingStartedAt=syllabus.processamento_iniciado_em,
         processedAt=syllabus.processado_em,
         processingDurationMs=syllabus.processing_duration_ms,
+        totalDurationMs=duration_ms(syllabus.created_at, syllabus.processado_em),
         disciplina=syllabus.disciplina,
         turma=syllabus.turma,
         createdAt=syllabus.created_at,
