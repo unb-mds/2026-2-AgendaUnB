@@ -230,9 +230,9 @@ Tasks:
 
 ## Base documental
 
-- [Requisitos](../requisitos.md): RF05–RF09, RNF02, RNF04, RNF06, RNF07, RNF09 e RNF10.
-- [Documento de visão](../documento-de-visao.md): Modelo Dual e prioridade da extração assistida.
-- [Arquitetura](../Architecture.md): FastAPI, Supabase Auth/Storage e estado atual do processamento.
-- [Especificação de banco](../especificacao-banco-de-dados.md) e [modelo de dados](../modelo-de-dados.md): estruturas existentes, que precisam evoluir para propriedade estudantil e estados.
+- [Requisitos](../produto/requisitos.md): RF05–RF09, RNF02, RNF04, RNF06, RNF07, RNF09 e RNF10.
+- [Documento de visão](../produto/visao.md): Modelo Dual e prioridade da extração assistida.
+- [Arquitetura](../arquitetura/visao-geral.md): FastAPI, Supabase Auth/Storage e estado atual do processamento.
+- [Especificação de banco](../arquitetura/banco-de-dados.md) e [modelo de dados](../arquitetura/modelo-de-dados.md): estruturas existentes, que precisam evoluir para propriedade estudantil e estados.
 - [Painel administrativo](../painel-administrativo.md): permissões, RPCs e notificações já entregues.
 - Migrações `20260923172640` e `20261014120200`: planos atuais com `professor_id` obrigatório, leitura pública de avaliações e bucket PDF privado de até 10 MB. Essas limitações fundamentam as issues de dados.
