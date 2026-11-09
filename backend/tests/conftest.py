@@ -9,6 +9,9 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 os.environ.setdefault("DATABASE_URL", "sqlite+pysqlite:///:memory:")
+# O limitador conta por processo; a suíte inteira parte do mesmo cliente de teste.
+os.environ["RATE_LIMIT_PER_MINUTE"] = "0"
+os.environ["RATE_LIMIT_WRITE_PER_MINUTE"] = "0"
 
 from src.database.connection import get_db
 from src.database.models import Base, Campus, Category, PersonalEvent, PublicEvent

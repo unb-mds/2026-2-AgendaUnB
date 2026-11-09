@@ -57,9 +57,15 @@ def get_current_user(
         raise HTTPException(status_code=503, detail="Falha ao validar a sessão")
 
     try:
-        user_id = UUID(response.json()["id"])
+        account = response.json()
+        user_id = UUID(account["id"])
     except (KeyError, TypeError, ValueError) as exc:
         raise HTTPException(status_code=401, detail="Resposta de autenticação inválida") from exc
+
+    # Defesa em profundidade: mesmo que o projeto Supabase seja configurado sem
+    # confirmação de e-mail, a API não atende conta de endereço não confirmado.
+    if not (account.get("email_confirmed_at") or account.get("confirmed_at")):
+        raise HTTPException(status_code=403, detail="Confirme seu e-mail para continuar.")
 
     role = db.scalar(select(Profile.papel).where(Profile.id == user_id))
     if role is None:
