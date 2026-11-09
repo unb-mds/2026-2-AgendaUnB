@@ -49,7 +49,7 @@ async def validate_pdf_file(file: UploadFile) -> bytes:
 
     # 3. Leitura do conteúdo em memória e validação de tamanho de payload
     try:
-        content = await file.read()
+        content = await file.read(MAX_FILE_SIZE_BYTES + 1)
     except Exception as exc:
         raise HTTPException(
             status_code=400,

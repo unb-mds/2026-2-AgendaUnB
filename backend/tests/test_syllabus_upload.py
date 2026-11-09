@@ -1,14 +1,17 @@
+import asyncio
 import io
 from uuid import UUID, uuid4
 
 import pypdf
 import pytest
-from fastapi import HTTPException
+from fastapi import HTTPException, UploadFile
+from starlette.datastructures import Headers
 from sqlalchemy import select
 
 from src.database.models import Profile, Syllabus
 from src.main import app
 from src.middlewares.auth import CurrentUser, get_current_user
+from src.modules.syllabus.services import validate_pdf_file
 from src.services.storage import SupabaseStorageService, get_storage_service
 
 
@@ -214,6 +217,22 @@ def test_upload_syllabus_payload_too_large(api, monkeypatch):
 
     assert response.status_code == 413
     assert "excede o limite máximo permitido" in response.json()["detail"]
+
+
+def test_oversized_upload_reads_only_limit_plus_one(monkeypatch):
+    monkeypatch.setattr("src.modules.syllabus.services.MAX_FILE_SIZE_BYTES", 50)
+
+    class BoundedFile(io.BytesIO):
+        def read(self, size=-1):
+            assert size == 51, "O upload não deve carregar o arquivo inteiro antes de rejeitá-lo"
+            return super().read(size)
+
+    stream = BoundedFile(b"%PDF-" + b"x" * 100_000)
+    upload = UploadFile(stream, filename="plano.pdf", headers=Headers({"content-type": "application/pdf"}))
+    with pytest.raises(HTTPException) as caught:
+        asyncio.run(validate_pdf_file(upload))
+    assert caught.value.status_code == 413
+    assert stream.tell() == 51
 
 
 def test_upload_syllabus_storage_failure(api):
