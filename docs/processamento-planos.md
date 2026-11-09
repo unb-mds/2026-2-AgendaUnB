@@ -26,6 +26,23 @@ equivalência de expressões arbitrárias de políticas.
 
 ## Arquitetura e recuperação
 
+Antes de aceitar o upload, a API lê no máximo `MAX_UPLOAD_SIZE_BYTES + 1` bytes:
+o byte adicional permite rejeitar excesso sem carregar o arquivo inteiro na
+memória da aplicação. O parser multipart pode usar arquivo temporário; esse
+limite de leitura não substitui um limite de recepção HTTP da hospedagem.
+Extensão, MIME e assinatura são conferidos antes de iniciar o parser de PDF.
+
+A pré-validação de integridade, senha, páginas e texto selecionável roda em um
+subprocesso `spawn` descartável, com prazo padrão de **8s**, incluindo sua criação.
+A espera e as operações síncronas de Storage/banco usam o pool de threads da API;
+outras requisições continuam respondendo. Ao vencer o prazo, o parser é encerrado
+(limpeza de até 2,2s adicionais) e o upload retorna **422**. Falha do processo ou
+de comunicação retorna **503**. Nenhum desses casos envia o PDF ao Storage ou
+cria linha na fila. A pré-validação ainda é aguardada pelo upload; a extração
+completa e a IA acontecem somente no worker após o **202**.
+O filho devolve apenas um código de uma lista fixa; mensagens do parser e
+conteúdo do documento não são encaminhados a respostas ou logs.
+
 ```mermaid
 flowchart LR
     UP[Upload autenticado] --> STORAGE[PDF no Storage privado]
@@ -39,7 +56,7 @@ flowchart LR
     CAND --> REVIEW[Revisão futura S6-B02]
 ```
 
-A API não inicia threads, `BackgroundTasks` ou chamadas à IA. A própria linha de
+A API não agenda extração/IA em `BackgroundTasks` nem chama a IA. A própria linha de
 `planos_ensino` é a fila persistente; reiniciar API/worker não perde a tarefa.
 O worker consulta a fila a cada segundo quando ocioso. Em PostgreSQL, usa
 `FOR UPDATE SKIP LOCKED` para reivindicar uma linha, incrementa `execucao_atual`,
@@ -79,6 +96,7 @@ em 09/11/2026.
 | --- | --- | --- |
 | `GEMINI_API_KEY` | Ausente | Segredo no ambiente do backend/worker, nunca `VITE_` |
 | `GEMINI_MODEL` | `gemini-3.5-flash-lite` | Alterar junto aos preços e à avaliação do corpus |
+| `SYLLABUS_UPLOAD_VALIDATION_TIMEOUT_SECONDS` | 8 | Prazo do parser na pré-validação do upload; finito, maior que zero e no máximo 30; independente do worker |
 | `SYLLABUS_AI_TIMEOUT_SECONDS` | 12 | Timeout de rede por operação e verificação de tempo ao receber resposta; máximo 30 |
 | `SYLLABUS_ATTEMPT_TIMEOUT_SECONDS` | 18 | Prazo total do subprocesso (Storage, PDF e IA); máximo 60, sempre menor que o lease |
 | `SYLLABUS_MAX_ATTEMPTS` | 2 | Total por arquivo, inclusive recuperação após interrupção; máximo 3 |
@@ -171,6 +189,11 @@ os timestamps persistidos de criação/término, incluindo fila e retentativas;
 antes do término, retorna nulo. Logs de sucesso/falha usam esse total para indicar
 desvios de 20s, mesmo se a tentativa final foi rápida. Recuperações sem orçamento
 ou tentativas restantes também registram a duração total.
+Esse campo começa após a pré-validação e não inclui a recepção do upload. O teste
+HTTP registra separadamente `upload_duration_ms` e `upload_to_candidates_ms`,
+este último incluindo pré-validação, Storage, fila e conclusão do processamento.
+Também inclui as checagens de acesso executadas pelo teste enquanto a tarefa
+aguarda despacho; não equivale a uma medição da hospedagem final.
 
 ## Avaliação reproduzível
 
@@ -222,3 +245,25 @@ persistidas. Nenhuma data precisou ser bloqueada nessa execução; os testes
 adversariais locais verificam a remoção de datas sem evidência. A amostra é pequena
 e sintética; não representa todos os formatos de cronograma da UnB nem comprova
 resistência geral a instruções maliciosas.
+
+### Regressão local do upload — 09/11/2026
+
+Depois de limitar a leitura e isolar a pré-validação, a suíte completa teve
+**129 testes aprovados e um ignorado**: somente a chamada real ao Gemini foi
+omitida explicitamente nesta execução. PostgreSQL, Auth, Storage e PostgREST
+rodaram na instância local descartável (API 15321, banco 15322); o banco da
+aplicação e a nuvem não foram alterados.
+
+Os testes novos verificam leitura de limite + 1 byte, aceitação do tamanho exato,
+parser travado encerrado em até 6s com prazo de 3s sem deixar filho, mensagens
+sanitizadas e ausência de gravação após timeout/falha. `/health` respondeu em
+menos de 2s enquanto validação ou Storage estavam bloqueados por uma barreira;
+o upload permaneceu aguardando até o teste liberar essa barreira.
+
+O [relatório HTTP desta regressão](benchmarks/syllabus-upload-local-2026-11-09.json)
+registra **1,725s** para o upload e **9,880s** desde seu início até os candidatos,
+incluindo as checagens de acesso durante a espera na fila. A última tentativa
+levou 4,109s. A resposta de IA foi uma referência sintética, sem rede externa;
+esses tempos não atualizam a avaliação do Gemini apresentada acima. O fluxo
+registrou dois candidatos, zero eventos antes de revisar e um após confirmação,
+sem duplicar na repetição. Contas e objetos sintéticos foram removidos ao final.

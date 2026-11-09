@@ -142,6 +142,7 @@ def test_authenticated_upload_private_download_processing_and_review(local_http,
     started = time.monotonic()
     response = client.post("/api/v1/syllabus/upload",headers=ctx.headers("owner"),
                            files={"file":("integracao.pdf",pdf,"application/pdf")})
+    upload_ms = round((time.monotonic()-started)*1000)
     assert response.status_code == 202
     body = response.json()
     assert body["status"] == "pendente" and body["userId"] == ctx.users["owner"]
@@ -170,6 +171,7 @@ def test_authenticated_upload_private_download_processing_and_review(local_http,
     status = client.get(f"/api/v1/syllabus/{sid}",headers=ctx.headers("owner"))
     assert status.status_code == 200 and status.json()["status"] == "concluido"
     assert status.json()["extractedEventsCount"] == 2
+    upload_to_candidates_ms = round((time.monotonic()-started)*1000)
     total_processing_ms = status.json()["totalDurationMs"]
     attempt_ms = status.json()["processingDurationMs"]
     with ctx.sessions() as session:
@@ -196,6 +198,8 @@ def test_authenticated_upload_private_download_processing_and_review(local_http,
     # Somente métricas; nenhum token, corpo do PDF ou retorno bruto da IA.
     ctx.result = {"case":"upload_processing_review","provider":provider_kind,
                   "flow_total_seconds":round(time.monotonic()-started,3),
+                  "upload_duration_ms":upload_ms,"upload_to_candidates_ms":upload_to_candidates_ms,
+                  "upload_to_candidates_under_20s":upload_to_candidates_ms < 20000,
                   "processing_total_ms":total_processing_ms,"last_attempt_ms":attempt_ms,
                   "processing_under_20s":total_processing_ms < 20000,
                   "candidates":2,"events_before_review":0,"events_after_review":1,
