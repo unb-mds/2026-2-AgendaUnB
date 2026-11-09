@@ -82,7 +82,7 @@ Agenda estritamente privada, gerenciada e visualizada unicamente por cada estuda
 
 ## 4. Organizador Acadêmico
 
-Migrações de referência: `20261026120000_upload_planos_ensino.sql` (#40) e `20261027120000_planos_particulares_e_candidatos.sql` (S6-D01, #53).
+Migrações de referência: `20261026120000_upload_planos_ensino.sql` (#40), `20261027120000_planos_particulares_e_candidatos.sql` (S6-D01, #53), `20261029160000_syllabus_review_confirmation.sql` (S6-B02), `20261107000000_planos_escrita_via_backend.sql` e `20261109120000_turmas_vinculos_versoes.sql` (S7-D01, #69).
 
 Fluxo: o upload (#40) cria o plano como `pendente`; o processamento (S6-B01) passa para `processando`, grava candidatos e termina em `concluido` ou `falha`; a revisão (S6-B02) marca cada candidato como `confirmado` ou `descartado`. Nenhum evento pessoal é criado sem confirmação do estudante.
 
@@ -111,37 +111,42 @@ PDFs de plano de ensino. Um plano é `particular` (enviado por um usuário para 
     *   **Resultado vazio** é `concluido` sem candidatos, e não `falha`.
 *   **Dados anteriores:** linhas sem `caminho_arquivo` (anteriores à #40) viraram `oficial`, com o professor como dono e `status = 'concluido'`. Linhas criadas pela #40 continuam `particular`; `professor_id` foi limpo e `processing` virou `pendente`. Nada foi apagado.
 *   **Índices:** histórico do usuário `(user_id, criado_em desc, id)`; fila do worker `(status, processamento_iniciado_em)` parcial em `pendente`/`processando`, usada para retomar tarefas interrompidas; `plano_oficial_id` parcial; e os índices da #40 em `user_id` e `status`.
-*   **Políticas RLS:** RLS habilitado. A #40 criou leitura e inserção pelo próprio dono (`user_id = auth.uid()`). As demais políticas são da S6-D02.
+*   **Turma:** `oferta_id` (UUID, opcional) liga o plano a uma oferta de `ofertas_turma` (`ON DELETE SET NULL`). Planos antigos e envios sem turma continuam válidos.
+*   **Políticas RLS:** RLS habilitado. Desde `20261107000000`, o navegador só lê os próprios planos (`user_id = auth.uid()`); toda escrita passa pelo back-end. O registro do plano e o caminho do PDF continuam visíveis só ao dono, mesmo quando uma versão é compartilhada.
 
-### 4.2. Tabela `candidatos_avaliacao`
-Avaliações sugeridas pela IA. São sugestões: só viram compromisso após confirmação do estudante.
+### 4.2. Tabela `avaliacoes` (candidatos)
+Tabela oficial de candidatos extraídos dos planos (decisão da equipe na S7-D01). São sugestões: só viram compromisso após confirmação do estudante. A tabela `candidatos_avaliacao` (#53), que nenhum código usava, foi removida em `20261109120000`.
 *   **Colunas:**
-    *   `id` (UUID, Primary Key).
-    *   `plano_id` (UUID, Not Null): FK para `planos_ensino(id)` (`ON DELETE CASCADE`).
-    *   `execucao` (SMALLINT ≥ 1) e `ordem` (SMALLINT ≥ 0): execução que gerou o candidato e posição na saída.
-    *   `titulo` (TEXT, 1–300), `tipo` (`prova`, `trabalho`, `projeto`, `seminario`, `lista`, `entrega`, `outro`).
-    *   `data_sugerida` (DATE) e `hora_sugerida` (TIME): opcionais; hora exige data. A hora é a hora local escrita no plano, sem fuso; o fuso é definido na confirmação.
-    *   `campos_ambiguos` (TEXT[], padrão vazio): subconjunto de `titulo`, `tipo`, `data`, `hora`. `ambiguo` (BOOLEAN) é calculado a partir dele.
-    *   `pagina_origem` (SMALLINT ≥ 1) e `trecho_origem` (TEXT, 1–1000): evidência obrigatória.
-    *   `provedor_ia`, `modelo_ia`, `versao_processamento` (TEXT, Not Null).
-    *   `status` (TEXT, padrão `pendente`): `pendente`, `descartado` ou `confirmado`. `revisado_em` é preenchido se, e somente se, o status não for `pendente`.
-    *   `evento_pessoal_id` (UUID, Unique): FK para `eventos_pessoais(id)` (`ON DELETE SET NULL`). Só em candidato `confirmado`.
-    *   `criado_em` (TIMESTAMPTZ, Not Null).
-*   **Sem duplicação:** `(plano_id, execucao, ordem)` é único. O worker grava com `ON CONFLICT (plano_id, execucao, ordem) DO NOTHING`, então repetir a mesma execução não duplica. Reprocessar gera nova execução e mantém as anteriores como histórico.
-*   **Vínculo com a agenda:**
-    *   Um candidato gera no máximo um evento, e um evento vem de no máximo um candidato (unicidade de `evento_pessoal_id`).
-    *   Editar o evento pessoal não altera o candidato: o candidato guarda o que a IA extraiu, e o evento guarda o que o estudante decidiu.
-    *   Excluir o evento pessoal deixa `evento_pessoal_id` nulo; o candidato continua `confirmado` e não é recriado em nova confirmação.
-    *   Procedência de um evento: `eventos_pessoais` → `candidatos_avaliacao.evento_pessoal_id` → `planos_ensino`.
-*   **Políticas RLS:** RLS habilitado, sem políticas nesta migração (S6-D02).
+    *   `id` (UUID, Primary Key) e `plano_id` (UUID, Not Null, FK para `planos_ensino`, `ON DELETE CASCADE`).
+    *   `versao_id` (UUID, Not Null): versão do plano a que o candidato pertence. A FK composta `(plano_id, versao_id)` → `versoes_plano(plano_id, id)` impede apontar para a versão de outro plano. Quando omitido no INSERT, um trigger usa a versão mais recente do plano.
+    *   `ordem` (SMALLINT ≥ 0, opcional): posição do candidato na versão. `(versao_id, ordem)` é único, para reprocessar sem duplicar.
+    *   `titulo` (TEXT, Not Null), `data_avaliacao` (TIMESTAMPTZ, opcional), `tipo` (TEXT), `ambiguo` (BOOLEAN, padrão falso).
+    *   `pagina_origem` (INTEGER) e `trecho_origem` (TEXT): evidência no plano.
+    *   `status` (TEXT, padrão `pendente`), `versao_processamento` e `provedor` (TEXT).
+*   **Políticas RLS:** leitura pelo dono do plano (*"dono do plano consulta candidatos"*) e, quando a versão estiver compartilhada, por quem segue a oferta do plano (*"leitura de candidatos de versoes compartilhadas"*). Sem política de escrita.
 
-### 4.3. Tabela `avaliacoes`
-Avaliações de planos oficiais, anteriores à S6. Mantida sem mudança de estrutura; recebeu índice em `plano_id`. Os resultados da IA para planos particulares ficam em `candidatos_avaliacao`.
+### 4.3. Tabela `versoes_plano`
+Versões de um plano. Toda versão nasce **privada**; uma nova revisão cria nova versão e não sobrescreve calendários pessoais.
 *   **Colunas:**
-    *   `id` (UUID, Primary Key).
-    *   `plano_id` (UUID, Not Null): Chave estrangeira apontando para `planos_ensino(id)` (`ON DELETE CASCADE`).
-    *   `titulo` (TEXT, Not Null): Nome da avaliação/trabalho.
-    *   `data_avaliacao` (TIMESTAMPTZ, Not Null): Data programada.
+    *   `id` (UUID, Primary Key) e `plano_id` (UUID, Not Null, FK, `ON DELETE CASCADE`).
+    *   `numero` (SMALLINT ≥ 1): único por plano.
+    *   `autor_id` (UUID, Not Null, FK para `profiles`).
+    *   `visibilidade` (TEXT, padrão `privada`): `privada` ou `compartilhada`. `compartilhada_em` (TIMESTAMPTZ) é preenchido se, e somente se, a versão estiver compartilhada.
     *   `criado_em` (TIMESTAMPTZ, Not Null).
-*   **Políticas RLS:** Segurança em Nível de Linha habilitada.
-    *   **Leitura (SELECT):** Pública. Política: *"avaliacoes sao publicas"* (`USING true`). A substituição por acesso vinculado ao dono é tarefa da S6-D02.
+*   **Criação:** todo plano recebe a versão 1 automaticamente (trigger após INSERT em `planos_ensino`). Os planos existentes ganharam a versão 1 na migração.
+*   **Políticas RLS:** leitura pelo dono do plano ou, se compartilhada, por usuários que seguem a oferta do plano (função `pode_ler_versao`). Sem política de escrita: compartilhar e retirar passam pelo back-end (S8-B01).
+*   **PDF:** compartilhar uma versão **não** expõe o PDF nem o registro do plano. Compartilhar o arquivo original exige autorização específica, a definir na S8-B01.
+
+### 4.4. Tabelas `disciplinas`, `ofertas_turma` e `vinculos_turma`
+Catálogo de turmas e turmas que o usuário segue. A disciplina abstrata (`disciplinas`) é separada da sua oferta em um semestre (`ofertas_turma`).
+*   **`disciplinas`:** `origem` (`followw` | `manual`), `origem_id` (identificador na origem, opcional), `codigo`, `nome`, `unidade` e `nivel` (opcionais), `atualizado_na_origem_em`, `criado_em`, `atualizado_em`.
+    *   **Identidade:** com `origem_id`, `(origem, origem_id)` é único. Sem ele, `(origem, código sem diferenciar maiúsculas, unidade, nível)` é único.
+*   **`ofertas_turma`:** `disciplina_id` (FK, `ON DELETE RESTRICT`), `origem`, `origem_id` (opcional), `turma`, `ano` (2000–2100), `semestre` (1 ou 2, como no contrato da API), `atualizado_na_origem_em`, `sincronizado_em` (última sincronização bem-sucedida, para avisar catálogo desatualizado), `criado_em`, `atualizado_em`.
+    *   **Identidade:** `(disciplina_id, turma, ano, semestre)` é único; ofertas de semestres diferentes são registros distintos. Com `origem_id`, `(origem, origem_id)` também é único.
+*   **`vinculos_turma`:** chave primária `(user_id, oferta_id)`, `origem` (`autodeclarado`), `criado_em`. Seguir a mesma oferta de novo não duplica o vínculo. O vínculo é autodeclarado, sem comprovação de matrícula.
+*   **Políticas RLS:** catálogo (`disciplinas`, `ofertas_turma`) com leitura pública; `vinculos_turma` com leitura só do próprio usuário. Sem políticas de escrita: a sincronização com o Followw (S7-B03) e seguir/deixar de seguir (S7-F02) passam pelo back-end.
+
+### 4.5. Importação para a agenda
+`eventos_pessoais` registra a procedência em `origem_plano_id`, `origem_avaliacao_id` e `origem_versao_id`.
+*   **Unicidade por usuário:** `(user_id, origem_avaliacao_id)` é único. Cada usuário importa um candidato no máximo uma vez, e dois colegas podem importar o mesmo candidato de uma versão compartilhada para agendas independentes. Até a S7-D01, a unicidade era global (`origem_avaliacao_id`).
+*   **Índice:** `(user_id, origem_versao_id)`, para consultar o que o usuário importou de cada versão.
