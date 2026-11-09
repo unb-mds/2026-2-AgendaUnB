@@ -62,7 +62,11 @@ entity "EVENTOS_PESSOAIS" {
   * data_hora : TIMESTAMPTZ
   campus_id : UUID <<FK>>
   category_id : UUID <<FK>>
+  origem_plano_id : UUID
+  origem_avaliacao_id : UUID
+  origem_versao_id : UUID <<FK>>
   created_at : TIMESTAMPTZ
+  .. Unique (user_id, origem_avaliacao_id) ..
 }
 
 entity "PLANOS_ENSINO" {
@@ -100,33 +104,65 @@ entity "AVALIACOES" {
   * id : UUID <<PK>>
   --
   * plano_id : UUID <<FK>>
+  * versao_id : UUID <<FK>>
+  ordem : SMALLINT
   * titulo : TEXT
-  * data_avaliacao : TIMESTAMPTZ
+  data_avaliacao : TIMESTAMPTZ
+  tipo : TEXT
+  * ambiguo : BOOLEAN
+  pagina_origem : INT
+  trecho_origem : TEXT
+  * status : TEXT
+  versao_processamento : TEXT
+  provedor : TEXT
   created_at : TIMESTAMPTZ
+  .. Unique (versao_id, ordem) ..
 }
 
-entity "CANDIDATOS_AVALIACAO" {
+entity "VERSOES_PLANO" {
   * id : UUID <<PK>>
   --
   * plano_id : UUID <<FK>>
-  * execucao : SMALLINT
-  * ordem : SMALLINT
-  * titulo : TEXT
-  * tipo : TEXT
-  data_sugerida : DATE
-  hora_sugerida : TIME
-  * campos_ambiguos : TEXT[]
-  ambiguo : BOOLEAN (calculado)
-  * pagina_origem : SMALLINT
-  * trecho_origem : TEXT
-  * provedor_ia : TEXT
-  * modelo_ia : TEXT
-  * versao_processamento : TEXT
-  * status : TEXT (pendente | descartado | confirmado)
-  revisado_em : TIMESTAMPTZ
-  evento_pessoal_id : UUID <<FK, Unique>>
+  * numero : SMALLINT
+  * autor_id : UUID <<FK>>
+  * visibilidade : TEXT (privada | compartilhada)
+  compartilhada_em : TIMESTAMPTZ
   criado_em : TIMESTAMPTZ
-  .. Unique (plano_id, execucao, ordem) ..
+  .. Unique (plano_id, numero) ..
+}
+
+entity "DISCIPLINAS" {
+  * id : UUID <<PK>>
+  --
+  * origem : TEXT (followw | manual)
+  origem_id : TEXT
+  * codigo : TEXT
+  * nome : TEXT
+  unidade : TEXT
+  nivel : TEXT
+  atualizado_na_origem_em : TIMESTAMPTZ
+}
+
+entity "OFERTAS_TURMA" {
+  * id : UUID <<PK>>
+  --
+  * disciplina_id : UUID <<FK>>
+  * origem : TEXT
+  origem_id : TEXT
+  * turma : TEXT
+  * ano : SMALLINT
+  * semestre : SMALLINT (1 | 2)
+  atualizado_na_origem_em : TIMESTAMPTZ
+  sincronizado_em : TIMESTAMPTZ
+  .. Unique (disciplina_id, turma, ano, semestre) ..
+}
+
+entity "VINCULOS_TURMA" {
+  * user_id : UUID <<PK, FK>>
+  * oferta_id : UUID <<PK, FK>>
+  --
+  * origem : TEXT (autodeclarado)
+  criado_em : TIMESTAMPTZ
 }
 
 PROFILES ||--o{ EVENTOS : "cria"
@@ -141,8 +177,15 @@ CATEGORIES ||--o{ EVENTOS : "classifica"
 CATEGORIES ||--o{ EVENTOS_PESSOAIS : "classifica"
 
 PLANOS_ENSINO ||--o{ AVALIACOES : "gera"
-PLANOS_ENSINO ||--o{ CANDIDATOS_AVALIACAO : "IA sugere"
 PLANOS_ENSINO |o--o{ PLANOS_ENSINO : "plano_oficial_id"
-CANDIDATOS_AVALIACAO |o--o| EVENTOS_PESSOAIS : "confirmado vira"
+PLANOS_ENSINO ||--|{ VERSOES_PLANO : "versiona"
+VERSOES_PLANO ||--o{ AVALIACOES : "contém"
+AVALIACOES |o--o{ EVENTOS_PESSOAIS : "importada por usuário"
+VERSOES_PLANO |o--o{ EVENTOS_PESSOAIS : "origem"
+PROFILES ||--o{ VERSOES_PLANO : "autor"
+DISCIPLINAS ||--o{ OFERTAS_TURMA : "ofertada em"
+OFERTAS_TURMA |o--o{ PLANOS_ENSINO : "oferta_id"
+PROFILES ||--o{ VINCULOS_TURMA : "segue"
+OFERTAS_TURMA ||--o{ VINCULOS_TURMA : "seguida por"
 @enduml
 ```
