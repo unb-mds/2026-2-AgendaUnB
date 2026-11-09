@@ -50,10 +50,13 @@ Armazena os metadados dos usuários, sincronizada com a tabela nativa de autenti
 Eventos publicados por professor/admin e sugestões da comunidade sujeitas à moderação. As regras posteriores à R1 estão no [guia de moderação](../painel-administrativo.md).
 *   **Colunas:**
     *   `id` (UUID, Primary Key): Identificador único.
-    *   `autor_id` (UUID, Not Null): Chave estrangeira para `profiles(id)` (`ON DELETE CASCADE`).
+    *   `autor_id` (UUID): Chave estrangeira para `profiles(id)` (`ON DELETE CASCADE`). Nulo apenas em evento coletado, que é identificado pela fonte (`CHECK (autor_id is not null or fonte is not null)`).
     *   `titulo` (TEXT, Not Null): Título do evento. Validação: Mínimo de 3 caracteres (`CHECK (char_length(trim(titulo)) >= 3)`).
     *   `descricao` (TEXT, Not Null): Detalhamento do evento.
-    *   `data_evento` (TIMESTAMPTZ, Not Null): Data e hora consolidadas do evento.
+    *   `data_evento` (TIMESTAMPTZ): Início do evento. Obrigatório para publicar (`CHECK (status <> 'aprovado' or data_evento is not null)`); só um item coletado em revisão pode ficar sem data.
+    *   `data_fim`, `dia_inteiro`, `data_inicio_civil`, `data_fim_civil`: intervalo e dia inteiro, descritos em [3.3](#33-datas-e-intervalos-adr-011).
+    *   `fonte`, `fonte_id`, `fonte_url`, `fonte_tipo`, `fonte_hash`, `coletado_em`, `campos_editados`, `motivo_revisao`, `possivel_duplicata_de`: procedência da coleta, descrita em [3.4](#34-coleta-de-eventos-s7-b05).
+    *   `moderado_por`, `moderado_em`: quem decidiu sobre o evento e quando.
     *   `localizacao` (TEXT): Local físico específico (ex: Sala S1, Auditório).
     *   `link_externo` (TEXT): Link auxiliar ou de inscrição.
     *   `campus_id` (UUID): Chave estrangeira para a tabela `campus(id)`.
@@ -71,7 +74,8 @@ Agenda estritamente privada, gerenciada e visualizada unicamente por cada estuda
     *   `user_id` (UUID, Not Null): Chave estrangeira para `auth.users(id)` (`DEFAULT auth.uid()`).
     *   `titulo` (TEXT, Not Null): Título do compromisso. Validação: Mínimo de 3 caracteres.
     *   `descricao` (TEXT): Notas extras.
-    *   `data_hora` (TIMESTAMPTZ, Not Null): Data e hora do compromisso.
+    *   `data_hora` (TIMESTAMPTZ, Not Null): Início do compromisso.
+    *   `data_fim`, `dia_inteiro`, `data_inicio_civil`, `data_fim_civil`: intervalo e dia inteiro, descritos em [3.3](#33-datas-e-intervalos-adr-011).
     *   `campus_id` (UUID): Chave estrangeira para a tabela `campus(id)`.
     *   `category_id` (UUID): Chave estrangeira para a tabela `categories(id)`.
     *   `criado_em` (TIMESTAMPTZ, Not Null): Timestamp de criação.
@@ -80,6 +84,36 @@ Agenda estritamente privada, gerenciada e visualizada unicamente por cada estuda
     *   **Criação (INSERT):** Política *"utilizadores podem criar eventos"* (`WITH CHECK (auth.uid() = user_id)`).
     *   **Edição (UPDATE):** Política *"utilizadores podem atualizar os seus proprios eventos"* (`USING (auth.uid() = user_id)` e `WITH CHECK`).
     *   **Exclusão (DELETE):** Política *"utilizadores podem deletar os seus proprios eventos"* (`USING (auth.uid() = user_id)`).
+
+### 3.3. Datas e intervalos (ADR-011)
+Instantes ficam em `data_evento`/`data_hora` e `data_fim` (`TIMESTAMPTZ`). Dia inteiro usa datas civis em `data_inicio_civil` e `data_fim_civil` (`DATE`), com `dia_inteiro = true`. O fim é sempre **exclusivo**: 18 a 20/11 inclusive é início 18 e fim 21.
+*   **Triggers** `eventos_normaliza_datas` e `eventos_pessoais_normaliza_datas`: em dia inteiro, preenchem o início e o fim como a meia-noite de `America/Sao_Paulo` dos dias civis, para que ordenação, filtros e lembretes tratem os dois tipos da mesma forma.
+*   **Validações:** dia inteiro exige as duas datas civis e fim posterior ao início; evento com horário não tem data civil; `data_fim`, quando existe, é posterior ao início.
+*   **Índices:** `idx_eventos_aprovados_data` (parcial, `status = 'aprovado'`) e `idx_eventos_pessoais_usuario_data (user_id, data_hora)`.
+*   Registros anteriores não foram reclassificados: `00:00` em um evento legado não prova dia inteiro.
+
+### 3.4. Coleta de eventos (S7-B05)
+Eventos coletados da Agenda UnB Notícias ficam na própria tabela `eventos`, identificados pela procedência.
+*   **Chave da origem:** índice único parcial `uq_eventos_fonte (fonte, fonte_id)`. Coletas sucessivas ou concorrentes atualizam o mesmo registro.
+*   **Função** `registrar_evento_coletado(jsonb)`: uma chamada por item, atômica. Publica itens completos e inequívocos; envia à revisão (`motivo_revisao` em `incompleto`, `ambiguo`, `possivel_duplicata`, `informe`); concilia URL idêntica à de um evento cadastrado na plataforma; nunca desfaz edição local nem decisão de moderação.
+*   **Edições locais:** o trigger `eventos_registra_edicao_local` anota em `campos_editados` o que foi alterado fora da coleta. O trigger `eventos_protege_procedencia` impede que o navegador grave procedência ou registro de moderação.
+*   **Tabela `coletas_eventos`:** uma linha por execução do coletor (`status`, horários, contadores e `erro_codigo` curto). Sem conteúdo da fonte.
+*   **Revisão:** `listar_revisoes_coleta(status, offset)` para professor e admin; a decisão usa `moderar_sugestao`, que registra `moderado_por` e `moderado_em` e recusa publicar item sem data.
+
+### 3.5. Tabela `cliques_evento` (S8-B02)
+Deduplica os redirecionamentos de **Conferir evento**. Chave primária `(evento_id, click_id)`; além dela, só `criado_em`. Não guarda usuário, IP ou agente.
+*   **Função** `registrar_clique_evento(evento_id, click_id)`: devolve o link de um evento aprovado com URL `http(s)` e incrementa `eventos.interessados_count` uma vez por `click_id`. `registrar_interesse(uuid)` foi removida.
+*   `interessados_count` conta redirecionamentos acionados. Não mede visitantes únicos, inscrição ou presença.
+
+### 3.6. Tabela `lembretes` (S8-B03, ADR-013)
+Avisos na plataforma 24 horas antes do início de cada evento da agenda da conta.
+*   **Colunas:** `user_id` (FK `profiles`, `ON DELETE CASCADE`), `tipo_evento` (`pessoal` ou `publico_salvo`), `evento_pessoal_id` ou `evento_id` (FK com `ON DELETE CASCADE`), `inicio_referencia`, `agendado_para`, `status` (`pendente` ou `disparado`), `disparado_em`, `lido_em`.
+*   **Idempotência:** índices únicos parciais `(user_id, evento_pessoal_id, inicio_referencia)` e `(user_id, evento_id, inicio_referencia)`.
+*   **Triggers:** em `eventos_pessoais`, `eventos_salvos` e `eventos`, agendam ao entrar na agenda, trocam o aviso quando o início muda e cancelam na exclusão, na remoção do vínculo ou quando o evento sai do catálogo. Entrada na agenda com 24 horas ou menos não gera aviso.
+*   **Função** `disparar_lembretes(limite)`: torna visíveis os avisos vencidos, uma única vez cada (`FOR UPDATE SKIP LOCKED`), conferindo de novo a elegibilidade.
+*   **Políticas RLS:** a conta lê apenas os próprios avisos já disparados e só altera `lido_em`; o primeiro `lido_em` é mantido. Sem acesso para visitantes.
+
+O uso dessas estruturas pela API, pelo coletor e pelo agendador está em [Dados de eventos](dados-de-eventos.md).
 
 ---
 
