@@ -36,7 +36,14 @@ Aplique as migrações pendentes em ordem antes de disponibilizar o código atua
 
 ## Ainda em preparação
 
-`/plano-de-ensino` informa que envio de PDFs e extração de avaliações ainda não estão disponíveis e oferece organização manual da agenda. O bucket privado é infraestrutura preparatória. Upload de atestados, parser, revisão assistida e validação colaborativa continuam planejados, assim como inscrições, histórico de participação, lembretes de proximidade, exportação `.ics` e coleta externa.
+`/plano-de-ensino` continua informativo e oferece organização manual da agenda.
+No backend, #40/S6-B01 disponibilizam upload autenticado e worker separado para
+candidatos privados com procedência, recuperação e limite de custo. O worker fica
+desativado por padrão, aguardando políticas S6-D02 para dados reais. Revisão e
+confirmação assistidas pertencem a S6-B02/S6-D02. Ver [operação e avaliação](processamento-planos.md).
+Upload de atestados e validação colaborativa continuam planejados, assim como
+inscrições, histórico de participação, lembretes de proximidade, exportação `.ics`
+e coleta externa.
 
 ## Verificação disponível
 

@@ -2,7 +2,7 @@
 
 ## Referência e limites
 
-A API possui **15 operações HTTP de aplicação**, incluindo `/health`: 10 presentes na R1 e cinco posteriores. `/docs`, `/redoc` e `/openapi.json` são recursos de documentação gerados pelo FastAPI, não operações de negócio. Consulte também [Arquitetura](Architecture.md), [Padrões](padroes.md) e [Implantação](implantacao.md).
+Este documento descreve as operações HTTP da aplicação, incluindo `/health`. A base documental pós-R1 cobria 15 operações; upload/consulta de planos e rotas administrativas foram acrescentados depois. `/docs`, `/redoc` e `/openapi.json` são recursos de documentação gerados pelo FastAPI, não operações de negócio. Consulte também [Arquitetura](Architecture.md), [Padrões](padroes.md) e [Implantação](implantacao.md).
 
 Fontes: `backend/src/main.py`, `modules/events/router.py`, `modules/events/schemas.py`, `middlewares/auth.py` e `database/models.py` (os quatro últimos relativos a `backend/src/`). O OpenAPI ajuda a conferir campos e rotas, mas não descreve integralmente os handlers de erro personalizados.
 
@@ -232,4 +232,34 @@ Cada item tem `id`, `usuario_id`, `evento_id`, `tipo` (`submissao/aprovacao/recu
 
 Conferir inventário com `app.openapi()` e revisar manualmente handlers, permissões e SQL. Os testes de eventos, sugestões e salvos usam SQLite e substituem dependências de autenticação: não comprovam integração real com Auth nem RLS. Os testes de moderação de banco exigem Supabase local descartável. Ver [Contribuição](CONTRIBUTING.md) e o registro de validação em [Arquitetura](Architecture.md#9-verificacao).
 
-Qualquer alteração de rota, schema, autorização, erro ou RPC deve atualizar este documento no mesmo PR. Upload/parser, inscrições, categorias REST e atualização pública não são contratos disponíveis.
+Qualquer alteração de rota, schema, autorização, erro ou RPC deve atualizar este documento no mesmo PR. Inscrições, categorias REST e atualização pública não são contratos disponíveis.
+
+## Planos particulares — atualização S6-B01 (09/11/2026)
+
+### POST `/api/v1/syllabus/upload`
+
+Autenticação obrigatória. Recebe `multipart/form-data` com `file` PDF e campos
+opcionais `disciplina` e `turma`. Valida extensão, MIME, assinatura, integridade,
+senha, tamanho (10 MB), quantidade (dez páginas) e presença de texto selecionável.
+Salva o arquivo no bucket privado e a linha do dono como `pendente`; retorna
+**202**, sem esperar por IA. Se o banco falhar, compensa o arquivo no Storage.
+
+Resposta: `id`, `userId`, `fileName`, `filePath`, `fileSize`, `fileType`, `status`,
+`createdAt` e `message`. `filePath` é referência privada, não URL pública assinada.
+401 sem sessão; 400 arquivo inválido/protegido/sem texto/excesso de páginas; 413
+excesso de bytes; 502/503 indisponibilidade de Storage ou banco.
+
+### GET `/api/v1/syllabus/{syllabus_id}`
+
+Autenticado e restrito ao proprietário: UUID válido de outro dono ou inexistente
+retorna **404**. Retorna metadados do upload e `status`, `extractedEventsCount`,
+`errorMessage`, `errorCode`, `pageCount`, `attempts`, `processingStartedAt`,
+`processedAt`, `processingDurationMs`, `disciplina` e `turma`. Campos ainda não
+disponíveis são nulos; `attempts` começa em zero. Estados: `pendente`,
+`processando`, `concluido` e `falha`. Erros são mensagens fixas e códigos da S6-D01.
+Concluído com contagem zero significa documento sem cronograma identificado.
+
+O [worker independente](processamento-planos.md) consome a fila. Ele fica
+desativado até a configuração explícita e a validação das políticas S6-D02.
+Nenhuma chamada deste contrato cria compromissos ou expõe candidatos. Listagem,
+revisão de candidatos e confirmação continuam no escopo S6-B02/S6-D02.

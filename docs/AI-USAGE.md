@@ -30,6 +30,15 @@ O campo **verificado** é o mais importante. Sem ele, a entrada declara o uso ma
 
 ## Entradas
 
+### 09/11/2026 — Processamento de planos particulares com Gemini (S6-B01)
+
+- **Quem:** Heitor Gomes Monteiro (solicitante).
+- **Ferramenta:** Codex (OpenAI) e Gemini API (`gemini-3.5-flash-lite`, somente corpus sintético).
+- **O que foi pedido:** Implementar extração de avaliações de PDFs em candidatos estruturados, com processamento persistente fora da requisição, sem criar compromissos.
+- **O que entrou no repositório:** Worker SQL com lease/fencing e orçamento acumulado, integração REST Gemini, validação de evidências e datas, modelo ORM de candidatos, migração da fila, metadados no GET privado, corpus e benchmark sintéticos, testes e documentação operacional.
+- **O que foi verificado:** 66 testes passaram e nove testes PostgreSQL foram ignorados sem configuração local; chamada real com cinco PDFs sintéticos identificou sete candidatos corretos, sem omissões, extras ou datas inventadas persistidas. Documento de dez páginas com conteúdo adicional concluiu em 4,143s; nenhum caso excedeu 20s. `mkdocs build --strict` e `git diff --check` passaram. Logs/erros próprios foram revisados para não registrar texto integral, respostas brutas ou credenciais. Worker desativado por padrão; nenhum PDF real, migração remota ou deploy foi realizado.
+- **O que foi rejeitado ou corrigido:** O Gemini rejeitou o primeiro esquema JSON por complexidade; o esquema enviado foi simplificado, mantendo validação local completa. A avaliação passou a associar título literal com sufixo e página para não contar variações válidas como datas inventadas. O teste de upload foi isolado do Supabase configurado no `.env`. A S6-D02 não foi presumida pronta: integração real e homologação de RLS/PostgreSQL continuam pendentes.
+
 ### 19/10/2026 — Planejamento da Sprint 06 e histórico de issues por sprint
 
 - **Quem:** Thomas Augusto Amorim de Araujo (solicitante).
