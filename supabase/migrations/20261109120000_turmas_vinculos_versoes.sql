@@ -274,7 +274,14 @@ comment on column public.eventos_pessoais.origem_versao_id is
 
 -- -------------------------------------------------------------
 -- 7. Remoção do modelo paralelo de candidatos (#53)
+--
+-- confirmar_candidatos_transacional (S6-D02) só opera sobre
+-- candidatos_avaliacao e não é chamada pelo front nem pela API: a
+-- confirmação é feita pelo back-end sobre avaliacoes. O PostgreSQL não
+-- rastreia dependências do corpo de funções plpgsql, então a função
+-- continuaria exposta (SECURITY DEFINER) e quebrada após o DROP TABLE.
 -- -------------------------------------------------------------
+drop function if exists public.confirmar_candidatos_transacional(uuid[], integer);
 drop table if exists public.candidatos_avaliacao;
 
 

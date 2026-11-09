@@ -233,3 +233,11 @@ def test_browser_cannot_write_catalog_follows_or_versions(database):
     # Without an UPDATE policy, sharing from the browser changes nothing.
     assert conn.execute(text("""update public.versoes_plano set visibilidade='compartilhada', compartilhada_em=now()
         where plano_id=:p"""), {'p': plan_id}).rowcount == 0
+
+
+def test_parallel_candidate_model_was_removed(database):
+    conn, _ = database
+    assert conn.execute(text("select to_regclass('public.candidatos_avaliacao')")).scalar() is None
+    # A função da S6-D02 dependia da tabela removida e não pode ficar exposta e quebrada.
+    assert conn.execute(text(
+        "select to_regprocedure('public.confirmar_candidatos_transacional(uuid[], integer)')")).scalar() is None
