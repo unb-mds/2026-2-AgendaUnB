@@ -328,9 +328,96 @@ class SyllabusVersion(Base):
     )
     visibility: Mapped[str] = mapped_column("visibilidade", String, default="privada", nullable=False)
     shared_at: Mapped[datetime | None] = mapped_column("compartilhada_em", DateTime(timezone=True), nullable=True)
+    # Evidência pública oficial, validada por admin. Papel do autor não a substitui.
+    institutional_source_url: Mapped[str | None] = mapped_column("fonte_institucional_url", String, nullable=True)
+    provenance_validated_by: Mapped[UUID | None] = mapped_column(
+        "procedencia_validada_por", Uuid(as_uuid=True), ForeignKey("profiles.id", ondelete="SET NULL"), nullable=True
+    )
+    provenance_validated_at: Mapped[datetime | None] = mapped_column(
+        "procedencia_validada_em", DateTime(timezone=True), nullable=True
+    )
+    withdrawn_at: Mapped[datetime | None] = mapped_column("retirada_em", DateTime(timezone=True), nullable=True)
+    withdrawn_by: Mapped[UUID | None] = mapped_column(
+        "retirada_por", Uuid(as_uuid=True), ForeignKey("profiles.id", ondelete="SET NULL"), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         "criado_em", DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+
+class CandidateVote(Base):
+    """Voto de um seguidor sobre um candidato compartilhado (S8-B01). Gravado por votar_avaliacao()."""
+
+    __tablename__ = "votos_avaliacao"
+
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), primary_key=True
+    )
+    candidate_id: Mapped[UUID] = mapped_column(
+        "avaliacao_id", Uuid(as_uuid=True), ForeignKey("avaliacoes.id", ondelete="CASCADE"), primary_key=True
+    )
+    value: Mapped[str] = mapped_column("valor", String, nullable=False)  # confirma | contesta
+    created_at: Mapped[datetime] = mapped_column(
+        "criado_em", DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        "atualizado_em", DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class ImportOperation(Base):
+    """Ação de confirmação identificada pela Idempotency-Key (ADR-010). Gravada por confirmar_importacao()."""
+
+    __tablename__ = "operacoes_importacao"
+    __table_args__ = (
+        UniqueConstraint("user_id", "chave", name="operacoes_importacao_chave_unica"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False
+    )
+    idempotency_key: Mapped[str] = mapped_column("chave", String, nullable=False)
+    version_id: Mapped[UUID | None] = mapped_column(
+        "versao_id", Uuid(as_uuid=True), ForeignKey("versoes_plano.id", ondelete="SET NULL"), nullable=True
+    )
+    content_hash: Mapped[str] = mapped_column("conteudo_hash", String, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        "criado_em", DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class ImportItem(Base):
+    """Item de uma operação. event_id fica nulo quando a pessoa apaga o evento."""
+
+    __tablename__ = "itens_importacao"
+
+    operation_id: Mapped[UUID] = mapped_column(
+        "operacao_id", Uuid(as_uuid=True), ForeignKey("operacoes_importacao.id", ondelete="CASCADE"), primary_key=True
+    )
+    candidate_id: Mapped[UUID] = mapped_column("avaliacao_id", Uuid(as_uuid=True), primary_key=True)
+    event_id: Mapped[UUID | None] = mapped_column(
+        "evento_pessoal_id", Uuid(as_uuid=True), ForeignKey("eventos_pessoais.id", ondelete="SET NULL"), nullable=True
+    )
+    result: Mapped[str] = mapped_column("resultado", String, nullable=False)  # criado | ja_importado
+
+
+class CatalogSyncRun(Base):
+    """Uma execução do adaptador do catálogo de turmas (S7-B03)."""
+
+    __tablename__ = "sincronizacoes_catalogo"
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    source: Mapped[str] = mapped_column("origem", String, default="followw", nullable=False)
+    status: Mapped[str] = mapped_column(String, default="executando", nullable=False)
+    started_at: Mapped[datetime] = mapped_column(
+        "iniciada_em", DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    finished_at: Mapped[datetime | None] = mapped_column("concluida_em", DateTime(timezone=True), nullable=True)
+    offerings_read: Mapped[int] = mapped_column("ofertas_lidas", Integer, default=0, nullable=False)
+    created: Mapped[int] = mapped_column("criadas", Integer, default=0, nullable=False)
+    updated: Mapped[int] = mapped_column("atualizadas", Integer, default=0, nullable=False)
+    error_code: Mapped[str | None] = mapped_column("erro_codigo", String, nullable=True)
 
 
 class EventCollectionRun(Base):
