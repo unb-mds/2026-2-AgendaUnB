@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { eventsApi, toUiEvent } from '../lib/api';
+import { safeEventUrl } from '../lib/moderation';
 import NavBar from '../components/NavBar';
 import SaveEventButton from '../components/SaveEventButton';
 import '../styles/global.css';
@@ -96,7 +97,8 @@ export default function PaginaDeEvento() {
     categoria: dataEvento.area || 'Evento',
     organizador,
     descricao: dataEvento.descricao || 'Sem descrição disponível.',
-    linkOriginal: dataEvento.linkExterno || '',
+    // Só http(s): um link "javascript:" executaria código na sessão de quem clica.
+    linkOriginal: safeEventUrl(dataEvento.linkExterno) || '',
   };
 
   const handleConferir = () => {
@@ -106,7 +108,7 @@ export default function PaginaDeEvento() {
       setHasClicked(true);
     }
     // Abre o link do evento em nova aba
-    window.open(evento.linkOriginal, "_blank");
+    window.open(evento.linkOriginal, "_blank", "noopener,noreferrer");
   };
 
   const handleShare = () => {
