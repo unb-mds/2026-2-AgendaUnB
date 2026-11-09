@@ -1,14 +1,15 @@
-import io
 import logging
+import math
 import os
 import re
 from uuid import UUID, uuid4
 
-import pypdf
 from fastapi import HTTPException, UploadFile
 from sqlalchemy.orm import Session
+from starlette.concurrency import run_in_threadpool
 
 from src.database.models import Syllabus
+from src.modules.syllabus.upload_validation import PdfValidationError, validate_pdf_structure
 from src.services.storage import SupabaseStorageService
 
 logger = logging.getLogger("agenda_unb.syllabus")
@@ -18,6 +19,19 @@ MAX_FILE_SIZE_BYTES = int(
     os.getenv("MAX_UPLOAD_SIZE_BYTES", str(10 * 1024 * 1024))
 )
 MAX_PDF_PAGES = int(os.getenv("MAX_PDF_PAGES", "10"))
+UPLOAD_VALIDATION_TIMEOUT_SECONDS = float(os.getenv("SYLLABUS_UPLOAD_VALIDATION_TIMEOUT_SECONDS", "8"))
+if not math.isfinite(UPLOAD_VALIDATION_TIMEOUT_SECONDS) or not 0 < UPLOAD_VALIDATION_TIMEOUT_SECONDS <= 30:
+    raise ValueError("SYLLABUS_UPLOAD_VALIDATION_TIMEOUT_SECONDS deve estar entre 0 e 30 segundos")
+
+PDF_VALIDATION_MESSAGES = {
+    "malformed": "Arquivo PDF corrompido ou malformado. Verifique o arquivo ou realize o cadastro manual.",
+    "encrypted": "O arquivo PDF está protegido por senha. Envie uma versão sem proteção ou realize o cadastro manual.",
+    "empty": "O arquivo PDF não possui páginas válidas.",
+    "pages": f"O arquivo PDF está ultrapassando o limite máximo de {MAX_PDF_PAGES} páginas. Reduza o documento ou adicione os eventos manualmente.",
+    "no_text": "O arquivo PDF não possui texto selecionável legível (documento escaneado ou imagem). Envie um documento com texto selecionável ou cadastre os eventos manualmente.",
+    "timeout": "O tempo limite de validação do PDF foi excedido. Reduza o documento ou realize o cadastro manual.",
+    "unavailable": "A validação do PDF está indisponível no momento. Tente novamente mais tarde.",
+}
 
 
 def sanitize_filename(filename: str) -> str:
@@ -47,7 +61,7 @@ async def validate_pdf_file(file: UploadFile) -> bytes:
             detail="MIME Type inválido. O arquivo enviado deve ser do tipo application/pdf.",
         )
 
-    # 3. Leitura do conteúdo em memória e validação de tamanho de payload
+    # 3. Leitura limitada antes da validação de tamanho de payload
     try:
         content = await file.read(MAX_FILE_SIZE_BYTES + 1)
     except Exception as exc:
@@ -76,53 +90,14 @@ async def validate_pdf_file(file: UploadFile) -> bytes:
             detail="Assinatura de arquivo inválida. O arquivo enviado não é um PDF legítimo.",
         )
 
-    # 5. Validação estrutural via leitor de PDF (pypdf)
+    # Parser e extração em processo com prazo; a espera não bloqueia o event loop.
     try:
-        reader = pypdf.PdfReader(io.BytesIO(content))
-    except Exception as exc:
-        logger.warning("Falha ao analisar a estrutura do PDF")
-        raise HTTPException(
-            status_code=400,
-            detail="Arquivo PDF corrompido ou malformado. Verifique o arquivo ou realize o cadastro manual.",
-        ) from exc
-
-    # 6. Verificação de proteção por senha / criptografia
-    if reader.is_encrypted:
-        raise HTTPException(
-            status_code=400,
-            detail="O arquivo PDF está protegido por senha. Envie uma versão sem proteção ou realize o cadastro manual.",
+        await run_in_threadpool(
+            validate_pdf_structure, content, MAX_PDF_PAGES, UPLOAD_VALIDATION_TIMEOUT_SECONDS
         )
-
-    # 7. Verificação de quantidade de páginas
-    num_pages = len(reader.pages)
-    if num_pages == 0:
-        raise HTTPException(
-            status_code=400,
-            detail="O arquivo PDF não possui páginas válidas.",
-        )
-
-    if num_pages > MAX_PDF_PAGES:
-        raise HTTPException(
-            status_code=400,
-            detail=f"O arquivo PDF possui {num_pages} páginas, ultrapassando o limite máximo de {MAX_PDF_PAGES} páginas. Reduza o documento ou adicione os eventos manualmente.",
-        )
-
-    # 8. Verificação de texto selecionável
-    has_text = False
-    try:
-        for page in reader.pages:
-            text = page.extract_text()
-            if text and text.strip():
-                has_text = True
-                break
-    except Exception as exc:
-        logger.warning("Erro ao tentar extrair texto das páginas do PDF")
-
-    if not has_text:
-        raise HTTPException(
-            status_code=400,
-            detail="O arquivo PDF não possui texto selecionável legível (documento escaneado ou imagem). Envie um documento com texto selecionável ou cadastre os eventos manualmente.",
-        )
+    except PdfValidationError as exc:
+        status_code = 422 if exc.code == "timeout" else 503 if exc.code == "unavailable" else 400
+        raise HTTPException(status_code=status_code, detail=PDF_VALIDATION_MESSAGES[exc.code]) from None
 
     return content
 

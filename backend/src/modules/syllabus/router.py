@@ -3,6 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from starlette.concurrency import run_in_threadpool
 
 from src.database.connection import get_db
 from src.database.models import Syllabus
@@ -39,7 +40,8 @@ async def upload_syllabus(
     """
     content = await validate_pdf_file(file)
 
-    syllabus = process_syllabus_upload(
+    syllabus = await run_in_threadpool(
+        process_syllabus_upload,
         user_id=current_user.id,
         filename=file.filename or "syllabus.pdf",
         content=content,

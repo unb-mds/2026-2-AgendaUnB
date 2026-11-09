@@ -241,13 +241,19 @@ Qualquer alteração de rota, schema, autorização, erro ou RPC deve atualizar 
 Autenticação obrigatória. Recebe `multipart/form-data` com `file` PDF e campos
 opcionais `disciplina` e `turma`. Valida extensão, MIME, assinatura, integridade,
 senha, tamanho (10 MB), quantidade (dez páginas) e presença de texto selecionável.
+Lê no máximo limite + 1 byte antes de rejeitar excesso. O parser roda em processo
+separado com prazo de 8s (`SYLLABUS_UPLOAD_VALIDATION_TIMEOUT_SECONDS`); a espera
+e o acesso síncrono ao Storage/banco não bloqueiam o event loop da API.
 Salva o arquivo no bucket privado e a linha do dono como `pendente`; retorna
 **202**, sem esperar por IA. Se o banco falhar, compensa o arquivo no Storage.
 
 Resposta: `id`, `userId`, `fileName`, `filePath`, `fileSize`, `fileType`, `status`,
 `createdAt` e `message`. `filePath` é referência privada, não URL pública assinada.
 401 sem sessão; 400 arquivo inválido/protegido/sem texto/excesso de páginas; 413
-excesso de bytes; 502/503 indisponibilidade de Storage ou banco.
+excesso de bytes; 422 prazo de pré-validação excedido; 502/503 indisponibilidade
+de Storage, banco ou processo de validação. Timeout/falha da pré-validação não
+persistem arquivo ou tarefa. A pré-validação é aguardada antes do 202; o prazo
+inclui criação do processo e admite até 2,2s adicionais para encerrá-lo.
 
 ### GET `/api/v1/syllabus/{syllabus_id}`
 
