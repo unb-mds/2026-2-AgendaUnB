@@ -114,7 +114,28 @@ erDiagram
         TEXT autor_papel
         UUID versao_origem_id FK
         BOOLEAN procedencia_institucional
+        TEXT fonte_institucional_url
         TEXT visibilidade
+    }
+
+    VOTOS_AVALIACAO {
+        UUID user_id PK,FK
+        UUID avaliacao_id PK,FK
+        TEXT valor
+    }
+
+    OPERACOES_IMPORTACAO {
+        UUID id PK
+        UUID user_id FK
+        TEXT chave "UK com user_id"
+        UUID versao_id FK
+    }
+
+    ITENS_IMPORTACAO {
+        UUID operacao_id PK,FK
+        UUID avaliacao_id PK
+        UUID evento_pessoal_id FK "nulo se o evento foi apagado"
+        TEXT resultado
     }
 
     DISCIPLINAS {
@@ -165,6 +186,11 @@ erDiagram
     OFERTAS_TURMA ||--o{ VINCULOS_TURMA : "seguida por"
     PLANOS_ENSINO o|--o{ PLANOS_ENSINO : "referencia plano oficial"
     VERSOES_PLANO o|--o{ EVENTOS_PESSOAIS : "origem da importacao"
+    AVALIACOES ||--o{ VOTOS_AVALIACAO : "recebe"
+    PROFILES ||--o{ VOTOS_AVALIACAO : "vota"
+    PROFILES ||--o{ OPERACOES_IMPORTACAO : "confirma"
+    OPERACOES_IMPORTACAO ||--|{ ITENS_IMPORTACAO : "contem"
+    EVENTOS_PESSOAIS o|--o{ ITENS_IMPORTACAO : "criado por"
 ```
 
 O dono de `eventos_pessoais` referencia `auth.users.id`. O fluxo de confirmação da API registra a procedência em `eventos_pessoais.origem_avaliacao_id` (sem FK) e `origem_versao_id` (FK para `versoes_plano`). A unicidade é por usuário, `(user_id, origem_avaliacao_id)`. `avaliacoes` é a tabela única de candidatos desde a S7-D01; detalhes na [especificação física](banco-de-dados.md).
