@@ -13,12 +13,26 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from src.modules.events.router import router as events_router
 from src.modules.syllabus.router import router as syllabus_router
+from src.middlewares.security import (
+    BodyLimitMiddleware,
+    RateLimitMiddleware,
+    SecurityHeadersMiddleware,
+    env_flag,
+    parse_cors_origins,
+)
 from src.middlewares.upload_limits import UploadLimitsMiddleware
 
+
+# A documentação interativa descreve toda a superfície da API. Em
+# homologação/produção, definir API_DOCS_ENABLED=false.
+docs_enabled = env_flag("API_DOCS_ENABLED", True)
 
 app = FastAPI(
     title="Agenda UnB API",
     version="1.0.0",
+    docs_url="/docs" if docs_enabled else None,
+    redoc_url="/redoc" if docs_enabled else None,
+    openapi_url="/openapi.json" if docs_enabled else None,
 )
 logger = logging.getLogger("agenda_unb.api")
 
@@ -71,19 +85,25 @@ async def handle_validation_error(request: Request, exc: RequestValidationError)
     )
 
 default_origins = "http://localhost:5173,http://127.0.0.1:5173"
-allowed_origins = [
-    origin.strip()
-    for origin in os.getenv("CORS_ORIGINS", default_origins).split(",")
-    if origin.strip()
-]
+allowed_origins = parse_cors_origins(os.getenv("CORS_ORIGINS", default_origins))
+
+# A última camada adicionada é a mais externa. Ordem de entrada da requisição:
+# cabeçalhos de segurança -> CORS -> limite de taxa -> limites de corpo -> rotas.
+# O CORS fica por fora dos limites para que 413/429 cheguem legíveis ao navegador.
+app.add_middleware(UploadLimitsMiddleware)
+app.add_middleware(BodyLimitMiddleware)
+app.add_middleware(RateLimitMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
-    allow_credentials=True,
+    # A sessão viaja no cabeçalho Authorization, nunca em cookie.
+    allow_credentials=False,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["*"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "Idempotency-Key"],
+    expose_headers=["Retry-After"],
+    max_age=600,
 )
-app.add_middleware(UploadLimitsMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
 
 app.include_router(events_router, prefix="/api/v1")
 app.include_router(syllabus_router, prefix="/api/v1")

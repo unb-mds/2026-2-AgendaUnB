@@ -74,7 +74,8 @@ def test_auth_retains_validated_token(monkeypatch):
     user_id = uuid4()
     monkeypatch.setenv("SUPABASE_URL", "https://auth.example.test")
     monkeypatch.setenv("SUPABASE_ANON_KEY", "public-key")
-    monkeypatch.setattr(httpx, "get", lambda *args, **kwargs: httpx.Response(200, json={"id": str(user_id)}))
+    monkeypatch.setattr(httpx, "get", lambda *args, **kwargs: httpx.Response(
+        200, json={"id": str(user_id), "email_confirmed_at": "2026-11-01T12:00:00Z"}))
     database = Mock()
     database.scalar.return_value = "student"
     user = get_current_user(HTTPAuthorizationCredentials(scheme="Bearer", credentials="user-token"), database)
