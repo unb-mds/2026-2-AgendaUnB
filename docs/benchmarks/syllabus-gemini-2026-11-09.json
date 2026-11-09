@@ -1,5 +1,7 @@
 {
-  "executed_at": "2026-11-09T14:05:52.523940+00:00",
+  "executed_at": "2026-11-09T14:21:27.678711+00:00",
+  "processing_version": "syllabus-v2",
+  "attempt_timeout_seconds": 18.0,
   "mode": "gemini_live_synthetic",
   "provider": "google",
   "model": "gemini-3.5-flash-lite",
@@ -13,7 +15,7 @@
       "error_code": null,
       "attempts": 1,
       "cost_reserved_usd": "0.027040",
-      "total_seconds": 2.435,
+      "total_seconds": 6.933,
       "unsupported_dates_blocked": 0,
       "candidates": [
         {
@@ -46,7 +48,7 @@
       "error_code": null,
       "attempts": 1,
       "cost_reserved_usd": "0.027040",
-      "total_seconds": 2.428,
+      "total_seconds": 5.028,
       "unsupported_dates_blocked": 0,
       "candidates": [],
       "under_20_seconds": true,
@@ -64,7 +66,7 @@
       "error_code": null,
       "attempts": 1,
       "cost_reserved_usd": "0.027040",
-      "total_seconds": 3.102,
+      "total_seconds": 4.873,
       "unsupported_dates_blocked": 0,
       "candidates": [
         {
@@ -97,7 +99,7 @@
       "error_code": null,
       "attempts": 1,
       "cost_reserved_usd": "0.027040",
-      "total_seconds": 4.143,
+      "total_seconds": 5.171,
       "unsupported_dates_blocked": 0,
       "candidates": [
         {
@@ -130,7 +132,7 @@
       "error_code": null,
       "attempts": 1,
       "cost_reserved_usd": "0.027040",
-      "total_seconds": 2.729,
+      "total_seconds": 4.707,
       "unsupported_dates_blocked": 0,
       "candidates": [
         {

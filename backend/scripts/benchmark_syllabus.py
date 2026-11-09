@@ -20,9 +20,10 @@ from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 
 from src.database.models import AssessmentCandidate, Base, Profile, Syllabus
-from src.modules.syllabus.extraction import normalize, validate_candidates
+from src.modules.syllabus.extraction import VERSION, normalize
 from src.modules.syllabus.gemini import GeminiProvider
 from src.modules.syllabus.processing_config import ProcessingConfig
+from src.modules.syllabus.processing_task import run_isolated
 from src.modules.syllabus.worker import SyllabusWorker
 from syllabus_samples import cases, make_pdf
 
@@ -48,17 +49,6 @@ class ReferenceProvider:
             item["campos_ambiguos"] = [] if item["data_sugerida"] else ["data"]
             candidates.append(item)
         return json.dumps({"candidatos": candidates})
-
-
-class ObservedProvider:
-    def __init__(self, provider):
-        self.provider = provider
-        self.unsupported_dates = 0
-
-    def extract(self, pages):
-        raw = self.provider.extract(pages)
-        self.unsupported_dates += validate_candidates(raw, pages).unsupported_dates
-        return raw
 
 
 def metrics(expected, actual):
@@ -102,6 +92,7 @@ def main():
     Base.metadata.create_all(engine)
     sessions = sessionmaker(engine, expire_on_commit=False)
     report = dict(executed_at=datetime.now(timezone.utc).isoformat(),
+                  processing_version=VERSION, attempt_timeout_seconds=config.attempt_timeout_seconds,
                   mode="gemini_live_synthetic" if args.live else "reference_offline",
                   provider="google" if args.live else "reference", model=config.model if args.live else None,
                   target_seconds=20, max_file_cost_usd=str(config.max_file_cost_usd), cases=[])
@@ -114,8 +105,13 @@ def main():
             db.add(Syllabus(id=sid, user_id=owner, file_name=case["id"] + ".pdf",
                             file_path=f"syllabus_files/{owner}/{sid}.pdf", file_size=len(content)))
             db.commit()
-        provider = ObservedProvider(GeminiProvider(config) if args.live else ReferenceProvider(case))
-        worker = SyllabusWorker(sessions, SyntheticStorage(content), provider, config)
+        provider = GeminiProvider(config) if args.live else ReferenceProvider(case)
+        observations = []
+        def observe_task(*params):
+            result = run_isolated(*params)
+            observations.append(result.extraction.unsupported_dates)
+            return result
+        worker = SyllabusWorker(sessions, SyntheticStorage(content), provider, config, runner=observe_task)
         for _ in range(config.max_attempts + 1):
             if not worker.run_once():
                 break
@@ -127,7 +123,7 @@ def main():
             measurement = dict(id=case["id"], pages=len(case["pages"]), status=job.status,
                                error_code=job.erro_codigo, attempts=job.execucao_atual,
                                cost_reserved_usd=str(job.cost_reserved_usd), total_seconds=elapsed,
-                               unsupported_dates_blocked=provider.unsupported_dates,
+                               unsupported_dates_blocked=sum(observations),
                                candidates=[dict(titulo=item.titulo, tipo=item.tipo,
                                                 data=item.data_sugerida.isoformat() if item.data_sugerida else None,
                                                 hora=item.hora_sugerida.strftime("%H:%M") if item.hora_sugerida else None,

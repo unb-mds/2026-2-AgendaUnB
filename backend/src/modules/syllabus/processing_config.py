@@ -27,6 +27,7 @@ class ProcessingConfig:
     model: str = "gemini-3.5-flash-lite"
     api_key: str = field(default="", repr=False)
     timeout_seconds: float = 12
+    attempt_timeout_seconds: float = 18
     max_attempts: int = 2
     retry_delay_seconds: int = 2
     lease_seconds: int = 90
@@ -40,6 +41,9 @@ class ProcessingConfig:
     def __post_init__(self):
         if not (0 < self.timeout_seconds <= 30 and 1 <= self.max_attempts <= 3):
             raise ValueError("Timeout deve estar em (0, 30] e tentativas entre 1 e 3.")
+        if not (0 < self.attempt_timeout_seconds <= 60 and
+                self.attempt_timeout_seconds + 5 < self.lease_seconds):
+            raise ValueError("Prazo da tentativa deve ser de até 60s e menor que o lease.")
         if not (1 <= self.max_pages <= 10 and 1 <= self.max_text_bytes <= 120000):
             raise ValueError("Limites de páginas ou texto inválidos.")
         if not (128 <= self.max_output_tokens <= 8192 and self.lease_seconds >= 90):
@@ -64,6 +68,7 @@ class ProcessingConfig:
             model=os.getenv("GEMINI_MODEL", cls.model),
             api_key=os.getenv("GEMINI_API_KEY", ""),
             timeout_seconds=float(os.getenv("SYLLABUS_AI_TIMEOUT_SECONDS", "12")),
+            attempt_timeout_seconds=float(os.getenv("SYLLABUS_ATTEMPT_TIMEOUT_SECONDS", "18")),
             max_attempts=int(os.getenv("SYLLABUS_MAX_ATTEMPTS", "2")),
             max_file_cost_usd=Decimal(os.getenv("SYLLABUS_MAX_FILE_COST_USD", "0.06")),
             input_usd_per_million=Decimal(os.getenv("GEMINI_INPUT_USD_PER_MILLION", "0.30")),
