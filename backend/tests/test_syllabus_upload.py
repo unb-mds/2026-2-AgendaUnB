@@ -235,6 +235,13 @@ def test_oversized_upload_reads_only_limit_plus_one(monkeypatch):
     assert stream.tell() == 51
 
 
+def test_upload_accepts_pdf_at_exact_size_limit(monkeypatch):
+    monkeypatch.setattr("src.modules.syllabus.services.MAX_FILE_SIZE_BYTES", len(BASE_VALID_PDF))
+    upload = UploadFile(io.BytesIO(BASE_VALID_PDF), filename="plano.pdf",
+                        headers=Headers({"content-type": "application/pdf"}))
+    assert asyncio.run(validate_pdf_file(upload)) == BASE_VALID_PDF
+
+
 def test_upload_syllabus_storage_failure(api):
     client, _, authenticated_user, _ = api
 
