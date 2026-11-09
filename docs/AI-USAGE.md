@@ -30,6 +30,15 @@ O campo **verificado** é o mais importante. Sem ele, a entrada declara o uso ma
 
 ## Entradas
 
+### 09/11/2026 — Ambiguidade de horários no extrator Gemini
+
+- **Quem:** Heitor Gomes Monteiro (solicitante).
+- **Ferramenta:** Codex (OpenAI).
+- **O que foi pedido:** Continuar a implementação da issue e registrar commits na branch `feat/geminiapi`.
+- **O que entrou no repositório:** Validação de horários alternativos/intervalos e horários explicitamente incertos, sem escolher um horário para o estudante; versão do processamento atualizada para `syllabus-v2`.
+- **O que foi verificado:** 32 testes do processamento passaram, incluindo nove novos casos de horários; datas válidas permanecem intactas e horários únicos por extenso numérico são preservados.
+- **O que foi rejeitado ou corrigido:** A presença de um horário no trecho não bastava quando o mesmo trecho continha outra alternativa. A escolha foi substituída por hora nula com marcação de ambiguidade.
+
 ### 09/11/2026 — Processamento de planos particulares com Gemini (S6-B01)
 
 - **Quem:** Heitor Gomes Monteiro (solicitante).

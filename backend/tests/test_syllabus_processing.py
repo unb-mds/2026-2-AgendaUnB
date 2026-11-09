@@ -64,6 +64,28 @@ def test_missing_time_stays_null_and_empty_is_success():
     assert validate_candidates('{"candidatos": []}', [TextPage(1, "Ementa")]).candidates == []
 
 
+@pytest.mark.parametrize("hours", ["09h ou 14h", "09:00 - 14:00", "09 h 00 ou 14 h 00"])
+def test_alternative_or_range_hours_require_review(hours):
+    evidence = f"Prova 1 - 10/11/2026 - {hours}."
+    result = validate_candidates(raw_candidate(trecho_origem=evidence), [TextPage(1, evidence)])
+    item = result.candidates[0]
+    assert item.data_sugerida.isoformat() == "2026-11-10"
+    assert item.hora_sugerida is None and "hora" in item.campos_ambiguos
+
+
+def test_declared_uncertain_hour_is_not_chosen():
+    raw = raw_candidate(campos_ambiguos=["hora"])
+    result = validate_candidates(raw, [TextPage(1, "Prova 1 - 10/11/2026 - 14:00.")])
+    assert result.candidates[0].hora_sugerida is None
+
+
+@pytest.mark.parametrize("written", ["14h", "14h00", "14 h 00", "14:00", "14:00 e novamente 14h"])
+def test_unique_literal_hour_is_preserved(written):
+    evidence = f"Prova 1 - 10/11/2026 - {written}."
+    result = validate_candidates(raw_candidate(trecho_origem=evidence), [TextPage(1, evidence)])
+    assert result.candidates[0].hora_sugerida.isoformat() == "14:00:00"
+
+
 def test_provider_only_sends_data_and_disables_storage():
     def handler(request):
         body = json.loads(request.content)

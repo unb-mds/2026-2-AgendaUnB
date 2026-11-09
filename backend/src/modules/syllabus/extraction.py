@@ -10,7 +10,7 @@ from pypdf import PdfReader
 
 from src.modules.syllabus.processing_config import ProcessingConfig, ProcessingError
 
-VERSION = "syllabus-v1"
+VERSION = "syllabus-v2"
 Kind = Literal["prova", "trabalho", "projeto", "seminario", "lista", "entrega", "outro"]
 AmbiguousField = Literal["titulo", "tipo", "data", "hora"]
 
@@ -108,6 +108,16 @@ def dates_in_evidence(value: str) -> set[date]:
     return found
 
 
+def times_in_evidence(value: str) -> set[time]:
+    found = set()
+    for match in re.finditer(r"(?<![\d:])(\d{1,2})\s*(?::\s*(\d{2})|h(?:\s*(\d{2}))?)(?![\d:])", value):
+        try:
+            found.add(time(int(match[1]), int(match[2] or match[3] or 0)))
+        except ValueError:
+            pass
+    return found
+
+
 def validate_candidates(raw: str, pages: list[TextPage]) -> ExtractionResult:
     try:
         output = ExtractionData.model_validate_json(raw)
@@ -129,11 +139,11 @@ def validate_candidates(raw: str, pages: list[TextPage]) -> ExtractionResult:
             ambiguous.add("data")
         if item.data_sugerida is None:
             ambiguous.add("data")
+        hours = times_in_evidence(evidence)
+        if len(hours) > 1:
+            ambiguous.add("hora")
         if item.hora_sugerida is not None:
-            hour, minute = item.hora_sugerida.hour, item.hora_sugerida.minute
-            pattern = rf"(?<!\d)0?{hour}(?::|h){minute:02d}(?!\d)"
-            full_hour = minute == 0 and re.search(rf"(?<!\d)0?{hour}h(?!\d)", evidence)
-            if item.data_sugerida is None or not (re.search(pattern, evidence) or full_hour):
+            if item.data_sugerida is None or hours != {item.hora_sugerida} or "hora" in ambiguous:
                 item.hora_sugerida = None
                 ambiguous.add("hora")
         if item.tipo == "outro":
