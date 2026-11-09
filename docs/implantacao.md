@@ -130,3 +130,25 @@ Aceitar a implantação apenas com evidências registradas de migrações, build
 | Atualizar este documento com evidências e URLs efetivas | Responsável pela release |
 
 Nenhum desses papéis representa atribuição nominal já aprovada. Mudanças de hospedagem, variáveis, migrações ou pipeline devem atualizar este documento no mesmo PR. Ver [Arquitetura](Architecture.md), [Contratos](api-specs.md) e [Contribuição](CONTRIBUTING.md).
+
+## Transição do desenvolvimento local para o projeto Supabase da equipe
+
+O time informou que Felipe Couto Duque está preparando o projeto Supabase na
+nuvem. O desenvolvimento de `feat/geminiapi` e os testes continuam locais enquanto
+essa configuração é concluída. Nenhum outro projeto hospedado foi criado e nenhum
+projeto remoto foi vinculado ou migrado por esta implementação.
+
+Quando o ambiente estiver disponível, alinhar com Felipe o projeto/ambiente de
+destino e o histórico de migrações já aplicado. Revisar e aplicar os SQLs pendentes
+em ordem, preservando dados; não copiar/resetar o banco local inteiro na nuvem.
+Para planos, o destino precisa incluir #40, S6-D01, a fila `20261109120000` e a
+privacidade/revisão `20261109130000`.
+
+Configurar URLs/chaves públicas no frontend e segredos somente no backend/worker
+(`DATABASE_URL`, serviço Supabase e Gemini), separados dos de teste. Validar HTTPS,
+CORS, Auth/retornos de login, bucket privado e revisão explícita com contas de
+homologação antes de habilitar as flags. A aprovação local não equivale à aprovação
+do ambiente hospedado. A suíte local foi feita para rejeitar hosts remotos; a
+homologação na nuvem deve ter procedimento próprio, com dados sintéticos e o
+projeto de destino identificado. Ver o [fluxo HTTP local](privacidade-planos.md#integracao-http-local-de-auth-storage-e-processamento)
+e as [variáveis do worker](processamento-planos.md).

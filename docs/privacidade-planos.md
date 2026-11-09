@@ -33,9 +33,10 @@ continua regida pelo CRUD e pela RLS existentes.
 
 A política do bucket é substituída sem recriá-lo; PDFs existentes não são apagados.
 Novas políticas aceitam PDF na pasta única do dono e mantêm o bucket privado, com
-limite de 10 MB. A suíte verifica as políticas reais de `storage.objects` no
-PostgreSQL; isso não equivale a testar download/upload binário pela API HTTP do
-Storage. Referência: [RLS Supabase](https://supabase.com/docs/guides/database/postgres/row-level-security).
+limite de 10 MB. A suíte SQL verifica as políticas reais de `storage.objects` no
+PostgreSQL. A suíte HTTP descrita abaixo complementa essa verificação com
+upload/download binário pelo Storage. Referência:
+[RLS Supabase](https://supabase.com/docs/guides/database/postgres/row-level-security).
 
 ## Contrato transacional para S6-B02
 
@@ -141,8 +142,8 @@ no banco isolado 15322 nesta entrega; o banco da aplicação não foi migrado/re
 
 1. Aplicar a migração S6-D02 no **ambiente de destino**, além de #40/S6-D01/S6-B01;
    a aprovação do banco isolado não aplica mudanças ao Supabase usado pela API.
-2. Repetir testes de privacidade no ambiente local/homologação correspondente e
-   verificar Auth/Storage HTTP, credenciais e caminho privado ponta a ponta.
+2. Repetir os testes de privacidade e o fluxo Auth/Storage no ambiente de
+   homologação correspondente. A validação HTTP local já está disponível abaixo.
 3. Conferir termos/tier de tratamento de dados do provedor de IA e separar os
    segredos por ambiente. `store=false` não substitui essa avaliação.
 4. Só então configurar `SYLLABUS_WORKER_ENABLED=true` e
@@ -151,3 +152,58 @@ no banco isolado 15322 nesta entrega; o banco da aplicação não foi migrado/re
 
 A tela e a rota de revisão/consulta de candidatos da S6-B02 são uma entrega
 separada; a função de banco já fornece o contrato e as garantias de persistência.
+
+## Integração HTTP local de Auth, Storage e processamento
+
+O projeto descartável `agendaunb-s6d02-tests` também pode executar Auth, Storage,
+PostgREST e gateway na porta 15321, mantendo o PostgreSQL na 15322. O arquivo de
+configuração isolado deve ter `project_id = "agendaunb-s6d02-tests"`, todos os SQLs
+da pasta de migrações e as portas próprias. Iniciar somente `supabase db start`
+não sobe os serviços HTTP. Se o banco já estiver iniciado sozinho, parar e iniciar
+**apenas esse projeto de teste** com `supabase stop --workdir <diretorio-isolado>`
+e `supabase start --workdir <diretorio-isolado>`, preservando o backup padrão;
+não usar `db reset` nem `--no-backup` no projeto da aplicação.
+
+Na pasta `backend`:
+
+```powershell
+.\venv\Scripts\python.exe scripts/test_syllabus_local_http.py --workdir <diretorio-isolado>
+# Suíte completa e chamada real ao Gemini, somente com PDF sintético:
+.\venv\Scripts\python.exe scripts/test_syllabus_local_http.py --workdir <diretorio-isolado> --all-tests --gemini-live --report ../docs/benchmarks/syllabus-http-local-2026-11-09.json
+```
+
+Se o CLI não estiver no PATH, fornecer `--supabase-cli <caminho-do-executavel>`.
+O comando consulta `supabase status --output json` em memória e repassa as chaves
+locais somente ao processo dos testes. Não imprime chaves, não grava `.env`, não
+aceita projeto remoto e não habilita o worker da aplicação. Sem `--gemini-live`,
+o provedor de referência é determinístico e não faz chamadas pagas; esse parâmetro
+habilita explicitamente uma chamada com o PDF sintético e a `GEMINI_API_KEY` já
+presente no ambiente.
+
+Os testes criam contas fictícias pelo endpoint administrativo local com
+`email_confirm=true`, sem enviar e-mails, e fazem login por senha. Usam Auth,
+PostgreSQL, Storage e PostgREST reais. A API FastAPI é exercitada via TestClient
+ASGI, com autenticação real e sem substituir o usuário por um mock. O worker usa
+o download HTTP real e o subprocesso com prazo limitado. A confirmação só ocorre
+depois de o teste conferir que nenhum evento foi criado automaticamente.
+
+Cobertura: dono baixa seu PDF, estudantes/professores/admins alheios e anônimos
+não baixam nem consultam o plano; URL pública não expõe o objeto; candidatos só
+aparecem ao dono via REST; revisão explícita confirma/descarta e repetir não duplica;
+uploads em pasta alheia/subpasta ou com MIME inválido são negados. Objetos são
+removidos pela API Storage e contas/dados sintéticos são apagados ao final.
+
+O [relatório HTTP local](benchmarks/syllabus-http-local-2026-11-09.json) registra
+somente métricas e resultados, sem credenciais, IDs de usuários ou conteúdo do PDF.
+`processing_total_ms` usa a duração do plano, incluindo fila, enquanto
+`flow_total_seconds` inclui também verificações de acesso e a revisão simulada;
+criação/login das contas de teste não fazem parte desses tempos.
+
+Resultado em 09/11/2026: **121 testes passaram, nenhum ignorado**, com a suíte SQL
+e os três casos HTTP habilitados. Provedor de referência: processamento total
+10,414s e fluxo de teste 14,826s. Gemini real: processamento total **16,917s**,
+última tentativa 5,340s e fluxo de teste com checagens/revisão **20,563s**. Os dois
+processamentos ficaram abaixo de 20s; o fluxo completo de teste excedeu esse valor
+porque também inclui as verificações de acesso e a revisão simulada. Foram dois
+candidatos e zero eventos antes da revisão, com um único evento após confirmação.
+Isso valida o cenário sintético local, sem homologar disponibilidade/carga na nuvem.
