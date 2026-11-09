@@ -1,0 +1,33 @@
+{
+  "executed_at": "2026-11-09T15:40:03.338158+00:00",
+  "api_port": 15321,
+  "db_port": 15322,
+  "gemini_live": false,
+  "results": [
+    {
+      "case": "upload_processing_review",
+      "provider": "reference",
+      "flow_total_seconds": 12.875,
+      "upload_duration_ms": 1725,
+      "upload_to_candidates_ms": 9880,
+      "upload_to_candidates_under_20s": true,
+      "processing_total_ms": 9010,
+      "last_attempt_ms": 4109,
+      "processing_under_20s": true,
+      "candidates": 2,
+      "events_before_review": 0,
+      "events_after_review": 1,
+      "cross_user_download_denied": true,
+      "public_download_denied": true,
+      "cleanup_completed": true
+    },
+    {
+      "case": "storage_constraints",
+      "foreign_folder_upload_denied": true,
+      "nested_folder_upload_denied": true,
+      "invalid_mime_denied": true,
+      "cleanup_completed": true
+    }
+  ],
+  "pytest_exit_code": 0
+}

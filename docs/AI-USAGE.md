@@ -30,6 +30,15 @@ O campo **verificado** é o mais importante. Sem ele, a entrada declara o uso ma
 
 ## Entradas
 
+### 09/11/2026 — Leitura limitada e pré-validação de PDF com timeout
+
+- **Quem:** Heitor Gomes Monteiro (solicitante).
+- **Ferramenta:** Codex (OpenAI), PostgreSQL/Auth/Storage locais.
+- **O que foi pedido:** Concluir os ajustes e testes restantes da S6-B01, continuar commits na `feat/geminiapi` e manter a nuvem intacta.
+- **O que entrou no repositório:** Leitura de no máximo limite + 1 byte, parser em subprocesso descartável com timeout configurável, espera e operações de Storage/banco fora do event loop, testes de limite/travamento/responsividade/privacidade, métricas HTTP desde o upload, contrato de erros e checklist S6-B01 com evidências locais.
+- **O que foi verificado:** **129 testes aprovados e um ignorado** (Gemini real, desabilitado nesta execução), incluindo PostgreSQL e transporte HTTP local nas portas 15322/15321. O parser travado foi encerrado sem processo órfão. `/health` respondeu durante validação e Storage bloqueados. Upload de 1,725s e chegada aos candidatos em 9,880s com provedor de referência; dois candidatos, zero eventos antes de revisar e um após confirmação, sem duplicação. Documentação estrita e diff verificados.
+- **O que foi rejeitado ou corrigido:** Timeout apenas de thread deixaria o parser continuar; o processo filho é encerrado. O teste inicial de travamento carregava toda a aplicação ao importar seu inspector no Windows, consumindo o prazo antes de chegar à etapa simulada; o inspector passou a um módulo leve e o teste exige comprovação de entrada nessa etapa. `totalDurationMs` começa após a pré-validação; o relatório HTTP passou a registrar também o tempo desde o início do upload. Não houve chamada externa, migração do banco da aplicação, alteração de `.env` ou operação na nuvem.
+
 ### 09/11/2026 — Integração HTTP local e preparação da entrega à equipe
 
 - **Quem:** Heitor Gomes Monteiro (solicitante).
