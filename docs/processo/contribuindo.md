@@ -95,8 +95,8 @@ npx supabase start      # Inicia PostgreSQL, Auth e Studio
 npx supabase db reset   # Aplica migrações e seed
 ```
 
-- Studio local: [http://localhost:54323](http://localhost:54323)
-- API Local: `http://127.0.0.1:54321`
+- Studio local: [http://localhost:14323](http://localhost:14323)
+- API Local: `http://127.0.0.1:14321`
 
 <a id="setup-backend"></a>
 
@@ -118,6 +118,19 @@ Navegue até a pasta `backend/` e prepare o ambiente virtual:
 - Verificação básica: [http://localhost:8000/health](http://localhost:8000/health)
 
 Se o PowerShell bloquear a ativação do ambiente, execute os comandos pela coluna CMD ou chame `.\venv\Scripts\python.exe` diretamente, por exemplo `.\venv\Scripts\python.exe -m uvicorn src.main:app --reload`.
+
+Se `python -m venv venv` terminar sem erro mas `venv\Scripts\python.exe` não existir, o `python` ativo no terminal pode ser outro (por exemplo, o do MSYS2). Confira com `where.exe python` e crie o ambiente com o executável correto:
+
+```powershell
+& "C:\caminho\do\python.exe" -m venv venv
+```
+
+Também é possível usar o ambiente sem ativação:
+
+```powershell
+.\venv\Scripts\python.exe -m pip install -r requirements.txt -r requirements-dev.txt
+.\venv\Scripts\python.exe -m uvicorn src.main:app --reload
+```
 
 <a id="setup-frontend"></a>
 
