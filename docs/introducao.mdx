@@ -1,0 +1,108 @@
+---
+title: "Introdução"
+description: "Documentação oficial do Agenda UnB, plataforma centralizada de eventos e organização acadêmica da Universidade de Brasília."
+sidebarTitle: "Introdução"
+---
+
+Bem-vindo à documentação oficial do projeto **Agenda UnB**, desenvolvido pelo **Grupo G8** na disciplina de **Métodos de Desenvolvimento de Software (MDS)** da Universidade de Brasília (UnB) no semestre **2026/2**.
+
+A informação que organiza a rotina de um estudante da UnB está fragmentada: a grade está no SIGAA, as datas de prova estão em PDFs de planos de ensino e os eventos circulam por Instagram, cartazes e grupos de WhatsApp. Não existe um lugar único onde o estudante veja o que vai acontecer nas próximas semanas.
+
+O **Agenda UnB** resolve esse problema reunindo dois eixos em uma única aplicação web:
+
+- **Agenda do Campus** — Catálogo público de eventos acadêmicos, culturais e esportivos de todos os campi (Darcy Ribeiro, FCTE, FCTS, FUP e FAL), com filtros por área, campus e turno.
+- **Organizador Acadêmico** — Calendário pessoal e privado do estudante, com criação, edição e exclusão de compromissos, e futuramente alimentado por extração automática de datas a partir de planos de ensino e atestado de matrícula.
+
+---
+
+## Stack Tecnológica
+
+<div className="tech-stack-table">
+
+| Camada | Tecnologia | Finalidade |
+| --- | --- | --- |
+| Frontend | React 19, Vite 6, React Router 7 | SPA responsiva com roteamento client-side |
+| Backend | Python 3, FastAPI, SQLAlchemy 2, Pydantic 2 | API REST com validação automática |
+| Banco de Dados | PostgreSQL (Supabase) | Dados relacionais com Row Level Security |
+| Autenticação | Supabase Auth | Google OAuth, login com e-mail/senha, JWT |
+| Migrações | Supabase Migrations (SQL) | Versionamento de migrações |
+| Ambiente Local | Supabase CLI + Docker | PostgreSQL, Auth e Studio locais |
+| Documentação | MkDocs Material | Site publicado no GitHub Pages |
+| Tipografia | Orbitron + Inter (Google Fonts) | Display sci-fi + body legível |
+| Iconografia | Material Symbols | Ícones consistentes em toda a UI |
+
+</div>
+
+---
+
+## Equipe G8
+
+<Columns cols={3}>
+  <Card title="Thomas Araujo" href="https://github.com/thomas4ugust0" img="https://github.com/thomas4ugust0.png">
+    Frontend
+  </Card>
+
+  <Card title="Heitor Monteiro" href="https://github.com/heitormontt" img="https://github.com/heitormontt.png">
+    Backend
+  </Card>
+
+  <Card title="Luis Davi" href="https://github.com/pontesluis" img="https://github.com/pontesluis.png">
+    Banco de Dados
+  </Card>
+
+  <Card title="Gabriel Escramin" href="https://github.com/Bielziin07" img="https://github.com/Bielziin07.png">
+    Frontend
+  </Card>
+
+  <Card title="Thomaz Marra" href="https://github.com/marrathomaz" img="https://github.com/marrathomaz.png">
+    Backend
+  </Card>
+
+  <Card title="Felipe Duque" href="https://github.com/felipecduque7" img="https://github.com/felipecduque7.png">
+    Banco de Dados
+  </Card>
+</Columns>
+
+---
+
+## Mapa da Documentação
+
+Navegue pelas seções através dos cards abaixo:
+
+<Columns cols={2}>
+  <Card title="Visão do Produto" icon="target" href="/docs/produto/visao">
+    Problema, stakeholders, declaração de posicionamento e priorização.
+  </Card>
+
+  <Card title="Arquitetura" icon="layers" href="/docs/arquitetura/visao-geral">
+    Visão arquitetural, tecnologias, frontend, backend e modelos de dados.
+  </Card>
+
+  <Card title="Requisitos" icon="list-checks" href="/docs/produto/requisitos">
+    Especificação completa de Requisitos Funcionais (RF) e Não Funcionais (RNF).
+  </Card>
+
+  <Card title="Padrões de Projeto" icon="git-branch" href="/docs/arquitetura/padroes">
+    Glossário oficial, convenções de código, branches e commits.
+  </Card>
+
+  <Card title="Sprints" icon="calendar-range" href="/docs/sprints/sprint-1">
+    Acompanhamento ágil das entregas por ciclo de desenvolvimento.
+  </Card>
+
+  <Card title="Como Contribuir" icon="handshake" href="/docs/processo/contribuindo">
+    Guia de instalação e ambiente de desenvolvimento local.
+  </Card>
+
+  <Card title="Como Executar" icon="play" href="/docs/quickstart">
+    Instruções rápidas para rodar o projeto localmente com Make ou manualmente.
+  </Card>
+</Columns>
+
+---
+
+## Recursos Externos
+
+- [Repositório no GitHub](https://github.com/unb-mds/2026-2-AgendaUnB)
+- [Figma](https://www.figma.com/board/RlZe9FgO3Bz3gPkxevs8UJ/AGENDA-UNB?node-id=1-217&amp;t=USKjIQh4OXxQVwsG-1)
+- [Miro](https://miro.com/welcomeonboard/b0lMYXFqaEFMTnNpejdUOE1tLy8rOGNHdk5QVndFOUN0ZTFtc1kvWC9UUWdCbUJXVkpFU2JKRXhqUHpRZEYxekt6NUNFZXNzOXkxVDRxRmk0TjI1akdVY0Q5QW0vUENuMVpvYWRaZzdVNFdQUDB4eFNqVTdGOHAxd2lDUnhTUTBBS2NFMDFkcUNFSnM0d3FEN050ekl3PT0hdjE=?share_link_id=540201941184)

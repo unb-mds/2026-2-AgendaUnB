@@ -1,4 +1,8 @@
-# Sprint 03 - Validação e preparações iniciais para a Release 1 (28/09)
+---
+title: "Sprint 03 - Validação e preparações iniciais para a Release 1 (28/09)"
+description: "Validação e preparações iniciais para a Release 1 da terceira sprint do Agenda UnB."
+sidebarTitle: "Sprint 3"
+---
 
 **Período:** 07/09/2026 - 20/09/2026
 

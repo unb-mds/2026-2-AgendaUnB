@@ -159,7 +159,9 @@ def test_worker_persists_private_candidates_without_events(job, api):
     body = response.json()
     assert body["status"] == "concluido" and body["pageCount"] == 1 and body["attempts"] == 1
     assert body["processedAt"] is not None and body["errorCode"] is None
-    assert "candidates" not in body and "processingToken" not in body
+    # O contrato HTTP remoto já lista avaliações legadas; candidatos privados
+    # do worker ficam na tabela S6-D01 até a conciliação da integração.
+    assert body["candidates"] == [] and "processingToken" not in body
 
 
 def test_worker_empty_result_is_completed(job):

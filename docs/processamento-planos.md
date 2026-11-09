@@ -183,7 +183,10 @@ Em hospedagem, configurar processo de worker com reinício automático e acesso 
 servidor ao PostgreSQL/Storage. API e worker compartilham a fila, não a memória.
 O Storage em memória só serve aos testes; o comando de produção o rejeita.
 A consulta autenticada existente `GET /api/v1/syllabus/{id}` permite polling
-do estado; resposta não contém candidatos ou credenciais. Ver [API](api-specs.md).
+do estado. O campo `candidates` das rotas S6-B02 existentes lê `avaliacoes`
+legadas, enquanto o worker grava somente `candidatos_avaliacao`; conectar esses
+contratos permanece pendente da integração com o Supabase da equipe. Nenhuma
+credencial é retornada. Ver [API](api-specs.md).
 `processingDurationMs` é a duração da última tentativa. `totalDurationMs` usa
 os timestamps persistidos de criação/término, incluindo fila e retentativas;
 antes do término, retorna nulo. Logs de sucesso/falha usam esse total para indicar

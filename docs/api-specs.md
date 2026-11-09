@@ -12,7 +12,7 @@ Fontes: `backend/src/main.py`, `modules/events/router.py`, `modules/events/schem
 - Corpos JSON usam `Content-Type: application/json`. Rotas autenticadas exigem `Authorization: Bearer <token>` do Supabase Auth.
 - Papéis persistidos: `student`, `professor`, `admin`. O servidor obtém o ID da sessão e consulta o papel em `profiles`; o cliente não escolhe a identidade.
 - `{event_id}` é UUID. UUID malformado gera falha de validação; UUID válido ausente recebe o comportamento indicado em cada operação.
-- GET e DELETE não têm corpo definido; PUT de evento salvo também não. Listas retornam arrays, sem envelope ou total, e listas vazias retornam `[]`.
+- GET e DELETE não têm corpo definido; PUT de evento salvo também não. Listas de eventos retornam arrays, e listas vazias retornam `[]`. O histórico de planos usa um envelope de paginação.
 - Os schemas ignoram campos extras; enviar `status` ou `author_id` não altera os valores definidos pelo servidor. Isso não equivale a rejeitar esses campos com 422.
 
 ## Payloads e respostas
@@ -132,6 +132,19 @@ Todas as operações exigem sessão. O vínculo não copia o evento e não const
 
 PUT e DELETE são idempotentes. O PUT recupera colisão de inserção concorrente quando o vínculo já foi criado. DELETE só remove o vínculo do usuário atual.
 
+### Planos de ensino
+
+As operações exigem autenticação e só consultam ou confirmam planos do usuário autenticado.
+
+| Operação | Entrada | Resposta |
+| --- | --- | --- |
+| `POST /api/v1/syllabus/upload` | `multipart/form-data` com `file` (PDF), `disciplina`, `turma`, `ano` (2000 a 2100) e `semestre` (1 ou 2). Somente `file` é obrigatório. | 202, plano registrado como `pendente`. Ano e semestre são persistidos quando informados. |
+| `GET /api/v1/syllabus` | `limit` de 1 a 100 (padrão 20), `offset` a partir de 0 (padrão 0). | 200, `{ "items": [], "total": 0, "limit": 20, "offset": 0 }` para histórico vazio. Ordena por criação e ID decrescentes. |
+| `GET /api/v1/syllabus/{syllabus_id}` | UUID do plano. | 200, dados do plano e `candidates`. 404 para plano ausente ou de outra conta. |
+| `POST /api/v1/syllabus/{syllabus_id}/confirm` | UUID de um plano concluído e lista `candidates` com os IDs e os ajustes das avaliações selecionadas. | 200, eventos confirmados na agenda pessoal. |
+
+O histórico e o detalhe retornam `ano` e `semestre`. Planos antigos podem ter esses campos, `fileName` e `filePath` nulos. O upload aplica a cota de 10 envios em cinco dias (429 ao exceder) e valida o PDF antes de gravar. O cliente autenticado consulta os próprios planos e PDFs, enquanto o backend grava o arquivo e o registro de acompanhamento.
+
 ### Saúde — R1
 
 `GET /health`: público, sem parâmetros ou corpo, retorna 200 com `{ "status": "ok" }`. Não consulta banco nem Auth; não é uma verificação de prontidão de todas as dependências.
@@ -230,7 +243,7 @@ Cada item tem `id`, `usuario_id`, `evento_id`, `tipo` (`submissao/aprovacao/recu
 
 ## Verificação e manutenção
 
-Conferir inventário com `app.openapi()` e revisar manualmente handlers, permissões e SQL. Os testes de eventos, sugestões e salvos usam SQLite e substituem dependências de autenticação: não comprovam integração real com Auth nem RLS. Os testes de moderação de banco exigem Supabase local descartável. Ver [Contribuição](CONTRIBUTING.md) e o registro de validação em [Arquitetura](Architecture.md#9-verificacao).
+Conferir inventário com `app.openapi()` e revisar manualmente handlers, permissões e SQL. Os testes de eventos, sugestões e salvos usam SQLite e substituem dependências de autenticação: não comprovam integração real com Auth nem RLS. Os testes de moderação de banco exigem Supabase local descartável. Ver [Contribuição](processo/contribuindo.md) e o registro de validação em [Arquitetura](Architecture.md#9-verificacao).
 
 Qualquer alteração de rota, schema, autorização, erro ou RPC deve atualizar este documento no mesmo PR. Inscrições, categorias REST e atualização pública não são contratos disponíveis.
 
@@ -269,7 +282,9 @@ do registro ao término, incluindo fila/retentativas, e é nulo antes de finaliz
 
 O [worker independente](processamento-planos.md) consome a fila. Ele fica
 desativado até a configuração explícita e a validação das políticas S6-D02.
-Nenhuma chamada deste contrato cria compromissos ou expõe candidatos. Listagem,
-revisão de candidatos e confirmação por HTTP continuam no escopo S6-B02.
+Upload e worker não criam compromissos. As rotas de listagem, detalhe e confirmação
+S6-B02 já existentes, descritas acima, operam sobre `avaliacoes` legadas; os
+candidatos privados do worker em `candidatos_avaliacao` ainda exigem conciliação
+com esse contrato antes da integração no ambiente da equipe.
 O contrato transacional de banco S6-D02 já está disponível em
 [`revisar_candidatos_plano`](privacidade-planos.md#contrato-transacional-para-s6-b02).

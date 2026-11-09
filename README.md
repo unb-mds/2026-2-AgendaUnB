@@ -217,7 +217,7 @@ Para rodar localmente o site de documentação com tema Material:
 | Etapa | Linux / macOS | Windows (PowerShell / CMD) | Equivalente Make |
 |---|---|---|---|
 | **Instalar MkDocs Material** | `pip install mkdocs-material` | `pip install mkdocs-material` | — |
-| **Iniciar servidor de docs** | `mkdocs serve -a 127.0.0.1:8008` | `mkdocs serve -a 127.0.0.1:8008` | `make docs` |
+| **Iniciar servidor de docs** | `mkdocs serve -f .github/mkdocs.yml -a 127.0.0.1:8008` | `mkdocs serve -f .github/mkdocs.yml -a 127.0.0.1:8008` | `make docs` |
 
 > **Documentação local:** [http://127.0.0.1:8008](http://127.0.0.1:8008)
 

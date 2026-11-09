@@ -2,7 +2,7 @@ from datetime import date, datetime, time
 from decimal import Decimal
 from uuid import UUID, uuid4
 
-from sqlalchemy import BigInteger, Date, DateTime, ForeignKey, Integer, JSON, Numeric, String, Text, Time, UniqueConstraint, Uuid, func
+from sqlalchemy import BigInteger, Date, DateTime, ForeignKey, Integer, JSON, Numeric, SmallInteger, String, Text, Time, UniqueConstraint, Uuid, func
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -102,6 +102,14 @@ class PersonalEvent(Base):
     category_id: Mapped[UUID | None] = mapped_column(
         Uuid(as_uuid=True), ForeignKey("categories.id"), nullable=True
     )
+    origin_syllabus_id: Mapped[UUID | None] = mapped_column(
+        "origem_plano_id", Uuid(as_uuid=True), nullable=True
+    )
+    origin_candidate_id: Mapped[UUID | None] = mapped_column(
+        "origem_avaliacao_id", Uuid(as_uuid=True), nullable=True, unique=True
+    )
+    origin_page: Mapped[int | None] = mapped_column("origem_pagina", Integer, nullable=True)
+    origin_excerpt: Mapped[str | None] = mapped_column("origem_trecho", Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         "criado_em", DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -124,8 +132,8 @@ class Syllabus(Base):
     professor_id: Mapped[UUID | None] = mapped_column(
         "professor_id", Uuid(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), nullable=True
     )
-    file_name: Mapped[str] = mapped_column("nome_arquivo", String, nullable=False)
-    file_path: Mapped[str] = mapped_column("caminho_arquivo", String, nullable=False)
+    file_name: Mapped[str | None] = mapped_column("nome_arquivo", String, nullable=True)
+    file_path: Mapped[str | None] = mapped_column("caminho_arquivo", String, nullable=True)
     arquivo_url: Mapped[str | None] = mapped_column("arquivo_url", String, nullable=True)
     file_size: Mapped[int | None] = mapped_column("tamanho_bytes", BigInteger, nullable=True)
     file_type: Mapped[str] = mapped_column("tipo_arquivo", String, default="pdf", nullable=False)
@@ -136,6 +144,8 @@ class Syllabus(Base):
     error_message: Mapped[str | None] = mapped_column("erro", Text, nullable=True)
     disciplina: Mapped[str | None] = mapped_column(String, nullable=True)
     turma: Mapped[str | None] = mapped_column(String, nullable=True)
+    ano: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
+    semestre: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         "criado_em", DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -143,8 +153,6 @@ class Syllabus(Base):
     user: Mapped[Profile] = relationship(foreign_keys=[user_id])
     tipo: Mapped[str] = mapped_column(String, default="particular", nullable=False)
     paginas: Mapped[int | None] = mapped_column(Integer)
-    ano: Mapped[int | None] = mapped_column(Integer)
-    semestre: Mapped[int | None] = mapped_column(Integer)
     execucao_atual: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     provedor_ia: Mapped[str | None] = mapped_column(String)
     modelo_ia: Mapped[str | None] = mapped_column(String)
@@ -186,3 +194,26 @@ class AssessmentCandidate(Base):
     @property
     def ambiguo(self) -> bool:
         return bool(self.campos_ambiguos)
+
+
+class SyllabusCandidate(Base):
+    """Avaliação extraída de um plano, ainda sujeita à revisão do estudante."""
+
+    __tablename__ = "avaliacoes"
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    syllabus_id: Mapped[UUID] = mapped_column(
+        "plano_id", Uuid(as_uuid=True), ForeignKey("planos_ensino.id", ondelete="CASCADE"),
+        nullable=False, index=True,
+    )
+    title: Mapped[str] = mapped_column("titulo", String, nullable=False)
+    starts_at: Mapped[datetime | None] = mapped_column(
+        "data_avaliacao", DateTime(timezone=True), nullable=True
+    )
+    kind: Mapped[str | None] = mapped_column("tipo", String, nullable=True)
+    ambiguous: Mapped[bool] = mapped_column("ambiguo", default=False, nullable=False)
+    source_page: Mapped[int | None] = mapped_column("pagina_origem", Integer, nullable=True)
+    source_excerpt: Mapped[str | None] = mapped_column("trecho_origem", Text, nullable=True)
+    status: Mapped[str] = mapped_column("status", String, default="pendente", nullable=False)
+    processing_version: Mapped[str | None] = mapped_column("versao_processamento", String, nullable=True)
+    provider: Mapped[str | None] = mapped_column("provedor", String, nullable=True)

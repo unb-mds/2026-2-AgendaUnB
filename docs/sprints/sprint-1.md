@@ -1,4 +1,8 @@
-# Sprint 01 - Delimitação de escopo, produto e consolidação de ideias.
+---
+title: "Sprint 01 - Delimitação de escopo, produto e consolidação de ideias."
+description: "Delimitação de escopo, produto e consolidação de ideias da primeira sprint do Agenda UnB."
+sidebarTitle: "Sprint 1"
+---
 
 **Período:** 10/08/2026 - 23/08/2026
 

@@ -1,14 +1,17 @@
 import logging
 import os
-from typing import Dict
+from urllib.parse import quote
+
 import httpx
-from fastapi import HTTPException
+from fastapi import Depends, HTTPException
+
+from src.middlewares.auth import CurrentUser, get_current_user
 
 logger = logging.getLogger("agenda_unb.storage")
 
 
 class SupabaseStorageService:
-    """Serviço de integração com o Supabase Storage."""
+    """Acessa o bucket privado somente após a API autenticar o usuário."""
 
     def __init__(
         self,
@@ -16,99 +19,70 @@ class SupabaseStorageService:
         supabase_key: str | None = None,
         bucket_name: str = "syllabus_files",
     ):
-        self.supabase_url = (supabase_url or os.getenv("SUPABASE_URL", "")).rstrip("/")
-        # Chave de serviço (service_role) tem permissão para ignorar RLS e gravar com segurança
+        self.supabase_url = (
+            supabase_url if supabase_url is not None else os.getenv("SUPABASE_URL", "")
+        ).rstrip("/")
         self.supabase_key = (
-            supabase_key
-            or os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-            or os.getenv("SUPABASE_SERVICE_KEY")
-            or os.getenv("SUPABASE_ANON_KEY", "")
+            supabase_key if supabase_key is not None else os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
         )
         self.bucket_name = bucket_name
-        # Armazenamento em memória para ambiente de testes e desenvolvimento desconectado
-        self._mock_storage: Dict[str, bytes] = {}
+
+    def _headers(self) -> dict[str, str]:
+        if not self.supabase_url or not self.supabase_key:
+            raise HTTPException(status_code=503, detail="Armazenamento Supabase não configurado no backend.")
+        return {
+            "apikey": self.supabase_key,
+            "Authorization": f"Bearer {self.supabase_key}",
+        }
+
+    def _object_url(self, path: str) -> str:
+        return f"{self.supabase_url}/storage/v1/object/{quote(self.bucket_name, safe='')}/{quote(path, safe='/')}"
 
     def upload_file(
         self,
         path: str,
         content: bytes,
         content_type: str = "application/pdf",
-        auth_token: str | None = None,
     ) -> str:
-        """
-        Realiza o upload físico do arquivo no bucket do Supabase Storage.
-        Retorna a URI relativa no bucket.
-        """
-        full_path = f"{self.bucket_name}/{path}"
-
-        if not self.supabase_url:
-            logger.info("Supabase URL não configurada. Simulando upload para %s", full_path)
-            self._mock_storage[path] = content
-            return full_path
-
-        key = self.supabase_key or auth_token
-        headers = {
-            "Authorization": f"Bearer {key}",
-            "Content-Type": content_type,
-            "x-upsert": "false",
-        }
-        if self.supabase_key:
-            headers["apikey"] = self.supabase_key
-
-        url = f"{self.supabase_url}/storage/v1/object/{self.bucket_name}/{path}"
+        headers = {**self._headers(), "Content-Type": content_type, "x-upsert": "false"}
         try:
-            response = httpx.post(url, headers=headers, content=content, timeout=10.0)
+            response = httpx.post(self._object_url(path), headers=headers, content=content, timeout=10.0)
         except httpx.RequestError as exc:
-            logger.error("Erro de conexão ao enviar arquivo para o Storage")
-            raise HTTPException(
-                status_code=503,
-                detail="Falha na conexão com o serviço de armazenamento (Supabase Storage).",
-            ) from exc
+            logger.warning("Falha de conexão no upload ao Storage (%s).", type(exc).__name__)
+            raise HTTPException(status_code=503, detail="O armazenamento está indisponível. Tente novamente.") from exc
 
         if response.status_code not in (200, 201):
-            logger.error("Erro retornado pelo Supabase Storage: HTTP %s", response.status_code)
-            raise HTTPException(
-                status_code=502,
-                detail="Erro ao salvar arquivo no bucket de armazenamento.",
-            )
+            # Storage may wrap a 403 inside an HTTP 400. Never expose its raw body.
+            try:
+                body = response.json()
+                storage_status = int(body.get("statusCode", response.status_code))
+            except (ValueError, TypeError, AttributeError):
+                storage_status = response.status_code
+            logger.warning("Storage recusou upload (HTTP %s, código %s).", response.status_code, storage_status)
+            if storage_status == 401:
+                raise HTTPException(status_code=401, detail="Sua sessão expirou. Entre novamente para enviar o plano.")
+            if storage_status == 403:
+                raise HTTPException(status_code=403, detail="O armazenamento não autorizou este envio. Entre novamente; se persistir, contate o suporte.")
+            raise HTTPException(status_code=502, detail="Não foi possível salvar o PDF no armazenamento. Tente novamente.")
 
-        return full_path
+        return f"{self.bucket_name}/{path}"
 
-    def delete_file(
-        self,
-        path: str,
-        auth_token: str | None = None,
-    ) -> bool:
-        """
-        Compensação atômica: remove o arquivo do Storage caso o registro em banco falhe.
-        """
-        if not self.supabase_url:
-            self._mock_storage.pop(path, None)
-            return True
-
-        key = self.supabase_key or auth_token
-        headers = {
-            "Authorization": f"Bearer {key}",
-        }
-        if self.supabase_key:
-            headers["apikey"] = self.supabase_key
-
-        url = f"{self.supabase_url}/storage/v1/object/{self.bucket_name}/{path}"
+    def delete_file(self, path: str) -> bool:
+        """Remove o arquivo enviado caso a persistência em banco falhe."""
         try:
-            response = httpx.delete(url, headers=headers, timeout=10.0)
-            return response.status_code in (200, 204)
-        except Exception:
-            logger.warning("Falha na compensação/deleção do arquivo no Storage")
+            response = httpx.delete(self._object_url(path), headers=self._headers(), timeout=10.0)
+        except (httpx.RequestError, HTTPException) as exc:
+            logger.warning("Falha na compensação do Storage (%s).", type(exc).__name__)
             return False
+        if response.status_code not in (200, 204):
+            logger.warning("Storage recusou compensação (HTTP %s).", response.status_code)
+            return False
+        return True
 
     def download_file(self, path: str, *, max_bytes: int = 10 * 1024 * 1024) -> bytes:
         """Lê um objeto privado, com limite de memória, somente no servidor."""
-        if not self.supabase_url:
-            if path not in self._mock_storage:
-                raise HTTPException(status_code=503, detail="Arquivo indisponível no armazenamento.")
-            return self._mock_storage[path]
-        headers = {"Authorization": f"Bearer {self.supabase_key}", "apikey": self.supabase_key}
-        url = f"{self.supabase_url}/storage/v1/object/{self.bucket_name}/{path}"
+        headers = self._headers()
+        url = self._object_url(path)
         try:
             with httpx.stream("GET", url, headers=headers, timeout=10.0, follow_redirects=False) as response:
                 if response.status_code != 200:
@@ -123,6 +97,5 @@ class SupabaseStorageService:
             raise HTTPException(status_code=503, detail="Armazenamento indisponível.") from None
 
 
-def get_storage_service() -> SupabaseStorageService:
+def get_storage_service(current_user: CurrentUser = Depends(get_current_user)) -> SupabaseStorageService:
     return SupabaseStorageService()
-

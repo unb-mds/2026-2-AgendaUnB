@@ -128,12 +128,27 @@ def test_admin_can_promote_personal_email_but_user_cannot(database):
     assert conn.execute(text('select public.is_event_moderator()')).scalar() is True
 
 
-def test_admin_role_lock_serializes_profile_writers(database):
+def test_syllabus_upload_cannot_bypass_api_through_supabase(database):
     conn, users = database
-    conn.execute(text("LOCK TABLE public.profiles IN SHARE ROW EXCLUSIVE MODE"))
-    with conn.engine.connect() as other:
-        with pytest.raises(DBAPIError) as error:
-            other.execute(text("SET LOCAL lock_timeout = '100ms'"))
-            other.execute(text("UPDATE public.profiles SET papel = papel WHERE id = :id"), {"id":users["admin"]})
-        assert error.value.orig.sqlstate == "55P03"
-        other.rollback()
+    owner = users['student']
+    object_name = f'{owner}/{uuid4()}.pdf'
+    stored_file = "insert into storage.objects (bucket_id, name) values ('syllabus_files', :name)"
+    plan_sql = 'insert into public.planos_ensino (user_id, caminho_arquivo) values (:owner, :path)'
+    plan_args = {'owner': owner, 'path': f'syllabus_files/{object_name}'}
+
+    # The backend can create the object and tracking record before the owner reads them.
+    conn.execute(text(stored_file), {'name': object_name})
+    plan_id = conn.execute(text(plan_sql + ' returning id'), plan_args).scalar_one()
+    assume(conn, owner)
+    assert conn.execute(text('select id from public.planos_ensino where id=:id'), {'id': plan_id}).scalar_one() == plan_id
+    assert conn.execute(text('select name from storage.objects where name=:name'), {'name': object_name}).scalar_one() == object_name
+    denied(conn, stored_file, {'name': f'{owner}/{uuid4()}.pdf'})
+    denied(conn, plan_sql, {'owner': owner, 'path': f'syllabus_files/{owner}/{uuid4()}.pdf'})
+    assert conn.execute(text("update public.planos_ensino set status='processando' where id=:id"), {'id': plan_id}).rowcount == 0
+    # Simula a exclusão pela API do Storage, que habilita esse parâmetro por transação.
+    conn.execute(text("select set_config('storage.allow_delete_query', 'true', true)"))
+    assert conn.execute(text('delete from storage.objects where name=:name'), {'name': object_name}).rowcount == 0
+
+    assume(conn, users['other'])
+    assert conn.execute(text('select id from public.planos_ensino where id=:id'), {'id': plan_id}).scalar() is None
+    assert conn.execute(text('select name from storage.objects where name=:name'), {'name': object_name}).scalar() is None

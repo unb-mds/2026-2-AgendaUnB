@@ -30,6 +30,15 @@ O campo **verificado** é o mais importante. Sem ele, a entrada declara o uso ma
 
 ## Entradas
 
+### 09/11/2026 — Sincronização da branch remota antes do push
+
+- **Quem:** Heitor Gomes Monteiro (solicitante).
+- **Ferramenta:** Codex (OpenAI).
+- **O que foi pedido:** Publicar a `feat/geminiapi` para abrir PR, sem alterar o Supabase.
+- **O que entrou no repositório:** Merge das atualizações já presentes na branch remota, preservando os 11 commits locais, as rotas de revisão legadas, limites de upload, autenticação/Storage da equipe e o worker privado. Conflitos de modelos, upload e documentação resolvidos; mocks de Storage restritos aos testes.
+- **O que foi verificado:** 113 testes locais aprovados e 31 ignorados por exigirem PostgreSQL/HTTP local ou Gemini opt-in. Suíte executada com banco SQLite, sem habilitar integrações externas. Documentação estrita e ausência de marcadores de conflito verificadas. Nenhum comando de banco, migração ou configuração do Supabase foi executado nesta etapa; `.env` permanece fora do Git.
+- **O que foi rejeitado ou corrigido:** O push inicial foi recusado porque o remoto continha atualizações da equipe. Foi preservado o histórico remoto em vez de sobrescrevê-lo. A sincronização do código não foi tratada como integração entre as avaliações legadas da API e os candidatos privados do worker; essa conciliação permanece para o próximo PR.
+
 ### 09/11/2026 — Leitura limitada e pré-validação de PDF com timeout
 
 - **Quem:** Heitor Gomes Monteiro (solicitante).

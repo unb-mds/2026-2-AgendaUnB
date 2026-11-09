@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { calendarDays, dateKey, movePeriod } from '../lib/calendar';
+import EventsLoading from './EventsLoading';
 
 const weekdays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 const fullDate = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'full' });
@@ -45,7 +46,7 @@ export default function EventCalendar({ events, loading = false, error = false }
           <button type="button" className={`btn-toggle-item ${mode === 'week' ? 'active' : ''}`} aria-pressed={mode === 'week'} onClick={() => setMode('week')}>Semana</button>
         </div>
       </div>
-      {loading && <p className="calendar-empty" role="status">Carregando eventos…</p>}
+      {loading && <EventsLoading />}
       {!loading && !error && !hasEvents && <p className="calendar-empty" role="status">Nenhum evento encontrado neste {mode === 'month' ? 'mês' : 'período'} com os filtros atuais.</p>}
       <p className="calendar-scroll-hint">Deslize para os lados para ver todos os dias.</p>
       <div className="calendar-scroll" hidden={loading || error} tabIndex={0} role="region" aria-label="Dias e eventos. Em telas pequenas, role horizontalmente para ver todos os dias.">

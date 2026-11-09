@@ -10,7 +10,7 @@ web
 Alunos e professores da Universidade de Brasília (UnB) que precisam descobrir eventos extracurriculares, divulgar atividades e organizar suas demandas acadêmicas diárias.
 
 ## Product Purpose
-O produto atua como um organizador central da vida acadêmica de toda a comunidade da UnB. Ele acaba com a dispersão de informações ao unificar eventos acadêmicos, culturais e esportivos, e oferece ferramentas robustas como a extração de Planos de Ensino para mapeamento automático de provas e trabalhos.
+O produto atua como um organizador central da vida acadêmica de toda a comunidade da UnB. Ele acaba com a dispersão de informações ao unificar eventos acadêmicos, culturais e esportivos. A extração de planos de ensino para mapeamento automático de provas e trabalhos está prevista como funcionalidade futura e ainda não está disponível.
 
 ## Positioning
 É o único hub digital que une a vivência extraclasse (eventos, extensão, lazer) com as obrigações acadêmicas (planos de ensino), criando uma experiência unificada e essencial para a sobrevivência e aproveitamento do estudante na Universidade.
@@ -19,11 +19,11 @@ O produto atua como um organizador central da vida acadêmica de toda a comunida
 A plataforma será utilizada tanto de forma pontual (para descobrir o que está acontecendo no campus hoje) quanto para o planejamento de longo prazo do semestre (acompanhamento de calendário de provas e trabalhos dos planos de ensino).
 
 ## Capabilities and Constraints
-- Autenticação por e-mail/senha e Google OAuth, com perfis estudante/professor/admin. Cadastro e autopromoção para professor exigem `@unb.br`; admins podem atribuir esse papel a outro domínio.
+- Sistema de dupla autenticação e perfis (Estudantes via Google OAuth e login padrão, Professores via e-mail `@unb.br`).
 - Categorização rígida atrelada aos campi da UnB e aos tipos de atividades.
 - Lista e calendário mensal/semanal; agenda pessoal reúne eventos privados e públicos salvos por vínculo.
 - Sugestões estudantis, moderação por professores/admins, notificações de decisão e gestão de cargos exclusiva de admins.
-- Backend possui upload particular, worker Gemini e políticas/revisão transacional S6-D02 validadas em PostgreSQL isolado. Ativação exige homologar o destino; tela e endpoints de revisão S6-B02, integração na página `/plano-de-ensino` e leitura de atestados continuam pendentes.
+- Backend possui upload particular, worker Gemini e políticas/revisão transacional S6-D02 validadas em PostgreSQL isolado. As rotas e a interface de revisão existentes usam avaliações legadas; conectá-las aos candidatos privados do worker e homologar o Supabase de destino são etapas pendentes. A leitura de atestados continua planejada.
 - Obrigatório suporte fluido a temas (Claro e Escuro).
 
 ## Brand Commitments

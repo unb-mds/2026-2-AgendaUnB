@@ -4,7 +4,16 @@ import { useAuth } from '../contexts/AuthContext';
 import { eventsApi, toApiEvent, toUiEvent } from '../lib/api';
 import NavBar from '../components/NavBar';
 import EventCalendar from '../components/EventCalendar';
+import EventsLoading from '../components/EventsLoading';
 import { Feedback, Modal } from '../components/ManagementUI';
+
+function EventError({ message, compact = false }) {
+  const needsAccount = message.includes('Entre na sua conta');
+  return <div role="alert" className={`event-error${needsAccount ? ' event-error-auth' : ''}${compact ? ' event-error-compact' : ''}`}>
+    <p>{message}</p>
+    {needsAccount && <Link className="event-error-signup" to="/?auth=signup">Criar conta</Link>}
+  </div>;
+}
 
 const CustomSelect = ({ value, onChange, options, placeholder, dropUp = false, className, wrapperWidth, ariaLabel }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -743,15 +752,13 @@ export default function SegundaPagina() {
         </div>
 
         {erroEventos && (
-          <div role="alert" style={{ marginBottom: '1rem', padding: '1rem', borderRadius: '12px', color: '#b42318', background: '#fee4e2' }}>
-            {erroEventos}
-          </div>
+          <EventError message={erroEventos} />
         )}
 
         {modoVisualizacao === 'calendario' ? (
           <EventCalendar events={eventosFiltrados} loading={carregandoEventos} error={Boolean(erroEventos)} />
         ) : carregandoEventos ? (
-          <p role="status" style={{ textAlign: 'center', padding: '3rem', color: textMuted }}>Carregando eventos…</p>
+          <EventsLoading />
         ) : erroEventos ? null : eventosFiltrados.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '4rem 2rem', background: cardBg, borderRadius: '24px', border: `1px dashed ${borderColor}` }}>
             <span className="material-symbols-outlined" style={{ fontSize: '3rem', color: textMuted, marginBottom: '1rem' }}>event_busy</span>
@@ -846,9 +853,7 @@ export default function SegundaPagina() {
           onClose={() => { setIsModalOpen(false); resetModal(); }}>
             <form onSubmit={handleAdicionarEvento} className="modal-form">
               {erroEventos && (
-                <div role="alert" style={{ padding: '0.75rem 1rem', borderRadius: '12px', color: '#b42318', background: '#fee4e2', fontSize: '0.85rem', fontWeight: 500, lineHeight: 1.4 }}>
-                  {erroEventos}
-                </div>
+                <EventError message={erroEventos} compact />
               )}
               
               <div>

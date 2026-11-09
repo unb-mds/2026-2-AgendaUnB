@@ -11,9 +11,9 @@ from fastapi.requests import Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from src.modules.admin.router import router as admin_router
 from src.modules.events.router import router as events_router
 from src.modules.syllabus.router import router as syllabus_router
+from src.middlewares.upload_limits import UploadLimitsMiddleware
 
 
 app = FastAPI(
@@ -83,8 +83,8 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
+app.add_middleware(UploadLimitsMiddleware)
 
-app.include_router(admin_router, prefix="/api/v1")
 app.include_router(events_router, prefix="/api/v1")
 app.include_router(syllabus_router, prefix="/api/v1")
 

@@ -1,6 +1,8 @@
-# Atualizações pós-Release 1
+---
+title: "Atualizações pós-Release 1"
+---
 
-**Referência documental: 18/10/2026 - fim da Sprint 05.** Este documento registra o estado posterior à [v0.1.0](release-notes/v0.1.0.md), sem atribuir uma nova versão ou afirmar implantação em produção.
+**Registro histórico da Sprint 05 em 18/10/2026.** Para o planejamento posterior, consulte a [Sprint 06](sprints/sprint-6.md). Este documento registra o estado posterior à [v0.1.0](release-notes/v0.1.0.md), sem atribuir uma nova versão ou afirmar implantação em produção.
 
 ## Agenda e calendário
 
@@ -49,4 +51,4 @@ e coleta externa.
 
 ## Verificação disponível
 
-O projeto contém testes pytest da API (eventos, sugestões e vínculos salvos), testes Node de calendário e testes PostgreSQL de RLS/RPC/triggers. Estes últimos exigem `TEST_SUPABASE_DB_URL` local e são ignorados se ela não estiver configurada. Consulte [Contribuição](CONTRIBUTING.md). A existência das suítes não afirma execução ou aprovação em um ambiente de produção.
+O projeto contém testes pytest da API (eventos, sugestões e vínculos salvos), testes Node de calendário e testes PostgreSQL de RLS/RPC/triggers. Estes últimos exigem `TEST_SUPABASE_DB_URL` local e são ignorados se ela não estiver configurada. Consulte [Contribuição](processo/contribuindo.md). A existência das suítes não afirma execução ou aprovação em um ambiente de produção.
