@@ -115,7 +115,7 @@ PDFs de plano de ensino. Um plano é `particular` (enviado por um usuário para 
 *   **Políticas RLS:** RLS habilitado. Desde `20261107000000`, o navegador só lê os próprios planos (`user_id = auth.uid()`); toda escrita passa pelo back-end. O registro do plano e o caminho do PDF continuam visíveis só ao dono, mesmo quando uma versão é compartilhada.
 
 ### 4.2. Tabela `avaliacoes` (candidatos)
-Tabela oficial de candidatos extraídos dos planos (decisão da equipe na S7-D01). São sugestões: só viram compromisso após confirmação do estudante. A tabela `candidatos_avaliacao` (#53), que nenhum código usava, foi removida em `20261109120000`.
+Tabela oficial de candidatos extraídos dos planos (decisão da equipe na S7-D01). São sugestões: só viram compromisso após confirmação do estudante. A tabela `candidatos_avaliacao` (#53), que nenhum código usava, foi removida em `20261109120000`, junto com a função `confirmar_candidatos_transacional` (S6-D02), que só operava sobre ela; a confirmação é feita pela API.
 *   **Colunas:**
     *   `id` (UUID, Primary Key) e `plano_id` (UUID, Not Null, FK para `planos_ensino`, `ON DELETE CASCADE`).
     *   `versao_id` (UUID, Not Null): versão do plano a que o candidato pertence. A FK composta `(plano_id, versao_id)` → `versoes_plano(plano_id, id)` impede apontar para a versão de outro plano. Quando omitido no INSERT, um trigger usa a versão mais recente do plano.
