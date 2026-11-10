@@ -146,9 +146,10 @@ Todas exigem sessão; `user_id` vem da identidade validada. PUT/DELETE são idem
 * `POST /api/v1/syllabus/upload` — Envia PDF e cria o rastreamento em estado `processing`.
 * `GET /api/v1/syllabus?limit=20&offset=0` — Lista, com paginação, somente os planos do usuário autenticado. Resposta: `{ items, total, limit, offset }`.
 * `GET /api/v1/syllabus/:id` — Retorna o estado e candidatos do plano, incluindo `sourcePage`, `sourceExcerpt`, ambiguidade e status.
-* `POST /api/v1/syllabus/:id/confirm` — Recebe `{ candidates: [{ candidateId, title?, description?, startsAt?, category? }] }`; grava somente os candidatos selecionados em `eventos_pessoais` após o estado `concluido`/`completed`. Datas precisam incluir fuso ISO 8601. Resposta inclui os eventos criados e sua `origin` (`syllabusId`, `candidateId`, `page`, `excerpt`).
+* `POST /api/v1/syllabus/:id/confirm` — Recebe `{ candidates: [{ candidateId, title?, description?, type?, startsAt?, category?, reimport? }] }`; grava ou atualiza somente os candidatos selecionados em `eventos_pessoais` após o estado `concluido`/`completed`. Datas precisam incluir fuso ISO 8601; candidatos ambíguos exigem data revisada. `reimport: true` autoriza explicitamente recriar evento removido ou candidato descartado. Resposta inclui os eventos e sua `origin` (`syllabusId`, `candidateId`, `page`, `excerpt`).
+* `DELETE /api/v1/syllabus/:id/candidates/:candidateId` — Descarta o candidato sem apagar sua evidência; só funciona para o dono de um plano concluído e antes da importação.
 
-Todas as operações exigem sessão e verificam a propriedade pelo usuário autenticado. A confirmação é idempotente por candidato; candidatos não selecionados permanecem pendentes. O parser/worker que preenche candidatos ainda é uma dependência separada.
+Todas as operações exigem sessão e verificam a propriedade pelo usuário autenticado. A confirmação é idempotente por candidato; candidatos não selecionados permanecem pendentes. Importação e descarte de planos compartilhados retornam `409` até que decisões por usuário sejam persistidas no banco. O parser/worker que preenche candidatos ainda é uma dependência separada.
 
 ### ✅ Validação Colaborativa (`/api/v1/assessments`) — *Planejado, sem endpoint implementado*
 * `POST /api/v1/assessments/:id/confirm` — Votar para confirmar ou contestar data de avaliação extraída de plano compartilhado

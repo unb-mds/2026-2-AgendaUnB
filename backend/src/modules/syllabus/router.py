@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Response, UploadFile, status
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
@@ -200,6 +200,14 @@ def confirm_syllabus_candidates(
                 status_code=409,
                 detail="A confirmação estará disponível quando o processamento for concluído.",
             )
+        if syllabus.visibility == "compartilhado":
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    "A importação de candidatos compartilhados ainda não está disponível "
+                    "com decisões isoladas por usuário."
+                ),
+            )
 
         candidates = db.scalars(
             select(SyllabusCandidate).where(
@@ -224,19 +232,27 @@ def confirm_syllabus_candidates(
         ).all()
         existing_by_candidate = {event.origin_candidate_id: event for event in existing}
 
-        new_events: list[PersonalEvent] = []
+        reviewed_items = []
         for reviewed in payload.candidates:
             candidate = by_id[reviewed.candidate_id]
-            if candidate.status == "descartado":
+            existing_event = existing_by_candidate.get(candidate.id)
+            if candidate.status in {"descartado", "confirmado"} and existing_event is None and not reviewed.reimport:
+                raise HTTPException(
+                    status_code=409,
+                    detail=(
+                        "Este candidato já foi descartado ou importado e seu evento foi removido. "
+                        "Informe reimport=true para importá-lo novamente de forma explícita."
+                    ),
+                )
+            title = reviewed.title or (existing_event.title if existing_event else candidate.title)
+            if candidate.ambiguous and reviewed.starts_at is None and existing_event is None:
                 raise HTTPException(
                     status_code=422,
-                    detail="Um candidato descartado não pode ser confirmado.",
+                    detail="Corrija a data ambígua antes de confirmar o candidato.",
                 )
-            if candidate.id in existing_by_candidate:
-                continue
-
-            title = reviewed.title or candidate.title
-            starts_at = reviewed.starts_at or candidate.starts_at
+            starts_at = reviewed.starts_at or (
+                existing_event.starts_at if existing_event else candidate.starts_at
+            )
             if len(title.strip()) < 3:
                 raise HTTPException(status_code=422, detail="O título revisado deve ter ao menos 3 caracteres.")
             if starts_at is None or starts_at.tzinfo is None or starts_at.utcoffset() is None:
@@ -245,12 +261,32 @@ def confirm_syllabus_candidates(
                     detail="Informe data e hora com fuso horário para cada candidato selecionado.",
                 )
 
+            category_id = _category_id(db, reviewed.category) if reviewed.category is not None else None
+            reviewed_items.append((reviewed, candidate, title.strip(), starts_at, category_id))
+
+        # Valida todos os candidatos antes de alterar estado ou eventos.
+        new_events: list[PersonalEvent] = []
+        for reviewed, candidate, title, starts_at, category_id in reviewed_items:
+            existing_event = existing_by_candidate.get(candidate.id)
+            if reviewed.kind is not None:
+                candidate.kind = reviewed.kind
+
+            if existing_event is not None:
+                existing_event.title = title
+                existing_event.starts_at = starts_at
+                if reviewed.description is not None:
+                    existing_event.description = reviewed.description
+                if reviewed.category is not None:
+                    existing_event.category_id = category_id
+                candidate.status = "confirmado"
+                continue
+
             event = PersonalEvent(
                 user_id=current_user.id,
-                title=title.strip(),
+                title=title,
                 description=reviewed.description or candidate.source_excerpt,
                 starts_at=starts_at,
-                category_id=_category_id(db, reviewed.category),
+                category_id=category_id,
                 origin_syllabus_id=syllabus.id,
                 origin_candidate_id=candidate.id,
                 origin_page=candidate.source_page,
@@ -285,4 +321,52 @@ def confirm_syllabus_candidates(
         syllabusId=syllabus_id,
         events=[_personal_read(event) for event in confirmed],
     )
+
+
+@router.delete(
+    "/{syllabus_id}/candidates/{candidate_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Descarta um candidato do plano",
+)
+def discard_syllabus_candidate(
+    syllabus_id: UUID,
+    candidate_id: UUID,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Response:
+    syllabus = db.scalar(
+        select(Syllabus)
+        .where(Syllabus.id == syllabus_id, Syllabus.user_id == current_user.id)
+        .with_for_update()
+    )
+    if syllabus is None:
+        raise HTTPException(status_code=404, detail="Plano de ensino não encontrado.")
+    if syllabus.status not in {"completed", "concluido"}:
+        raise HTTPException(status_code=409, detail="Só é possível descartar candidatos de um plano concluído.")
+    if syllabus.visibility == "compartilhado":
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "O descarte de candidatos compartilhados exige decisões isoladas por usuário, "
+                "ainda não disponíveis no esquema atual."
+            ),
+        )
+
+    candidate = db.scalar(
+        select(SyllabusCandidate).where(
+            SyllabusCandidate.id == candidate_id,
+            SyllabusCandidate.syllabus_id == syllabus.id,
+        )
+    )
+    if candidate is None:
+        raise HTTPException(status_code=404, detail="Candidato não encontrado neste plano.")
+    if candidate.status == "confirmado":
+        raise HTTPException(
+            status_code=409,
+            detail="O candidato já foi importado. Remova primeiro o evento da agenda pessoal.",
+        )
+
+    candidate.status = "descartado"
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 

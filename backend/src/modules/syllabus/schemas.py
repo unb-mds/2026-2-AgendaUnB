@@ -81,8 +81,10 @@ class ConfirmCandidateInput(BaseModel):
     candidate_id: UUID = Field(alias="candidateId")
     title: str | None = Field(default=None, min_length=3, max_length=200)
     description: str | None = Field(default=None, max_length=10000)
+    kind: str | None = Field(default=None, alias="type", min_length=2, max_length=80)
     starts_at: datetime | None = Field(default=None, alias="startsAt")
     category: str | None = Field(default=None, min_length=2, max_length=80)
+    reimport: bool = False
 
     @field_validator("starts_at")
     @classmethod
@@ -91,7 +93,7 @@ class ConfirmCandidateInput(BaseModel):
             raise ValueError("Informe data e hora com fuso horário (ISO 8601)")
         return value
 
-    @field_validator("description", "category", mode="before")
+    @field_validator("description", "category", "kind", mode="before")
     @classmethod
     def empty_values_to_none(cls, value):
         if isinstance(value, str) and not value.strip():
