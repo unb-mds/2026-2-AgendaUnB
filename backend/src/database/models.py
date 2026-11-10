@@ -476,3 +476,33 @@ class CandidateVote(Base):
     updated_at: Mapped[datetime] = mapped_column(
         "atualizado_em", DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+
+class Reminder(Base):
+    """Aviso na plataforma 24 h antes do início (S8-B03).
+
+    O banco agenda, troca e cancela os avisos por triggers; a aplicação só
+    lê os disparados e marca a leitura.
+    """
+
+    __tablename__ = "lembretes"
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    event_kind: Mapped[str] = mapped_column("tipo_evento", String, nullable=False)
+    personal_event_id: Mapped[UUID | None] = mapped_column(
+        "evento_pessoal_id", Uuid(as_uuid=True), ForeignKey("eventos_pessoais.id", ondelete="CASCADE"), nullable=True
+    )
+    public_event_id: Mapped[UUID | None] = mapped_column(
+        "evento_id", Uuid(as_uuid=True), ForeignKey("eventos.id", ondelete="CASCADE"), nullable=True
+    )
+    event_starts_at: Mapped[datetime] = mapped_column("inicio_referencia", DateTime(timezone=True), nullable=False)
+    scheduled_for: Mapped[datetime] = mapped_column("agendado_para", DateTime(timezone=True), nullable=False)
+    status: Mapped[str] = mapped_column(String, default="pendente", nullable=False)
+    fired_at: Mapped[datetime | None] = mapped_column("disparado_em", DateTime(timezone=True), nullable=True)
+    read_at: Mapped[datetime | None] = mapped_column("lido_em", DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        "criado_em", DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
