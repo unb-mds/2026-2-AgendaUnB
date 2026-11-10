@@ -40,6 +40,7 @@ Use a navegação do site ou os links abaixo.
 * [Decisões arquiteturais (ADRs)](arquitetura/adrs/index.md) — Decisões, estados, consequências e orientações para contribuir.
 * [Contratos do backend](api-specs.md) — Rotas, payloads, respostas e integrações Supabase.
 * [Plano de implantação](implantacao.md) — Proposta de hospedagem, CI/CD e homologação.
+* [Supabase Cloud em 10/11/2026](supabase-nuvem-2026-11-10.md) — Migrações aplicadas, preservação dos dados e configuração Render/Vercel.
 * [Requisitos](produto/requisitos.md) — Especificação completa de Requisitos Funcionais (RF) e Não Funcionais (RNF).
 * [Padrões de Projeto](produto/padroes.md) — Glossário e convenções de código e nomenclatura.
 * [Sprints](sprints/sprint-1.md) — Acompanhamento ágil das entregas por ciclo de desenvolvimento.

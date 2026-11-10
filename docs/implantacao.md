@@ -1,5 +1,15 @@
 # Plano de hospedagem e CI/CD
 
+## Atualização de 10/11/2026
+
+O projeto Supabase Cloud da equipe recebeu as cinco migrações pendentes, passando
+de 21 para 26 versões, com backup restaurado e ensaio antes da aplicação.
+O [registro da operação](supabase-nuvem-2026-11-10.md) distingue o banco migrado das
+etapas ainda pendentes no Render e na Vercel. Configurações por serviço estão em
+`deploy/README.md`, `deploy/render.env.example` e `deploy/vercel.env.example`.
+As seções abaixo preservam o plano anterior e suas condições de homologação;
+não devem ser interpretadas como evidência de publicação da API ou do frontend.
+
 ## Estado e proposta
 
 O [ADR-002](arquitetura/adrs/adr-002-separar-hospedagem-e-ambientes.md) registra a proposta de separação da hospedagem e dos ambientes. Este plano detalha a configuração, a publicação e a recuperação.
@@ -52,7 +62,7 @@ URLs, IDs dos projetos, região e responsáveis nominais serão preenchidos quan
 
 | Variável/configuração | Destino | Tratamento |
 | --- | --- | --- |
-| `VITE_API_URL` | Build Vercel | Pública; URL HTTPS da API **incluindo `/api/v1`**; ausente de `.env.example` atualmente |
+| `VITE_API_URL` | Build Vercel | Pública; URL HTTPS da API **incluindo `/api/v1`**; exemplo local em `.env.example` |
 | `VITE_SUPABASE_URL` | Build Vercel | Pública; URL do projeto do ambiente |
 | `VITE_SUPABASE_ANON_KEY` | Build Vercel | Chave pública anon do ambiente; segurança depende de Auth/RLS |
 | `DATABASE_URL` | Runtime Render | Segredo; conexão SQLAlchemy `postgresql+psycopg://...`, credenciais próprias do ambiente e TLS |
@@ -136,6 +146,9 @@ Aceitar a implantação apenas com evidências registradas de migrações, build
 Nenhum desses papéis representa atribuição nominal já aprovada. Mudanças de hospedagem, variáveis, migrações ou pipeline devem atualizar este documento no mesmo PR. Ver [Arquitetura](arquitetura/visao-geral.md), [Contratos](api-specs.md) e [Contribuição](processo/contribuindo.md).
 
 ## Transição do desenvolvimento local para o projeto Supabase da equipe
+
+Esta seção registra o plano anterior. A execução de 10/11/2026 e as configurações
+do ambiente hospedado estão no [registro atualizado](supabase-nuvem-2026-11-10.md).
 
 O time informou que Felipe Couto Duque está preparando o projeto Supabase na
 nuvem. O desenvolvimento de `feat/geminiapi` e os testes continuam locais enquanto
