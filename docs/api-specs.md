@@ -2,7 +2,9 @@
 
 ## Referência e limites
 
-Este documento descreve as operações HTTP da aplicação, incluindo `/health`. A base documental pós-R1 cobria 15 operações; upload/consulta de planos e rotas administrativas foram acrescentados depois. `/docs`, `/redoc` e `/openapi.json` são recursos de documentação gerados pelo FastAPI, não operações de negócio. Consulte também [Arquitetura](Architecture.md), [Padrões](padroes.md) e [Implantação](implantacao.md).
+Este inventário descreve o backend atual. Para os contratos planejados, consulte [Release 2](atualizacoes.md#contratos-da-release-2).
+
+A API possui operações HTTP de aplicação (inventário abaixo), incluindo `/health`. `/docs`, `/redoc` e `/openapi.json` são recursos de documentação gerados pelo FastAPI, não operações de negócio. Consulte também [Arquitetura](arquitetura/visao-geral.md), [Padrões](produto/padroes.md) e [Implantação](implantacao.md).
 
 Fontes: `backend/src/main.py`, `modules/events/router.py`, `modules/events/schemas.py`, `middlewares/auth.py` e `database/models.py` (os quatro últimos relativos a `backend/src/`). O OpenAPI ajuda a conferir campos e rotas, mas não descreve integralmente os handlers de erro personalizados.
 
@@ -176,7 +178,7 @@ Exemplo de validação de título curto:
 }
 ```
 
-O conteúdo auxiliar de `errors` depende da versão do Pydantic, que não está fixada nas dependências. Erros inesperados não têm envelope de aplicação garantido. **Dívida conhecida:** o handler passa `exc.errors()` diretamente a `JSONResponse`; erros de validadores com objetos não serializáveis em `ctx` podem resultar em 500, apesar da intenção de retornar 422. A especificação não promete 422 para esse caso sem correção e teste específicos. Não há contrato implementado de processamento assíncrono com 202.
+O conteúdo auxiliar de `errors` depende da versão do Pydantic, que não está fixada nas dependências. Erros inesperados não têm envelope de aplicação garantido. **Dívida conhecida:** o handler passa `exc.errors()` diretamente a `JSONResponse`; erros de validadores com objetos não serializáveis em `ctx` podem resultar em 500, apesar da intenção de retornar 422. A especificação não promete 422 para esse caso sem correção e teste específicos. O upload já responde 202 para o registro do plano. A execução do worker externo e sua integração são parte da Release 2.
 
 ## Exemplos cURL
 
@@ -243,7 +245,7 @@ Cada item tem `id`, `usuario_id`, `evento_id`, `tipo` (`submissao/aprovacao/recu
 
 ## Verificação e manutenção
 
-Conferir inventário com `app.openapi()` e revisar manualmente handlers, permissões e SQL. Os testes de eventos, sugestões e salvos usam SQLite e substituem dependências de autenticação: não comprovam integração real com Auth nem RLS. Os testes de moderação de banco exigem Supabase local descartável. Ver [Contribuição](processo/contribuindo.md) e o registro de validação em [Arquitetura](Architecture.md#9-verificacao).
+Conferir inventário com `app.openapi()` e revisar manualmente handlers, permissões e SQL. Os testes de eventos, sugestões e salvos usam SQLite e substituem dependências de autenticação: não comprovam integração real com Auth nem RLS. Os testes de moderação de banco exigem Supabase local descartável. Ver [Contribuição](processo/contribuindo.md) e o registro de validação em [Arquitetura](arquitetura/visao-geral.md#9-verificacao).
 
 Qualquer alteração de rota, schema, autorização, erro ou RPC deve atualizar este documento no mesmo PR. Inscrições, categorias REST e atualização pública não são contratos disponíveis.
 
@@ -317,7 +319,11 @@ a revisão inicial da fila pronta; `preparedTextAvailable` identifica o protocol
 S7. Detalhe inclui `preparationDurationMs`, `reviewDurationMs` e
 `totalDurationMs` desde a autorização, separando a espera do estudante. Planos
 históricos sem preparação mantêm a revisão legada e não recebem autorização
-retroativa. A consulta/confirmação de candidatos privados segue a conciliação
-S7-B04/S7-F03; este produtor não escreve eventos automaticamente.
+retroativa. A consulta e a confirmação particular usam agora `avaliacoes`, a mesma tabela
+do worker, filtrando a versão autorizada. Cada candidato inclui `suggestedDate`,
+`suggestedTime`, `ambiguousFields` e `versionId`; `startsAt` continua nulo quando
+não existe instante/fuso confirmado. O contrato legado não exige ainda
+`Idempotency-Key`; sua evolução e a confirmação compartilhada seguem S7-B04/S7-F03.
+O produtor não escreve eventos automaticamente e retry não recria evento apagado.
 
 [Fluxo, flags e evidências](processamento-planos-s7.md).

@@ -253,3 +253,40 @@ def test_approval_keeps_only_the_students_corrected_text(api, monkeypatch):
     with api[1]() as db:
         plan = db.get(Syllabus,UUID(sid))
         assert plan.prepared_pages == plan.approved_pages == pages
+
+
+def test_reprocessing_preserves_shared_version_and_pins_private_output(api, monkeypatch):
+    from datetime import datetime, timezone
+    from src.database.models import SyllabusVersion
+    monkeypatch.setenv("SYLLABUS_PROVIDER_TERMS_READY", "true")
+    sid, preview = prepare(api)
+    assert api[0].post(f"/api/v1/syllabus/{sid}/extractions", json=approval(preview)).status_code == 202
+    class Provider:
+        def extract(self, pages):
+            return json.dumps({"candidatos": [{"titulo": "Prova 1", "tipo": "prova",
+                "data_sugerida": "2026-11-10", "hora_sugerida": "14:00",
+                "pagina_origem": None, "trecho_origem": TEXT}]})
+    worker = SyllabusWorker(api[1], None, Provider(), ProcessingConfig(), runner=process_document)
+    assert worker.run_once()
+    with api[1]() as db:
+        plan = db.get(Syllabus, UUID(sid))
+        first_version = plan.approved_version_id
+        version = db.get(SyllabusVersion, first_version)
+        version.visibility = "compartilhada"
+        version.shared_at = datetime.now(timezone.utc)
+        db.commit()
+    payload = approval(preview, reprocess=True)
+    assert api[0].post(f"/api/v1/syllabus/{sid}/extractions", json=payload).status_code == 202
+    assert worker.run_once()
+    with api[1]() as db:
+        plan = db.get(Syllabus, UUID(sid))
+        assert plan.approved_version_id != first_version
+        assert db.get(SyllabusVersion, plan.approved_version_id).visibility == "privada"
+        candidates = db.scalars(select(AssessmentCandidate)).all()
+        assert len(candidates) == 2 and all(row.status == "pendente" for row in candidates)
+        assert len({row.version_id for row in candidates}) == 2
+    response = api[0].get(f"/api/v1/syllabus/{sid}").json()
+    assert len(response["candidates"]) == 1
+    candidate = response["candidates"][0]
+    assert candidate["suggestedDate"] == "2026-11-10" and candidate["suggestedTime"] == "14:00:00"
+    assert candidate["startsAt"] is None  # Nenhum fuso ou instante é inferido.

@@ -23,7 +23,7 @@ A plataforma será utilizada tanto de forma pontual (para descobrir o que está 
 - Categorização rígida atrelada aos campi da UnB e aos tipos de atividades.
 - Lista e calendário mensal/semanal; agenda pessoal reúne eventos privados e públicos salvos por vínculo.
 - Sugestões estudantis, moderação por professores/admins, notificações de decisão e gestão de cargos exclusiva de admins.
-- Backend S7 prepara PDF/texto sem reter o original, exige autorização explícita, processa em worker persistente e possui políticas/revisão transacional validadas em PostgreSQL isolado. As rotas e a interface de revisão existentes usam avaliações legadas; conectá-las aos candidatos privados do worker e homologar o Supabase de destino são etapas pendentes. A leitura de atestados continua planejada.
+- Backend S7 prepara PDF/texto sem reter o original, exige autorização explícita, processa em worker persistente e possui políticas/revisão transacional validadas em PostgreSQL isolado. O worker e a revisão particular usam candidatos na tabela oficial de avaliações, ligados à versão autorizada. Homologar o Supabase de destino e concluir a jornada com turmas/compartilhamento são etapas pendentes. A leitura de atestados continua planejada.
 - Obrigatório suporte fluido a temas (Claro e Escuro).
 
 ## Brand Commitments

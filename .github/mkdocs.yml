@@ -6,29 +6,38 @@ repo_url: https://github.com/unb-mds/2026-2-AgendaUnB
 docs_dir: ../docs
 site_dir: ../site
 
-# Páginas com estrutura e links próprios do Mintlify.
-exclude_docs: |
-  /arquitetura/
-  /processo/release-notes/
-  /processo/uso-de-ia.md
-  /produto/
-
 nav:
   - Início: index.md
-  - Visão do Produto: documento-de-visao.md
-  - Arquitetura: Architecture.md
+  - Visão do Produto: produto/visao.md
+  - Arquitetura: arquitetura/visao-geral.md
+  - Decisões arquiteturais:
+    - Índice e guia de leitura: arquitetura/adrs/index.md
+    - ADR-001 — Integração FastAPI e Supabase: arquitetura/adrs/adr-001-integracao-fastapi-supabase.md
+    - ADR-002 — Hospedagem e ambientes: arquitetura/adrs/adr-002-separar-hospedagem-e-ambientes.md
+    - ADR-003 — Minimização de dados de planos: arquitetura/adrs/adr-003-minimizar-dados-de-planos.md
+    - ADR-004 — Manter a API em uma aplicação FastAPI única: arquitetura/adrs/adr-004-api-monolitica.md
+    - ADR-005 — Validar a sessão no Supabase Auth e consultar o papel no banco: arquitetura/adrs/adr-005-validacao-de-sessao.md
+    - ADR-006 — Aplicar autorização na API, nas RPCs e nas políticas RLS: arquitetura/adrs/adr-006-autorizacao-em-camadas.md
+    - ADR-007 — Usar migrações SQL como referência do esquema completo: arquitetura/adrs/adr-007-migracoes-sql.md
+    - ADR-008 — Salvar vínculos aos eventos públicos na agenda pessoal: arquitetura/adrs/adr-008-vinculos-de-eventos-publicos.md
+    - ADR-009 — Integrar o catálogo público de turmas com identidade local e cache: arquitetura/adrs/adr-009-catalogo-publico-de-turmas.md
+    - ADR-010 — Versionar planos e exigir confirmação individual para importar candidatos: arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos.md
+    - ADR-011 — Distinguir datas civis de instantes e usar fim exclusivo: arquitetura/adrs/adr-011-datas-civis-e-instantes.md
+    - ADR-012 — Exportar por ação explícita para uma agenda Google secundária: arquitetura/adrs/adr-012-exportacao-google-idempotente.md
+    - ADR-013 — Persistir lembretes com agendamento idempotente e revalidação: arquitetura/adrs/adr-013-lembretes-persistentes.md
   - Contratos do Backend: api-specs.md
   - Extração Autorizada S7: processamento-planos-s7.md
   - Validação S7-B01: s7-b01-validacao.md
   - Histórico de Processamento S6: processamento-planos.md
   - Privacidade dos Planos: privacidade-planos.md
+  - Matriz de aceite da Release 2: matriz-release-2.md
   - Plano de Implantação: implantacao.md
-  - Modelo de Dados: modelo-de-dados.md
-  - Especificação do Banco: especificacao-banco-de-dados.md
-  - Requisitos: requisitos.md
-  - Padrões de Projeto: padroes.md
-  - Interface e Design: especificacao-frontend.md
-  - Personas: personas.md
+  - Modelo de Dados: arquitetura/modelo-de-dados.md
+  - Especificação do Banco: arquitetura/banco-de-dados.md
+  - Requisitos: produto/requisitos.md
+  - Padrões de Projeto: produto/padroes.md
+  - Interface e Design: arquitetura/frontend.md
+  - Personas: produto/personas.md
   - Sprints:
     - Sprint 1: sprints/sprint-1.md
     - Sprint 2: sprints/sprint-2.md
@@ -39,9 +48,33 @@ nav:
     - Sprint 7: sprints/sprint-7.md
     - Sprint 8: sprints/sprint-8.md
   - Release Notes:
-    - v0.1.0: release-notes/v0.1.0.md
-    - Atualizações pós-Release 1: atualizacoes.md
-  - Como Contribuir: CONTRIBUTING.md
+    - v0.1.0: processo/release-notes/v0-1-0.md
+    - v0.2.0-beta.1: processo/release-notes/v0-2-0-beta-1.md
+    - Atualizações e contratos da R2: atualizacoes.md
+  - Uso de IA: processo/uso-de-ia.md
+  - Como Contribuir: processo/contribuindo.md
+
+plugins:
+  - search
+  - redirects:
+      redirect_maps:
+        contratos-release-2.md: 'atualizacoes.md#contratos-da-release-2'
+        Architecture.md: arquitetura/visao-geral.md
+        modelo-de-dados.md: arquitetura/modelo-de-dados.md
+        especificacao-banco-de-dados.md: arquitetura/banco-de-dados.md
+        especificacao-frontend.md: arquitetura/frontend.md
+        CONTRIBUTING.md: processo/contribuindo.md
+        introducao.md: index.md
+        quickstart.md: processo/contribuindo.md
+        requisitos.md: produto/requisitos.md
+        personas.md: produto/personas.md
+        padroes.md: produto/padroes.md
+        documento-de-visao.md: produto/visao.md
+        AI-USAGE.md: processo/uso-de-ia.md
+        release-notes/v0.1.0.md: processo/release-notes/v0-1-0.md
+        planejamento-r2-sprints-7-8.md: matriz-release-2.md
+        prototipo-planos-react.md: planos-de-ensino-frontend.md
+        s6-f02-editor-parcial.md: sprints/sprint-6.md
 
 theme:
   name: material

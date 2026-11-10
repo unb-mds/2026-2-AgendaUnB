@@ -181,8 +181,8 @@ def test_authenticated_upload_private_download_processing_and_review(local_http,
     attempt_ms = status.json()["processingDurationMs"]
     with ctx.sessions() as session:
         assert not session.scalars(select(PersonalEvent).where(PersonalEvent.user_id == ctx.users["owner"])).all()
-    candidates_url = ctx.url+"/rest/v1/candidatos_avaliacao"
-    params = {"plano_id":"eq."+sid,"select":"id,titulo,status,evento_pessoal_id","order":"ordem"}
+    candidates_url = ctx.url+"/rest/v1/avaliacoes"
+    params = {"plano_id":"eq."+sid,"select":"id,titulo,status,versao_id","order":"ordem"}
     own = httpx.get(candidates_url,params=params,headers=ctx.headers("owner"),timeout=15)
     assert own.status_code == 200 and len(own.json()) == 2
     for role in ("other","professor","admin"):

@@ -4,7 +4,7 @@
 > autorização explícita do texto. Veja [S7-B01](processamento-planos-s7.md).
 > Os fluxos/resultados S6 abaixo são históricos.
 
-Migração: `20261109130000_privacidade_e_revisao_planos.sql`, depois da modelagem
+Migração: `20261109113000_privacidade_e_revisao_planos.sql`, depois da modelagem
 S6-D01 e da fila S6-B01. A revisão é explícita: upload e worker não chamam a função
 de confirmação. Esta entrega não implementa a tela nem a rota HTTP S6-B02.
 
@@ -138,8 +138,8 @@ estrita para o conjunto atual de políticas: políticas novas legítimas exigem
 revisar os testes e esse contrato, em vez de presumir liberação automática.
 
 Uma consulta somente de leitura em 09/11/2026 encontrou **duas migrações pendentes
-no banco da aplicação, porta 14322**: `20261109120000_fila_processamento_planos.sql`
-e `20261109130000_privacidade_e_revisao_planos.sql`. Elas foram aplicadas somente
+no banco da aplicação, porta 14322**: `20261109110000_fila_processamento_planos.sql`
+e `20261109113000_privacidade_e_revisao_planos.sql`. Elas foram aplicadas somente
 no banco isolado 15322 nesta entrega; o banco da aplicação não foi migrado/resetado.
 
 ## O que ainda falta para habilitar dados reais

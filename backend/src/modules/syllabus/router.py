@@ -42,6 +42,10 @@ def _candidate_read(candidate: SyllabusCandidate) -> SyllabusCandidateRead:
         sourcePage=candidate.source_page,
         sourceExcerpt=candidate.source_excerpt,
         status=candidate.status,
+        suggestedDate=candidate.data_sugerida,
+        suggestedTime=candidate.hora_sugerida,
+        ambiguousFields=candidate.campos_ambiguos or [],
+        versionId=candidate.version_id,
     )
 
 
@@ -174,6 +178,7 @@ def get_syllabus_status(
     candidates = db.scalars(
         select(SyllabusCandidate)
         .where(SyllabusCandidate.syllabus_id == syllabus.id)
+        .where(SyllabusCandidate.version_id == syllabus.approved_version_id if syllabus.approved_version_id else True)
         .order_by(SyllabusCandidate.source_page.asc(), SyllabusCandidate.id.asc())
     ).all()
 
@@ -240,6 +245,7 @@ def confirm_syllabus_candidates(
             select(SyllabusCandidate).where(
                 SyllabusCandidate.syllabus_id == syllabus.id,
                 SyllabusCandidate.id.in_(requested_ids),
+                SyllabusCandidate.version_id == syllabus.approved_version_id if syllabus.approved_version_id else True,
             )
         ).all()
         by_id = {candidate.id: candidate for candidate in candidates}
@@ -269,6 +275,8 @@ def confirm_syllabus_candidates(
                 )
             if candidate.id in existing_by_candidate:
                 continue
+            if candidate.status == "confirmado":
+                continue  # Evento removido não reaparece por retry da confirmação.
 
             title = reviewed.title or candidate.title
             starts_at = reviewed.starts_at or candidate.starts_at
@@ -288,6 +296,7 @@ def confirm_syllabus_candidates(
                 category_id=_category_id(db, reviewed.category),
                 origin_syllabus_id=syllabus.id,
                 origin_candidate_id=candidate.id,
+                origin_version_id=candidate.version_id,
                 origin_page=candidate.source_page,
                 origin_excerpt=candidate.source_excerpt,
             )

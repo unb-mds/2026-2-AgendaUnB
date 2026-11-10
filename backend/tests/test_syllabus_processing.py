@@ -152,7 +152,7 @@ def test_worker_persists_private_candidates_without_events(job, api):
         assert record.paginas == 1 and record.processado_em is not None
         assert record.cost_reserved_usd > 0
         candidate = db.scalar(select(AssessmentCandidate))
-        assert candidate.status == "pendente" and candidate.evento_pessoal_id is None
+        assert candidate.status == "pendente" and candidate.version_id is not None
         assert candidate.plano_id == sid and candidate.pagina_origem == 1
         assert db.scalar(select(func.count()).select_from(PersonalEvent)) == 0
     response = api[0].get(f"/api/v1/syllabus/{sid}")
@@ -160,9 +160,8 @@ def test_worker_persists_private_candidates_without_events(job, api):
     body = response.json()
     assert body["status"] == "concluido" and body["pageCount"] == 1 and body["attempts"] == 1
     assert body["processedAt"] is not None and body["errorCode"] is None
-    # O contrato HTTP remoto já lista avaliações legadas; candidatos privados
-    # do worker ficam na tabela S6-D01 até a conciliação da integração.
-    assert body["candidates"] == [] and "processingToken" not in body
+    # O produtor e a consulta HTTP usam a mesma tabela oficial de candidatos.
+    assert len(body["candidates"]) == 1 and "processingToken" not in body
 
 
 def test_worker_empty_result_is_completed(job):

@@ -20,7 +20,7 @@ Esta prévia da R2 reúne as mudanças desde a **R1 (v0.1.0)**. Agora você pode
 ## Planos de ensino em prévia
 
 - Em **Envios reais de PDF**, usuários autenticados podem enviar planos particulares, informar disciplina e período, consultar o status e retomar um envio pelo histórico. São aceitos PDFs com texto selecionável, de até 10 MB e 10 páginas nas configurações padrão.
-- A **Demonstração interativa** usa dados de exemplo para mostrar o fluxo de matrícula, revisão de avaliações e prévia no calendário. Ela não lê o conteúdo dos PDFs, não os envia ao servidor e não altera **Meus Eventos**.
+- A **Demonstração interativa** usa dados de exemplo para mostrar o fluxo de seleção de turmas com vínculo autodeclarado, revisão de avaliações e prévia no calendário. Ela não lê o conteúdo dos PDFs, não os envia ao servidor e não altera **Meus Eventos**.
 - Envios reais entram como pendentes. A API já oferece consulta e confirmação de avaliações previamente registradas para planos concluídos, mas a extração automática por IA e a revisão e confirmação de avaliações reais pela interface ainda não estão disponíveis. É possível cadastrar as datas manualmente em **Meus Eventos**.
 
 ## Para atualizar a partir da R1

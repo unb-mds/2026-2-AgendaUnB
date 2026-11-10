@@ -2,9 +2,9 @@ from datetime import date, datetime, time
 from decimal import Decimal
 from uuid import UUID, uuid4
 
-from sqlalchemy import BigInteger, Date, DateTime, ForeignKey, Integer, JSON, Numeric, SmallInteger, String, Text, Time, UniqueConstraint, Uuid, func
+from sqlalchemy import BigInteger, Boolean, Date, DateTime, ForeignKey, Integer, JSON, Numeric, SmallInteger, String, Text, Time, UniqueConstraint, Uuid, func
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, synonym
 
 
 class Base(DeclarativeBase):
@@ -86,6 +86,10 @@ class SavedPublicEvent(Base):
 
 class PersonalEvent(Base):
     __tablename__ = "eventos_pessoais"
+    # Um candidato gera no máximo um evento por usuário (S7-D01).
+    __table_args__ = (
+        UniqueConstraint("user_id", "origem_avaliacao_id", name="uq_eventos_pessoais_usuario_avaliacao"),
+    )
 
     id: Mapped[UUID] = mapped_column(
         Uuid(as_uuid=True), primary_key=True, default=uuid4
@@ -106,7 +110,10 @@ class PersonalEvent(Base):
         "origem_plano_id", Uuid(as_uuid=True), nullable=True
     )
     origin_candidate_id: Mapped[UUID | None] = mapped_column(
-        "origem_avaliacao_id", Uuid(as_uuid=True), nullable=True, unique=True
+        "origem_avaliacao_id", Uuid(as_uuid=True), nullable=True
+    )
+    origin_version_id: Mapped[UUID | None] = mapped_column(
+        "origem_versao_id", Uuid(as_uuid=True), ForeignKey("versoes_plano.id", ondelete="SET NULL"), nullable=True
     )
     origin_page: Mapped[int | None] = mapped_column("origem_pagina", Integer, nullable=True)
     origin_excerpt: Mapped[str | None] = mapped_column("origem_trecho", Text, nullable=True)
@@ -146,6 +153,9 @@ class Syllabus(Base):
     turma: Mapped[str | None] = mapped_column(String, nullable=True)
     ano: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
     semestre: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
+    offering_id: Mapped[UUID | None] = mapped_column(
+        "oferta_id", Uuid(as_uuid=True), ForeignKey("ofertas_turma.id", ondelete="SET NULL"), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         "criado_em", DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -171,6 +181,12 @@ class Syllabus(Base):
     queued_at: Mapped[datetime | None] = mapped_column("enfileirado_em", DateTime(timezone=True))
     preparation_duration_ms: Mapped[int | None] = mapped_column("duracao_preparacao_ms", Integer)
     text_revision: Mapped[int] = mapped_column("versao_texto", Integer, default=0, nullable=False)
+    approved_version_id: Mapped[UUID | None] = mapped_column(
+        "versao_aprovada_id", Uuid(as_uuid=True), ForeignKey(
+            "versoes_plano.id", ondelete="RESTRICT", use_alter=True,
+            name="planos_versao_aprovada_fkey"
+        )
+    )
 
 
     @property
@@ -180,36 +196,6 @@ class Syllabus(Base):
     @property
     def authorization_required(self) -> bool:
         return self.prepared_pages is not None and self.authorized_at is None
-
-
-class AssessmentCandidate(Base):
-    """Sugestões privadas; o worker nunca grava eventos_pessoais ou avaliacoes."""
-
-    __tablename__ = "candidatos_avaliacao"
-    __table_args__ = (UniqueConstraint("plano_id", "execucao", "ordem"),)
-
-    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
-    plano_id: Mapped[UUID] = mapped_column(ForeignKey("planos_ensino.id", ondelete="CASCADE"))
-    execucao: Mapped[int] = mapped_column(Integer)
-    ordem: Mapped[int] = mapped_column(Integer)
-    titulo: Mapped[str] = mapped_column(String)
-    tipo: Mapped[str] = mapped_column(String)
-    data_sugerida: Mapped[date | None] = mapped_column(Date)
-    hora_sugerida: Mapped[time | None] = mapped_column(Time)
-    campos_ambiguos: Mapped[list[str]] = mapped_column(JSON().with_variant(ARRAY(Text), "postgresql"), default=list)
-    pagina_origem: Mapped[int | None] = mapped_column(Integer)
-    trecho_origem: Mapped[str] = mapped_column(Text)
-    provedor_ia: Mapped[str] = mapped_column(String)
-    modelo_ia: Mapped[str] = mapped_column(String)
-    versao_processamento: Mapped[str] = mapped_column(String)
-    status: Mapped[str] = mapped_column(String, default="pendente")
-    revisado_em: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    evento_pessoal_id: Mapped[UUID | None] = mapped_column(ForeignKey("eventos_pessoais.id", ondelete="SET NULL"), unique=True)
-    criado_em: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-
-    @property
-    def ambiguo(self) -> bool:
-        return bool(self.campos_ambiguos)
 
 
 class SyllabusCandidate(Base):
@@ -233,3 +219,135 @@ class SyllabusCandidate(Base):
     status: Mapped[str] = mapped_column("status", String, default="pendente", nullable=False)
     processing_version: Mapped[str | None] = mapped_column("versao_processamento", String, nullable=True)
     provider: Mapped[str | None] = mapped_column("provedor", String, nullable=True)
+    # No PostgreSQL é obrigatório; um trigger usa a versão mais recente do plano quando omitido.
+    version_id: Mapped[UUID | None] = mapped_column(
+        "versao_id", Uuid(as_uuid=True), ForeignKey("versoes_plano.id", ondelete="CASCADE"), nullable=True, index=True
+    )
+    order: Mapped[int | None] = mapped_column("ordem", SmallInteger, nullable=True)
+
+
+    # Campos civis e rastreamento do extrator: nunca inferem um instante/fuso.
+    execucao: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    data_sugerida: Mapped[date | None] = mapped_column(Date)
+    hora_sugerida: Mapped[time | None] = mapped_column(Time)
+    campos_ambiguos: Mapped[list[str]] = mapped_column(JSON().with_variant(ARRAY(Text), "postgresql"), default=list)
+    modelo_ia: Mapped[str | None] = mapped_column(String)
+    revisado_em: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    criado_em: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    # Compatibilidade de nomes do extrator; uma única tabela física (S7-D01).
+    plano_id = synonym("syllabus_id")
+    titulo = synonym("title")
+    tipo = synonym("kind")
+    pagina_origem = synonym("source_page")
+    trecho_origem = synonym("source_excerpt")
+    provedor_ia = synonym("provider")
+    versao_processamento = synonym("processing_version")
+    ordem = synonym("order")
+    ambiguo = synonym("ambiguous")
+
+
+AssessmentCandidate = SyllabusCandidate
+
+
+class Subject(Base):
+    """Disciplina abstrata do catálogo público (sem semestre)."""
+
+    __tablename__ = "disciplinas"
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    source: Mapped[str] = mapped_column("origem", String, default="followw", nullable=False)
+    source_id: Mapped[str | None] = mapped_column("origem_id", String, nullable=True)
+    code: Mapped[str] = mapped_column("codigo", String, nullable=False)
+    name: Mapped[str] = mapped_column("nome", String, nullable=False)
+    unit: Mapped[str | None] = mapped_column("unidade", String, nullable=True)
+    level: Mapped[str | None] = mapped_column("nivel", String, nullable=True)
+    source_updated_at: Mapped[datetime | None] = mapped_column(
+        "atualizado_na_origem_em", DateTime(timezone=True), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        "criado_em", DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        "atualizado_em", DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class ClassOffering(Base):
+    """Oferta de uma disciplina em um período: turma + ano + semestre."""
+
+    __tablename__ = "ofertas_turma"
+    __table_args__ = (
+        UniqueConstraint("disciplina_id", "turma", "ano", "semestre", name="ofertas_turma_identidade"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    subject_id: Mapped[UUID] = mapped_column(
+        "disciplina_id", Uuid(as_uuid=True), ForeignKey("disciplinas.id", ondelete="RESTRICT"), nullable=False
+    )
+    source: Mapped[str] = mapped_column("origem", String, default="followw", nullable=False)
+    source_id: Mapped[str | None] = mapped_column("origem_id", String, nullable=True)
+    class_number: Mapped[str] = mapped_column("turma", String, nullable=False)
+    year: Mapped[int] = mapped_column("ano", SmallInteger, nullable=False)
+    semester: Mapped[int] = mapped_column("semestre", SmallInteger, nullable=False)
+    teacher: Mapped[str | None] = mapped_column("professor", String, nullable=True)
+    schedule: Mapped[str | None] = mapped_column("horarios", String, nullable=True)
+    source_updated_at: Mapped[datetime | None] = mapped_column(
+        "atualizado_na_origem_em", DateTime(timezone=True), nullable=True
+    )
+    synced_at: Mapped[datetime | None] = mapped_column("sincronizado_em", DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        "criado_em", DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        "atualizado_em", DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    subject: Mapped[Subject] = relationship()
+
+
+class ClassFollow(Base):
+    """Vínculo autodeclarado entre usuário e oferta; único por par."""
+
+    __tablename__ = "vinculos_turma"
+
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), primary_key=True
+    )
+    offering_id: Mapped[UUID] = mapped_column(
+        "oferta_id", Uuid(as_uuid=True), ForeignKey("ofertas_turma.id", ondelete="RESTRICT"), primary_key=True
+    )
+    source: Mapped[str] = mapped_column("origem", String, default="autodeclarado", nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        "criado_em", DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class SyllabusVersion(Base):
+    """Versão de um plano. Privada por padrão; compartilhar registra a data."""
+
+    __tablename__ = "versoes_plano"
+    __table_args__ = (
+        UniqueConstraint("plano_id", "numero", name="versoes_plano_numero_unico"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    syllabus_id: Mapped[UUID] = mapped_column(
+        "plano_id", Uuid(as_uuid=True), ForeignKey("planos_ensino.id", ondelete="CASCADE"), nullable=False
+    )
+    number: Mapped[int] = mapped_column("numero", SmallInteger, nullable=False)
+    author_id: Mapped[UUID] = mapped_column(
+        "autor_id", Uuid(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False
+    )
+    author_role: Mapped[str] = mapped_column("autor_papel", String, default="student", nullable=False)
+    source_version_id: Mapped[UUID | None] = mapped_column(
+        "versao_origem_id", Uuid(as_uuid=True), ForeignKey("versoes_plano.id", ondelete="SET NULL"), nullable=True
+    )
+    institutional_provenance: Mapped[bool] = mapped_column(
+        "procedencia_institucional", Boolean, default=False, nullable=False
+    )
+    visibility: Mapped[str] = mapped_column("visibilidade", String, default="privada", nullable=False)
+    shared_at: Mapped[datetime | None] = mapped_column("compartilhada_em", DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        "criado_em", DateTime(timezone=True), server_default=func.now(), nullable=False
+    )

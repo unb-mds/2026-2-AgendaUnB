@@ -83,13 +83,13 @@ declare
   v_candidato public.candidatos_avaliacao;
   v_item jsonb;
   v_id uuid;
-  v_ids uuid[] := '{}';
+  v_ids uuid[] := '{}'::uuid[];
   v_acao text;
   v_titulo text;
   v_descricao text;
   v_data_hora timestamptz;
   v_evento uuid;
-  v_resultado jsonb := '[]';
+  v_resultado jsonb := '[]'::jsonb;
 begin
   if v_actor is null then
     raise exception 'Autenticação necessária' using errcode = '42501';

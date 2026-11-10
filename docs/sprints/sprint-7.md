@@ -9,12 +9,14 @@ Planejamento aprovado para 07–15/11/2026. Entrega final em 25/11/2026. As tare
 
 ## Decisões da entrega
 
+Consulte os [contratos](../atualizacoes.md#contratos-da-release-2) e a [matriz de aceite](../matriz-release-2.md) para os critérios vigentes.
+
 - Seleção manual de turmas pelo catálogo público Followw, com vínculo autodeclarado.
-- Planos privados por padrão e compartilhamento voluntário de versões revisadas.
+- Planos privados por padrão, com edição conforme papel e visibilidade. Compartilhamento voluntário de conteúdo revisado. O PDF original é descartado após a extração local.
 - IA limitada a provas e trabalhos, com revisão do texto antes do envio e confirmação antes da criação de eventos.
-- Coleta inicial pela Agenda UnB Notícias e participação registrada localmente.
+- A Agenda UnB Notícias alimenta o catálogo. Eventos completos são publicados automaticamente e exceções seguem para revisão. Adicionar aos meus eventos e Conferir evento são ações independentes.
 - Professores e administradores moderam eventos. Administradores gerenciam papéis e categorias.
-- Lembretes persistidos na plataforma e exportação direta ao Google Agenda via Calendar API com consentimento adicional, usando agenda secundária criada pelo aplicativo. ICS permanece como opção complementar para Apple Calendar/Outlook.
+- Lembretes na plataforma 24 horas antes de eventos da própria agenda. Exportação direta ao Google Agenda com consentimento adicional e e-mail verificado correspondente. ICS complementa Apple Calendar e Outlook.
 - Primeira URL Vercel até 12/11 e ambiente integrado até 15/11. Congelamento funcional em 20/11, homologação até 23/11, ensaio em 24/11 e aceite em 25/11.
 
 ## Organização
@@ -77,7 +79,7 @@ local, sem aprovação automática de dados reais ou fechamento das dependência
 
 #### Objetivo
 
-Fixar as decisões da Release 2 e publicar contratos que permitam frontend, backend e dados trabalharem em paralelo.
+Fixar as decisões da Release 2 e publicar contratos para frontend, backend e dados. O resultado está nos [contratos](../atualizacoes.md#contratos-da-release-2) e na [matriz de aceite](../matriz-release-2.md).
 
 - **Sprint** [Sprint 07](https://github.com/unb-mds/2026-2-AgendaUnB/milestone/7)
 - **Janela** 07–08/11/2026
@@ -92,9 +94,9 @@ Fixar as decisões da Release 2 e publicar contratos que permitam frontend, back
 - [ ] Atualizar a visão e os requisitos canônicos, incluindo as funcionalidades antecipadas para esta entrega.
 - [ ] Revisar RF05/RF06 para substituir atestado de matrícula por seleção manual de oferta do catálogo público do Followw. Registrar vínculo autodeclarado e separar o catálogo de matrícula, notas, avisos privados e login Followw/SIGAA.
 - [ ] Revisar RF07/RNF02 para definir planos privados por padrão e compartilhamento voluntário após revisão. Distinguir contribuição de estudante, envio por perfil professor e origem institucional comprovada.
-- [ ] Revisar RF11/RNF04 para delimitar moderação por professor/admin e gestão de papéis e categorias por admin. Revisar RF12/RF18 para distinguir interesse/participação local, inscrição externa e comprovação de presença.
-- [ ] Atualizar RF21 para exportação direta pela Google Calendar API com autorização adicional. Registrar o escopo de lembretes na plataforma, coleta inicial pela Agenda UnB Notícias e extração de provas/trabalhos com confirmação humana.
-- [ ] Definir contratos de turma, plano/versão, candidato, evento com intervalo/dia inteiro, participação e lembrete. Harmonizar estados de processamento entre backend e frontend e planejar migração quando necessária.
+- [ ] Delimitar moderação por professor/admin e gestão de papéis e categorias por admin. Documentar agenda pessoal, redirecionamento agregado e histórico em RF12/RF13/RF18.
+- [ ] Registrar o escopo de lembretes na plataforma, coleta inicial pela Agenda UnB Notícias e extração de provas e trabalhos com confirmação humana.
+- [ ] Definir contratos de turma, plano/versão, candidato, evento com intervalo/dia inteiro, vínculo de agenda, redirecionamento e lembrete. Harmonizar estados de processamento e planejar migrações.
 
 #### Critérios de aceite
 
@@ -176,7 +178,7 @@ Evoluir o esquema de planos existentes para associar ofertas de turma, versões 
 
 - [ ] Executar migrations em dados existentes e demonstrar compatibilidade com o ORM.
 - [ ] Seguir uma turma repetidamente mantém um vínculo, e ofertas de semestres diferentes permanecem distintas.
-- [ ] Usuário B não acessa PDF, texto ou candidatos privados de A por API, banco ou Storage. Arquivos são privados por padrão e as verificações valem para requisições diretas.
+- [ ] Usuário B não acessa texto ou candidatos privados de A pela API, banco ou Storage. Verificar descarte do PDF após extração local e remoção dos originais legados conforme a migração.
 
 #### Evidências para fechamento
 
@@ -331,7 +333,7 @@ Completar cadastro e recuperação via Supabase, homologar Google OAuth e refor�
 
 #### Tasks
 
-- [ ] Implementar autorização incremental para Calendar ao conectar a integração. Vincular a conta Google à sessão Agenda UnB autenticada, inclusive para quem entrou com e-mail/senha, validando state/PKCE conforme o fluxo adotado. Tratar recusa sem bloquear login. Obter tokens do provedor e implementar renovação no servidor, armazenamento protegido e desconexão com revogação e remoção dos tokens. Testar expiração, `invalid_grant`, conta divergente e nova autorização. Integrar com [#82](https://github.com/unb-mds/2026-2-AgendaUnB/issues/82).
+- [ ] Implementar autorização incremental para Calendar com `state` e PKCE. Exigir e-mail Google verificado correspondente ao da conta Agenda UnB e testar recusa e divergência. Guardar e renovar tokens no servidor e removê-los na desconexão com revogação. Integrar com [#82](https://github.com/unb-mds/2026-2-AgendaUnB/issues/82).
 - [ ] Tratar cadastro sem sessão, tela de confirmação, retorno do link, reenvio com intervalo e links expirados ou reutilizados. Integrar recuperação e troca de senha pelo Supabase.
 - [ ] Adicionar mostrar/ocultar senha, confirmação, validação e autocomplete apropriados. Tratar retorno e erros do Google OAuth sem confirmação local redundante.
 - [ ] Verificar e-mail confirmado e autorização no servidor. Impedir escalada via domínio informado ou metadata do cliente. Restringir alterações de papel de terceiros a admin.
@@ -368,7 +370,7 @@ Alimentar a agenda pela fonte institucional Agenda UnB Notícias, com origem ver
 - [ ] Implementar coletor periódico da [lista paginada e dos detalhes da Agenda UnB Notícias](https://noticias.unb.br/component/agenda/agendas), observando restrições de acesso e frequência moderada.
 - [ ] Persistir fonte, identificador/URL canônica, hash e última coleta. Fazer upsert por chave única da origem. Conciliar URL idêntica já cadastrada manualmente e enviar similaridade de título/data para revisão.
 - [ ] Normalizar início/fim, dia inteiro, campus, local e link externo. Tratar `00:00` de preenchimento sem inventar horário e distinguir informes de eventos.
-- [ ] Enviar casos ambíguos ou incompletos para moderação. Validar com a equipe a publicação automática proposta para itens válidos da fonte institucional permitida. Exibir a procedência.
+- [ ] Publicar automaticamente os eventos completos e inequívocos da fonte. Enviar casos ambíguos, incompletos e possíveis duplicatas para revisão. Exibir a procedência.
 
 #### Critérios de aceite
 
@@ -419,3 +421,15 @@ Disponibilizar o frontend React/Vite em uma URL Vercel HTTPS estável e demonstr
 - [ ] Registrar o nome do revisor e a revisão dos contratos, permissões e dados afetados por esta entrega.
 
 
+
+## Esclarecimentos de contrato — 08/11/2026
+
+O RNF11 cobre exclusivamente a indisponibilidade do Followw. Referências anteriores deste planejamento a RNF11 em coleta de notícias, exportação ou infraestrutura geral não ampliam essa garantia; permanecem os contratos específicos dessas funcionalidades.
+
+Toda data extraída começa como candidata. Somente a confirmação explícita do usuário a transforma em avaliação efetiva na sua agenda; em versões compartilhadas, essa decisão pertence a cada conta. A revisão deve ser breve: mostrar candidatos em uma lista, permitir selecionar vários e confirmar o lote em uma única ação, destacar apenas campos ambíguos que exigem correção e preservar as escolhas durante ajustes. Não exigir uma sequência de confirmações por item nem importar automaticamente. Avaliar a fluidez na homologação com o tempo e as dificuldades observadas, sem inventar um limite numérico ainda não acordado.
+
+Retirar o compartilhamento da versão original não retira nem exclui suas revisões: elas mantêm sua própria visibilidade e continuam disponíveis quando compartilhadas. Cópias já importadas na agenda também permanecem. Essa regra trata da retirada de compartilhamento, não define a política de exclusão de conta.
+
+Uma revisão feita por professor ou admin mantém a procedência institucional já validada da versão de origem. Registrar a versão de origem, a evidência institucional herdada, o autor da revisão e seu papel no momento da alteração. A interface distingue documento institucional de origem e alterações posteriores da comunidade. Papel professor/admin não cria procedência institucional quando a origem não a possuía; revisões estudantis não recebem essa herança automaticamente.
+
+A confirmação e reimportação devem seguir a chave por ação descrita nos [contratos da R2](../atualizacoes.md#confirmacao-rapida-e-reimportacao). Professor/admin publicam diretamente suas revisões de conteúdo já compartilhado.

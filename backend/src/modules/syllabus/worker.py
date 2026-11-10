@@ -10,13 +10,14 @@ from uuid import UUID, uuid4
 from sqlalchemy import or_, select, update
 
 from src.database.connection import SessionLocal
-from src.database.models import AssessmentCandidate, Syllabus
+from src.database.models import AssessmentCandidate, Syllabus, SyllabusVersion
 from src.modules.syllabus.extraction import VERSION
 from src.modules.syllabus.gemini import GeminiProvider
 from src.modules.syllabus.processing_config import ERROR_MESSAGES, ProcessingConfig, ProcessingError
 from src.modules.syllabus.processing_task import run_isolated
 from src.modules.syllabus.privacy import privacy_checks
 from src.modules.syllabus.preparation import checked_pages, text_hash
+from src.modules.syllabus.versions import private_version
 from src.modules.syllabus.timing import duration_ms as elapsed_ms
 
 logger = logging.getLogger("agenda_unb.syllabus.worker")
@@ -37,6 +38,7 @@ class Lease:
     terminal: bool = False
     approved_pages: list[dict] | None = None
     approved_hash: str | None = None
+    version_id: UUID | None = None
 
 
 class SyllabusWorker:
@@ -64,6 +66,8 @@ class SyllabusWorker:
             attempt = job.execucao_atual + 1
             exhausted = (attempt > self.config.max_attempts or
                          job.cost_reserved_usd + self.config.attempt_reservation > self.config.max_file_cost_usd)
+            version = db.get(SyllabusVersion, job.approved_version_id) if job.approved_version_id else private_version(db, job)
+            exhausted = exhausted or (version is None or version.visibility != "privada" or version.syllabus_id != job.id)
             # CAS também protege o caminho SQLite usado nos testes. PostgreSQL
             # usa SKIP LOCKED para permitir múltiplos processos independentes.
             condition = (Syllabus.id == job.id, Syllabus.execucao_atual == job.execucao_atual,
@@ -76,9 +80,11 @@ class SyllabusWorker:
                               processamento_iniciado_em=now, processado_em=None, erro_codigo=None,
                               error_message=None, next_attempt_at=None, provedor_ia="google",
                               modelo_ia=self.config.model, versao_processamento=VERSION,
+                              approved_version_id=version.id,
                               cost_reserved_usd=job.cost_reserved_usd + self.config.attempt_reservation)
             lease = Lease(job.id, token, attempt, job.user_id, job.file_path, job.queued_at or job.created_at, terminal=exhausted,
-                          approved_pages=job.approved_pages, approved_hash=job.approved_hash)
+                          approved_pages=job.approved_pages, approved_hash=job.approved_hash,
+                          version_id=version.id if version else None)
             changed = db.execute(update(Syllabus).where(*condition).values(**values),
                                  execution_options={"synchronize_session": False}).rowcount
             db.commit()
@@ -123,6 +129,13 @@ class SyllabusWorker:
             result = document.extraction
             with self.sessions() as db:
                 duration = round((time.monotonic() - started) * 1000)
+                version = db.scalar(select(SyllabusVersion).where(
+                    SyllabusVersion.id == lease.version_id,
+                    SyllabusVersion.syllabus_id == lease.id,
+                    SyllabusVersion.visibility == "privada",
+                ).with_for_update())
+                if version is None:
+                    raise ProcessingError("erro_interno")
                 changed = db.execute(update(Syllabus).where(
                     Syllabus.id == lease.id, Syllabus.status == "processando", Syllabus.processing_token == lease.token,
                 ).values(status="concluido", processing_token=None, processado_em=utcnow(),
@@ -133,9 +146,9 @@ class SyllabusWorker:
                     return True
                 for order, candidate in enumerate(result.candidates):
                     db.add(AssessmentCandidate(
-                        plano_id=lease.id, execucao=lease.execution, ordem=order,
+                        plano_id=lease.id, version_id=lease.version_id, execucao=lease.execution, ordem=order,
                         **candidate.model_dump(), provedor_ia="google", modelo_ia=self.config.model,
-                        versao_processamento=VERSION, status="pendente",
+                        versao_processamento=VERSION, status="pendente", ambiguous=bool(candidate.campos_ambiguos),
                     ))
                 db.commit()  # Candidatos + estado final são uma única transação.
             total = elapsed_ms(lease.created_at, utcnow())

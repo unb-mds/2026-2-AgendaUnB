@@ -12,7 +12,8 @@ from fastapi import HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select, update
 
-from src.database.models import AssessmentCandidate, Syllabus
+from src.database.models import AssessmentCandidate, Syllabus, SyllabusVersion
+from src.modules.syllabus.versions import private_version
 from src.modules.syllabus.extraction import extract_pages
 from src.modules.syllabus.processing_config import ProcessingConfig, ProcessingError
 
@@ -175,7 +176,12 @@ def authorize(db, plan, payload, config):
         raise HTTPException(409, "O plano atingiu o limite acumulado de tentativas ou custo.")
     now = datetime.now(timezone.utc)
     db.execute(update(AssessmentCandidate).where(AssessmentCandidate.plano_id == plan.id,
-        AssessmentCandidate.status == "pendente").values(status="descartado", revisado_em=now))
+        AssessmentCandidate.status == "pendente",
+        AssessmentCandidate.version_id.in_(select(SyllabusVersion.id).where(
+            SyllabusVersion.syllabus_id == plan.id, SyllabusVersion.visibility == "privada"
+        ))).values(status="descartado", revisado_em=now))
+    version = private_version(db, plan, new_analysis=plan.authorized_at is not None)
+    plan.approved_version_id = version.id
     plan.prepared_pages = pages  # Não conservar a versão anterior às correções do dono.
     plan.approved_pages = pages
     plan.approved_hash = digest
