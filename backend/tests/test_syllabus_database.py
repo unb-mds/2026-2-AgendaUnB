@@ -37,8 +37,8 @@ def plan(conn, owner, *, status="concluido", execution=1):
 
 
 def candidate(conn, sid, *, order=0, execution=1):
-    return str(conn.execute(text("""insert into public.candidatos_avaliacao
-      (plano_id,execucao,ordem,titulo,tipo,pagina_origem,trecho_origem,provedor_ia,modelo_ia,versao_processamento)
+    return str(conn.execute(text("""insert into public.avaliacoes
+      (plano_id,execucao,ordem,titulo,tipo,pagina_origem,trecho_origem,provedor,modelo_ia,versao_processamento)
       values (:plan,:execution,:order,'Prova sintetica','prova',1,'Prova sintetica: data a definir',
               'test','reference','s6d02-test') returning id"""),
       {"plan":sid,"execution":execution,"order":order}).scalar_one())
@@ -72,13 +72,13 @@ def test_syllabus_owner_only_reads_and_server_only_writes(database):
     for role in ("student", "other", "professor", "admin"):
         assume(conn, users[role])
         expected = 1 if role == "student" else 0
-        for table, rid in (("planos_ensino",sid),("candidatos_avaliacao",cid),("avaliacoes",legacy)):
+        for table, rid in (("planos_ensino",sid),("avaliacoes",cid),("avaliacoes",legacy)):
             assert conn.execute(text(f"select count(*) from public.{table} where id=:id"), {"id":rid}).scalar() == expected
     assume(conn, users["student"])
-    for table, rid in (("planos_ensino",sid),("candidatos_avaliacao",cid),("avaliacoes",legacy)):
+    for table, rid in (("planos_ensino",sid),("avaliacoes",cid),("avaliacoes",legacy)):
         reject(conn, lambda: conn.execute(text(f"delete from public.{table} where id=:id"), {"id":rid}), "42501")
     reject(conn, lambda: conn.execute(text("update public.planos_ensino set custo_reservado_usd=0 where id=:id"), {"id":sid}), "42501")
-    reject(conn, lambda: conn.execute(text("update public.candidatos_avaliacao set status='confirmado' where id=:id"), {"id":cid}), "42501")
+    reject(conn, lambda: conn.execute(text("update public.avaliacoes set status='confirmado' where id=:id"), {"id":cid}), "42501")
     conn.execute(text("reset role"))
     reject(conn, lambda: conn.execute(text("update public.planos_ensino set user_id=:other where id=:id"),
                                      {"id":sid,"other":users["other"]}), "42501")
@@ -91,7 +91,7 @@ def test_anonymous_and_unbound_privileged_review_are_denied(database):
     conn.execute(text("select set_config('request.jwt.claim.sub','',true)"))
     reject(conn, lambda: review(conn, sid, [selection(cid)]), "42501")
     conn.execute(text("set local role anon"))
-    for table in ("planos_ensino", "candidatos_avaliacao", "avaliacoes"):
+    for table in ("planos_ensino", "avaliacoes", "avaliacoes"):
         reject(conn, lambda: conn.execute(text(f"select * from public.{table}")), "42501")
     reject(conn, lambda: review(conn, sid, [selection(cid)]), "42501")
     conn.execute(text("reset role"))
@@ -127,7 +127,7 @@ def test_review_partial_atomic_idempotent_and_deleted_event_not_recreated(databa
     eid = result["itens"][0]["evento_pessoal_id"]
     assert eid and result["itens"][1]["evento_pessoal_id"] is None
     assert review(conn,sid,items) == result
-    assert conn.execute(text("select status from public.candidatos_avaliacao where id=:id"), {"id":third}).scalar() == 'pendente'
+    assert conn.execute(text("select status from public.avaliacoes where id=:id"), {"id":third}).scalar() == 'pendente'
     assert conn.execute(text("select count(*) from public.eventos_pessoais where user_id=:owner"), {"owner":users["student"]}).scalar() == 1
     event = conn.execute(text("select titulo,data_hora from public.eventos_pessoais where id=:id"), {"id":eid}).one()
     assert event[0] == 'Prova revisada' and event[1].hour == 17
@@ -154,7 +154,7 @@ def test_review_cross_owner_cross_plan_and_old_execution_roll_back(database):
     reject(conn,lambda:review(conn,sid,[selection(first),selection(other_candidate)]),"P0002")
     reject(conn,lambda:review(conn,sid,[selection(old)]),"P0002")
     reject(conn,lambda:review(conn,own_second_plan,[selection(old)]),"P0002")
-    assert conn.execute(text("select status from public.candidatos_avaliacao where id=:id"), {"id":first}).scalar() == 'pendente'
+    assert conn.execute(text("select status from public.avaliacoes where id=:id"), {"id":first}).scalar() == 'pendente'
     assert conn.execute(text("select count(*) from public.eventos_pessoais where user_id=:owner"), {"owner":users["student"]}).scalar() == 0
 
 
@@ -176,12 +176,10 @@ def test_invalid_review_never_writes_partial_events(database, kind):
     assert conn.execute(text("select count(*) from public.eventos_pessoais where user_id=:owner"), {"owner":users["student"]}).scalar() == 0
 
 
-def test_review_requires_completed_plan_and_matching_event_owner(database):
+def test_review_requires_completed_plan(database):
     conn, users = database
     sid = plan(conn,users["student"],status='pendente')
     cid = candidate(conn,sid)
-    eid = conn.execute(text("insert into public.eventos_pessoais(user_id,titulo,data_hora) values (:owner,'Outro dono',now()) returning id"), {"owner":users['other']}).scalar_one()
-    reject(conn,lambda:conn.execute(text("update public.candidatos_avaliacao set status='confirmado',revisado_em=now(),evento_pessoal_id=:event where id=:id"), {"event":eid,"id":cid}),"42501")
     assume(conn,users["student"])
     reject(conn,lambda:review(conn,sid,[selection(cid)]),"22023")
 
@@ -298,4 +296,4 @@ def test_worker_postgres_constraints_and_candidate_array(database):
         assert plan.status == "concluido" and plan.extracted_events_count == 1
         candidate = db.scalar(select(AssessmentCandidate).where(AssessmentCandidate.plano_id == sid))
         assert candidate.campos_ambiguos == ["data"]
-        assert candidate.evento_pessoal_id is None and candidate.status == "pendente"
+        assert candidate.version_id is not None and candidate.status == "pendente"

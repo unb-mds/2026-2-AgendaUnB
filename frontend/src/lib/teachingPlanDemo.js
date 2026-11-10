@@ -2,11 +2,11 @@ import { validateReviewItem } from './syllabusReview.js';
 
 // Explicit demonstration data, never an API response or extracted PDF content.
 export const DEMO_COURSES = [
-  { id: 'mds', initials: 'MDS', title: 'Métodos de Desenvolvimento de Software', group: 'A', campus: 'Faculdade do Gama', enrolled: true },
-  { id: 'fac', initials: 'FAC', title: 'Fundamentos de Arquitetura de Computadores', group: 'B', campus: 'Darcy Ribeiro', enrolled: true },
-  { id: 'cal', initials: 'C1', title: 'Cálculo 1', group: 'C', campus: 'Darcy Ribeiro', enrolled: true },
-  { id: 'icc', initials: 'ICC', title: 'Introdução à Ciência da Computação', group: 'A', campus: 'Darcy Ribeiro', enrolled: false },
-  { id: 'ea', initials: 'EA', title: 'Engenharia e Ambiente', group: 'B', campus: 'Faculdade do Gama', enrolled: false },
+  { id: 'mds', initials: 'MDS', title: 'Métodos de Desenvolvimento de Software', group: 'A', campus: 'Faculdade do Gama' },
+  { id: 'fac', initials: 'FAC', title: 'Fundamentos de Arquitetura de Computadores', group: 'B', campus: 'Darcy Ribeiro' },
+  { id: 'cal', initials: 'C1', title: 'Cálculo 1', group: 'C', campus: 'Darcy Ribeiro' },
+  { id: 'icc', initials: 'ICC', title: 'Introdução à Ciência da Computação', group: 'A', campus: 'Darcy Ribeiro' },
+  { id: 'ea', initials: 'EA', title: 'Engenharia e Ambiente', group: 'B', campus: 'Faculdade do Gama' },
 ];
 
 export function sampleCandidates() {
@@ -17,7 +17,7 @@ export function sampleCandidates() {
 }
 
 export function initialDemoState() {
-  return { step: 1, enrollment: '', activeCourse: 'mds', plans: {
+  return { step: 1, enrollment: '', followedCourses: [], activeCourse: 'mds', plans: {
     cal: { status: 'ready', fileName: 'plano_calculo_exemplo.pdf', candidates: [
       { id: 'cal-1', title: 'Prova 2', type: 'Prova', date: '2026-11-18', time: '10:00', utcOffset: '-03:00', decision: 'selected' },
       { id: 'cal-2', title: 'Prova final', type: 'Prova', date: '2026-11-30', time: '10:00', utcOffset: '-03:00', decision: 'selected' },
@@ -34,14 +34,18 @@ export function canConfirm(plan, acknowledged) {
 export function demoReducer(state, action) {
   switch (action.type) {
     case 'RESET': return initialDemoState();
-    case 'ENROLL': return state.enrollment ? state : { ...state, enrollment: action.name, step: 2 };
+    case 'ENROLL': {
+      const ids = [...new Set(action.ids || [])].filter(id => DEMO_COURSES.some(c => c.id === id));
+      if (state.enrollment || !ids.length) return state;
+      return { ...state, enrollment: 'Vínculo autodeclarado', followedCourses: ids, activeCourse: ids[0], step: 2 };
+    }
     case 'STEP': {
       if (![1, 2, 3, 4].includes(action.step) || (action.step > 1 && !state.enrollment)) return state;
       if (action.step === 3 && !state.plans[state.activeCourse]?.candidates) return state;
       return { ...state, step: action.step };
     }
     case 'OPEN': {
-      if (!state.enrollment || !DEMO_COURSES.some(c => c.id === action.id && c.enrolled)) return state;
+      if (!state.enrollment || !state.followedCourses.includes(action.id)) return state;
       return { ...state, activeCourse: action.id, acknowledged: false,
         step: state.plans[action.id]?.candidates ? 3 : 2 };
     }
@@ -68,7 +72,7 @@ export function demoReducer(state, action) {
       return { ...state, step: 4, plans: { ...state.plans, [state.activeCourse]: { ...plan, status: 'ready' } } };
     }
     case 'SELECT_COURSE': {
-      if (state.plans[action.id]?.status !== 'ready' || !state.enrollment) return state;
+      if (state.plans[action.id]?.status !== 'ready' || !state.enrollment || !state.followedCourses.includes(action.id)) return state;
       return { ...state, selectedCourses: action.selected
         ? [...new Set([...state.selectedCourses, action.id])]
         : state.selectedCourses.filter(id => id !== action.id) };

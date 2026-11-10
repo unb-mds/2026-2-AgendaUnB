@@ -1,5 +1,7 @@
 # Painel administrativo e sugestões
 
+Este guia descreve os fluxos, as permissões e a verificação do painel. A divisão da integração entre FastAPI e RPCs do Supabase está no [ADR-001](arquitetura/adrs/adr-001-integracao-fastapi-supabase.md).
+
 ## Navegação e permissões
 
 - `/eventos`: eventos públicos e agenda pessoal. `/segunda-pagina` redireciona para esta rota, preservando parâmetros.

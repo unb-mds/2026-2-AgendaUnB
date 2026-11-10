@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime, time
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -37,6 +37,7 @@ class SyllabusListItem(BaseModel):
     file_size: int | None = Field(default=None, alias="fileSize")
     file_type: str = Field(default="pdf", alias="fileType")
     status: str
+
     authorization_required: bool = Field(default=False, alias="authorizationRequired")
     prepared_text_available: bool = Field(default=False, alias="preparedTextAvailable")
     extracted_events_count: int = Field(default=0, alias="extractedEventsCount")
@@ -66,6 +67,11 @@ class SyllabusCandidateRead(BaseModel):
     source_page: int | None = Field(default=None, alias="sourcePage")
     source_excerpt: str | None = Field(default=None, alias="sourceExcerpt")
     status: str
+
+    suggested_date: date | None = Field(default=None, alias="suggestedDate")
+    suggested_time: time | None = Field(default=None, alias="suggestedTime")
+    ambiguous_fields: list[str] = Field(default_factory=list, alias="ambiguousFields")
+    version_id: UUID | None = Field(default=None, alias="versionId")
 
 
 class SyllabusDetailResponse(SyllabusListItem):

@@ -13,9 +13,9 @@ e revisão transacional; a tela e os endpoints de revisão pertencem à S6-B02.
 
 - #40: upload autenticado, PDF válido, Storage privado e registro `pendente`.
 - S6-D01: migração `20261027120000`, candidatos, procedência e estados em português.
-- S6-B01: migração `20261109120000_fila_processamento_planos.sql` para lease,
+- S6-B01: migração `20261109110000_fila_processamento_planos.sql` para lease,
   próxima tentativa, orçamento acumulado e duração.
-- S6-D02: migração `20261109130000_privacidade_e_revisao_planos.sql`, validada em
+- S6-D02: migração `20261109113000_privacidade_e_revisao_planos.sql`, validada em
   PostgreSQL isolado. Aplicá-la e testar as políticas no ambiente de destino antes
   de usar dados reais. Nenhuma flag foi habilitada automaticamente.
 

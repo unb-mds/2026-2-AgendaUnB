@@ -7,6 +7,8 @@ Obrigado pelo interesse em contribuir com o **Agenda UnB**! Este guia orienta os
 
 ---
 
+<a id="setup-requisitos"></a>
+
 ## Pré-requisitos
 
 Antes de iniciar, certifique-se de ter instalado em sua máquina:
@@ -15,7 +17,7 @@ Antes de iniciar, certifique-se de ter instalado em sua máquina:
 - [Node.js](https://nodejs.org/) (Versão LTS recomendada, v18 ou superior)
 - [Python 3.11+](https://www.python.org/) (Necessário para a API FastAPI, testes com pytest e MkDocs)
 - [Docker Desktop / Docker Engine](https://www.docker.com/) (Em execução, necessário para o banco de dados e autenticação via Supabase)
-- [GNU Make](https://www.gnu.org/software/make/) _(Opcional, mas altamente recomendado para automação de setup e execução em 1 comando)_
+- [GNU Make](https://www.gnu.org/software/make/) para automatizar a configuração e a execução. No Linux, instale pelo gerenciador de pacotes. No macOS, use as ferramentas de desenvolvimento. No Windows, use Chocolatey (`choco install make`), Scoop (`scoop install make`) ou winget (`winget install GnuWin32.Make`).
 
 ---
 
@@ -72,6 +74,8 @@ make dev
 
 Caso prefira executar cada serviço manualmente em terminais separados:
 
+<a id="setup-ambiente"></a>
+
 #### Configurar Variáveis de Ambiente
 
 Crie o arquivo `.env` na raiz a partir do `.env.example`:
@@ -79,6 +83,8 @@ Crie o arquivo `.env` na raiz a partir do `.env.example`:
 | Linux / macOS (Bash) | Windows (PowerShell) | Windows (CMD) |
 | --- | --- | --- |
 | `cp .env.example .env` | `Copy-Item .env.example .env` | `copy .env.example .env` |
+
+<a id="setup-supabase"></a>
 
 #### Banco de Dados (Supabase Local)
 
@@ -89,8 +95,10 @@ npx supabase start      # Inicia PostgreSQL, Auth e Studio
 npx supabase db reset   # Aplica migrações e seed
 ```
 
-- Studio local: [http://localhost:54323](http://localhost:54323)
-- API Local: `http://127.0.0.1:54321`
+- Studio local: [http://localhost:14323](http://localhost:14323)
+- API Local: `http://127.0.0.1:14321`
+
+<a id="setup-backend"></a>
 
 #### Executar o Backend (FastAPI)
 
@@ -105,7 +113,26 @@ Navegue até a pasta `backend/` e prepare o ambiente virtual:
 | **5. Instalar dependências dev** | `pip install -r requirements-dev.txt` | `pip install -r requirements-dev.txt` | `pip install -r requirements-dev.txt` |
 | **6. Iniciar a API** | `uvicorn src.main:app --reload` | `uvicorn src.main:app --reload` | `uvicorn src.main:app --reload` |
 
-- API local: [http://localhost:8000](http://localhost:8000) | Swagger: [http://localhost:8000/docs](http://localhost:8000/docs)
+- API local: [http://localhost:8000](http://localhost:8000)
+- Swagger: [http://localhost:8000/docs](http://localhost:8000/docs)
+- Verificação básica: [http://localhost:8000/health](http://localhost:8000/health)
+
+Se o PowerShell bloquear a ativação do ambiente, execute os comandos pela coluna CMD ou chame `.\venv\Scripts\python.exe` diretamente, por exemplo `.\venv\Scripts\python.exe -m uvicorn src.main:app --reload`.
+
+Se `python -m venv venv` terminar sem erro mas `venv\Scripts\python.exe` não existir, o `python` ativo no terminal pode ser outro (por exemplo, o do MSYS2). Confira com `where.exe python` e crie o ambiente com o executável correto:
+
+```powershell
+& "C:\caminho\do\python.exe" -m venv venv
+```
+
+Também é possível usar o ambiente sem ativação:
+
+```powershell
+.\venv\Scripts\python.exe -m pip install -r requirements.txt -r requirements-dev.txt
+.\venv\Scripts\python.exe -m uvicorn src.main:app --reload
+```
+
+<a id="setup-frontend"></a>
 
 #### Executar o Frontend
 
@@ -117,12 +144,15 @@ npm install
 npm run dev
 ```
 
-- 🌐 Aplicação web: [http://localhost:5173](http://localhost:5173)
+- Aplicação web: [http://localhost:5173](http://localhost:5173)
+- Build estático: `npm run build` em `frontend/`.
+
+<a id="setup-mkdocs"></a>
 
 #### Executar a Documentação (MkDocs — Opcional)
 
 ```bash
-pip install mkdocs-material
+pip install mkdocs-material mkdocs-redirects
 mkdocs serve -f .github/mkdocs.yml -a 127.0.0.1:8008
 ```
 
@@ -140,9 +170,9 @@ pytest tests/
 
 ## Adicionar uma página de documentação
 
-Crie a página em `docs/` como `.md` para Markdown comum ou `.mdx` se usar componentes do Mintlify. Para incluí-la no menu do Mintlify, adicione a rota sem extensão ao `docs.json`. As sprints usam a mesma fonte em `docs/sprints/` para o Mintlify e o MkDocs.
+Crie a página em `docs/` como `.md` para Markdown comum ou `.mdx` se usar componentes do Mintlify. Para incluí-la no menu do Mintlify, adicione a rota sem extensão ao `docs.json`. Use o mesmo arquivo Markdown para os dois sites sempre que a página for compartilhada.
 
-Para incluir uma página compartilhada no menu do MkDocs, adicione o caminho com extensão à navegação de `.github/mkdocs.yml`. As pastas `docs/arquitetura/` e `docs/produto/` mantêm as páginas organizadas para o Mintlify.
+Para incluir uma página compartilhada no menu do MkDocs, adicione o caminho com extensão à navegação de `.github/mkdocs.yml`. As páginas são organizadas por assunto em `docs/arquitetura/`, `docs/produto/` e `docs/processo/`. Ao mover uma página publicada, atualize os links e configure o redirecionamento nos dois sites.
 
 ---
 
@@ -173,3 +203,46 @@ Exemplos:
 - `fix(navbar): corrige alinhamento dos botões em telas menores`
 - `docs(requisitos): inclui novos requisitos de moderação`
 - `refactor(parser): melhora desempenho da extração de datas em PDF`
+
+<a id="setup-verificacoes"></a>
+
+## Atualizações de banco e verificações
+
+O estado atual inclui eventos salvos, sugestões, moderação, notificações e administração. Aplique todas as migrações em ordem antes de disponibilizar a API/frontend correspondente. Para atualizar o Supabase local já iniciado sem recriar o banco:
+
+```bash
+npx supabase migration up --local
+```
+
+`make db-reset` recria o banco, reaplica migrações e seed. Use-o somente quando puder descartar os dados locais. Para outros ambientes, siga o fluxo de migrações adotado pela equipe.
+
+Execute as verificações a partir das respectivas pastas:
+
+```bash
+# backend, com o ambiente Python ativo
+python -m pytest tests -q
+
+# frontend
+npm run build
+node --test src/lib/calendar.test.js
+```
+
+Os testes de API usam SQLite. Para exercitar RLS, RPCs e triggers reais, configure `TEST_SUPABASE_DB_URL` com a conexão PostgreSQL do Supabase local e execute pytest. Os testes de banco só aceitam `localhost`/`127.0.0.1`, desfazem os dados ao terminar e são ignorados quando a variável não está configurada. Não use uma conexão de produção.
+
+Para conferir a documentação com as dependências do MkDocs instaladas:
+
+```bash
+mkdocs build -f .github/mkdocs.yml --strict
+```
+
+Ao alterar uma funcionalidade, atualize os guias correspondentes e o estado em [Atualizações pós-R1](../atualizacoes.md). Notas de versões anteriores são registros históricos. Registre uso relevante de IA em [AI-USAGE.md](uso-de-ia.md), incluindo o que foi efetivamente verificado.
+
+## Manutenção da documentação
+
+Registre uma decisão técnica significativa em um arquivo numerado em `docs/arquitetura/adrs/`. Inclua estado, contexto, decisão, alternativas e consequências. Vincule o ADR ao [índice de decisões](../arquitetura/visao-geral.md) e ao guia ou contrato correspondente. Quando outra decisão a substituir, mantenha o registro anterior e aponte para o novo.
+
+No mesmo PR que alterar rotas, schemas, autorização, regras, migrações ou operação, atualizar [API](../api-specs.md), [Arquitetura](../arquitetura/visao-geral.md), [Padrões](../produto/padroes.md) e/ou [Implantação](../implantacao.md), conforme o assunto. Preservar notas históricas de release e distinguir estado implementado de proposta. Confira os diagramas renderizados e execute `mint broken-links --check-redirects` ao alterar links ou a navegação do Mintlify.
+
+### Versão de Python observada
+
+Em 08/11/2026, `backend/venv/Scripts/python.exe --version` retornou **Python 3.14.4**, consistente com `backend/venv/pyvenv.cfg`. O Makefile usa esse ambiente virtual, mas cria novos ambientes com o Python disponível na máquina, sem fixar versão. O workflow de documentação configura 3.11; isso não determina a versão do backend. Esta observação local não certifica compatibilidade de toda a faixa 3.11+.

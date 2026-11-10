@@ -66,10 +66,83 @@ A etapa de implantação exige revisão humana das migrações e elegibilidade.
 
 - [ ] Revisar/aplicar migrações e validar o ambiente hospedado com dados sintéticos.
 - [ ] Registrar em S7-B02 a elegibilidade do público, termos/tier e infraestrutura.
-- [ ] Integrar os consumidores de candidatos/turmas em S7-B04/S7-F03/S7-D01.
+- [ ] Concluir os consumidores de turmas/compartilhamento e idempotência por chave em S7-B04/S7-F03. A consulta/confirmação particular já usa a tabela oficial.
 - [ ] Anexar URL do PR e identificar a versão efetivamente implantada na issue.
 - [ ] Registrar o revisor humano e sua aprovação dos contratos, permissões e dados.
 
 Nenhuma flag foi ativada no `.env`, nenhuma chave entrou no repositório e não
 houve alteração do Supabase na nuvem. As evidências de fechamento permanecem
 abertas até essas etapas ocorrerem; não se declara aprovação de produção.
+
+
+## Revisão após integração da `dev` — 10/11/2026
+
+Base incorporada: `origin/dev` em `3922797`. Revisor automatizado: Codex.
+Revisor humano e implantação permanecem pendentes.
+
+### Resumo
+
+Conflitos textuais resolvidos preservando a organização canônica dos documentos,
+os modelos de turmas/versões e a autorização do texto. O produtor usa agora
+`avaliacoes`, sem recriar a tabela removida por S7-D01. O snapshot autorizado fixa
+uma versão privada; reprocessar cria outra versão e preserva versões compartilhadas.
+
+### Achados e correções
+
+- **Alta — persistência/migrações:** a `dev` remove `candidatos_avaliacao` e havia
+  duas versões `20261109120000`. Isso impediria migrar/iniciar o worker. A fila e a
+  privacidade inéditas foram renumeradas para `20261109110000`/`20261109113000`,
+  antes da modelagem S7-D01; a migração S7 estende a tabela oficial. Nenhuma
+  migração já existente no projeto hospedado foi modificada ou aplicada ali.
+- **Alta — revisão/versionamento:** publicar extração numa versão compartilhada
+  ou descartar seus candidatos no reprocessamento alteraria conteúdo da turma.
+  As execuções são fixadas em versões privadas e não alteram versões compartilhadas.
+- **Média — confirmação particular:** o retry podia recriar evento apagado e
+  não registrava `origem_versao_id`. Ambos foram corrigidos, com teste de regressão.
+- **Média — integração de testes:** cenários antigos esperavam zero linhas por RLS,
+  enquanto o privilégio é agora revogado. As verificações mantêm o bloqueio de
+  leitura/escrita; nenhuma permissão foi liberada para satisfazer os testes.
+- **Baixa — lint SQL:** inicializações de array/JSONB receberam casts explícitos.
+  O lint do esquema público ficou sem achados.
+
+### Segurança
+
+Sem bloqueio novo identificado nos cenários revisados. Texto e PDF não são
+compartilhados pela política de versões. A política de candidatos compartilhados
+é preservada, exige versão compartilhada e vínculo com a oferta. Clientes não
+escrevem em candidatos, snapshots, orçamento ou estado do job. A RPC particular
+continua restrita ao dono e com `search_path` fixo. Não houve alteração na nuvem.
+
+### Testes executados
+
+- Suíte completa no contêiner local: **191 aprovados e um ignorado**. Inclui os
+  novos testes de turmas, versões e segurança da `dev`, além de PostgreSQL,
+  Auth/JWT, Storage e PostgREST. O único opt-out é Gemini real na suíte HTTP.
+- Frontend: **17 testes de lógica e 38 de navegador** aprovados; build aprovado
+  com o aviso preexistente do tamanho de bundle.
+- Corpus de referência executado novamente: **7/7 acertos**, sem omissões ou
+  datas inventadas e nenhum caso acima de 20s. Não foi feita nova chamada Gemini
+  nesta revisão; as métricas reais anteriores estão preservadas como históricas.
+- `supabase db lint --local --schema public`: **sem erros/avisos de esquema**.
+- Build estrito da documentação e `git diff --check` aprovados.
+- Migrações testadas do início na instância descartável, até S7-D01/S7-B02/S7-B01;
+  o banco da aplicação em 14322 não foi alterado.
+
+[HTTP local após merge](benchmarks/syllabus-s7-dev-compat-http-local-2026-11-10.json)
+· [Corpus de referência](benchmarks/syllabus-s7-dev-compat-reference-2026-11-10.json).
+
+### Seguimentos
+
+A fila `fila_processamento_ia` de S7-B02 não é consumida por este executor:
+o lease recuperável continua em `planos_ensino`, sem enfileiramento duplicado.
+Adoção de outro executor exige unificar o despacho. O contrato particular de
+confirmação continua compatível com clientes anteriores; a evolução de
+`Idempotency-Key`, a importação compartilhada e a jornada integrada com catálogo
+são entregas dependentes, documentadas na ADR-010 e S7-B04/S7-F03.
+
+### Recomendação
+
+**No blocking issues were identified.** Compatibilidade local com a base do PR
+verificada; integração hospedada e requisitos dependentes não são declarados
+concluídos. Padrões verificados atendidos; entrega parcialmente conforme ao
+escopo completo da R2 pelas pendências explicitadas.

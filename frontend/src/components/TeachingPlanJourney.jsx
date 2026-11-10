@@ -4,7 +4,7 @@ import { validatePdf } from '../lib/syllabus';
 import { validateReviewItem } from '../lib/syllabusReview';
 import { canConfirm, DEMO_COURSES, demoReducer, initialDemoState } from '../lib/teachingPlanDemo';
 
-const steps = ['Vincular matrícula', 'Conectar planos', 'Revisar datas', 'Enviar à agenda'];
+const steps = ['Selecionar turmas', 'Conectar planos', 'Revisar datas', 'Enviar à agenda'];
 const statusLabels = { processing: 'Preparando exemplo', review: 'Revisão pendente', ready: 'Plano vinculado' };
 const courseLabel = course => `Turma ${course.group} · ${course.campus} · 2026.2`;
 
@@ -92,7 +92,7 @@ function DemoAgenda({ state, dispatch }) {
   const dayCount = new Date(year, monthNumber, 0).getDate();
   return <div>
     <header className="tp-section-heading"><div><h2>Leve as datas para o seu calendário.</h2><p>Prévia local de Meus Eventos. Nada será gravado na agenda real.</p></div></header>
-    <div className="tp-agenda-layout"><div>{DEMO_COURSES.filter(c => c.enrolled).map(course => {
+    <div className="tp-agenda-layout"><div>{DEMO_COURSES.filter(c => state.followedCourses.includes(c.id)).map(course => {
       const plan = state.plans[course.id];
       const imported = plan?.status === 'ready' && plan.candidates.filter(item => item.decision === 'selected').every(item => state.events.some(e => e.id === `${course.id}:${item.id}`));
       return <div className="tp-agenda-choice" key={course.id}><label className="tp-choice"><input type="checkbox" disabled={plan?.status !== 'ready' || imported} checked={state.selectedCourses.includes(course.id)} onChange={e => dispatch({ type: 'SELECT_COURSE', id: course.id, selected: e.target.checked })} /><span><strong>{course.title}</strong><small>Turma {course.group} · {imported ? 'Incluída na prévia' : plan?.status === 'ready' ? 'Plano pronto para selecionar' : 'Conclua o plano antes de selecionar'}</small></span></label><CourseStatus plan={plan} /></div>;
@@ -111,7 +111,7 @@ function DemoAgenda({ state, dispatch }) {
 
 export default function TeachingPlanJourney() {
   const [state, dispatch] = useReducer(demoReducer, undefined, initialDemoState);
-  const [enrollmentFile, setEnrollmentFile] = useState('');
+  const [chosenCourses, setChosenCourses] = useState([]);
   const [files, setFiles] = useState({});
   const [query, setQuery] = useState('');
   const [campus, setCampus] = useState('');
@@ -142,13 +142,13 @@ export default function TeachingPlanJourney() {
     <nav ref={stepNavigation} className="tp-steps" aria-label="Etapas do plano de ensino">{steps.map((label, i) => <button type="button" key={label} aria-current={state.step === i + 1 ? 'step' : undefined}
       disabled={(i > 0 && !state.enrollment) || (i === 2 && !plan?.candidates)} onClick={() => dispatch({ type: 'STEP', step: i + 1 })}><span>{i + 1}</span>{label}</button>)}</nav>
     <h2 ref={heading} tabIndex={-1} className="sr-only">Etapa {state.step}: {steps[state.step - 1]}</h2>
-    {state.step === 1 && <section className="tp-upload-layout"><div className="tp-panel"><header className="tp-section-heading"><div><h2>Sua matrícula é o ponto de partida.</h2><p>Identifique as turmas que fazem parte do seu semestre.</p></div><Icon>school</Icon></header>
-      {state.enrollment ? <div className="tp-linked"><Icon>check_circle</Icon><h3>3 turmas de exemplo vinculadas</h3><p>{state.enrollment}</p><button className="manage-button primary" onClick={() => dispatch({ type: 'STEP', step: 2 })}>Ver minhas turmas<Icon>arrow_forward</Icon></button></div> : <>
-        <FilePicker key={pickerVersion} label="Comprovante de matrícula" example="comprovante_exemplo_2026_2.pdf" onFile={setEnrollmentFile} />
-        <div className="tp-panel-footer"><small><Icon>lock</Icon> Seu comprovante permanece no dispositivo.</small><button type="button" className="manage-button primary" disabled={!enrollmentFile} onClick={() => dispatch({ type: 'ENROLL', name: enrollmentFile })}>Vincular turmas de exemplo<Icon>arrow_forward</Icon></button></div>
-      </>}</div><aside className="tp-guidance"><h2>Do plano ao próximo compromisso.</h2><ol><li><strong>Vincule sua matrícula</strong><p>Nesta demonstração, qualquer PDF válido vincula as mesmas três turmas de exemplo.</p></li><li><strong>Complete os planos ausentes</strong><p>Escolha a turma certa e confira as datas sugeridas antes de vincular o plano.</p></li><li><strong>Escolha o que vai para a agenda</strong><p>Somente avaliações selecionadas e conferidas entram na prévia.</p></li></ol></aside></section>}
-    {state.step === 2 && <section><header className="tp-section-heading"><div><h2>Minhas turmas</h2><p>3 turmas de exemplo vinculadas · período 2026.2</p></div><a className="management-text-button" href="#tp-catalog">Explorar catálogo de exemplo<Icon>arrow_forward</Icon></a></header>
-      <div className="tp-course-list">{DEMO_COURSES.filter(c => c.enrolled).map(c => <article className="tp-course" key={c.id}><span className="tp-initials">{c.initials}</span><div><h3>{c.title}</h3><p>{courseLabel(c)}</p></div><CourseStatus plan={state.plans[c.id]} /><button type="button" className="manage-button" disabled={state.plans[c.id]?.status === 'processing'} onClick={() => dispatch({ type: 'OPEN', id: c.id })}>{state.plans[c.id]?.candidates ? 'Ver avaliações' : 'Selecionar turma'}<Icon>arrow_forward</Icon></button></article>)}</div>
+    {state.step === 1 && <section className="tp-upload-layout"><div className="tp-panel"><header className="tp-section-heading"><div><h2>Selecione as turmas do seu semestre.</h2><p>O vínculo é autodeclarado e não comprova matrícula oficial.</p></div><Icon>school</Icon></header>
+      {state.enrollment ? <div className="tp-linked"><Icon>check_circle</Icon><h3>{state.followedCourses.length} turma(s) selecionada(s)</h3><p>Vínculo autodeclarado nesta demonstração.</p><button className="manage-button primary" onClick={() => dispatch({ type: 'STEP', step: 2 })}>Ver minhas turmas<Icon>arrow_forward</Icon></button></div> : <>
+        <fieldset><legend>Turmas do catálogo de exemplo</legend>{DEMO_COURSES.map(c => <label className="tp-choice" key={c.id}><input type="checkbox" checked={chosenCourses.includes(c.id)} onChange={e => setChosenCourses(previous => e.target.checked ? [...previous, c.id] : previous.filter(id => id !== c.id))} /><span><strong>{c.title}</strong><small>{courseLabel(c)}</small></span></label>)}</fieldset>
+        <div className="tp-panel-footer"><small>Ao confirmar, você declara seu vínculo com as turmas selecionadas.</small><button type="button" className="manage-button primary" disabled={!chosenCourses.length} onClick={() => dispatch({ type: 'ENROLL', ids: chosenCourses })}>Confirmar seleção de turmas<Icon>arrow_forward</Icon></button></div>
+      </>}</div><aside className="tp-guidance"><h2>Do plano ao próximo compromisso.</h2><ol><li><strong>Selecione suas turmas</strong><p>Escolha as ofertas do catálogo ilustrativo. Não é necessário enviar comprovante de matrícula.</p></li><li><strong>Complete os planos ausentes</strong><p>Escolha a turma certa e confira as datas sugeridas antes de vincular o plano.</p></li><li><strong>Escolha o que vai para a agenda</strong><p>Somente avaliações selecionadas e conferidas entram na prévia.</p></li></ol></aside></section>}
+    {state.step === 2 && <section><header className="tp-section-heading"><div><h2>Minhas turmas</h2><p>{state.followedCourses.length} turma(s) com vínculo autodeclarado · período 2026.2</p></div><a className="management-text-button" href="#tp-catalog">Explorar catálogo de exemplo<Icon>arrow_forward</Icon></a></header>
+      <div className="tp-course-list">{DEMO_COURSES.filter(c => state.followedCourses.includes(c.id)).map(c => <article className="tp-course" key={c.id}><span className="tp-initials">{c.initials}</span><div><h3>{c.title}</h3><p>{courseLabel(c)}</p></div><CourseStatus plan={state.plans[c.id]} /><button type="button" className="manage-button" disabled={state.plans[c.id]?.status === 'processing'} onClick={() => dispatch({ type: 'OPEN', id: c.id })}>{state.plans[c.id]?.candidates ? 'Ver avaliações' : 'Selecionar turma'}<Icon>arrow_forward</Icon></button></article>)}</div>
       <div className="tp-upload-layout tp-spaced"><div className="tp-panel"><header className="tp-section-heading"><div><h2>Complete o plano da turma</h2><p>{course.title}</p></div><Icon>description</Icon></header><div className="tp-destination"><strong>Turma de destino</strong><p>{courseLabel(course)}</p></div>
         {!plan ? <><FilePicker key={`${state.activeCourse}-${pickerVersion}`} label="Plano de ensino" example={`plano_${state.activeCourse}_exemplo.pdf`} onFile={name => setFiles(previous => ({ ...previous, [state.activeCourse]: name }))} />
           {files[state.activeCourse] && <p className="tp-help">Selecionado: {files[state.activeCourse]}</p>}
@@ -163,10 +163,10 @@ export default function TeachingPlanJourney() {
       <div className="tp-filters"><label>Disciplina ou sigla<input value={query} onChange={e => setQuery(e.target.value)} placeholder="Buscar disciplina ou sigla" /></label><div><label htmlFor="tp-campus">Campus</label><select id="tp-campus" value={campus} onChange={e => setCampus(e.target.value)}><option value="">Todos os campi</option><option>Darcy Ribeiro</option><option>Faculdade do Gama</option></select></div><button type="button" className="manage-button" onClick={() => { setQuery(''); setCampus(''); }} disabled={!query && !campus}>Limpar filtros</button></div>
       <p className="tp-help" role="status">{filtered.length} turma(s) encontrada(s)</p>
       {!filtered.length && <p className="tp-empty">Nenhuma turma corresponde aos filtros. Tente outro nome ou limpe os filtros.</p>}
-      {filtered.map(c => <article key={c.id} className="tp-catalog-row"><div><h3>{c.title}</h3><p>{courseLabel(c)}</p></div><CourseStatus plan={state.plans[c.id]} /><span>{state.enrollment && c.enrolled ? 'Na matrícula de exemplo' : state.enrollment ? 'Fora da sua matrícula' : 'Vincule a matrícula para identificar suas turmas'}</span></article>)}
+      {filtered.map(c => <article key={c.id} className="tp-catalog-row"><div><h3>{c.title}</h3><p>{courseLabel(c)}</p></div><CourseStatus plan={state.plans[c.id]} /><span>{state.followedCourses.includes(c.id) ? 'Vínculo autodeclarado' : 'Turma não selecionada'}</span></article>)}
     </section>
     {resetOpen && <Modal title="Reiniciar demonstração?" onClose={() => setResetOpen(false)}><p>As edições e a prévia local serão descartadas. Nenhum dado real será alterado.</p><div className="dialog-actions"><button type="button" className="manage-button" onClick={() => setResetOpen(false)}>Cancelar</button><button type="button" className="manage-button primary" onClick={() => {
-      dispatch({ type: 'RESET' }); setEnrollmentFile(''); setFiles({}); setQuery(''); setCampus(''); setPickerVersion(v => v + 1); setResetOpen(false);
+      dispatch({ type: 'RESET' }); setChosenCourses([]); setFiles({}); setQuery(''); setCampus(''); setPickerVersion(v => v + 1); setResetOpen(false);
     }}>Reiniciar</button></div></Modal>}
   </div>;
 }

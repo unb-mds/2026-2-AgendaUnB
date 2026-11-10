@@ -21,7 +21,7 @@ texto no banco. PDFs históricos não são apagados por esta migração.
    `textHash`, `authorize: true`, `contentEligible: true` e, quando necessário,
    `reprocess: true`. Só o snapshot exato aprovado fica elegível ao worker.
 5. Worker persistente consome o texto aprovado, valida JSON/evidência e grava
-   candidatos privados em `candidatos_avaliacao`, sem criar eventos.
+   candidatos privados em `avaliacoes`, ligados a uma versão privada, sem criar eventos.
 
 O cliente calcula SHA-256 do JSON UTF-8 sem espaços separadores, com as chaves
 `pagina`, `texto` nessa ordem em cada página. A ordem dos campos recebidos do
@@ -63,8 +63,9 @@ reserva de custo, retry e limites continuam persistidos. Repetir a mesma autoriz
 sem `reprocess` retorna o estado existente e não dispara outra execução.
 
 Uma nova análise de plano finalizado exige `reprocess: true` e nova autorização.
-Não é aceita durante execução/fila já autorizada. Candidatos pendentes da versão
-anterior são descartados transacionalmente; os já confirmados são preservados.
+Não é aceita durante execução/fila já autorizada. Candidatos pendentes de versões privadas anteriores são descartados
+transacionalmente; versões compartilhadas e candidatos confirmados são preservados.
+Cada nova análise recebe uma versão privada, fixada no snapshot autorizado.
 A reserva acumulada e o contador de tentativas não são zerados. Quando esses
 limites acabam, o servidor retorna 409 e oferece organização manual.
 
@@ -114,15 +115,35 @@ preparação; permite página nula para texto bruto; concilia políticas de leit
 privada; fecha upload direto e protege snapshot em execução. Dados históricos
 permanecem legíveis e sem autorização automática.
 
-Na nuvem auditada, a integração exige revisar/aplicar, na ordem, `20261109120000`,
-`20261109130000` e `20261110120000`, alinhando-as com as migrações da equipe.
-Nenhuma foi aplicada na nuvem. O auditor exige a migração S7, RLS/privilégios,
-políticas, RPC, triggers e bucket correspondentes antes de iniciar o worker.
+Após conciliar com a `dev`, as migrações inéditas desta branch foram renumeradas:
+`20261109110000_fila_processamento_planos.sql` e
+`20261109113000_privacidade_e_revisao_planos.sql` precedem S7-D01
+(`20261109120000_turmas_vinculos_versoes.sql`). Não há versões duplicadas.
+A migração S7 é posterior à fila S7-B02 (`20261109185725`). Nenhuma dessas
+alterações foi aplicada na nuvem; o inventário remoto antigo precisa ser refeito
+antes da implantação. Não basta reutilizar a lista anterior de SQLs pendentes.
+Bancos locais descartáveis com a numeração antiga devem ser recriados; ambientes
+compartilhados exigem reconciliação explícita do histórico, sem reset ou reparo
+automático. A remoção da tabela histórica de candidatos é a decisão S7-D01 da
+`dev`; revisar dados legados antes de aplicar essa migração em um destino existente.
 
-As rotas legadas de confirmação usam `avaliacoes`; o produtor S7 grava
-`candidatos_avaliacao`. A integração da consulta/confirmação HTTP e da jornada
-com turmas segue S7-B04/S7-F03 e S7-D01. A RPC privada `revisar_candidatos_plano`
-foi exercitada após revisão explícita nos testes locais; o worker não a chama.
+O worker e a consulta/confirmação particular agora usam a mesma tabela oficial
+`avaliacoes`, com `versao_id` e `ordem`. `AssessmentCandidate` é somente um alias
+ORM de compatibilidade, sem segunda tabela. Datas/horários civis ficam em
+`data_sugerida`/`hora_sugerida`; `data_avaliacao` não recebe um instante inferido.
+A API expõe `suggestedDate`, `suggestedTime`, `ambiguousFields` e `versionId`,
+seleciona a versão autorizada e exige data/hora com fuso para confirmar. Eventos
+confirmados registram a versão de origem. Retry não recria evento apagado.
+A evolução completa de idempotência por chave, confirmação compartilhada e
+jornada de turmas continua em S7-B04/S7-F03, conforme ADR-010.
+
+A política de leitura compartilhada por seguidores foi preservada. O texto
+preparado/aprovado continua privado no plano. A RPC de compatibilidade
+`revisar_candidatos_plano` atende somente o dono e não é chamada pelo worker.
+A tabela de infraestrutura `fila_processamento_ia` da S7-B02 permanece disponível;
+este worker usa o lease persistido em `planos_ensino` e não cria uma segunda tarefa
+nessa tabela. Não há dois despachos para a mesma autorização. Integrar outro
+executor exige definir antes um único responsável pela fila.
 
 ## RNF06 e evidências
 
@@ -174,3 +195,7 @@ Nesta máquina, a porta Windows estava interceptada pelo WSL relay; a suíte uso
 Python 3.13 na rede do contêiner descartável `agendaunb-s6d02-tests`, com proxy
 loopback para o gateway desse mesmo projeto. O banco da aplicação 14322 e o
 Supabase hospedado não foram alterados. [Registro de revisão](s7-b01-validacao.md).
+
+## Compatibilidade com a base do PR
+
+As evidências posteriores ao merge da `dev` estão no [registro de validação](s7-b01-validacao.md) e no [fluxo HTTP atualizado](benchmarks/syllabus-s7-dev-compat-http-local-2026-11-10.json). Os benchmarks Gemini anteriores continuam sendo evidências do corpus e do provedor; não representam uma nova chamada realizada após o merge.
