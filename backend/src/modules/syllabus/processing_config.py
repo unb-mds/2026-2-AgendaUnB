@@ -26,6 +26,7 @@ class ProcessingError(Exception):
 class ProcessingConfig:
     model: str = "gemini-3.5-flash-lite"
     api_key: str = field(default="", repr=False)
+    provider_terms_ready: bool = False
     timeout_seconds: float = 12
     attempt_timeout_seconds: float = 18
     max_attempts: int = 2
@@ -72,6 +73,7 @@ class ProcessingConfig:
         return cls(
             model=model,
             api_key=os.getenv("GEMINI_API_KEY", ""),
+            provider_terms_ready=os.getenv("SYLLABUS_PROVIDER_TERMS_READY", "false").lower() == "true",
             timeout_seconds=float(os.getenv("SYLLABUS_AI_TIMEOUT_SECONDS", "12")),
             attempt_timeout_seconds=float(os.getenv("SYLLABUS_ATTEMPT_TIMEOUT_SECONDS", "18")),
             max_attempts=int(os.getenv("SYLLABUS_MAX_ATTEMPTS", "2")),

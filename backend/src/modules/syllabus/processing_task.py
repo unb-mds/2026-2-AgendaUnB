@@ -6,29 +6,33 @@ from dataclasses import dataclass
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
-from src.modules.syllabus.extraction import ExtractionData, ExtractionResult, extract_pages, validate_candidates
+from src.modules.syllabus.extraction import ExtractionData, ExtractionResult, TextPage, extract_pages, validate_candidates
 from src.modules.syllabus.processing_config import ERROR_MESSAGES, ProcessingConfig, ProcessingError
 
 
 @dataclass
 class DocumentResult:
-    page_count: int
+    page_count: int | None
     extraction: ExtractionResult
 
 
 class TaskOutput(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    page_count: int = Field(ge=1, le=10, strict=True)
+    page_count: int | None = Field(default=None, ge=1, le=10, strict=True)
     extraction: ExtractionData
     unsupported_dates: int = Field(ge=0, le=100, strict=True)
 
 
 def process_document(path, storage, provider, config: ProcessingConfig) -> DocumentResult:
     """Execução direta injetável nos testes unitários; não é o padrão do worker."""
-    content = storage.download_file(path)
-    pages = extract_pages(content, config)
+    if isinstance(path, list):
+        pages = [TextPage(**page) for page in path]
+    else:
+        # Adaptador apenas para benchmarks/testes legados. O worker S7 passa
+        # exclusivamente um snapshot de texto aprovado, nunca um caminho de PDF.
+        pages = extract_pages(storage.download_file(path), config)
     result = validate_candidates(provider.extract(pages), pages)
-    return DocumentResult(len(pages), result)
+    return DocumentResult(len(pages) if pages[0].pagina is not None else None, result)
 
 
 def _child(send, path, storage, provider, config):

@@ -34,7 +34,7 @@ async def handle_integrity_error(request: Request, exc: IntegrityError) -> JSONR
 
 @app.exception_handler(SQLAlchemyError)
 async def handle_database_error(request: Request, exc: SQLAlchemyError) -> JSONResponse:
-    logger.exception("Database failure on %s %s", request.method, request.url.path)
+    logger.error("Database failure on %s %s", request.method, request.url.path)
     return JSONResponse(
         status_code=503,
         content={"detail": "O serviço de dados está indisponível no momento."},
