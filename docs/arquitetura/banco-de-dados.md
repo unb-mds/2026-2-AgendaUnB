@@ -146,6 +146,7 @@ Catálogo de turmas (ADR-009) e turmas que o usuário segue. A disciplina abstra
     *   **Identidade:** `(disciplina_id, turma, ano, semestre)` é único; ofertas de semestres diferentes são registros distintos. Com `origem_id`, `(origem, origem_id)` também é único.
 *   **`vinculos_turma`:** chave primária `(user_id, oferta_id)`, `origem` (`autodeclarado`), `criado_em`. Seguir a mesma oferta de novo não duplica. O vínculo é autodeclarado e não prova matrícula.
 *   **Políticas RLS:** catálogo com leitura pública; vínculos com leitura só do próprio usuário. Sem políticas de escrita: a sincronização (S7-B03) e seguir/deixar de seguir (S7-F02) passam pelo back-end.
+*   **Sincronização (S7-B03):** `registrar_oferta_catalogo(jsonb)` faz o upsert mantendo a identidade; `sincronizacoes_catalogo` registra cada execução; `estado_catalogo()` informa a última sincronização válida e se o cache está desatualizado. Nada é removido por uma sincronização. Ver [Catálogo de turmas](catalogo-de-turmas.md).
 
 ### 4.5. Importação para a agenda
 `eventos_pessoais` registra a procedência em `origem_plano_id`, `origem_avaliacao_id` e `origem_versao_id` (FK para `versoes_plano`, `ON DELETE SET NULL`).
