@@ -407,3 +407,40 @@ class EventCollectionRun(Base):
     sent_to_review: Mapped[int] = mapped_column("para_revisao", Integer, default=0, nullable=False)
     # Código curto (http_503, timeout). Nunca HTML ou conteúdo da fonte.
     error_code: Mapped[str | None] = mapped_column("erro_codigo", String, nullable=True)
+
+
+class ImportOperation(Base):
+    """Ação de confirmação identificada pela Idempotency-Key (ADR-010). Gravada por confirmar_importacao()."""
+
+    __tablename__ = "operacoes_importacao"
+    __table_args__ = (
+        UniqueConstraint("user_id", "chave", name="operacoes_importacao_chave_unica"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False
+    )
+    idempotency_key: Mapped[str] = mapped_column("chave", String, nullable=False)
+    version_id: Mapped[UUID | None] = mapped_column(
+        "versao_id", Uuid(as_uuid=True), ForeignKey("versoes_plano.id", ondelete="SET NULL"), nullable=True
+    )
+    content_hash: Mapped[str] = mapped_column("conteudo_hash", String, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        "criado_em", DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class ImportItem(Base):
+    """Item de uma operação. event_id fica nulo quando a pessoa apaga o evento."""
+
+    __tablename__ = "itens_importacao"
+
+    operation_id: Mapped[UUID] = mapped_column(
+        "operacao_id", Uuid(as_uuid=True), ForeignKey("operacoes_importacao.id", ondelete="CASCADE"), primary_key=True
+    )
+    candidate_id: Mapped[UUID] = mapped_column("avaliacao_id", Uuid(as_uuid=True), primary_key=True)
+    event_id: Mapped[UUID | None] = mapped_column(
+        "evento_pessoal_id", Uuid(as_uuid=True), ForeignKey("eventos_pessoais.id", ondelete="SET NULL"), nullable=True
+    )
+    result: Mapped[str] = mapped_column("resultado", String, nullable=False)  # criado | ja_importado
