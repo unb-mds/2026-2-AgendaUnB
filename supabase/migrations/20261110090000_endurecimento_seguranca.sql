@@ -356,3 +356,35 @@ create policy "admin consulta auditoria de papeis"
   on public.auditoria_papeis for select
   to authenticated
   using ((select public.is_admin()));
+
+
+-- -------------------------------------------------------------
+-- Fila de processamento por IA (20261109185725, #92)
+--
+-- A tabela recebeu os privilégios padrão: contas logadas tinham
+-- INSERT, UPDATE e DELETE sem política (o RLS bloqueava só porque
+-- nenhuma política de escrita existia). E a política de leitura usava
+-- planos_ensino.professor_id, nulo em plano particular: o dono nunca
+-- via o próprio job.
+--
+-- Observação: o worker atual (S7-B01) controla a fila pelas colunas de
+-- planos_ensino (status, token_processamento, proxima_tentativa_em) e
+-- não usa esta tabela. Manter as duas é decisão da equipe; aqui só se
+-- garante que ela não seja um caminho de escrita pelo navegador.
+-- -------------------------------------------------------------
+revoke all on public.fila_processamento_ia from anon, authenticated;
+grant select on public.fila_processamento_ia to authenticated;
+
+drop policy if exists "Usuário vê status do seu plano na fila" on public.fila_processamento_ia;
+create policy "dono do plano acompanha o proprio job"
+  on public.fila_processamento_ia for select
+  to authenticated
+  using (exists (
+    select 1 from public.planos_ensino p
+     where p.id = plano_id and p.user_id = (select auth.uid())));
+
+-- Só um código curto (http_429, timeout). NOT VALID: não reprova linhas
+-- antigas, mas vale para toda escrita nova.
+alter table public.fila_processamento_ia
+  add constraint fila_ia_erro_tecnico_curto
+    check (erro_tecnico is null or char_length(erro_tecnico) <= 60) not valid;
