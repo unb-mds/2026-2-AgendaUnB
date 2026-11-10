@@ -1,4 +1,4 @@
-.syllabus-review { color: var(--manage-text); line-height: 1.6; min-width: 0; overflow-wrap: anywhere; }
+.syllabus-review { color: var(--manage-text); line-height: 1.6; min-width: 0; overflow-wrap: anywhere; scroll-margin-top: 100px; }
 .syllabus-review h2 { font-size: 1.2rem; margin-bottom: 12px; }
 .syllabus-review > p + p { margin-top: 8px; }
 .syllabus-review-item { min-width: 0; margin: 28px 0 0; padding: 20px 0; border: 0; border-top: 1px solid var(--manage-border); }
@@ -16,6 +16,14 @@ body.light .syllabus-review input, body.light .syllabus-review select { color-sc
 .syllabus-review-error { color: #ffb4ab; margin-top: 8px; }
 body.light .syllabus-review-error { color: #a3221b; }
 .syllabus-review-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; margin-top: 16px; }
+.syllabus-candidates { list-style: none; padding: 0; margin: 0; }
+.syllabus-candidate { border-top: 1px solid var(--manage-border); margin-top: 24px; padding-top: 20px; }
+.syllabus-candidate h3 { font-size: 1.05rem; margin-bottom: 12px; }
+.syllabus-candidate p { margin-block: 8px; }
+.syllabus-candidate dl { display: grid; gap: 12px; margin-block: 16px; }
+.syllabus-candidate dt { font-weight: 600; }
+.syllabus-candidate dd { margin: 0; }
+.syllabus-candidate blockquote { margin: 8px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 @media (max-width: 600px) {
   .syllabus-review-fields { grid-template-columns: minmax(0, 1fr); }
   .syllabus-review .field-title { grid-column: auto; }

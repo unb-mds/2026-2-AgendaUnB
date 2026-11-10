@@ -2,6 +2,55 @@ import { test, expect } from '@playwright/test';
 
 const plan = { id: 'd79eeb53-aed8-4369-936b-156e01cc455c', disciplina: 'Métodos de Desenvolvimento de Software', fileName: 'plano-mds.pdf', semestre: 2, ano: 2026, fileSize: 12345, createdAt: '2026-10-30T15:00:00Z', status: 'pendente' };
 const pdf = { name: 'plano-mds.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4\nTeste de transporte multipart') };
+const candidate = { id: 'candidate-a', title: 'Prova de integração', type: 'prova', status: 'pendente', ambiguous: true, ambiguousFields: ['data'], suggestedDate: null, suggestedTime: null, sourcePage: 2, sourceExcerpt: 'Prova: data a definir.', versionId: 'version-a' };
+
+test('candidatos da API: origem, estados, recarga, troca de plano e saída da conta', async ({ page }) => {
+  await setup(page, { detail: { ...plan, status: 'concluido', candidates: [candidate, { ...candidate, id: 'b', title: 'Trabalho confirmado', status: 'confirmado', sourcePage: null }] } });
+  const writes = [];
+  page.on('request', request => { if (request.method() !== 'GET' && request.url().includes('/api/')) writes.push(request.url()); });
+  await page.goto(`/plano-de-ensino?plano=${plan.id}`);
+  const review = page.getByRole('region', { name: 'Revisar avaliações' });
+  await expect(review).toContainText(candidate.title);
+  await expect(review).toContainText('Página 2');
+  await expect(review).toContainText(candidate.sourceExcerpt);
+  await expect(review).toContainText('Requer conferência: data');
+  await expect(review).toContainText('Sem referência de página');
+  await expect(review).toContainText('Confirmado');
+  await page.reload();
+  await expect(review).toContainText(candidate.title);
+  await page.route('**/api/v1/syllabus/other-plan', route => route.fulfill({ json: { ...plan, id: 'other-plan', status: 'concluido', candidates: [] } }));
+  await page.goto('/plano-de-ensino?plano=other-plan');
+  await expect(review).toContainText('terminou sem avaliações');
+  await expect(page.getByText(candidate.title, { exact: true })).toHaveCount(0);
+  await page.goto(`/plano-de-ensino?plano=${plan.id}`);
+  await expect(review).toContainText(candidate.title);
+  await page.evaluate(() => window.dispatchEvent(new Event('test-signout')));
+  await expect(page.getByText(candidate.title, { exact: true })).toHaveCount(0);
+  expect(writes).toEqual([]);
+});
+
+test('resposta inválida de candidatos permite recuperação sem exibir lista vazia', async ({ page }) => {
+  await setup(page, { detail: { ...plan, status: 'concluido', candidates: [null] } });
+  await page.goto(`/plano-de-ensino?plano=${plan.id}`);
+  await expect(page.getByText('Resposta das avaliações inválida. Tente consultar novamente.')).toBeVisible();
+  await page.route(`**/api/v1/syllabus/${plan.id}`, route => route.fulfill({ json: { ...plan, status: 'concluido', candidates: [candidate] } }));
+  await page.getByRole('button', { name: 'Tentar novamente', exact: true }).click();
+  await expect(page.getByRole('heading', { name: candidate.title })).toBeVisible();
+});
+
+for (const width of [360, 1365]) for (const theme of ['dark', 'light']) {
+  test(`candidatos legíveis ${width}px ${theme}`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width, height: 1000 });
+    await setup(page, { detail: { ...plan, status: 'concluido', candidates: [{ ...candidate, sourceExcerpt: '<script>alert(1)</script> ' + 'TextoSemEspacos'.repeat(30) }] } });
+    await page.goto(`/plano-de-ensino?plano=${plan.id}`);
+    if (theme === 'light') await page.getByRole('button', { name: /tema/i }).click();
+    const review = page.getByRole('region', { name: 'Revisar avaliações' });
+    await expect(review).toContainText('<script>alert(1)</script>');
+    await review.evaluate(element => element.scrollIntoView({ block: 'start' }));
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.screenshot({ path: testInfo.outputPath('candidates.png') });
+  });
+}
 
 async function setup(page, { guest = false, items = [], total = items.length, detail = plan, listStatus = 200 } = {}) {
   // Substitute only the external auth/data provider, never the page or API client.
