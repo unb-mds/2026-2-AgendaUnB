@@ -21,6 +21,7 @@ export function normalizePlan(plan) {
   if (!plan || typeof plan.id !== 'string' || !plan.id) throw new Error('Resposta do plano inválida. Tente consultar novamente.');
   return {
     id: plan.id,
+    candidates: normalizeCandidates(plan.candidates),
     status: plan.status,
     authorizationRequired: plan.authorizationRequired === true,
     preparedTextAvailable: plan.preparedTextAvailable === true,
@@ -34,6 +35,30 @@ export function normalizePlan(plan) {
     extractedEventsCount: Number.isInteger(plan.extractedEventsCount) && plan.extractedEventsCount >= 0 ? plan.extractedEventsCount : null,
     errorMessage: typeof plan.errorMessage === 'string' ? plan.errorMessage : null,
   };
+}
+
+function normalizeCandidates(items) {
+  // History and older responses may omit details; omission is not an empty result.
+  if (items === undefined) return null;
+  const ids = new Set();
+  if (!Array.isArray(items)) throw new Error('Resposta das avaliações inválida. Tente consultar novamente.');
+  return items.map(item => {
+    if (!item || typeof item.id !== 'string' || !item.id.trim() || ids.has(item.id)
+      || typeof item.title !== 'string' || !item.title.trim()
+      || typeof item.status !== 'string' || typeof item.ambiguous !== 'boolean'
+      || (item.sourcePage != null && (!Number.isInteger(item.sourcePage) || item.sourcePage < 1))
+      || ['type', 'startsAt', 'sourceExcerpt', 'suggestedDate', 'suggestedTime', 'versionId'].some(key => item[key] != null && typeof item[key] !== 'string')
+      || (item.ambiguousFields !== undefined && (!Array.isArray(item.ambiguousFields) || item.ambiguousFields.some(field => typeof field !== 'string')))) {
+      throw new Error('Resposta das avaliações inválida. Tente consultar novamente.');
+    }
+    ids.add(item.id);
+    return { id: item.id, title: item.title, type: item.type ?? null,
+      status: item.status, ambiguous: item.ambiguous,
+      sourcePage: item.sourcePage ?? null, sourceExcerpt: item.sourceExcerpt ?? null,
+      suggestedDate: item.suggestedDate ?? null, suggestedTime: item.suggestedTime ?? null,
+      startsAt: item.startsAt ?? null, versionId: item.versionId ?? null,
+      ambiguousFields: [...(item.ambiguousFields ?? [])] };
+  });
 }
 
 export function normalizePlanList(result) {
