@@ -190,7 +190,7 @@ def test_private_plan_is_isolated_by_database_and_storage(database):
     for table in ('public.planos_ensino', 'public.avaliacoes'):
         denied(conn, f'select count(*) from {table}')
     for table in ('public.versoes_plano', 'public.vinculos_turma'):
-        assert count(conn, f'select count(*) from {table}') == 0
+        hidden(conn, f'select count(*) from {table}')
     assert count(conn, 'select count(*) from public.ofertas_turma') >= 1  # catalog is public
 
 
