@@ -214,6 +214,14 @@ O estado atual inclui eventos salvos, sugestões, moderação, notificações e 
 npx supabase migration up --local
 ```
 
+O mesmo comando está disponível como `make db-migrate`. Revise as migrações antes
+de aplicá-las. `supabase start` não atualiza um volume existente automaticamente.
+`make dev` e `make backend` verificam as tabelas e colunas usadas pela API antes
+de iniciar o servidor; um schema antigo interrompe a inicialização com os nomes
+faltantes e a orientação de migração. `make db-check` executa essa verificação
+isoladamente, sem alterar dados. Ela não substitui os testes de constraints,
+triggers, RLS e RPCs nem aplica migrações em ambientes remotos.
+
 `make db-reset` recria o banco, reaplica migrações e seed. Use-o somente quando puder descartar os dados locais. Para outros ambientes, siga o fluxo de migrações adotado pela equipe.
 
 Execute as verificações a partir das respectivas pastas:
