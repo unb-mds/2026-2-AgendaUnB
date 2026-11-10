@@ -328,6 +328,25 @@ def test_no_function_is_callable_by_visitors_and_rpcs_are_hardened(database):
     assert loose == [], f'RPCs sem search_path fixo: {loose}'
 
 
+def test_queue_status_is_visible_to_the_plan_owner_only(database):
+    conn, users = database
+    plan_id = str(uuid4())
+    conn.execute(text("""insert into public.planos_ensino(id, user_id, nome_arquivo, caminho_arquivo, tipo_arquivo, status)
+        values (:id, :u, 'plano.pdf', :path, 'pdf', 'pendente')"""),
+        {'id': plan_id, 'u': users['ana'], 'path': f"syllabus_files/{users['ana']}/{plan_id}_plano.pdf"})
+    conn.execute(text('insert into public.fila_processamento_ia(plano_id) values (:p)'), {'p': plan_id})
+    denied(conn, "update public.fila_processamento_ia set erro_tecnico=repeat('x', 61) where plano_id=:p", {'p': plan_id})
+
+    assume(conn, users['ana'])
+    assert scalar(conn, 'select count(*) from public.fila_processamento_ia where plano_id=:p', {'p': plan_id}) == 1
+    denied(conn, "update public.fila_processamento_ia set status='concluido' where plano_id=:p", {'p': plan_id})
+    denied(conn, 'insert into public.fila_processamento_ia(plano_id) values (:p)', {'p': plan_id})
+    assume(conn, users['bruno'])
+    assert scalar(conn, 'select count(*) from public.fila_processamento_ia') == 0
+    assume(conn)
+    hidden(conn, 'select count(*) from public.fila_processamento_ia')
+
+
 def test_legacy_interest_counter_is_closed_to_the_browser(database):
     conn, users = database
     event_id = public_event(conn, users['professor'], 'aprovado')
