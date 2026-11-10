@@ -71,7 +71,7 @@ Eventos publicados por professor/admin e sugestões da comunidade sujeitas à mo
 Agenda estritamente privada, gerenciada e visualizada unicamente por cada estudante.
 *   **Colunas:**
     *   `id` (UUID, Primary Key): Identificador único.
-    *   `user_id` (UUID, Not Null): Chave estrangeira para `auth.users(id)` (`DEFAULT auth.uid()`).
+    *   `user_id` (UUID, Not Null): Chave estrangeira para `auth.users(id)` (`DEFAULT auth.uid()`, `ON DELETE CASCADE` desde `20261110160000`; antes, uma conta com compromissos não podia ser excluída).
     *   `titulo` (TEXT, Not Null): Título do compromisso. Validação: Mínimo de 3 caracteres.
     *   `descricao` (TEXT): Notas extras.
     *   `data_hora` (TIMESTAMPTZ, Not Null): Início do compromisso.
@@ -194,6 +194,17 @@ O uso dessas funções pela API está em [Dados de planos](dados-de-planos.md).
 ## 5. Eventos salvos e notificações
 
 `eventos_salvos` vincula um perfil a um evento público com chave composta `(user_id, event_id)`. `notificacoes` referencia o perfil destinatário e pode referenciar o evento que originou o aviso. Consulte as políticas, a implantação e os cenários de verificação nos guias de [eventos salvos](../eventos-salvos.md) e [painel administrativo](../painel-administrativo.md).
+
+## 6. Privacidade e ciclo de vida (S8-D01)
+
+*   **`aceites_termos`:** chave `(user_id, documento, versao)`; `documento` em `termos_de_uso` ou `politica_de_privacidade`; `versao` é a data de vigência. O primeiro aceite de cada versão é mantido.
+*   **`consentimentos`:** `finalidade` (`google_agenda`; a autorização de envio à IA é o snapshot `texto_aprovado` do plano), `referencia_id`, `conteudo_hash`, `concedido_em`, `revogado_em`. Um consentimento ativo por conta, finalidade, objeto e conteúdo. Funções `registrar_consentimento`, `revogar_consentimento` e `tem_consentimento`.
+*   **`exclusoes_conta`:** evidência de exclusão com `solicitada_em`, `concluida_em` e `contagens`. Sem identificador da conta.
+*   **`planos_ensino.arquivo_descartado_em`:** quando o PDF original de um plano antigo saiu do Storage. `planos_particular_exige_fonte` passa a aceitar PDF, texto preparado **ou** descarte registrado.
+*   **Funções:** `exportar_dados_da_conta`, `preparar_exclusao_conta`, `concluir_exclusao_conta`, `arquivos_a_descartar` e `registrar_descarte_arquivo`, todas restritas ao servidor.
+*   **Políticas RLS:** cada conta lê os próprios aceites e consentimentos; nada é gravável pelo navegador.
+
+Inventário, direitos do titular e procedimentos em [Privacidade e ciclo de vida dos dados](../processo/privacidade.md).
 
 ## Evolução de candidatos na R2
 
