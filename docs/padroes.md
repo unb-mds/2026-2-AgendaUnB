@@ -84,7 +84,7 @@ candidato são `pendente`, `descartado` e `confirmado`. O extrator só grava
 
 ### 📄 `Syllabus` / `planos_ensino` (Modelo Dual planejado)
 
-Os campos abaixo são uma proposta para o processamento futuro; não descrevem integralmente a tabela já criada nas migrações. O parser e as rotas de upload não estão implementados.
+Os campos abaixo registram o Modelo Dual e não descrevem integralmente a tabela atual. O produtor particular S7 prepara PDF/texto localmente, descarta o original e exige autorização do texto antes da IA. Consulte o [contrato vigente](processamento-planos-s7.md) e as migrations para snapshots, hash, versão, fila e candidatos privados.
 * `id`: Identificador único do arquivo/processamento (`UUID`)
 * `usuario_id` / `professor_id`: ID do usuário que enviou o arquivo
 * `disciplina`: Nome ou código da disciplina

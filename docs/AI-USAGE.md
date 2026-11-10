@@ -30,6 +30,15 @@ O campo **verificado** é o mais importante. Sem ele, a entrada declara o uso ma
 
 ## Entradas
 
+### 10/11/2026 — Interface de autorização e validação final S7-B01
+
+- **Quem:** Heitor Gomes Monteiro (solicitante).
+- **Ferramenta:** Codex (OpenAI), Chromium/Playwright, PostgreSQL/Supabase locais e Gemini com corpus sintético.
+- **O que foi pedido:** Concluir o escopo atualizado da Sprint 07 e realizar commits na `feat/geminiapi`, preservando o Supabase na nuvem.
+- **O que entrou no repositório:** Entrada de texto, revisão editável por página, confirmações independentes e desmarcadas ao editar, hash canônico, reprocessamento explícito e caminho manual. Controle de privacidade/imutabilidade, fechamento do temporário antes do registro, descarte do rascunho anterior às correções, ajustes dos testes legados e evidências/documentação do protocolo S7.
+- **O que foi verificado:** **171 testes de backend aprovados e um ignorado**, incluindo 31 testes SQL reais e o transporte HTTP Auth/Storage/PostgREST local. **25 testes de preparação no Windows**, **16 de lógica frontend** e **38 de navegador** aprovados. Build frontend aprovado. Inspeção visual em desktop escuro/celular claro e detector mecânico sem achados nos alvos. Gemini real: sete acertos, zero omissões/extras/divergências/datas inventadas; máximo de 10,026s entre fila/provedor no corpus de até dez páginas. Preparação e tempo humano registrados separadamente. Nenhum evento antes de revisão explícita; confirmação repetida não duplicou.
+- **O que foi rejeitado ou corrigido:** Teste reproduziu hash instável quando JSONB reordena campos; o formato passou a ser canônico. A revisão legada foi preservada para planos sem preparação S7. A negação de UPDATE por privilégio revogado exige `42501`, não somente contagem zero por RLS. O WSL relay interceptava as portas Windows; a suíte rodou na rede do contêiner descartável, com proxy loopback para seu próprio gateway e credenciais locais só em memória. Não houve migração/alteração na nuvem, habilitação de flags no `.env` ou exposição de credenciais. Revisão humana, aprovação S7-B02, integração dos consumidores e versão implantada permanecem identificadas como pendentes.
+
 ### 10/11/2026 — Preparação privada e autorização do texto na S7-B01
 
 - **Quem:** Heitor Gomes Monteiro (solicitante).

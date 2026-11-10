@@ -1,5 +1,9 @@
 # Privacidade e revisão de planos — S6-D02
 
+> Atualização S7: o contrato vigente usa preparação local sem retenção do PDF e
+> autorização explícita do texto. Veja [S7-B01](processamento-planos-s7.md).
+> Os fluxos/resultados S6 abaixo são históricos.
+
 Migração: `20261109130000_privacidade_e_revisao_planos.sql`, depois da modelagem
 S6-D01 e da fila S6-B01. A revisão é explícita: upload e worker não chamam a função
 de confirmação. Esta entrega não implementa a tela nem a rota HTTP S6-B02.

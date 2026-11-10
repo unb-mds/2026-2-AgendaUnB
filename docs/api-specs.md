@@ -288,3 +288,36 @@ candidatos privados do worker em `candidatos_avaliacao` ainda exigem conciliaç�
 com esse contrato antes da integração no ambiente da equipe.
 O contrato transacional de banco S6-D02 já está disponível em
 [`revisar_candidatos_plano`](privacidade-planos.md#contrato-transacional-para-s6-b02).
+
+
+## Atualização S7-B01 — preparação e autorização do texto (10/11/2026)
+
+Este contrato substitui o fluxo de upload/extração S6 descrito acima.
+
+| Operação | Entrada | Resultado |
+| --- | --- | --- |
+| `POST /api/v1/syllabus/upload` | Multipart PDF validado, até 10 MiB/dez páginas; metadados existentes | 202, texto preparado privado, `filePath: null`, `authorizationRequired: true`, `preparedTextAvailable: true`. O PDF é descartado e não vai ao Storage. |
+| `POST /api/v1/syllabus/text` | JSON `text`, `disciplina`/`turma` opcionais; até 40.000 bytes UTF-8 | 202, preparação privada, `fileType: text`; página de origem nula. |
+| `GET /api/v1/syllabus/{id}/text` | Sessão do dono | 200 com `pages: [{pagina, texto}]`, `textHash`, `authorizationRequired`, `provider`, `providerAvailable`, `maxTextBytes`, `warning`, `preparationDurationMs`, `textRevision`. Resposta `no-store`. |
+| `POST /api/v1/syllabus/{id}/extractions` | JSON `pages`, `textHash`, `authorize: true`, `contentEligible: true`, `reprocess` opcional | 202, autorização registrada e elegibilidade para a fila persistente. Repetir o mesmo hash sem reprocessar não cria execução adicional. |
+
+O hash usa SHA-256 do JSON UTF-8 compacto, com `pagina`/`texto` nessa ordem em
+cada página; não é assinatura de autorização. O servidor valida JWT/dono, limites,
+referências, integridade e declarações, recusa identificadores comuns ainda
+presentes e não altera o texto aprovado antes de enviá-lo ao provedor.
+
+Erros: 400 PDF inválido/protegido/sem texto; 401 sem sessão; 404 para plano alheio/inexistente; 413 excesso de bytes;
+422 conteúdo, referências, declarações ou hash malformados; 409 hash divergente,
+execução em andamento, preparação antiga sem texto ou limite acumulado atingido;
+503 indisponibilidade/bloqueio operacional do provedor. O corpo continua
+`{"detail": "mensagem sanitizada"}`. Não há persistência do PDF após falha.
+
+Detalhe/listagem preservam estados anteriores. `authorizationRequired` distingue
+a revisão inicial da fila pronta; `preparedTextAvailable` identifica o protocolo
+S7. Detalhe inclui `preparationDurationMs`, `reviewDurationMs` e
+`totalDurationMs` desde a autorização, separando a espera do estudante. Planos
+históricos sem preparação mantêm a revisão legada e não recebem autorização
+retroativa. A consulta/confirmação de candidatos privados segue a conciliação
+S7-B04/S7-F03; este produtor não escreve eventos automaticamente.
+
+[Fluxo, flags e evidências](processamento-planos-s7.md).

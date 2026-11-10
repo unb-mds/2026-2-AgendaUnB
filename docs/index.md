@@ -86,7 +86,7 @@ A [v0.1.0](release-notes/v0.1.0.md) registra a entrega de 28/09/2026. Consulte [
 * [Painel administrativo e sugestões](painel-administrativo.md) — Permissões, moderação, notificações e testes.
 * [Interface e design](especificacao-frontend.md) — Navegação e experiência de uso.
 
-A página Plano de Ensino informa que upload e extração ainda estão em preparação. As estruturas de banco/Storage não significam que o processamento já esteja disponível.
+A implementação local da [S7-B01](processamento-planos-s7.md) oferece preparação de PDF/texto, revisão do trecho e autorização para o Gemini. O provedor permanece desativado por padrão até homologação e validação de elegibilidade. A implantação e a integração completa com turmas/importação têm acompanhamento separado.
 
 
 ## Planejamento e histórico de issues
