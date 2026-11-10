@@ -177,6 +177,10 @@ class Syllabus(Base):
     file_path: Mapped[str | None] = mapped_column("caminho_arquivo", String, nullable=True)
     arquivo_url: Mapped[str | None] = mapped_column("arquivo_url", String, nullable=True)
     file_size: Mapped[int | None] = mapped_column("tamanho_bytes", BigInteger, nullable=True)
+    # ADR-003: preenchido quando o PDF original é removido do Storage.
+    file_discarded_at: Mapped[datetime | None] = mapped_column(
+        "arquivo_descartado_em", DateTime(timezone=True), nullable=True
+    )
     file_type: Mapped[str] = mapped_column("tipo_arquivo", String, default="pdf", nullable=False)
     status: Mapped[str] = mapped_column(
         String, nullable=False, default="pendente"
@@ -506,3 +510,49 @@ class Reminder(Base):
     created_at: Mapped[datetime] = mapped_column(
         "criado_em", DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+
+class LegalAcceptance(Base):
+    """Versão de um documento legal que a conta declarou ter lido (S8-D01). Não é consentimento."""
+
+    __tablename__ = "aceites_termos"
+
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), primary_key=True
+    )
+    document: Mapped[str] = mapped_column("documento", String, primary_key=True)
+    version: Mapped[str] = mapped_column("versao", String, primary_key=True)
+    accepted_at: Mapped[datetime] = mapped_column(
+        "aceito_em", DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class Consent(Base):
+    """Autorização específica e revogável, por finalidade (S8-D01)."""
+
+    __tablename__ = "consentimentos"
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    purpose: Mapped[str] = mapped_column("finalidade", String, nullable=False)  # google_agenda (a autorização de IA fica no snapshot do plano)
+    reference_id: Mapped[UUID | None] = mapped_column("referencia_id", Uuid(as_uuid=True), nullable=True)
+    content_hash: Mapped[str | None] = mapped_column("conteudo_hash", String, nullable=True)
+    granted_at: Mapped[datetime] = mapped_column(
+        "concedido_em", DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    revoked_at: Mapped[datetime | None] = mapped_column("revogado_em", DateTime(timezone=True), nullable=True)
+
+
+class AccountDeletionRecord(Base):
+    """Evidência de exclusão de conta. Guarda só contagens, sem identificar a pessoa."""
+
+    __tablename__ = "exclusoes_conta"
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    requested_at: Mapped[datetime] = mapped_column(
+        "solicitada_em", DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    finished_at: Mapped[datetime | None] = mapped_column("concluida_em", DateTime(timezone=True), nullable=True)
+    counts: Mapped[dict] = mapped_column("contagens", JSON, default=dict, nullable=False)
