@@ -4,7 +4,7 @@ import '../styles/syllabus-review.css';
 
 // Controlled local draft: the owner preserves edits and resets on plan/account changes.
 // No persistence, network request or agenda confirmation is performed here.
-export default function SyllabusReviewEditor({ value, onChange, disabled = false, renderCandidate, emptyMessage = 'Nenhuma avaliação disponível para revisão.' }) {
+export default function SyllabusReviewEditor({ value, onChange, onConfirm, busy = false, disabled = false, renderCandidate, emptyMessage = 'Nenhuma avaliação disponível para revisão.' }) {
   const prefix = useId();
   const root = useRef(null);
   const [checked, setChecked] = useState(false);
@@ -23,11 +23,16 @@ export default function SyllabusReviewEditor({ value, onChange, disabled = false
     // Validation feedback is rendered before moving focus to the first invalid field.
     requestAnimationFrame(() => root.current?.querySelector('[aria-invalid="true"]')?.focus());
   }
-  return <section className="syllabus-review" ref={root} aria-labelledby={`${prefix}-heading`}>
+  function confirm() {
+    if (disabled || !checked || invalid || !selected.length) return;
+    setChecked(false);
+    onConfirm();
+  }
+  return <section className="syllabus-review" ref={root} aria-labelledby={`${prefix}-heading`} aria-busy={busy}>
     <h2 id={`${prefix}-heading`}>Revisar avaliações</h2>
     {!value.length ? <p className="management-muted" role="status">{emptyMessage}</p> : <>
       <p className="management-muted">Corrija os dados e escolha os itens que deseja incluir. A conferência abaixo não salva eventos na agenda.</p>
-      <p className="management-muted">As edições e a seleção ficam apenas nesta tela e serão perdidas ao recarregar ou sair do plano. Informe o fuso quando ele não estiver registrado na origem. A importação ainda não está disponível.</p>
+      <p className="management-muted">As edições e a seleção ficam nesta tela até a confirmação. Informe o fuso quando ele não estiver registrado na origem.</p>
       <div className="syllabus-review-actions">
         <button type="button" className="manage-button" disabled={disabled || !value.some(item => item.editable !== false && item.decision === 'pending')} onClick={() => selectAll(true)}>Selecionar pendentes</button>
         <button type="button" className="manage-button" disabled={disabled || !selected.length} onClick={() => selectAll(false)}>Limpar seleção</button>
@@ -80,6 +85,10 @@ export default function SyllabusReviewEditor({ value, onChange, disabled = false
       {checked && <p role={invalid ? 'alert' : 'status'} className={invalid ? 'syllabus-review-error' : 'management-muted'}>
         {selected.length > 100 ? 'Selecione no máximo 100 avaliações por vez.' : invalid ? 'Corrija os campos indicados para continuar.' : 'Campos conferidos. Nenhum evento foi salvo na agenda.'}
       </p>}
+      {onConfirm && <div className="syllabus-review-actions">
+        <button type="button" className="manage-button primary" onClick={confirm} disabled={disabled || !checked || invalid || !selected.length}>Confirmar e importar</button>
+        {busy && <p role="status">Aguarde a resposta do servidor…</p>}
+      </div>}
     </>}
   </section>;
 }
