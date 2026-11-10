@@ -33,6 +33,15 @@ O campo **verificado** é o mais importante. Sem ele, a entrada declara o uso ma
 
 ## Entradas
 
+### 10/11/2026 — Migração do Supabase Cloud e preparação Render/Vercel
+
+- **Quem:** Heitor Gomes Monteiro, com assistência do Codex.
+- **Ferramenta:** Codex (OpenAI).
+- **O que foi pedido:** revisar e aplicar as cinco migrações pendentes no projeto Supabase da equipe, preservando os dados, e preparar a configuração para Render e Vercel.
+- **O que entrou no repositório:** modelos de variáveis por provedor em `deploy/`, guia de configuração, `VITE_API_URL` no exemplo principal e registro operacional com o estado do banco. Backup, scripts operacionais e arquivos com credenciais ficaram somente na pasta ignorada `.supabase/`.
+- **O que foi verificado:** backup lógico consistente de 48 tabelas, restauração isolada, ensaio das cinco migrações e 49 testes PostgreSQL aprovados. Ensaio remoto com rollback e aplicação das cinco migrações em uma única transação, incluindo histórico. Conteúdo preexistente preservado por comparação de hashes; 26 migrações e dez pré-requisitos de privacidade confirmados após o commit. Cinco campi e sete categorias preservados; tabela legada removida somente após confirmar que estava vazia.
+- **O que foi rejeitado ou corrigido:** não reaproveitar chaves públicas locais recusadas pelo projeto remoto, não executar wrappers de transação com commit intermediário e não versionar credenciais. A restauração de ensaio precisou preservar os proprietários e privilégios originais. A fila paralela não foi tratada como consumidor do worker atual. Publicação Render/Vercel, chaves de API corretas, domínios e aprovação S7-B02 continuam pendentes; flags mantidas em `false`, sem chamadas Gemini nem contratação de worker pago.
+
 ### 09/11/2026 — S7-D01: turmas, vínculos, versões e isolamento dos planos (#69)
 
 - **Quem:** Felipe Couto Duque

@@ -32,6 +32,7 @@ nav:
   - Privacidade dos Planos: privacidade-planos.md
   - Matriz de aceite da Release 2: matriz-release-2.md
   - Plano de Implantação: implantacao.md
+  - Supabase Cloud — migrações de 10/11: supabase-nuvem-2026-11-10.md
   - Modelo de Dados: arquitetura/modelo-de-dados.md
   - Especificação do Banco: arquitetura/banco-de-dados.md
   - Requisitos: produto/requisitos.md
