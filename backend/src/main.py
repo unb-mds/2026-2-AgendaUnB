@@ -12,6 +12,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from src.modules.events.router import router as events_router
+from src.modules.account.router import router as account_router
 from src.modules.syllabus.router import router as syllabus_router
 from src.middlewares.upload_limits import UploadLimitsMiddleware
 
@@ -93,6 +94,7 @@ app.add_middleware(UploadLimitsMiddleware)
 
 app.include_router(events_router, prefix="/api/v1")
 app.include_router(syllabus_router, prefix="/api/v1")
+app.include_router(account_router, prefix="/api/v1")
 
 
 @app.get("/health", tags=["health"])
