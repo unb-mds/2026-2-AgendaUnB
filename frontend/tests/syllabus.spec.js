@@ -4,6 +4,44 @@ const plan = { id: 'd79eeb53-aed8-4369-936b-156e01cc455c', disciplina: 'Métodos
 const pdf = { name: 'plano-mds.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4\nTeste de transporte multipart') };
 const candidate = { id: 'candidate-a', title: 'Prova de integração', type: 'prova', status: 'pendente', ambiguous: true, ambiguousFields: ['data'], suggestedDate: null, suggestedTime: null, sourcePage: 2, sourceExcerpt: 'Prova: data a definir.', versionId: 'version-a' };
 
+test('revisão real permite corrigir e selecionar em lote sem gravar eventos', async ({ page }) => {
+  await setup(page, { detail: { ...plan, status: 'concluido', candidates: [candidate,
+    { ...candidate, id: 'b', title: 'Trabalho', type: 'trabalho' },
+    { ...candidate, id: 'c', status: 'confirmado' }, { ...candidate, id: 'd', status: 'descartado' },
+    { ...candidate, id: 'e', status: 'desconhecido' }] } });
+  const writes = [];
+  page.on('request', request => { if (request.method() !== 'GET' && request.url().includes('/api/')) writes.push(request.url()); });
+  await page.goto(`/plano-de-ensino?plano=${plan.id}`);
+  const first = page.getByRole('group', { name: 'Avaliação 1', exact: true });
+  const second = page.getByRole('group', { name: 'Avaliação 2', exact: true });
+  await expect(first.getByLabel('Fuso UTC')).toHaveValue('');
+  await second.getByLabel('Decisão').selectOption('discarded');
+  await page.getByRole('button', { name: 'Selecionar pendentes' }).click();
+  await expect(first.getByLabel('Decisão')).toHaveValue('selected');
+  await expect(second.getByLabel('Decisão')).toHaveValue('discarded');
+  for (const index of [3, 4, 5]) await expect(page.getByRole('group', { name: `Avaliação ${index}`, exact: true }).getByLabel('Decisão')).toBeDisabled();
+  await page.getByRole('button', { name: 'Conferir selecionados' }).click();
+  await expect(first.getByLabel('Data', { exact: false })).toBeFocused();
+  await first.getByLabel('Título').fill('Trabalho corrigido');
+  await first.getByLabel('Tipo', { exact: false }).selectOption('trabalho');
+  await first.getByLabel('Data', { exact: false }).fill('2026-12-01');
+  await first.getByLabel('Horário').fill('14:30');
+  await first.getByLabel('Fuso UTC').fill('-03:00');
+  await page.getByRole('button', { name: 'Conferir selecionados' }).click();
+  await expect(page.getByText('Campos conferidos. Nenhum evento foi salvo na agenda.')).toBeVisible();
+  await first.getByLabel('Título').fill('ab');
+  await expect(page.getByText('Campos conferidos. Nenhum evento foi salvo na agenda.')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Conferir selecionados' }).click();
+  await expect(first.getByLabel('Título')).toBeFocused();
+  await page.getByRole('button', { name: 'Limpar seleção' }).click();
+  await expect(first.getByLabel('Título')).toHaveValue('ab');
+  await expect(first.getByLabel('Decisão')).toHaveValue('pending');
+  await page.reload();
+  await expect(first.getByLabel('Título')).toHaveValue(candidate.title);
+  await expect(first.getByLabel('Decisão')).toHaveValue('pending');
+  expect(writes).toEqual([]);
+});
+
 test('candidatos da API: origem, estados, recarga, troca de plano e saída da conta', async ({ page }) => {
   await setup(page, { detail: { ...plan, status: 'concluido', candidates: [candidate, { ...candidate, id: 'b', title: 'Trabalho confirmado', status: 'confirmado', sourcePage: null }] } });
   const writes = [];
@@ -232,7 +270,7 @@ test('revisão aparece na rota real, explica limites e acompanha abertura e fech
   await expect(review).toContainText('Abra um plano');
   await page.getByText('O que poderei revisar?', { exact: true }).focus();
   await page.keyboard.press('Enter');
-  await expect(page.getByText('A edição das avaliações e a inclusão na agenda ainda não estão disponíveis nesta página.')).toBeVisible();
+  await expect(page.getByText('Você pode selecionar e corrigir as avaliações de um plano concluído. A inclusão na agenda ainda não está disponível nesta página.')).toBeVisible();
   await page.getByRole('button', { name: `Acompanhar ${plan.disciplina}` }).click();
   await expect(review).toContainText('os detalhes das avaliações ainda não estão disponíveis');
   await expect(page.getByRole('button', { name: 'Conferir selecionados' })).toHaveCount(0);
