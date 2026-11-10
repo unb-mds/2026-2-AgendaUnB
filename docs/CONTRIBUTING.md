@@ -121,6 +121,17 @@ pytest tests/
 
 ## 3. Política de Branches
 
+### Fluxo por issue e Pull Request
+
+Cada issue deve ter **uma única branch e um único PR**, reutilizados nas entregas parciais. Antes de iniciar, confira se já existem branch e PR para a issue. Recomenda-se incluir o número da issue no nome da branch, mantendo os tipos adotados pelo projeto (ex.: `feat/123-upload-plano-ensino`).
+
+Ao concluir sua parte, marque na própria issue somente os itens efetivamente concluídos e validados. Atualize o mesmo PR com as entregas, evidências e próximos passos. O checklist da issue é a fonte de verdade do progresso e não deve ser duplicado no PR.
+
+Use `status: <incompleto>` e mantenha o PR como Draft enquanto houver qualquer check da issue pendente. Use `status: <completo>` somente quando todos os checks estiverem concluídos; se algum item for reaberto, volte para incompleto. Enquanto incompleto, vincule com `Relacionado à issue #NUMERO`; quando completo, substitua por `Fixes #NUMERO`. Faça o merge apenas após as verificações e aprovações aplicáveis.
+
+Preencha o [template de PR](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/.github/PULL_REQUEST_TEMPLATE.md) com contexto, mudanças, testes, resultados, impactos e pendências. O template orienta o fluxo; não sincroniza checklists nem bloqueia merges automaticamente.
+
+
 Para manter a organização das entregas nas Sprints de MDS, utilizamos branches nomeadas por tipo de tarefa:
 
 * `main`: Código em produção/estável e versão final de cada Sprint.

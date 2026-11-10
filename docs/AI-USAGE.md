@@ -30,6 +30,15 @@ O campo **verificado** é o mais importante. Sem ele, a entrada declara o uso ma
 
 ## Entradas
 
+### 10/11/2026 — Template de PR e fluxo por issue
+
+- **Quem:** Codex, a pedido de Thomas.
+- **Ferramenta:** OpenAI Codex.
+- **O que foi pedido:** Reaplicar o template de PR na cópia atual do repositório, com uma branch e um PR por issue e status baseado nos checks da issue.
+- **O que entrou no repositório:** `.github/PULL_REQUEST_TEMPLATE.md` e orientações em `docs/CONTRIBUTING.md` e `docs/processo/contribuindo.md`.
+- **O que foi verificado:** Estado inicial limpo na main, ausência do template anterior e `git diff --check`. O build estrito da documentação foi tentado, mas o executável Python disponível não pôde ser iniciado neste ambiente.
+- **O que foi rejeitado ou corrigido:** Evitada a duplicação do checklist da issue no PR. O template orienta atualização manual, sem sincronização automática ou bloqueio de merge.
+
 ### 18/09/2026 — Ajustes de autenticação, correções de UI e modularização do CSS
 
 - **Quem:** Thomas Augusto Amorim de Araujo
