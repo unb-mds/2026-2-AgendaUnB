@@ -146,6 +146,7 @@ Tabela física única dos candidatos extraídos dos planos, decidida na S7-D01 c
     *   `ordem` (SMALLINT ≥ 0, opcional): posição do candidato na versão. `(versao_id, ordem)` é único, para reprocessar sem duplicar.
     *   `titulo` (TEXT, Not Null), `data_avaliacao` (TIMESTAMPTZ, opcional), `tipo`, `ambiguo`, `pagina_origem`, `trecho_origem`, `status`, `versao_processamento` e `provedor` (acrescentados em `20261029160000`).
 *   **Políticas RLS:** leitura por quem pode ler a versão (*"leitura de candidatos de versoes compartilhadas"*): o autor dela e, quando compartilhada, quem segue a oferta do plano. Sem política de escrita.
+*   **Conteúdo compartilhado:** candidatos de versão compartilhada não são alterados, excluídos nem acrescentados (triggers `avaliacoes_compartilhada_imutavel` e `avaliacoes_zz_nao_entra_em_compartilhada`). A correção é feita em uma revisão. `status` continua editável.
 
 ### 4.3. Tabela `versoes_plano`
 Versões de um plano (ADR-010). Toda versão nasce **privada**; uma nova revisão cria nova versão e não sobrescreve calendários pessoais.
@@ -155,8 +156,11 @@ Versões de um plano (ADR-010). Toda versão nasce **privada**; uma nova revisã
     *   `versao_origem_id` (UUID, opcional): versão revisada que originou esta (`ON DELETE SET NULL`); nunca a própria versão.
     *   `procedencia_institucional` (BOOLEAN, padrão falso): herdada da versão de origem. O papel professor/admin não a cria sozinho.
     *   `visibilidade` (padrão `privada`): `privada` ou `compartilhada`. `compartilhada_em` é preenchido se, e somente se, a versão estiver compartilhada.
+    *   `fonte_institucional_url`, `procedencia_validada_por`, `procedencia_validada_em`: evidência pública oficial da origem institucional, validada por admin. `procedencia_institucional` exige a evidência.
+    *   `retirada_em`, `retirada_por`: última retirada do compartilhamento.
 *   **Criação:** todo plano recebe a versão 1 automaticamente (trigger após INSERT em `planos_ensino`), com o papel atual do dono. Os planos existentes ganharam a versão 1 na migração.
 *   **Políticas RLS:** leitura pelo autor da versão ou, se compartilhada, por usuários que seguem a oferta do plano (função `pode_ler_versao`). O rascunho privado de uma revisão pertence a quem a escreveu. Sem política de escrita.
+*   **Funções (S8-B01):** `compartilhar_versao` (só o autor), `retirar_compartilhamento` (autor ou admin), `criar_revisao` (autor; professor e admin sobre versão compartilhada) e `validar_procedencia_institucional` (admin). Todas recebem o ator e conferem a permissão no banco.
 *   **Arquivo:** compartilhar uma versão não expõe o registro do plano nem o arquivo. A retenção do PDF segue a ADR-003.
 
 ### 4.4. Tabelas `disciplinas`, `ofertas_turma` e `vinculos_turma`
@@ -173,6 +177,9 @@ Catálogo de turmas (ADR-009) e turmas que o usuário segue. A disciplina abstra
 *   **Unicidade por usuário:** `(user_id, origem_avaliacao_id)` é único (índice parcial). Como cada candidato pertence a uma única versão, isso equivale à unicidade `(user_id, version_id, candidate_id)` da ADR-010. Até a S7-D01, a unicidade era global, e um usuário podia bloquear a confirmação de outro.
 *   **Índice:** `(user_id, origem_versao_id)`.
 *   **Confirmação idempotente (S7-B04):** `confirmar_importacao(ator, chave, versao, itens)` grava a operação (`operacoes_importacao`, única por `(user_id, chave)`), os itens (`itens_importacao`) e os eventos na mesma transação. Repetir a chave devolve o resultado anterior e não recria evento apagado; a mesma chave com outro conteúdo é recusada. O item mantém o registro quando o evento é excluído (`evento_pessoal_id` fica nulo).
+
+### 4.6. Tabela `votos_avaliacao` (S8-B01)
+Um voto por conta e candidato: chave primária `(user_id, avaliacao_id)`, `valor` em `confirma` ou `contesta`. Gravado por `votar_avaliacao`, que exige versão compartilhada e vínculo com a turma; `resumo_votos_versao` devolve as contagens. Cada conta lê apenas os próprios votos. Votos não alteram datas.
 
 O uso dessas funções pela API está em [Dados de planos](dados-de-planos.md).
 
