@@ -24,7 +24,7 @@ Severidade segundo o impacto no produto: **Alta** permite agir como outra conta 
 
 | # | Sev. | Achado | Tratamento | Estado |
 | --- | --- | --- | --- | --- |
-| A1 | Alta | **Script armazenado pelo link do evento.** Qualquer conta logada inseria direto em `eventos` pelo supabase-js, sem a validação de URL da API. Um `link_externo` com `javascript:` chegava ao catálogo (sugestão aprovada ou publicação de professor) e a página do evento o abria com `window.open`, executando código na sessão de quem clicasse. A tela de moderação ocultava o link inválido, o que dificultava perceber o problema ao aprovar. | INSERT direto removido; o banco só aceita `http(s)` no link, em qualquer caminho; a página do evento filtra o esquema e abre com `noopener,noreferrer`. | Corrigido (`20261110090000`, `PaginaDeEvento.jsx`) |
+| A1 | Alta | **Script armazenado pelo link do evento.** Qualquer conta logada inseria direto em `eventos` pelo supabase-js, sem a validação de URL da API. Um `link_externo` com `javascript:` chegava ao catálogo (sugestão aprovada ou publicação de professor) e a página do evento o abria com `window.open`, executando código na sessão de quem clicasse. A tela de moderação ocultava o link inválido, o que dificultava perceber o problema ao aprovar. | INSERT direto removido; o banco só aceita `http(s)` no link, em qualquer caminho; a página do evento filtra o esquema e abre com `noopener,noreferrer`. | Corrigido (`20261110130000`, `PaginaDeEvento.jsx`) |
 | A2 | Alta | **Papel de professor sem prova de posse do e-mail.** O cadastro com papel `professor` e endereço `@unb.br` criava o perfil de professor antes de qualquer confirmação. Em um projeto com confirmação de e-mail desligada, bastaria informar um `@unb.br` alheio para publicar e moderar eventos. | O papel só é concedido com `email_confirmed_at` preenchido: no cadastro quando já confirmado, ou automaticamente ao confirmar. A autopromoção pelo navegador exige o mesmo. A API recusa conta sem e-mail confirmado (403). | Corrigido. **Pendente:** conferir no painel do projeto hospedado que *Confirm email* está ligado. |
 | A3 | Alta | **Bloqueio da importação de outra conta.** A unicidade global de `origem_avaliacao_id` deixava o usuário B ocupar o candidato de A com um evento na própria agenda, fazendo a confirmação de A falhar. | Unicidade por `(user_id, origem_avaliacao_id)`. | Corrigido na S7-D01 (`20261109120000`) |
 | A4 | Média | Função `SECURITY DEFINER` `confirmar_candidatos_transacional` sem uso, operando sobre tabela removida. | Função removida. | Corrigido na S7-D01 |
@@ -75,7 +75,7 @@ Travas estruturais, válidas para qualquer migração futura:
 
 ## Regras para novas migrações
 
-A partir de `20261110090000`, tabelas e funções novas nascem fechadas:
+A partir de `20261110130000`, tabelas e funções novas nascem fechadas:
 
 - tabela nova não é legível por visitante. Para leitura pública, além da política, declare `grant select on public.<tabela> to anon;`
 - função nova não é executável pela API. Para expor uma RPC, declare `grant execute on function public.<f>(<tipos>) to authenticated;` e use `set search_path = ''`;

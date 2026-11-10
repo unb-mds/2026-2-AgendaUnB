@@ -48,7 +48,7 @@ Armazena os metadados dos usuários, sincronizada com a tabela nativa de autenti
 Registra toda mudança de papel, por qualquer caminho (RPC do painel, autopromoção, confirmação de e-mail, back-end ou SQL): `usuario_id`, `ator_id` (nulo quando não havia sessão de usuário), `papel_anterior`, `papel_novo` e `criado_em`. Somente admins leem; ninguém altera pela API.
 
 ### 2.3. Privilégios e funções
-Desde `20261110090000`, o `GRANT` acompanha as políticas: visitantes só leem o catálogo público (`eventos` aprovados, `campus`, `categories`, `disciplinas`, `ofertas_turma`), `TRUNCATE` não é concedido à API e funções novas não são executáveis via `/rpc` sem `GRANT EXECUTE` explícito. As regras para novas migrações estão em [Verificação de segurança](../processo/seguranca.md#regras-para-novas-migracoes).
+Desde `20261110130000`, o `GRANT` acompanha as políticas: visitantes só leem o catálogo público (`eventos` aprovados, `campus`, `categories`, `disciplinas`, `ofertas_turma`), `TRUNCATE` não é concedido à API e funções novas não são executáveis via `/rpc` sem `GRANT EXECUTE` explícito. As regras para novas migrações estão em [Verificação de segurança](../processo/seguranca.md#regras-para-novas-migracoes).
 
 ---
 
@@ -162,7 +162,7 @@ Catálogo de turmas (ADR-009) e turmas que o usuário segue. A disciplina abstra
 
 ## 5. Eventos salvos e notificações
 
-Eventos públicos são gravados somente pela API e pelas RPCs de moderação: o `INSERT` direto pelo navegador foi removido em `20261110090000`. O banco valida, em qualquer caminho, que `link_externo` usa `http(s)` e que título, descrição e local respeitam os limites da API.
+Eventos públicos são gravados somente pela API e pelas RPCs de moderação: o `INSERT` direto pelo navegador foi removido em `20261110130000`. O banco valida, em qualquer caminho, que `link_externo` usa `http(s)` e que título, descrição e local respeitam os limites da API.
 
 `eventos_salvos` vincula um perfil a um evento público com chave composta `(user_id, event_id)`. `notificacoes` referencia o perfil destinatário e pode referenciar o evento que originou o aviso. Consulte as políticas, a implantação e os cenários de verificação nos guias de [eventos salvos](../eventos-salvos.md) e [painel administrativo](../painel-administrativo.md).
 

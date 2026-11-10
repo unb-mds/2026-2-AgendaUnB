@@ -154,7 +154,10 @@ grant execute on function
   public.admin_definir_papel(uuid, text, text),
   public.moderar_sugestao(uuid, text, text),
   public.listar_sugestoes(text, text, integer),
-  public.pode_ler_versao(uuid)
+  public.pode_ler_versao(uuid),
+  -- Revisão de candidatos pelo dono (S7-B01, 20261110120000). A própria
+  -- função confere auth.uid() e o dono do plano.
+  public.revisar_candidatos_plano(uuid, jsonb)
   to authenticated;
 
 alter default privileges revoke execute on functions from public;
