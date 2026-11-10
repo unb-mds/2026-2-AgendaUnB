@@ -1,7 +1,19 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import BigInteger, DateTime, ForeignKey, Integer, String, Text, Uuid, func
+from sqlalchemy import (
+    BigInteger,
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    Uuid,
+    func,
+    text,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -114,6 +126,80 @@ class PersonalEvent(Base):
     category: Mapped[Category | None] = relationship()
 
 
+class CourseOffer(Base):
+    """Oferta de uma disciplina em uma turma e período acadêmico específicos."""
+
+    __tablename__ = "ofertas_turma"
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    source: Mapped[str] = mapped_column(
+        "origem", String, nullable=False, default="sigaa", server_default="sigaa"
+    )
+    source_offer_id: Mapped[str | None] = mapped_column("id_origem", String, nullable=True)
+    course_code: Mapped[str | None] = mapped_column("codigo_disciplina", String, nullable=True)
+    course_name: Mapped[str] = mapped_column("nome_disciplina", String, nullable=False)
+    class_number: Mapped[str] = mapped_column("numero_turma", String, nullable=False)
+    period: Mapped[str] = mapped_column("periodo", String, nullable=False)
+    unit: Mapped[str | None] = mapped_column("unidade", String, nullable=True)
+    level: Mapped[str | None] = mapped_column("nivel", String, nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        "atualizado_em", DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        "criado_em", DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    __table_args__ = (
+        Index(
+            "uq_ofertas_turma_origem_id_periodo",
+            "origem", "id_origem", "periodo", unique=True,
+            postgresql_where=text("id_origem is not null"),
+            sqlite_where=text("id_origem is not null"),
+        ),
+        Index(
+            "uq_ofertas_turma_chave_composta",
+            func.lower(func.trim(text("origem"))),
+            func.lower(
+                func.trim(
+                    func.coalesce(
+                        func.nullif(func.trim(text("codigo_disciplina")), text("''")),
+                        text("nome_disciplina"),
+                    )
+                )
+            ),
+            func.lower(func.trim(text("numero_turma"))),
+            func.lower(func.trim(text("periodo"))),
+            func.lower(func.trim(func.coalesce(text("unidade"), text("''")))),
+            func.lower(func.trim(func.coalesce(text("nivel"), text("''")))),
+            unique=True,
+            postgresql_where=text("id_origem is null"),
+            sqlite_where=text("id_origem is null"),
+        ),
+        CheckConstraint(
+            "id_origem is null or length(trim(id_origem)) > 0",
+            name="ck_ofertas_turma_id_origem_nao_vazio",
+        ),
+        Index("idx_ofertas_turma_periodo_codigo", "periodo", "codigo_disciplina"),
+    )
+
+
+class CourseEnrollment(Base):
+    """Vínculo único de um usuário com uma oferta acadêmica."""
+
+    __tablename__ = "vinculos_turma"
+
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), primary_key=True
+    )
+    offer_id: Mapped[UUID] = mapped_column(
+        "oferta_id", Uuid(as_uuid=True), ForeignKey("ofertas_turma.id", ondelete="CASCADE"), primary_key=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        "criado_em", DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    offer: Mapped[CourseOffer] = relationship()
+
+
 class Syllabus(Base):
     """Modelo para rastreamento de upload e processamento de planos de ensino."""
 
@@ -127,6 +213,18 @@ class Syllabus(Base):
     )
     professor_id: Mapped[UUID | None] = mapped_column(
         "professor_id", Uuid(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), nullable=True
+    )
+    author_id: Mapped[UUID | None] = mapped_column(
+        "autor_id", Uuid(as_uuid=True), ForeignKey("profiles.id", ondelete="SET NULL"), nullable=True
+    )
+    offer_id: Mapped[UUID | None] = mapped_column(
+        "oferta_id", Uuid(as_uuid=True), ForeignKey("ofertas_turma.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    version: Mapped[int] = mapped_column(
+        "versao", Integer, nullable=False, default=1, server_default="1"
+    )
+    visibility: Mapped[str] = mapped_column(
+        "visibilidade", String, nullable=False, default="privado", server_default="privado"
     )
     file_name: Mapped[str] = mapped_column("nome_arquivo", String, nullable=False)
     file_path: Mapped[str] = mapped_column("caminho_arquivo", String, nullable=False)
@@ -145,6 +243,23 @@ class Syllabus(Base):
     )
 
     user: Mapped[Profile] = relationship(foreign_keys=[user_id])
+    author: Mapped[Profile | None] = relationship(foreign_keys=[author_id])
+    offer: Mapped[CourseOffer | None] = relationship()
+
+    __table_args__ = (
+        CheckConstraint("versao > 0", name="ck_planos_ensino_versao_positiva"),
+        CheckConstraint(
+            "visibilidade in ('privado', 'compartilhado')",
+            name="ck_planos_ensino_visibilidade",
+        ),
+        Index("idx_planos_ensino_user_oferta_versao", "user_id", "oferta_id", "versao"),
+        Index(
+            "uq_planos_ensino_oferta_autor_versao",
+            "oferta_id", "autor_id", "versao", unique=True,
+            postgresql_where=text("oferta_id is not null and autor_id is not null"),
+            sqlite_where=text("oferta_id is not null and autor_id is not null"),
+        ),
+    )
 
 
 class SyllabusCandidate(Base):

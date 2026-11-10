@@ -67,11 +67,33 @@ entity "EVENTOS_PESSOAIS" {
 entity "PLANOS_ENSINO" {
   * id : UUID <<PK>>
   --
-  * professor_id : UUID <<FK>>
-  * disciplina : TEXT
-  * turma : TEXT
+  * user_id : UUID <<FK>>
+  autor_id : UUID <<FK>>
+  oferta_id : UUID <<FK>>
+  * versao : INTEGER
+  * visibilidade : TEXT
   arquivo_url : TEXT
   created_at : TIMESTAMPTZ
+}
+
+entity "OFERTAS_TURMA" {
+  * id : UUID <<PK>>
+  --
+  * origem : TEXT
+  id_origem : TEXT
+  codigo_disciplina : TEXT
+  * nome_disciplina : TEXT
+  * numero_turma : TEXT
+  * periodo : TEXT
+  unidade : TEXT
+  nivel : TEXT
+  * atualizado_em : TIMESTAMPTZ
+}
+
+entity "VINCULOS_TURMA" {
+  * user_id : UUID <<PK, FK>>
+  * oferta_id : UUID <<PK, FK>>
+  * criado_em : TIMESTAMPTZ
 }
 
 entity "AVALIACOES" {
@@ -85,7 +107,11 @@ entity "AVALIACOES" {
 
 PROFILES ||--o{ EVENTOS : "cria"
 PROFILES ||--o{ EVENTOS_PESSOAIS : "possui"
-PROFILES ||--o{ PLANOS_ENSINO : "envia"
+PROFILES ||--o{ PLANOS_ENSINO : "dono"
+PROFILES ||--o{ PLANOS_ENSINO : "autor"
+PROFILES ||--o{ VINCULOS_TURMA : "acompanha"
+OFERTAS_TURMA ||--o{ VINCULOS_TURMA : "tem alunos"
+OFERTAS_TURMA ||--o{ PLANOS_ENSINO : "tem versões"
 
 CAMPUS ||--o{ EVENTOS : "localiza"
 CAMPUS ||--o{ EVENTOS_PESSOAIS : "localiza"
@@ -95,3 +121,5 @@ CATEGORIES ||--o{ EVENTOS_PESSOAIS : "classifica"
 
 PLANOS_ENSINO ||--o{ AVALIACOES : "gera"
 @enduml
+
+Planos antigos sem período ou identificador de origem recebem ofertas legadas isoladas pela migração S7-D01. Isso evita fundir turmas de semestres potencialmente diferentes.

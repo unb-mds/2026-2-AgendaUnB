@@ -82,24 +82,29 @@ Agenda estritamente privada, gerenciada e visualizada unicamente por cada estuda
 
 ## 4. Organizador Acadêmico
 
-### 4.1. Tabela `planos_ensino`
-Documentos enviados pelos professores para o sistema de IA.
-*   **Colunas:**
-    *   `id` (UUID, Primary Key).
-    *   `professor_id` (UUID, Not Null): Chave estrangeira para `profiles(id)` (`ON DELETE CASCADE`).
-    *   `disciplina` (TEXT, Not Null): Nome da disciplina.
-    *   `turma` (TEXT, Not Null): Código da turma.
-    *   `arquivo_url` (TEXT): Caminho do PDF/Documento no Supabase Storage.
-    *   `criado_em` (TIMESTAMPTZ, Not Null).
-*   **Políticas RLS:** Segurança em Nível de Linha habilitada.
+### 4.1. Tabela `ofertas_turma`
+Identifica uma oferta canônica de disciplina, turma e período. A importação deve usar `origem` + `id_origem` + `periodo` quando a fonte pública fornecer um identificador estável. Sem esse identificador, a chave composta usa origem, código/nome da disciplina, turma, período, unidade e nível. Assim, a mesma turma em semestres diferentes permanece distinta.
 
-### 4.2. Tabela `avaliacoes`
-Datas extraídas automaticamente da tabela de planos de ensino.
-*   **Colunas:**
-    *   `id` (UUID, Primary Key).
-    *   `plano_id` (UUID, Not Null): Chave estrangeira apontando para `planos_ensino(id)` (`ON DELETE CASCADE`).
-    *   `titulo` (TEXT, Not Null): Nome da avaliação/trabalho.
-    *   `data_avaliacao` (TIMESTAMPTZ, Not Null): Data programada extraída.
-    *   `criado_em` (TIMESTAMPTZ, Not Null).
-*   **Políticas RLS:** Segurança em Nível de Linha habilitada.
-    *   **Leitura (SELECT):** Pública para os alunos. Política: *"avaliacoes sao publicas"* (`USING true`).
+* **Colunas:** `id` (UUID, PK), `origem`, `id_origem`, `codigo_disciplina`, `nome_disciplina`, `numero_turma`, `periodo`, `unidade`, `nivel`, `atualizado_em` e `criado_em`.
+* **RLS:** leitura permitida a usuários autenticados; importação e manutenção do catálogo ficam reservadas ao backend/serviço.
+
+### 4.2. Tabela `vinculos_turma`
+Registra que um usuário acompanha uma oferta. A chave primária composta `(user_id, oferta_id)` impede duplicar o vínculo e o índice inverso permite consultar rapidamente colegas de uma oferta.
+
+* **Colunas:** `user_id` e `oferta_id` (PK/FK), `criado_em`.
+* **RLS:** usuário autenticado consulta, cria e remove apenas os próprios vínculos.
+
+### 4.3. Tabela `planos_ensino`
+Cada documento representa uma versão de plano, com dono dos dados separado de autoria. `oferta_id` pode ficar nulo enquanto turma/período não forem conhecidos pelo fluxo atual de upload.
+
+* **Campos existentes:** `id`, `user_id`, arquivo, tamanho, estado do processamento e metadados atuais.
+* **Novos campos:** `autor_id` (responsável pela autoria), `oferta_id` (FK para a oferta), `versao` (inteiro positivo) e `visibilidade` (`privado` ou `compartilhado`).
+* **Restrições e índices:** unicidade de `(oferta_id, autor_id, versao)` e índice `(user_id, oferta_id, versao)` para consultas/importação.
+* **RLS:** o dono sempre pode consultar o próprio plano. Um colega só consulta quando o documento está compartilhado e possui vínculo com a mesma oferta. Inserção, edição e exclusão continuam limitadas ao dono.
+* **Storage:** mantém-se o bucket privado e a leitura pelo dono. A leitura por colega segue a mesma condição de plano compartilhado e vínculo com a oferta.
+
+### 4.4. Tabela `avaliacoes`
+Cada candidata continua subordinada ao plano (`plano_id`) e mantém página/trecho de origem para evidência. A leitura segue as permissões do plano pai: dono, ou colega vinculado se e somente se o plano foi compartilhado.
+
+### 4.5. Compatibilidade de dados antigos
+A migração `20261110000000` cria uma oferta legada isolada por plano antigo, porque os registros anteriores não informam período ou identificador externo. Ela não combina ofertas por nome/turma nem apaga PDFs ou registros. Essa escolha preserva os dados sem afirmar um semestre que não está registrado. A limpeza de arquivos após extração depende do processador, ainda não implementado.

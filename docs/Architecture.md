@@ -93,13 +93,13 @@ Triggers registram notificações de submissão, aprovação e recusa na mesma t
 
 ## 7. Persistência, privacidade e migrações
 
-As tabelas da base R1 são `profiles`, `campus`, `categories`, `eventos`, `eventos_pessoais`, `planos_ensino` e `avaliacoes`. As novas migrações adicionam `eventos_salvos`, `notificacoes`, campos de sugestões/recusa e contador de interessados, funções administrativas e políticas de Storage. A migração `20261029160000` acrescenta procedência aos candidatos e eventos pessoais, restringe a leitura de avaliações e impede confirmar o mesmo candidato mais de uma vez. A criação das estruturas não comprova a existência do parser.
+As tabelas acadêmicas incluem `ofertas_turma` (identidade da disciplina/turma/período), `vinculos_turma` (usuário por oferta), `planos_ensino` (documento/versionamento/autoria/visibilidade) e `avaliacoes` (candidatos e evidências). A migração `20261110000000` cria essas relações, preserva planos legados como ofertas isoladas e aplica políticas RLS para dono e colegas vinculados a planos explicitamente compartilhados. A migração `20261029160000` acrescenta procedência aos candidatos e eventos pessoais, restringe a leitura de avaliações e impede confirmar o mesmo candidato mais de uma vez. A criação das estruturas não comprova a existência do parser.
 
 - Eventos privados e vínculos salvos são limitados ao dono. A API também verifica propriedade, pois conexões administrativas podem ignorar RLS.
 - Apenas eventos aprovados aparecem no catálogo e nas consultas de públicos salvos. A exclusão de um público remove seus vínculos em cascata.
 - Cadastro e autopromoção para professor exigem `@unb.br`. A migração `20261018000100` removeu a constraint global de domínio: administradores podem atribuir professor a outro endereço pela RPC protegida. E-mail do perfil continua imutável.
 - A alteração de papéis pelo navegador é protegida por trigger; não há cadastro livre como admin.
-- O bucket privado `syllabus_files` aceita PDF até 10 MB. As políticas exigem a pasta `<user_id>/<arquivo>.pdf` e restringem envio/leitura ao dono. Chaves de serviço nunca devem ser expostas em variáveis `VITE_`.
+- O bucket privado `syllabus_files` aceita PDF até 10 MB. As políticas exigem a pasta `<user_id>/<arquivo>.pdf`; leitura é do dono ou de colega vinculado quando o plano foi explicitamente compartilhado. Chaves de serviço nunca devem ser expostas em variáveis `VITE_`.
 - HTTPS é requisito de produção; `.env` guarda configurações locais fora do versionamento.
 
 As migrações devem ser aplicadas antes de disponibilizar API/frontend dependentes delas. No Supabase local iniciado, use `npx supabase migration up --local`. `make db-reset` recria o banco com migrações e seed; não é o procedimento para preservar dados existentes. Veja os guias de [eventos salvos](eventos-salvos.md) e [painel](painel-administrativo.md).
