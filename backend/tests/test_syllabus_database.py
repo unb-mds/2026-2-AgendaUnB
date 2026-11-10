@@ -17,7 +17,7 @@ from src.modules.syllabus.processing_task import process_document
 from src.modules.syllabus.privacy import privacy_checks
 from src.modules.syllabus.worker import SyllabusWorker
 from src.modules.syllabus.processing_config import ProcessingError
-from syllabus_samples import make_pdf
+from syllabus_samples import approved_source, make_pdf
 from test_moderation_database import assume, database
 
 
@@ -28,6 +28,11 @@ def plan(conn, owner, *, status="concluido", execution=1):
       values (:id,:owner,'particular','sintetico.pdf',:path,:status,:execution,
               case when :status = 'concluido' then now() else null end)"""),
       dict(id=sid, owner=owner, path=f"syllabus_files/{owner}/{sid}.pdf", status=status, execution=execution))
+    snapshot = approved_source("Prova sintetica - data a definir.")
+    conn.execute(text("""update public.planos_ensino set
+        texto_preparado=cast(:pages as jsonb), texto_aprovado=cast(:pages as jsonb),
+        hash_texto_aprovado=:hash, autorizado_em=now(), enfileirado_em=now(),versao_texto=1
+        where id=:sid"""), {"sid":sid,"pages":json.dumps(snapshot["approved_pages"]),"hash":snapshot["approved_hash"]})
     return sid
 
 
@@ -98,8 +103,9 @@ def test_private_storage_policies_and_bucket_are_preserved(database):
     bucket = conn.execute(text("select public,file_size_limit,allowed_mime_types from storage.buckets where id='syllabus_files'")).one()
     assert tuple(bucket) == (False,10485760,["application/pdf"])
     path = f"{users['student']}/{uuid4()}.pdf"
-    assume(conn, users["student"])
     conn.execute(text("insert into storage.objects(bucket_id,name) values ('syllabus_files',:path)"), {"path":path})
+    assume(conn, users["student"])
+    reject(conn, lambda: conn.execute(text("insert into storage.objects(bucket_id,name) values ('syllabus_files',:path)"), {"path":f"{users['student']}/{uuid4()}.pdf"}), "42501")
     assert conn.execute(text("select count(*) from storage.objects where bucket_id='syllabus_files' and name=:path"), {"path":path}).scalar() == 1
     for bad_path in (f"{users['other']}/outro.pdf",f"{users['student']}/sub/p.pdf",f"{users['student']}/p.txt",f"{users['student']}/a\\p.pdf"):
         reject(conn, lambda: conn.execute(text("insert into storage.objects(bucket_id,name) values ('syllabus_files',:path)"),
@@ -272,7 +278,7 @@ def test_worker_postgres_constraints_and_candidate_array(database):
     owner = UUID(users["student"])
     with sessions() as db:
         db.add(Syllabus(id=sid, user_id=owner, file_name="sintetico.pdf",
-                        file_path=f"syllabus_files/{owner}/{sid}.pdf"))
+                        file_path=None, **approved_source("Prova sintetica - data a definir.")))
         db.commit()
 
     class Storage:

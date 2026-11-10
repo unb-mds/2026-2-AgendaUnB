@@ -18,7 +18,7 @@ def privacy_checks(connection) -> dict[str, bool]:
         where p.oid=to_regprocedure('public.revisar_candidatos_plano(uuid,jsonb)')
       )
       select
-        exists(select 1 from supabase_migrations.schema_migrations where version='20261109130000') as migration,
+        exists(select 1 from supabase_migrations.schema_migrations where version='20261110120000') as migration,
         ((select count(*)=3 and bool_and(relrowsecurity) from private_tables)
           and exists(select 1 from pg_catalog.pg_class where oid='storage.objects'::regclass and relrowsecurity)) as rls,
         not exists(select 1 from private_tables t where
@@ -46,14 +46,16 @@ def privacy_checks(connection) -> dict[str, bool]:
         exists(select 1 from storage.buckets where id='syllabus_files' and not public
           and file_size_limit between 1 and 10485760
           and allowed_mime_types=array['application/pdf']) as private_bucket,
-        ((select count(*)=3 from pg_catalog.pg_policies where schemaname='storage' and tablename='objects')
-          and (select count(*)=2 from pg_catalog.pg_policies where schemaname='storage' and tablename='objects'
-            and roles=array['authenticated']::name[] and cmd in ('SELECT','INSERT')
+        ((select count(*)=2 from pg_catalog.pg_policies where schemaname='storage' and tablename='objects')
+          and (select count(*)=1 from pg_catalog.pg_policies where schemaname='storage' and tablename='objects'
+            and roles=array['authenticated']::name[] and cmd='SELECT'
             and position('auth.uid()' in coalesce(qual,with_check))>0
-            and policyname in ('planos: usuario envia para a propria pasta','planos: usuario le apenas os proprios arquivos'))
+            and policyname='planos: usuario le apenas os proprios arquivos')
           and exists(select 1 from pg_catalog.pg_policies where schemaname='storage' and tablename='objects'
             and policyname='planos: back-end le todos os arquivos' and cmd='SELECT'
             and roles=array['service_role']::name[] and position('syllabus_files' in qual)>0))
-          as storage_policies
+          as storage_policies,
+        exists(select 1 from pg_catalog.pg_trigger where not tgisinternal and tgenabled in ('O','A')
+          and tgrelid='public.planos_ensino'::regclass and tgname='planos_preserva_texto_autorizado') as approved_snapshot_trigger
     """)).mappings().one()
     return {name: bool(value) for name, value in result.items()}

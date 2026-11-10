@@ -1,4 +1,5 @@
 import { request } from './api';
+import { approvedTextHash } from './approvedText';
 import { normalizePlan, normalizePlanList, SYLLABUS_PAGE_SIZE } from './syllabus';
 
 async function syllabusRequest(path, { signal, timeout = 30000, ...options } = {}) {
@@ -16,6 +17,19 @@ async function syllabusRequest(path, { signal, timeout = 30000, ...options } = {
 }
 
 export const syllabusApi = {
+  async prepareText(text, signal) {
+    return normalizePlan(await syllabusRequest('/text', { method: 'POST', body: JSON.stringify({ text }), signal }));
+  },
+  text(id, signal) {
+    return syllabusRequest(`/${encodeURIComponent(id)}/text`, { signal });
+  },
+  async authorize(id, pages, reprocess, signal) {
+    const textHash = await approvedTextHash(pages);
+    return normalizePlan(await syllabusRequest(`/${encodeURIComponent(id)}/extractions`, {
+      method: 'POST', signal,
+      body: JSON.stringify({ pages, textHash, authorize: true, contentEligible: true, reprocess }),
+    }));
+  },
   async upload({ file, disciplina, semestre, ano }, signal) {
     const body = new FormData();
     body.append('file', file);

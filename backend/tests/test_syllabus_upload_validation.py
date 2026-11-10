@@ -58,7 +58,7 @@ def test_validation_failure_does_not_store_pdf_or_job(api, monkeypatch, code, st
         assert session.scalar(select(Syllabus)) is None
 
 
-@pytest.mark.parametrize("stage", ["validation", "storage"])
+@pytest.mark.parametrize("stage", ["validation", "preparation"])
 def test_health_responds_during_slow_upload(api, monkeypatch, stage):
     _, TestSession, authenticated_user, _ = api
     with TestSession() as session:
@@ -75,14 +75,13 @@ def test_health_responds_during_slow_upload(api, monkeypatch, stage):
         if stage == "validation":
             slow_operation()
 
-    class SlowStorage:
-        def upload_file(self, path, **kwargs):
-            if stage == "storage":
-                slow_operation()
-            return f"syllabus_files/{path}"
+    def extract(*args):
+        if stage == "preparation":
+            slow_operation()
+        return [{"pagina": 1, "texto": "Cronograma sintetico"}]
 
     monkeypatch.setattr(services, "validate_pdf_structure", validate)
-    app.dependency_overrides[get_storage_service] = SlowStorage
+    monkeypatch.setattr("src.modules.syllabus.router.extract_pdf_isolated", extract)
 
     async def scenario():
         async with httpx.AsyncClient(transport=httpx.ASGITransport(app), base_url="http://test") as client:

@@ -75,3 +75,13 @@ create index planos_fila_texto_autorizado on public.planos_ensino(status,enfilei
   where autorizado_em is not null and status in ('pendente','processando');
 comment on column public.planos_ensino.texto_aprovado is
   'Snapshot privado exato autorizado pelo dono. Somente o servidor escreve. Não contém PDF.';
+
+-- Novos PDFs não são retidos. Fechar o caminho de upload direto pelo cliente;
+-- arquivos históricos continuam privados e legíveis somente pelo dono.
+drop policy if exists "planos: usuario envia para a propria pasta" on storage.objects;
+drop policy if exists "planos: usuario le apenas os proprios arquivos" on storage.objects;
+create policy "planos: usuario le apenas os proprios arquivos" on storage.objects
+  for select to authenticated using (
+    bucket_id='syllabus_files'
+    and name ~* ('^' || (select auth.uid())::text || '/[^/]+[.]pdf$')
+    and position(chr(92) in name)=0);

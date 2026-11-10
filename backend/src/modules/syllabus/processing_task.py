@@ -30,7 +30,8 @@ def process_document(path, storage, provider, config: ProcessingConfig) -> Docum
     else:
         # Adaptador apenas para benchmarks/testes legados. O worker S7 passa
         # exclusivamente um snapshot de texto aprovado, nunca um caminho de PDF.
-        pages = extract_pages(storage.download_file(path), config)
+        content = storage.download_file(path)
+        pages = extract_pages(content, config)
     result = validate_candidates(provider.extract(pages), pages)
     return DocumentResult(len(pages) if pages[0].pagina is not None else None, result)
 

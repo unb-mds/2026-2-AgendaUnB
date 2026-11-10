@@ -21,6 +21,7 @@ class SyllabusUploadResponse(BaseModel):
     semestre: int | None = None
     created_at: datetime = Field(alias="createdAt")
     authorization_required: bool = Field(default=True, alias="authorizationRequired")
+    prepared_text_available: bool = Field(default=False, alias="preparedTextAvailable")
     message: str = "Texto preparado. Revise e autorize o trecho antes de enviar ao Gemini."
 
 
@@ -36,6 +37,8 @@ class SyllabusListItem(BaseModel):
     file_size: int | None = Field(default=None, alias="fileSize")
     file_type: str = Field(default="pdf", alias="fileType")
     status: str
+    authorization_required: bool = Field(default=False, alias="authorizationRequired")
+    prepared_text_available: bool = Field(default=False, alias="preparedTextAvailable")
     extracted_events_count: int = Field(default=0, alias="extractedEventsCount")
     error_message: str | None = Field(default=None, alias="errorMessage")
     error_code: str | None = Field(default=None, alias="errorCode")

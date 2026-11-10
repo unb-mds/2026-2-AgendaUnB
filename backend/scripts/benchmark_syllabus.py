@@ -25,15 +25,7 @@ from src.modules.syllabus.gemini import GeminiProvider
 from src.modules.syllabus.processing_config import ProcessingConfig
 from src.modules.syllabus.processing_task import run_isolated
 from src.modules.syllabus.worker import SyllabusWorker
-from syllabus_samples import cases, make_pdf
-
-
-class SyntheticStorage:
-    def __init__(self, content):
-        self.content = content
-
-    def download_file(self, path):
-        return self.content
+from syllabus_samples import approved_source, cases, make_pdf
 
 
 class ReferenceProvider:
@@ -85,7 +77,7 @@ def main():
     parser.add_argument("--live", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    config = replace(ProcessingConfig.from_env(), retry_delay_seconds=0)
+    config = replace(ProcessingConfig.from_env(), retry_delay_seconds=0, provider_terms_ready=args.live)
     if args.live and not config.api_key:
         parser.exit(2, "GEMINI_API_KEY ausente; nenhum acesso ao registro do Windows será feito.\n")
     engine = create_engine("sqlite+pysqlite:///:memory:")
@@ -99,11 +91,24 @@ def main():
     for case in cases():
         started = time.monotonic()
         content = make_pdf(case["pages"])
+        from src.modules.syllabus.preparation import extract_pdf_isolated
+        prepared = extract_pdf_isolated(content, 8)
+        pdf_size = len(content)
+        del content
+        preparation_seconds = round(time.monotonic() - started, 3)
+        # Corpus fixo, sintético e revisado pelo mantenedor. Sem espera humana
+        # simulada no RNF06; a aprovação antecede o início da fila.
+        queued = time.monotonic()
         owner, sid = uuid4(), uuid4()
+        snapshot = approved_source("unused")
+        from src.modules.syllabus.preparation import text_hash
+        snapshot.update(prepared_pages=prepared, approved_pages=prepared, approved_hash=text_hash(prepared))
         with sessions() as db:
             db.add(Profile(id=owner, papel="student"))
             db.add(Syllabus(id=sid, user_id=owner, file_name=case["id"] + ".pdf",
-                            file_path=f"syllabus_files/{owner}/{sid}.pdf", file_size=len(content)))
+                            file_path=None, file_size=pdf_size,
+                            preparation_duration_ms=round(preparation_seconds*1000),
+                            **snapshot))
             db.commit()
         provider = GeminiProvider(config) if args.live else ReferenceProvider(case)
         observations = []
@@ -111,24 +116,28 @@ def main():
             result = run_isolated(*params)
             observations.append(result.extraction.unsupported_dates)
             return result
-        worker = SyllabusWorker(sessions, SyntheticStorage(content), provider, config, runner=observe_task)
+        worker = SyllabusWorker(sessions, None, provider, config, runner=observe_task)
         for _ in range(config.max_attempts + 1):
             if not worker.run_once():
                 break
         elapsed = round(time.monotonic() - started, 3)
+        processing_elapsed = round(time.monotonic() - queued, 3)
         with sessions() as db:
             job = db.get(Syllabus, sid)
             actual = list(db.scalars(select(AssessmentCandidate).where(
                 AssessmentCandidate.plano_id == sid, AssessmentCandidate.execucao == job.execucao_atual)))
             measurement = dict(id=case["id"], pages=len(case["pages"]), status=job.status,
                                error_code=job.erro_codigo, attempts=job.execucao_atual,
-                               cost_reserved_usd=str(job.cost_reserved_usd), total_seconds=elapsed,
+                               cost_reserved_usd=str(job.cost_reserved_usd), total_seconds=processing_elapsed,
+                               preparation_seconds=preparation_seconds,
+                               human_review_seconds=0,
+                               pipeline_seconds=elapsed,
                                unsupported_dates_blocked=sum(observations),
                                candidates=[dict(titulo=item.titulo, tipo=item.tipo,
                                                 data=item.data_sugerida.isoformat() if item.data_sugerida else None,
                                                 hora=item.hora_sugerida.strftime("%H:%M") if item.hora_sugerida else None,
                                                 pagina=item.pagina_origem) for item in actual],
-                               under_20_seconds=elapsed < 20, **metrics(case["expected"], actual))
+                               under_20_seconds=processing_elapsed < 20, **metrics(case["expected"], actual))
             report["cases"].append(measurement)
     report["totals"] = {name: sum(item[name] for item in report["cases"]) for name in
                         ["expected", "correct", "omissions", "incorrect", "extras", "invented_dates_persisted", "unsupported_dates_blocked"]}
