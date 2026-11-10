@@ -42,18 +42,18 @@ Concluir a extração da antiga S6-B01. Transformar texto de planos em candidato
 
 #### Tasks
 
-- [ ] Reaproveitar as validações de PDF digital de até 10 MB e 10 páginas, extrair texto no servidor com referência de página quando disponível e aceitar texto bruto com limite documentado.
-- [ ] Minimizar/remover identificadores e mostrar o conteúdo exato para revisão. Exigir autorização antes de qualquer chamada externa e enviar ao Gemini apenas o trecho aprovado, mantendo o PDF original privado.
-- [ ] Documentar provedor/modelo, configuração por ambiente, limite de custo por arquivo, timeout e tentativas limitadas. Manter credenciais no servidor e processar em job persistido e recuperável.
-- [ ] Validar saída estruturada com título, tipo prova/trabalho, data/horário quando disponíveis, ambiguidade e trecho/página de origem. Tratar o texto como dado, sem execução de instruções, navegação ou ferramentas acionadas pelo documento.
-- [ ] Persistir candidatos privados sem criar eventos definitivos. Tratar falha, 429, timeout, resultado vazio e reprocessamento, sem registrar PDF ou texto integral em logs.
+- [x] Reaproveitar as validações de PDF digital de até 10 MB e 10 páginas, extrair texto no servidor com referência de página quando disponível e aceitar texto bruto com limite documentado.
+- [x] Extrair localmente e descartar o PDF original/temporários ao fim da preparação, inclusive em falha. Minimizar identificadores, mostrar o texto exato e exigir autorização antes de enviar somente o trecho aprovado ao Gemini.
+- [x] Documentar provedor/modelo, configuração por ambiente, limite de custo por arquivo, timeout e tentativas limitadas. Manter credenciais no servidor e processar em job persistido e recuperável.
+- [x] Validar saída estruturada com título, tipo prova/trabalho, data/horário quando disponíveis, ambiguidade e trecho/página de origem. Tratar o texto como dado, sem execução de instruções, navegação ou ferramentas acionadas pelo documento.
+- [x] Persistir candidatos privados sem criar eventos definitivos. Tratar falha, 429, timeout, resultado vazio e reprocessamento, sem registrar PDF ou texto integral em logs.
 - [ ] Oferecer organização manual para PDF escaneado ou conteúdo ainda pessoal/confidencial. Habilitar o provedor em produção após validação de termos e elegibilidade em S7-B02 ([#68](https://github.com/unb-mds/2026-2-AgendaUnB/issues/68)).
 
 #### Critérios de aceite
 
-- [ ] Com amostras anonimizadas e resultado esperado, demonstrar que só provas e trabalhos viram candidatos. Registrar acertos, omissões e datas inventadas. Aulas e referências bibliográficas ficam fora, e datas incompletas exigem correção sem inferência de ano ou horário.
-- [ ] Demonstrar retomada e retry sem duplicar candidatos ativos, além de estados recuperáveis para erros e ausência de avaliações.
-- [ ] Medir RNF06 com corpus de até 10 páginas. Incluir fila e provedor, separar tempo humano de revisão e documentar o tempo inicial de preparação. Verificar a meta de menos de 20 s e registrar desvios.
+- [x] Com amostras anonimizadas e resultado esperado, demonstrar que só provas e trabalhos viram candidatos. Registrar acertos, omissões e datas inventadas. Aulas e referências bibliográficas ficam fora, e datas incompletas exigem correção sem inferência de ano ou horário.
+- [x] Demonstrar retomada e retry sem duplicar candidatos ativos, além de estados recuperáveis para erros e ausência de avaliações.
+- [x] Medir RNF06 com corpus de até 10 páginas. Incluir fila e provedor, separar tempo humano de revisão e documentar o tempo inicial de preparação. Verificar a meta de menos de 20 s e registrar desvios.
 
 #### Observações
 
@@ -64,6 +64,12 @@ A minimização por regex tem alcance limitado. Enviar conteúdo ao serviço gra
 - [ ] Anexar à issue o PR, a versão implantada e o resultado de cada cenário dos critérios de aceite, identificando falhas ainda abertas.
 - [ ] Registrar o nome do revisor e a revisão dos contratos, permissões e dados afetados por esta entrega.
 
+
+**Evidência local em 10/11/2026:** [contrato e métricas](../processamento-planos-s7.md),
+[revisão técnica e pendências](../s7-b01-validacao.md). O caminho manual e o bloqueio
+operacional estão implementados; produção continua pendente de S7-B02, implantação
+validada e revisão humana. Os checks acima representam implementação/validação
+local, sem aprovação automática de dados reais ou fechamento das dependências.
 
 ### S7-F01 - Consolidar requisitos, decisões e contratos da entrega
 

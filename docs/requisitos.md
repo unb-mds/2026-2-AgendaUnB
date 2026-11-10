@@ -4,6 +4,13 @@ Este documento reúne os **Requisitos Funcionais (RF)** e **Requisitos Não Func
 
 ---
 
+Atualização S7-B01: em planos particulares, RF06 exige preparação local com descarte
+do PDF, minimização e revisão do texto exato, autorização antes do envio ao Gemini,
+candidatos privados somente a provas/trabalhos e confirmação posterior para criar
+eventos. O protocolo e as evidências estão no [guia S7](processamento-planos-s7.md).
+A consolidação de ofertas/turmas e da substituição do atestado pertence à S7-F01;
+esta entrega não declara implementadas as demais extrações previstas na base RF05.
+
 ## 1. Requisitos Funcionais (RF)
 
 | ID | Nome | Descrição |

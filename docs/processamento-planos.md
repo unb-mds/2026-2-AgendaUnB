@@ -1,5 +1,9 @@
 # Processamento privado de planos de ensino — S6-B01
 
+> Atualização S7: o contrato vigente usa preparação local sem retenção do PDF e
+> autorização explícita do texto. Veja [S7-B01](processamento-planos-s7.md).
+> Os fluxos/resultados S6 abaixo são históricos.
+
 Implementação de RF06/RNF06 para planos particulares em PDF com texto selecionável.
 O processamento gera **candidatos**, nunca compromissos, notificações ou registros
 na tabela legada `avaliacoes`. A [S6-D02](privacidade-planos.md) fornece políticas
