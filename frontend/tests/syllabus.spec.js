@@ -32,10 +32,13 @@ for (const [width, theme] of [[360, 'light'], [1365, 'dark']]) {
     });
     const { first, confirm } = await openCheckedReview(page);
     if (theme === 'light') await page.getByRole('button', { name: /tema/i }).click();
+    const agenda = page.getByRole('link', { name: 'Abrir Meus Eventos' });
+    await expect(agenda).toHaveCount(0);
     expect(posts).toHaveLength(0);
     await confirm.evaluate(button => { button.click(); button.click(); });
     const feedback = page.getByText('1 avaliação confirmada na agenda.');
     await expect(feedback).toBeVisible();
+    await expect(agenda).toBeVisible();
     await expect(first.getByLabel('Decisão')).toBeDisabled();
     await expect(page.getByRole('group', { name: 'Avaliação 2', exact: true }).getByLabel('Decisão')).toBeEnabled();
     expect(posts).toEqual([{ candidates: [{ candidateId: candidate.id, title: 'Trabalho corrigido',
@@ -45,6 +48,45 @@ for (const [width, theme] of [[360, 'light'], [1365, 'dark']]) {
     await page.screenshot({ path: testInfo.outputPath('confirmation.png') });
   });
 }
+
+test('abrir Meus Eventos consulta a agenda e exibe a avaliação persistida uma vez', async ({ page }) => {
+  await setup(page, { detail: { ...plan, status: 'concluido', candidates: [candidate] } });
+  let storedEvent = null;
+  let agendaReads = 0;
+  let confirmations = 0;
+  await page.route('**/api/v1/me/events', route => {
+    expect(route.request().headers().authorization).toBe('Bearer test-token');
+    agendaReads++;
+    return route.fulfill({ json: storedEvent ? [storedEvent] : [] });
+  });
+  await page.route(`**/api/v1/syllabus/${plan.id}/confirm`, route => {
+    confirmations++;
+    const [item] = route.request().postDataJSON().candidates;
+    storedEvent = {
+      id: 'event-a', title: item.title, starts_at: item.startsAt, category: item.category, description: item.description,
+      origin: { syllabusId: plan.id, candidateId: item.candidateId },
+    };
+    return route.fulfill({ json: { syllabusId: plan.id, events: [storedEvent] } });
+  });
+
+  await page.goto('/eventos?aba=meus');
+  await expect(page.getByRole('heading', { name: 'Nenhum evento encontrado' })).toBeVisible();
+  expect(agendaReads).toBe(1);
+
+  const { confirm } = await openCheckedReview(page);
+  await confirm.click();
+  const agenda = page.getByRole('link', { name: 'Abrir Meus Eventos' });
+  await agenda.focus();
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/\/eventos\?aba=meus$/);
+  await expect(page.getByRole('heading', { name: 'Trabalho corrigido', exact: true })).toHaveCount(1);
+  expect(agendaReads).toBe(2);
+
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'Trabalho corrigido', exact: true })).toHaveCount(1);
+  expect(agendaReads).toBe(3);
+  expect(confirmations).toBe(1);
+});
 
 for (const mode of ['resposta perdida', 'conflito']) {
   test(`${mode} exige consultar o estado salvo antes de tentar confirmar de novo`, async ({ page }) => {
@@ -66,6 +108,7 @@ for (const mode of ['resposta perdida', 'conflito']) {
     await refresh.click();
     if (status === 'confirmado') {
       await expect(page.getByText(/1 de 1 itens do último envio constam como confirmados/)).toBeVisible();
+      await expect(page.getByRole('link', { name: 'Abrir Meus Eventos' })).toBeVisible();
       await expect(first.getByLabel('Decisão')).toBeDisabled();
       expect(posts).toHaveLength(1);
     } else {

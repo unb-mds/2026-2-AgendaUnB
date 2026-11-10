@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { syllabusError } from '../lib/syllabus';
 import { syllabusApi } from '../lib/syllabusApi';
 import { buildReviewConfirmation, createCandidateReviewDraft } from '../lib/syllabusReview';
-import { Feedback } from './ManagementUI';
+import { Feedback, Icon } from './ManagementUI';
 import SyllabusReviewEditor from './SyllabusReviewEditor';
 
 const states = { pendente: 'Pendente de confirmação', confirmado: 'Confirmado', descartado: 'Descartado' };
@@ -131,6 +132,10 @@ function CandidateReview({ planId, initialCandidates }) {
     </div>;
     }} />
     <Feedback error={error} success={success} />
+    {!busy && candidates.some(candidate => candidate.status === 'confirmado') &&
+      <Link className="manage-button" to="/eventos?aba=meus">
+        <Icon>event_available</Icon>Abrir Meus Eventos
+      </Link>}
     {unverifiedIds && <button className="manage-button" type="button" disabled={busy} onClick={refresh}>Atualizar avaliações</button>}
   </>;
 }
