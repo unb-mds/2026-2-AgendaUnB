@@ -100,7 +100,7 @@ async def validate_pdf_file(file: UploadFile) -> bytes:
 def process_syllabus_upload(
     user_id: UUID,
     filename: str,
-    content: bytes,
+    file_size: int,
     db: Session,
     pages: list[dict],
     preparation_duration_ms: int = 0,
@@ -135,7 +135,7 @@ def process_syllabus_upload(
         file_name=filename,
         file_path=None,
         arquivo_url=None,
-        file_size=len(content),
+        file_size=file_size,
         file_type=file_type,
         prepared_pages=pages,
         preparation_duration_ms=preparation_duration_ms,

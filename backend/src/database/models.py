@@ -174,8 +174,12 @@ class Syllabus(Base):
 
 
     @property
+    def prepared_text_available(self) -> bool:
+        return bool(self.prepared_pages)
+
+    @property
     def authorization_required(self) -> bool:
-        return self.authorized_at is None
+        return self.prepared_pages is not None and self.authorized_at is None
 
 
 class AssessmentCandidate(Base):

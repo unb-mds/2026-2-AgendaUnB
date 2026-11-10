@@ -85,6 +85,7 @@ def local_http(monkeypatch):
             if not isinstance(token,str) or not token:
                 pytest.fail("Auth local não retornou sessão")
             ctx.tokens[role] = token
+        monkeypatch.setenv("SYLLABUS_PROVIDER_TERMS_READY","true")
         monkeypatch.setenv("SUPABASE_URL",ctx.url)
         monkeypatch.setenv("SUPABASE_ANON_KEY",anon)
         def database():
@@ -147,20 +148,24 @@ def test_authenticated_upload_private_download_processing_and_review(local_http,
     body = response.json()
     assert body["status"] == "pendente" and body["userId"] == ctx.users["owner"]
     sid = body["id"]
-    path = body["filePath"].removeprefix("syllabus_files/")
-    ctx.paths.append(path)
-    download_url = ctx.url+"/storage/v1/object/syllabus_files/"+path
-    downloaded = httpx.get(download_url,headers=ctx.headers("owner"),timeout=15)
-    assert downloaded.status_code == 200 and downloaded.content == pdf
+    assert body["filePath"] is None and body["authorizationRequired"]
+    preview = client.get(f"/api/v1/syllabus/{sid}/text", headers=ctx.headers("owner"))
+    assert preview.status_code == 200
+    assert preview.headers["cache-control"] == "no-store"
     for role in ("other","professor","admin",None):
-        denied = httpx.get(download_url,headers=ctx.headers(role),timeout=15)
-        assert denied.status_code in (400,401,403,404)
-        status = client.get(f"/api/v1/syllabus/{sid}",headers=ctx.headers(role))
-        assert status.status_code == (401 if role is None else 404)
-    public = httpx.get(ctx.url+"/storage/v1/object/public/syllabus_files/"+path,headers={"apikey":ctx.anon_key},timeout=15)
-    assert public.status_code in (400,401,403,404)
+        for suffix in ("", "/text"):
+            hidden = client.get(f"/api/v1/syllabus/{sid}{suffix}",headers=ctx.headers(role))
+            assert hidden.status_code == (401 if role is None else 404)
+    with ctx.sessions() as session:
+        assert session.execute(text("select count(*) from storage.objects where bucket_id='syllabus_files'")).scalar() == 0
+    # Snapshot sintético conhecido: autorização explícita após conferir o conteúdo.
+    preview = preview.json()
+    authorized = client.post(f"/api/v1/syllabus/{sid}/extractions",headers=ctx.headers("owner"), json={
+        "pages":preview["pages"],"textHash":preview["textHash"],"authorize":True,"contentEligible":True})
+    assert authorized.status_code == 202
+    queue_started = time.monotonic()
     provider = GeminiProvider(config) if provider_kind == "gemini" else ReferenceProvider()
-    worker = SyllabusWorker(ctx.sessions,storage,provider,config)
+    worker = SyllabusWorker(ctx.sessions,None,provider,config)
     for _ in range(config.max_attempts):
         worker.run_once()
         with ctx.sessions() as session:
@@ -203,7 +208,9 @@ def test_authenticated_upload_private_download_processing_and_review(local_http,
                   "processing_total_ms":total_processing_ms,"last_attempt_ms":attempt_ms,
                   "processing_under_20s":total_processing_ms < 20000,
                   "candidates":2,"events_before_review":0,"events_after_review":1,
-                  "cross_user_download_denied":True,"public_download_denied":True,"cleanup_completed":True}
+                  "pdf_persisted":False,"cross_user_text_denied":True,
+                  "processing_wall_ms":round((time.monotonic()-queue_started)*1000),
+                  "human_review_seconds":0,"cleanup_completed":True}
 
 
 def test_storage_http_rejects_foreign_upload_and_invalid_mime(local_http):
@@ -215,10 +222,15 @@ def test_storage_http_rejects_foreign_upload_and_invalid_mime(local_http):
         response = httpx.post(ctx.url+"/storage/v1/object/syllabus_files/"+path,
                              headers={**ctx.headers("other"),"Content-Type":"application/pdf"},content=pdf,timeout=15)
         assert response.status_code in (400,401,403)
+    own_path = f"{ctx.users['owner']}/{uuid4()}.pdf"
+    ctx.paths.append(own_path)
+    own_upload = httpx.post(ctx.url+"/storage/v1/object/syllabus_files/"+own_path,
+        headers={**ctx.headers("owner"),"Content-Type":"application/pdf"},content=pdf,timeout=15)
+    assert own_upload.status_code in (400,401,403)
     path = f"{ctx.users['owner']}/{uuid4()}.pdf"
     ctx.paths.append(path)
     response = httpx.post(ctx.url+"/storage/v1/object/syllabus_files/"+path,
                          headers={**ctx.headers("owner"),"Content-Type":"text/plain"},content=b"not a pdf",timeout=15)
     assert response.status_code == 400
     ctx.result = {"case":"storage_constraints","foreign_folder_upload_denied":True,
-                  "nested_folder_upload_denied":True,"invalid_mime_denied":True,"cleanup_completed":True}
+                  "nested_folder_upload_denied":True,"own_pdf_retention_denied":True,"invalid_mime_denied":True,"cleanup_completed":True}

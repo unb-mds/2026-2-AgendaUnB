@@ -57,7 +57,7 @@ class SyllabusWorker:
         with self.sessions() as db:
             job = db.scalar(select(Syllabus).where(Syllabus.tipo == "particular", Syllabus.authorized_at.is_not(None),
                                   Syllabus.approved_pages.is_not(None), ready)
-                            .order_by(Syllabus.created_at, Syllabus.id).with_for_update(skip_locked=True).limit(1))
+                            .order_by(Syllabus.queued_at, Syllabus.id).with_for_update(skip_locked=True).limit(1))
             if job is None:
                 return None
             token = uuid4()

@@ -3,6 +3,7 @@ import hashlib
 import json
 import logging
 import multiprocessing
+import os
 import re
 import time
 from datetime import datetime, timezone
@@ -40,7 +41,6 @@ class ExtractionAuthorization(BaseModel):
     reprocess: bool = Field(default=False, strict=True)
 
 
-
 class PreparationPreview(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
     id: str
@@ -48,17 +48,25 @@ class PreparationPreview(BaseModel):
     text_hash: str = Field(alias="textHash")
     authorization_required: bool = Field(alias="authorizationRequired")
     provider: str
+    provider_available: bool = Field(alias="providerAvailable")
     max_text_bytes: int = Field(alias="maxTextBytes")
     warning: str
     preparation_duration_ms: int | None = Field(alias="preparationDurationMs")
     text_revision: int = Field(alias="textRevision")
+
 
 def checked_pages(pages):
     values = [page.model_dump() if isinstance(page, ReviewPage) else ReviewPage.model_validate(page).model_dump() for page in pages]
     ids = [page["pagina"] for page in values]
     if not 1 <= len(values) <= 10 or len(set(ids)) != len(ids) or (None in ids and ids != [None]):
         raise HTTPException(422, "Referências de página inválidas.")
-    if sum(len(page["texto"].encode("utf-8")) for page in values) > MAX_TEXT_BYTES:
+    if any("\x00" in page["texto"] for page in values):
+        raise HTTPException(422, "O texto contém caracteres de controle inválidos.")
+    try:
+        size = sum(len(page["texto"].encode("utf-8")) for page in values)
+    except UnicodeError:
+        raise HTTPException(422, "O texto precisa ser UTF-8 válido.") from None
+    if size > MAX_TEXT_BYTES:
         raise HTTPException(413, "O texto ultrapassa o limite de 40.000 bytes UTF-8.")
     if not any(page["texto"].strip() for page in values):
         raise HTTPException(422, "Informe um trecho com conteúdo para revisar.")
@@ -66,7 +74,8 @@ def checked_pages(pages):
 
 
 def text_hash(pages):
-    return hashlib.sha256(json.dumps(pages, ensure_ascii=False, separators=(",", ":")).encode("utf-8")).hexdigest()
+    snapshot = [{"pagina": page["pagina"], "texto": page["texto"]} for page in pages]
+    return hashlib.sha256(json.dumps(snapshot, ensure_ascii=False, separators=(",", ":")).encode("utf-8")).hexdigest()
 
 
 def minimize(text):
@@ -136,7 +145,7 @@ def preview(plan):
         raise HTTPException(409, "Este plano precisa ser preparado novamente antes de enviar texto à IA.")
     return {"id": str(plan.id), "pages": pages, "textHash": text_hash(pages),
             "authorizationRequired": plan.authorized_at is None,
-            "provider": "Google Gemini API", "maxTextBytes": MAX_TEXT_BYTES,
+            "provider": "Google Gemini API", "providerAvailable": os.getenv("SYLLABUS_PROVIDER_TERMS_READY", "false").lower() == "true", "maxTextBytes": MAX_TEXT_BYTES,
             "warning": "A remoção automática de identificadores é limitada. Revise o texto exato. Não envie conteúdo pessoal, sensível ou confidencial. A autorização não substitui os termos do provedor.",
             "preparationDurationMs": plan.preparation_duration_ms,
             "textRevision": plan.text_revision}
@@ -155,7 +164,7 @@ def authorize(db, plan, payload, config):
     if any(minimize(page["texto"]) != page["texto"] for page in pages):
         raise HTTPException(422, "Remova os identificadores detectados antes de autorizar o envio.")
     if not config.provider_terms_ready:
-        raise HTTPException(503, "A integração Gemini aguarda validação de termos e elegibilidade S7-B02. Use a organização manual.")
+        raise HTTPException(503, "A análise com Gemini ainda não está disponível. Use a organização manual.")
     if plan.approved_hash == digest and not payload.reprocess:
         return plan
     if plan.status == "processando" or (plan.authorized_at is not None and plan.status == "pendente"):
@@ -167,6 +176,7 @@ def authorize(db, plan, payload, config):
     now = datetime.now(timezone.utc)
     db.execute(update(AssessmentCandidate).where(AssessmentCandidate.plano_id == plan.id,
         AssessmentCandidate.status == "pendente").values(status="descartado", revisado_em=now))
+    plan.prepared_pages = pages  # Não conservar a versão anterior às correções do dono.
     plan.approved_pages = pages
     plan.approved_hash = digest
     plan.authorized_at = now

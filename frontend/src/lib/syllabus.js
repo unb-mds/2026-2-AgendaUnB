@@ -1,6 +1,6 @@
 export const MAX_PDF_BYTES = 10 * 1024 * 1024;
 export const SYLLABUS_PAGE_SIZE = 10;
-export const isProcessing = plan => ['pendente', 'processando'].includes(plan?.status);
+export const isProcessing = plan => !plan?.authorizationRequired && ['pendente', 'processando'].includes(plan?.status);
 
 export const PLAN_STATES = {
   pendente: { label: 'Pendente', icon: 'schedule', title: 'Seu plano está na fila', description: 'O arquivo foi recebido e aguarda processamento. Você pode sair desta página e acompanhar depois pelo histórico.' },
@@ -22,6 +22,8 @@ export function normalizePlan(plan) {
   return {
     id: plan.id,
     status: plan.status,
+    authorizationRequired: plan.authorizationRequired === true,
+    preparedTextAvailable: plan.preparedTextAvailable === true,
     fileName: plan.fileName || 'Plano de ensino.pdf',
     disciplina: plan.disciplina || '',
     semestre: plan.semestre ?? null,

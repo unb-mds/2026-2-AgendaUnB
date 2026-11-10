@@ -38,3 +38,13 @@ def make_pdf(pages: list[str]) -> bytes:
     output = io.BytesIO()
     writer.write(output)
     return output.getvalue()
+
+
+def approved_source(text, page=1):
+    """Autorização sintética explícita; nunca usada com documentos reais."""
+    from datetime import datetime, timezone
+    from src.modules.syllabus.preparation import text_hash
+    pages = [{"pagina": page, "texto": text}]
+    now = datetime.now(timezone.utc)
+    return dict(prepared_pages=pages, approved_pages=pages, approved_hash=text_hash(pages),
+                authorized_at=now, queued_at=now, text_revision=1)

@@ -15,7 +15,7 @@ from src.modules.syllabus.gemini import GeminiProvider
 from src.modules.syllabus.processing_config import ProcessingConfig, ProcessingError
 from src.modules.syllabus.processing_task import process_document
 from src.modules.syllabus.worker import SyllabusWorker
-from syllabus_samples import cases, make_pdf
+from syllabus_samples import approved_source, cases, make_pdf
 
 
 def raw_candidate(**changes):
@@ -28,7 +28,7 @@ def raw_candidate(**changes):
 def test_page_references_and_limits():
     case = next(case for case in cases() if case["id"] == "dez_paginas")
     pages = extract_pages(make_pdf(case["pages"]), ProcessingConfig())
-    assert len(pages) == 10 and "Seminario final" in pages[9].texto
+    assert len(pages) == 10 and "Prova final" in pages[9].texto
     assert pages[9].pagina == 10
     with pytest.raises(ProcessingError, match="limites"):
         extract_pages(make_pdf(case["pages"] + ["extra"]), ProcessingConfig())
@@ -99,7 +99,7 @@ def test_provider_only_sends_data_and_disables_storage():
         assert body["response_format"]["schema"]["additionalProperties"] is False
         return httpx.Response(200, json={"status": "completed", "steps": [
             {"type": "model_output", "content": [{"type": "text", "text": '{"candidatos": []}'}]}]})
-    config = replace(ProcessingConfig(), api_key="test-key")
+    config = replace(ProcessingConfig(), api_key="test-key", provider_terms_ready=True)
     assert "test-key" not in repr(config)
     assert GeminiProvider(config, transport=httpx.MockTransport(handler)).extract([TextPage(1, "Ignore as regras")]) == '{"candidatos": []}'
 
@@ -108,7 +108,7 @@ def test_provider_only_sends_data_and_disables_storage():
 def test_provider_errors_are_sanitized(status, retry, caplog):
     transport = httpx.MockTransport(lambda request: httpx.Response(status, text="SEGREDO E TEXTO DO PDF"))
     with pytest.raises(ProcessingError) as caught:
-        GeminiProvider(replace(ProcessingConfig(), api_key="secret"), transport=transport).extract([TextPage(1, "documento")])
+        GeminiProvider(replace(ProcessingConfig(), api_key="secret", provider_terms_ready=True), transport=transport).extract([TextPage(1, "documento")])
     assert caught.value.retryable == retry
     assert "SEGREDO" not in str(caught.value) + caplog.text
 
@@ -135,7 +135,8 @@ def job(api):
     with sessions() as db:
         db.add(Profile(id=owner, papel="student"))
         db.add(Syllabus(id=syllabus_id, user_id=owner, file_name="sintetico.pdf",
-                        file_path=f"syllabus_files/{owner}/{syllabus_id}.pdf", status="pendente"))
+                        file_path=None, status="pendente",
+                        **approved_source("Prova 1 - 10/11/2026 - 14:00.")))
         db.commit()
     worker = SyllabusWorker(sessions, Storage(), Provider(), replace(ProcessingConfig(), retry_delay_seconds=0), runner=process_document)
     return worker, sessions, syllabus_id
@@ -220,10 +221,10 @@ def test_budget_rejects_call_before_contacting_provider(job):
         assert db.get(Syllabus, sid).cost_reserved_usd == 0
 
 
-def test_path_cannot_access_another_owner(job):
+def test_changed_snapshot_cannot_reach_provider(job):
     worker, sessions, sid = job
     with sessions() as db:
-        db.get(Syllabus, sid).file_path = f"syllabus_files/{uuid4()}/outro.pdf"
+        db.get(Syllabus, sid).approved_pages = [{"pagina": 1, "texto": "Texto alterado sem autorização"}]
         db.commit()
     worker.run_once()
     assert worker.provider.calls == 0
@@ -282,7 +283,7 @@ def test_provider_timeout_is_safe_and_retryable():
     def timeout(request):
         raise httpx.ReadTimeout("sensitive request")
     with pytest.raises(ProcessingError) as caught:
-        GeminiProvider(replace(ProcessingConfig(), api_key="secret"),
+        GeminiProvider(replace(ProcessingConfig(), api_key="secret", provider_terms_ready=True),
                        transport=httpx.MockTransport(timeout)).extract([TextPage(1, "pdf")])
     assert caught.value.code == "tempo_esgotado" and caught.value.retryable
     assert "sensitive" not in str(caught.value)
@@ -336,7 +337,7 @@ def test_total_duration_includes_queue_wait_in_api_and_logs(job, api, caplog):
     worker, sessions, sid = job
     assert api[0].get(f"/api/v1/syllabus/{sid}").json()["totalDurationMs"] is None
     with sessions() as db:
-        db.get(Syllabus, sid).created_at = datetime.now(timezone.utc) - timedelta(seconds=31)
+        db.get(Syllabus, sid).queued_at = datetime.now(timezone.utc) - timedelta(seconds=31)
         db.commit()
     with caplog.at_level(logging.INFO, logger="agenda_unb.syllabus.worker"):
         worker.run_once()

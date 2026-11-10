@@ -131,3 +131,125 @@ def test_other_user_cannot_read_or_approve_text(api, monkeypatch):
 
 def test_raw_text_utf8_limit(api):
     assert api[0].post("/api/v1/syllabus/text", json={"text": "é" * 20001}).status_code == 413
+
+
+def test_text_preview_is_not_cacheable(api):
+    sid, _ = prepare(api)
+    assert api[0].get(f"/api/v1/syllabus/{sid}/text").headers["cache-control"] == "no-store"
+
+
+@pytest.mark.parametrize("text", ["invalid\x00text", " ", "\n\t"])
+def test_invalid_or_blank_text_is_rejected(api, text):
+    assert api[0].post("/api/v1/syllabus/text", json={"text": text}).status_code == 422
+
+
+def test_pdf_temporary_is_closed_before_text_is_persisted(api, monkeypatch):
+    from starlette.datastructures import UploadFile
+    import src.modules.syllabus.router as router
+    original_close = UploadFile.close
+    original_register = router.process_syllabus_upload
+    closed = []
+    async def close(file):
+        await original_close(file)
+        closed.append(file.file.closed)
+    def register(**kwargs):
+        assert closed and all(closed)
+        assert "content" not in kwargs
+        return original_register(**kwargs)
+    monkeypatch.setattr(UploadFile, "close", close)
+    monkeypatch.setattr(router, "process_syllabus_upload", register)
+    response = api[0].post("/api/v1/syllabus/upload", files={
+        "file": ("sintetico.pdf", make_pdf([TEXT]), "application/pdf")})
+    assert response.status_code == 202
+    assert closed and all(closed)
+
+
+def test_human_review_wait_does_not_consume_processing_sla(api, monkeypatch):
+    from datetime import datetime, timedelta, timezone
+    monkeypatch.setenv("SYLLABUS_PROVIDER_TERMS_READY", "true")
+    sid, preview = prepare(api)
+    with api[1]() as db:
+        db.get(Syllabus, UUID(sid)).created_at = datetime.now(timezone.utc)-timedelta(hours=2)
+        db.commit()
+    api[0].post(f"/api/v1/syllabus/{sid}/extractions", json=approval(preview))
+    class EmptyProvider:
+        def extract(self, pages):
+            return '{"candidatos": []}'
+    worker = SyllabusWorker(api[1], None, EmptyProvider(), ProcessingConfig(), runner=process_document)
+    assert worker.run_once()
+    result = api[0].get(f"/api/v1/syllabus/{sid}").json()
+    assert result["totalDurationMs"] < 20000
+    assert result["reviewDurationMs"] >= 7_199_000
+
+
+def test_provider_requires_terms_gate_before_http(monkeypatch):
+    import httpx
+    from src.modules.syllabus.gemini import GeminiProvider
+    from src.modules.syllabus.extraction import TextPage
+    from src.modules.syllabus.processing_config import ProcessingError
+    def unexpected(*args, **kwargs):
+        pytest.fail("Não pode chamar HTTP antes da liberação S7-B02")
+    monkeypatch.setattr(httpx.Client, "stream", unexpected)
+    with pytest.raises(ProcessingError):
+        GeminiProvider(ProcessingConfig(api_key="synthetic-key")).extract([TextPage(None, TEXT)])
+
+
+@pytest.mark.parametrize("title", ["Aula sobre prova", "Bibliografia de prova", "Leitura para trabalho"])
+def test_classes_and_bibliography_do_not_become_candidates(title):
+    from src.modules.syllabus.extraction import TextPage, validate_candidates
+    text = title + " - 10/11/2026."
+    kind = "trabalho" if "trabalho" in title else "prova"
+    result = validate_candidates(json.dumps({"candidatos": [{"titulo": title, "tipo": kind,
+        "pagina_origem": None, "trecho_origem": text}]}), [TextPage(None, text)])
+    assert result.candidates == []
+
+
+def test_other_assessment_types_are_rejected():
+    from src.modules.syllabus.extraction import TextPage, validate_candidates
+    from src.modules.syllabus.processing_config import ProcessingError
+    with pytest.raises(ProcessingError):
+        validate_candidates(json.dumps({"candidatos": [{"titulo": "Seminario", "tipo": "seminario",
+            "pagina_origem": None, "trecho_origem": "Seminario"}]}), [TextPage(None, "Seminario")])
+
+
+def test_snapshot_hash_is_stable_after_jsonb_reorders_keys():
+    from src.modules.syllabus.preparation import text_hash
+    assert text_hash([{"pagina":1,"texto":TEXT}]) == text_hash([{"texto":TEXT,"pagina":1}])
+
+
+@pytest.mark.parametrize("failure_stage", ["validation", "extraction"])
+def test_preparation_failure_closes_pdf_and_leaves_no_job(api, monkeypatch, failure_stage):
+    from fastapi import HTTPException
+    from starlette.datastructures import UploadFile
+    from src.modules.syllabus import services
+    import src.modules.syllabus.router as router
+    original_close = UploadFile.close
+    closed = []
+    async def close(file):
+        await original_close(file)
+        closed.append(file.file.closed)
+    def unavailable(*args):
+        raise HTTPException(422, "Preparação indisponível; use a organização manual.")
+    monkeypatch.setattr(UploadFile, "close", close)
+    if failure_stage == "validation":
+        monkeypatch.setattr(services, "validate_pdf_structure", unavailable)
+    else:
+        monkeypatch.setattr(router, "extract_pdf_isolated", unavailable)
+    response = api[0].post("/api/v1/syllabus/upload", files={
+        "file": ("sintetico.pdf", make_pdf([TEXT]), "application/pdf")})
+    assert response.status_code == 422
+    assert closed and all(closed)
+    with api[1]() as db:
+        assert db.scalar(select(Syllabus)) is None
+
+
+def test_approval_keeps_only_the_students_corrected_text(api, monkeypatch):
+    from src.modules.syllabus.preparation import text_hash
+    monkeypatch.setenv("SYLLABUS_PROVIDER_TERMS_READY", "true")
+    sid, preview = prepare(api, "NomeSemRotulo Exemplo\n" + TEXT)
+    pages = [{"pagina":None,"texto":TEXT}]
+    response = api[0].post(f"/api/v1/syllabus/{sid}/extractions", json=approval(preview,pages=pages,textHash=text_hash(pages)))
+    assert response.status_code == 202
+    with api[1]() as db:
+        plan = db.get(Syllabus,UUID(sid))
+        assert plan.prepared_pages == plan.approved_pages == pages
