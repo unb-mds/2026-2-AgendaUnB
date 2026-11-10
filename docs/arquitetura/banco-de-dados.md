@@ -145,7 +145,7 @@ Tabela física única dos candidatos extraídos dos planos, decidida na S7-D01 c
     *   `versao_id` (UUID, Not Null): versão do plano a que o candidato pertence. A FK composta `(plano_id, versao_id)` → `versoes_plano(plano_id, id)` impede apontar para a versão de outro plano. Quando omitido no INSERT, um trigger usa a versão mais recente do plano.
     *   `ordem` (SMALLINT ≥ 0, opcional): posição do candidato na versão. `(versao_id, ordem)` é único, para reprocessar sem duplicar.
     *   `titulo` (TEXT, Not Null), `data_avaliacao` (TIMESTAMPTZ, opcional), `tipo`, `ambiguo`, `pagina_origem`, `trecho_origem`, `status`, `versao_processamento` e `provedor` (acrescentados em `20261029160000`).
-*   **Políticas RLS:** leitura pelo dono do plano e, quando a versão estiver compartilhada, por quem segue a oferta do plano (*"leitura de candidatos de versoes compartilhadas"*). Sem política de escrita.
+*   **Políticas RLS:** leitura por quem pode ler a versão (*"leitura de candidatos de versoes compartilhadas"*): o autor dela e, quando compartilhada, quem segue a oferta do plano. Sem política de escrita.
 
 ### 4.3. Tabela `versoes_plano`
 Versões de um plano (ADR-010). Toda versão nasce **privada**; uma nova revisão cria nova versão e não sobrescreve calendários pessoais.
@@ -156,7 +156,7 @@ Versões de um plano (ADR-010). Toda versão nasce **privada**; uma nova revisã
     *   `procedencia_institucional` (BOOLEAN, padrão falso): herdada da versão de origem. O papel professor/admin não a cria sozinho.
     *   `visibilidade` (padrão `privada`): `privada` ou `compartilhada`. `compartilhada_em` é preenchido se, e somente se, a versão estiver compartilhada.
 *   **Criação:** todo plano recebe a versão 1 automaticamente (trigger após INSERT em `planos_ensino`), com o papel atual do dono. Os planos existentes ganharam a versão 1 na migração.
-*   **Políticas RLS:** leitura pelo dono do plano ou, se compartilhada, por usuários que seguem a oferta do plano (função `pode_ler_versao`). Sem política de escrita: compartilhar, revisar e retirar passam pelo back-end (S8-B01).
+*   **Políticas RLS:** leitura pelo autor da versão ou, se compartilhada, por usuários que seguem a oferta do plano (função `pode_ler_versao`). O rascunho privado de uma revisão pertence a quem a escreveu. Sem política de escrita.
 *   **Arquivo:** compartilhar uma versão não expõe o registro do plano nem o arquivo. A retenção do PDF segue a ADR-003.
 
 ### 4.4. Tabelas `disciplinas`, `ofertas_turma` e `vinculos_turma`
@@ -172,6 +172,9 @@ Catálogo de turmas (ADR-009) e turmas que o usuário segue. A disciplina abstra
 `eventos_pessoais` registra a procedência em `origem_plano_id`, `origem_avaliacao_id` e `origem_versao_id` (FK para `versoes_plano`, `ON DELETE SET NULL`).
 *   **Unicidade por usuário:** `(user_id, origem_avaliacao_id)` é único (índice parcial). Como cada candidato pertence a uma única versão, isso equivale à unicidade `(user_id, version_id, candidate_id)` da ADR-010. Até a S7-D01, a unicidade era global, e um usuário podia bloquear a confirmação de outro.
 *   **Índice:** `(user_id, origem_versao_id)`.
+*   **Confirmação idempotente (S7-B04):** `confirmar_importacao(ator, chave, versao, itens)` grava a operação (`operacoes_importacao`, única por `(user_id, chave)`), os itens (`itens_importacao`) e os eventos na mesma transação. Repetir a chave devolve o resultado anterior e não recria evento apagado; a mesma chave com outro conteúdo é recusada. O item mantém o registro quando o evento é excluído (`evento_pessoal_id` fica nulo).
+
+O uso dessas funções pela API está em [Dados de planos](dados-de-planos.md).
 
 ## 5. Eventos salvos e notificações
 
