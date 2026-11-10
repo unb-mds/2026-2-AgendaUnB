@@ -45,4 +45,15 @@ export const syllabusApi = {
   async get(id, signal) {
     return normalizePlan(await syllabusRequest(`/${encodeURIComponent(id)}`, { signal }));
   },
+  async confirm(id, candidates, signal) {
+    const result = await syllabusRequest(`/${encodeURIComponent(id)}/confirm`, {
+      method: 'POST', body: JSON.stringify({ candidates }), signal,
+    });
+    const requested = new Set(candidates.map(item => item.candidateId));
+    if (result?.syllabusId !== id || !Array.isArray(result.events) || result.events.some(event =>
+      typeof event?.id !== 'string' || event.origin?.syllabusId !== id || !requested.delete(event.origin.candidateId))) {
+      throw new Error('A resposta da confirmação não pôde ser verificada.');
+    }
+    return result.events;
+  },
 };

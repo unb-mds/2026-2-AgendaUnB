@@ -4,6 +4,81 @@ const plan = { id: 'd79eeb53-aed8-4369-936b-156e01cc455c', disciplina: 'Métodos
 const pdf = { name: 'plano-mds.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4\nTeste de transporte multipart') };
 const candidate = { id: 'candidate-a', title: 'Prova de integração', type: 'prova', status: 'pendente', ambiguous: true, ambiguousFields: ['data'], suggestedDate: null, suggestedTime: null, sourcePage: 2, sourceExcerpt: 'Prova: data a definir.', versionId: 'version-a' };
 
+async function openCheckedReview(page) {
+  const first = page.getByRole('group', { name: 'Avaliação 1', exact: true });
+  await page.goto(`/plano-de-ensino?plano=${plan.id}`);
+  await first.getByLabel('Decisão').selectOption('selected');
+  await first.getByLabel('Título').fill('Trabalho corrigido');
+  await first.getByLabel('Tipo').selectOption('trabalho');
+  await first.getByLabel('Data', { exact: false }).fill('2026-12-01');
+  await first.getByLabel('Horário').fill('14:30');
+  await first.getByLabel('Fuso UTC').fill('-03:00');
+  const confirm = page.getByRole('button', { name: 'Confirmar e importar' });
+  await expect(confirm).toBeDisabled();
+  await page.getByRole('button', { name: 'Conferir selecionados' }).click();
+  await expect(confirm).toBeEnabled();
+  return { first, confirm };
+}
+
+for (const [width, theme] of [[360, 'light'], [1365, 'dark']]) {
+  test(`confirmação envia somente selecionados e bloqueia clique duplicado em ${width}px ${theme}`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width, height: 1000 });
+    await setup(page, { detail: { ...plan, status: 'concluido', candidates: [candidate, { ...candidate, id: 'other' }] } });
+    const posts = [];
+    await page.route(`**/api/v1/syllabus/${plan.id}/confirm`, async route => {
+      expect(route.request().headers().authorization).toBe('Bearer test-token');
+      posts.push(route.request().postDataJSON());
+      await route.fulfill({ json: { syllabusId: plan.id, events: [{ id: 'event-a', origin: { syllabusId: plan.id, candidateId: candidate.id } }] } });
+    });
+    const { first, confirm } = await openCheckedReview(page);
+    if (theme === 'light') await page.getByRole('button', { name: /tema/i }).click();
+    expect(posts).toHaveLength(0);
+    await confirm.evaluate(button => { button.click(); button.click(); });
+    const feedback = page.getByText('1 avaliação confirmada na agenda.');
+    await expect(feedback).toBeVisible();
+    await expect(first.getByLabel('Decisão')).toBeDisabled();
+    await expect(page.getByRole('group', { name: 'Avaliação 2', exact: true }).getByLabel('Decisão')).toBeEnabled();
+    expect(posts).toEqual([{ candidates: [{ candidateId: candidate.id, title: 'Trabalho corrigido',
+      startsAt: '2026-12-01T14:30-03:00', category: 'Acadêmico', description: `Tipo de avaliação: Trabalho\n\n${candidate.sourceExcerpt}` }] }]);
+    await feedback.evaluate(element => element.scrollIntoView({ block: 'center', behavior: 'instant' }));
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.screenshot({ path: testInfo.outputPath('confirmation.png') });
+  });
+}
+
+for (const mode of ['resposta perdida', 'conflito']) {
+  test(`${mode} exige consultar o estado salvo antes de tentar confirmar de novo`, async ({ page }) => {
+    await setup(page, { detail: { ...plan, status: 'concluido', candidates: [candidate] } });
+    const posts = [];
+    await page.route(`**/api/v1/syllabus/${plan.id}/confirm`, route => {
+      posts.push(route.request().postDataJSON());
+      if (posts.length > 1) return route.fulfill({ json: { syllabusId: plan.id, events: [] } });
+      return mode === 'conflito' ? route.fulfill({ status: 409, json: { detail: 'Confirmação concorrente.' } }) : route.abort();
+    });
+    const { first, confirm } = await openCheckedReview(page);
+    await confirm.click();
+    const refresh = page.getByRole('button', { name: 'Atualizar avaliações' });
+    await expect(refresh).toBeEnabled();
+    await expect(confirm).toBeDisabled();
+    expect(posts).toHaveLength(1);
+    const status = mode === 'conflito' ? 'pendente' : 'confirmado';
+    await page.route(`**/api/v1/syllabus/${plan.id}`, route => route.fulfill({ json: { ...plan, status: 'concluido', candidates: [{ ...candidate, status }] } }));
+    await refresh.click();
+    if (status === 'confirmado') {
+      await expect(page.getByText(/1 de 1 itens do último envio constam como confirmados/)).toBeVisible();
+      await expect(first.getByLabel('Decisão')).toBeDisabled();
+      expect(posts).toHaveLength(1);
+    } else {
+      await expect(first.getByLabel('Título')).toHaveValue('Trabalho corrigido');
+      await expect(confirm).toBeDisabled();
+      await page.getByRole('button', { name: 'Conferir selecionados' }).click();
+      await confirm.click();
+      await expect(page.getByText(/0 de 1 eventos disponíveis na agenda/)).toBeVisible();
+      expect(posts).toEqual([posts[0], posts[0]]);
+    }
+  });
+}
+
 test('revisão real permite corrigir e selecionar em lote sem gravar eventos', async ({ page }) => {
   await setup(page, { detail: { ...plan, status: 'concluido', candidates: [candidate,
     { ...candidate, id: 'b', title: 'Trabalho', type: 'trabalho' },
@@ -270,7 +345,7 @@ test('revisão aparece na rota real, explica limites e acompanha abertura e fech
   await expect(review).toContainText('Abra um plano');
   await page.getByText('O que poderei revisar?', { exact: true }).focus();
   await page.keyboard.press('Enter');
-  await expect(page.getByText('Você pode selecionar e corrigir as avaliações de um plano concluído. A inclusão na agenda ainda não está disponível nesta página.')).toBeVisible();
+  await expect(page.getByText(/Somente as avaliações selecionadas entram na agenda/)).toBeVisible();
   await page.getByRole('button', { name: `Acompanhar ${plan.disciplina}` }).click();
   await expect(review).toContainText('os detalhes das avaliações ainda não estão disponíveis');
   await expect(page.getByRole('button', { name: 'Conferir selecionados' })).toHaveCount(0);

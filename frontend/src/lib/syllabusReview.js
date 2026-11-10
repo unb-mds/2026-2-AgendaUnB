@@ -32,6 +32,27 @@ export function selectReviewItems(items, selected) {
     ? item : { ...item, decision: selected ? 'selected' : item.decision === 'selected' ? 'pending' : item.decision });
 }
 
+export function buildReviewConfirmation(draft, candidates) {
+  const pending = new Map(candidates.filter(item => item.status === 'pendente').map(item => [item.id, item]));
+  const selected = draft.filter(item => item.decision === 'selected');
+  if (!selected.length || selected.length > 100 || new Set(selected.map(item => item.id)).size !== selected.length
+    || selected.some(item => !pending.has(item.id) || Object.keys(validateReviewItem(item, true)).length)) {
+    throw new Error('Revise as avaliações selecionadas antes de confirmar.');
+  }
+  return selected.map(item => {
+    const type = item.type.toLowerCase() === 'prova' ? 'Prova' : 'Trabalho';
+    const excerpt = pending.get(item.id).sourceExcerpt;
+    const description = excerpt ? `Tipo de avaliação: ${type}\n\n${excerpt}` : `Tipo de avaliação: ${type}`;
+    return {
+      candidateId: item.id,
+      title: item.title.trim(),
+      startsAt: `${item.date}T${item.time}${item.utcOffset}`,
+      category: 'Acadêmico',
+      description: Array.from(description).slice(0, 10000).join(''),
+    };
+  });
+}
+
 export function validReviewDate(value) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || value.startsWith('0000')) return false;
   const date = new Date(`${value}T00:00:00Z`);
