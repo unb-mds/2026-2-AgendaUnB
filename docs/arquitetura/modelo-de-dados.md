@@ -33,7 +33,18 @@ erDiagram
         UUID campus_id FK
         UUID category_id FK
         TIMESTAMPTZ data_evento
+        TIMESTAMPTZ data_fim "fim exclusivo"
+        BOOLEAN dia_inteiro
         TEXT status
+        TEXT fonte "nulo se criado na plataforma"
+        TEXT fonte_id "UK com fonte"
+    }
+
+    COLETAS_EVENTOS {
+        UUID id PK
+        TEXT fonte
+        TEXT status
+        TIMESTAMPTZ iniciada_em
     }
 
     EVENTOS_PESSOAIS {
