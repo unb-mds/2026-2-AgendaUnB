@@ -180,3 +180,8 @@ Limites conhecidos: `location` pessoal não é persistido; o handler de validaç
 ## 12. Manutenção documental
 
 Atualize no mesmo PR os documentos afetados por mudanças em rotas, schemas, autorização, regras de negócio, migrações ou implantação. Consulte a [referência da API](../api-specs.md), o [índice de decisões](#10-registro-de-decisoes-arquiteturais), os [padrões](../produto/padroes.md) e o [plano de implantação](../implantacao.md). Registre evidências de testes e identifique o que ainda está planejado.
+
+
+## Implementação local da extração S7
+
+Preparação local, autorização específica, fila recuperável e candidatos privados estão descritos no [protocolo S7](../processamento-planos-s7.md) e no [registro de validação](../s7-b01-validacao.md). O worker foi alinhado à tabela oficial `avaliacoes` e às versões de S7-D01; nenhuma migração foi aplicada na nuvem.

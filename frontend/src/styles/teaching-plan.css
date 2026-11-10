@@ -102,3 +102,16 @@ body.light .plan-badge-falha { color: #a3221b; }
   .plan-pagination > div { width: 100%; }
   .plan-pagination button { flex: 1; }
 }
+
+.plan-text-input { margin-top: 28px; padding-block: 24px; border-top: 1px solid var(--manage-border); }
+.plan-text-input h2 { font-size: 1.2rem; line-height: 1.5; }
+.plan-text-input p, .plan-text-review p { line-height: 1.6; margin-block: 12px; }
+.plan-text-input label, .plan-text-review .management-field label { display: block; margin-block: 16px 8px; }
+.plan-text-input textarea, .plan-text-review textarea { width: 100%; min-width: 0; padding: 12px; border: 1px solid var(--manage-border); border-radius: 10px; background: var(--manage-input); color: var(--manage-text); font: inherit; line-height: 1.6; resize: vertical; caret-color: var(--manage-text); }
+.plan-text-input button { margin-top: 16px; }
+.plan-text-review { border-block: 1px solid var(--manage-border); margin-top: 24px; padding-block: 16px; }
+.plan-text-review summary { min-height: 44px; cursor: pointer; font-weight: 600; align-content: center; }
+.plan-text-review fieldset { border: 0; padding: 0; min-width: 0; }
+.plan-consent { display: flex; gap: 12px; align-items: start; margin-block: 16px; line-height: 1.6; }
+.plan-consent input { margin-top: 5px; flex-shrink: 0; width: 18px; height: 18px; accent-color: var(--manage-accent); }
+.plan-text-review .management-text-button { display: inline-block; margin-top: 16px; }

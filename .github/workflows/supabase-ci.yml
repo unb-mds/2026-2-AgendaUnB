@@ -14,7 +14,7 @@ jobs:
   test-database:
     name: Validar Migrations e Schema
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout do código
         uses: actions/checkout@v4

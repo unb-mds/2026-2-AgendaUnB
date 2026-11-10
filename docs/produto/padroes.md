@@ -17,6 +17,7 @@ Utilizamos **Inglês** para os nomes de domínio da API e rotas. O banco existen
 | **Papel / Tipo de Usuário** | `Role` | Nível de acesso do usuário (`student`, `professor`, `admin`). |
 | **Evento / Compromisso** | `Event` | Registro de uma atividade na agenda (acadêmica pessoal ou geral do campus). |
 | **Plano de Ensino** | `Syllabus` | Arquivo (PDF ou texto) enviado para extração automática de datas acadêmicas. |
+| **Candidato a Avaliação** | `AssessmentCandidate` | Sugestão privada com evidência de página/trecho; só vira compromisso após revisão futura. |
 | **Calendário / Agenda** | `Calendar` | Coleção/agrupamento de eventos de um usuário ou do campus. |
 | **Categoria / Etiqueta** | `Category` | Classificação do evento (ex: *Prova*, *Trabalho*, *Seminário*, *Cultural*, *Palestra*). |
 | **Notificação** | `Notification` | Aviso persistido de submissão, aprovação ou recusa de sugestão. |
@@ -27,6 +28,12 @@ Utilizamos **Inglês** para os nomes de domínio da API e rotas. O banco existen
 ---
 
 ## 2. Convenções de Escrita (*Naming Conventions*)
+
+No worker S6-B01, preservar os nomes portugueses do contrato S6-D01 em candidatos
+e metadados de IA; respostas de rastreamento HTTP usam aliases `camelCase`.
+Estados do plano são `pendente`, `processando`, `concluido` e `falha`; estados do
+candidato são `pendente`, `descartado` e `confirmado`. O extrator só grava
+`pendente`, sem confirmar ou converter em evento. [Contrato e regras](../processamento-planos-s7.md).
 
 | Elemento | Padrão | Exemplo |
 | :--- | :--- | :--- |
@@ -81,6 +88,8 @@ Utilizamos **Inglês** para os nomes de domínio da API e rotas. O banco existen
 ### 📄 `Syllabus` / `planos_ensino`
 
 O esquema atual guarda metadados do envio e os estados `pendente`, `processando`, `concluido` e `falha`. O [contrato de plano e versão](../atualizacoes.md#contratos-da-release-2) detalha seleção de oferta, descarte do PDF e migração.
+
+O produtor S7 prepara PDF/texto localmente, descarta o original e exige autorização do texto antes da IA. Consulte o [contrato vigente](../processamento-planos-s7.md).
 
 ### 🏷️ `Category` / `categories` (Categoria)
 * `id`: Identificador da categoria (`UUID`)

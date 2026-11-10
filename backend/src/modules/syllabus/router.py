@@ -1,8 +1,9 @@
+import time
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Response, UploadFile, status
 from sqlalchemy import func, select
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session, joinedload
 from starlette.concurrency import run_in_threadpool
 
@@ -20,7 +21,13 @@ from src.modules.syllabus.schemas import (
     SyllabusUploadResponse,
 )
 from src.modules.syllabus.services import process_syllabus_upload, validate_pdf_file
-from src.services.storage import SupabaseStorageService, get_storage_service
+from src.modules.syllabus.timing import duration_ms
+from src.modules.syllabus.processing_config import ProcessingConfig
+from src.modules.syllabus.preparation import (
+    TextInput, ExtractionAuthorization, PreparationPreview, checked_pages, minimize, extract_pdf_isolated,
+    owned_plan, preview, authorize,
+)
+from src.modules.syllabus.services import UPLOAD_VALIDATION_TIMEOUT_SECONDS
 
 router = APIRouter(prefix="/syllabus", tags=["syllabus"])
 
@@ -35,6 +42,10 @@ def _candidate_read(candidate: SyllabusCandidate) -> SyllabusCandidateRead:
         sourcePage=candidate.source_page,
         sourceExcerpt=candidate.source_excerpt,
         status=candidate.status,
+        suggestedDate=candidate.data_sugerida,
+        suggestedTime=candidate.hora_sugerida,
+        ambiguousFields=candidate.campos_ambiguos or [],
+        versionId=candidate.version_id,
     )
 
 
@@ -76,32 +87,65 @@ async def upload_syllabus(
     semestre: int | None = Form(None, ge=1, le=2, description="Semestre de referência"),
     current_user: CurrentUser = Depends(get_current_user),
     db: Session = Depends(get_db),
-    storage: SupabaseStorageService = Depends(get_storage_service),
 ) -> SyllabusUploadResponse:
     """
     Recebe o arquivo PDF do plano de ensino, realiza validações estruturais rigorosas
     (extensão .pdf, MIME type, assinatura de bytes, integridade, texto legível e tamanho máximo)
-    e envia o arquivo para o bucket privado do Supabase Storage.
+    e extrai o texto localmente, sem enviar ou armazenar o PDF original.
 
-    Gera um registro na tabela de rastreamento com status inicial 'pendente'
-    e retorna HTTP 202 Accepted.
+    Retorna 202 com texto privado preparado. A fila só fica elegível após
+    autorização explícita do dono em /{id}/extractions.
     """
-    content = await run_in_threadpool(validate_pdf_file, file)
-
+    started = time.monotonic()
+    try:
+        content = await validate_pdf_file(file)
+        pages = await run_in_threadpool(extract_pdf_isolated, content, UPLOAD_VALIDATION_TIMEOUT_SECONDS)
+    finally:
+        await file.close()  # Fecha/remove o temporário ao fim da extração, inclusive em falha.
+    file_size = len(content)
+    del content
     syllabus = await run_in_threadpool(
-        process_syllabus_upload,
-        user_id=current_user.id,
-        filename=file.filename or "syllabus.pdf",
-        content=content,
-        db=db,
-        storage=storage,
-        disciplina=disciplina,
-        turma=turma,
-        ano=ano,
-        semestre=semestre,
+        process_syllabus_upload, user_id=current_user.id,
+        filename=file.filename or "syllabus.pdf", file_size=file_size, pages=pages,
+        preparation_duration_ms=round((time.monotonic()-started)*1000),
+        db=db, disciplina=disciplina, turma=turma, ano=ano, semestre=semestre,
     )
 
     return SyllabusUploadResponse.model_validate(syllabus)
+
+
+@router.post("/text", response_model=SyllabusUploadResponse, status_code=202)
+def prepare_syllabus_text(payload: TextInput, current_user: CurrentUser = Depends(get_current_user),
+                          db: Session = Depends(get_db)):
+    started = time.monotonic()
+    pages = checked_pages([{"pagina": None, "texto": payload.text}])
+    pages = checked_pages([{"pagina": None, "texto": minimize(pages[0]["texto"])}])
+    plan = process_syllabus_upload(user_id=current_user.id, filename="texto-revisado.txt",
+        file_size=len(payload.text.encode("utf-8")), pages=pages, file_type="text", db=db,
+        preparation_duration_ms=round((time.monotonic()-started)*1000),
+        disciplina=payload.disciplina, turma=payload.turma)
+    return SyllabusUploadResponse.model_validate(plan)
+
+
+@router.get("/{syllabus_id}/text", response_model=PreparationPreview)
+def get_syllabus_text(syllabus_id: UUID, response: Response, current_user: CurrentUser = Depends(get_current_user),
+                      db: Session = Depends(get_db)):
+    response.headers["Cache-Control"] = "no-store"
+    return preview(owned_plan(db, current_user.id, syllabus_id))
+
+
+@router.post("/{syllabus_id}/extractions", response_model=SyllabusUploadResponse, status_code=202)
+def authorize_syllabus_text(syllabus_id: UUID, payload: ExtractionAuthorization,
+                            current_user: CurrentUser = Depends(get_current_user), db: Session = Depends(get_db)):
+    plan = owned_plan(db, current_user.id, syllabus_id, lock=True)
+    try:
+        plan = authorize(db, plan, payload, ProcessingConfig.from_env())
+        response = SyllabusUploadResponse.model_validate(plan)
+        response.message = "Autorização registrada. Consulte o andamento do plano."
+        return response
+    except SQLAlchemyError:
+        db.rollback()
+        raise HTTPException(503, "Não foi possível registrar a autorização. Tente novamente.") from None
 
 
 @router.get(
@@ -134,6 +178,7 @@ def get_syllabus_status(
     candidates = db.scalars(
         select(SyllabusCandidate)
         .where(SyllabusCandidate.syllabus_id == syllabus.id)
+        .where(SyllabusCandidate.version_id == syllabus.approved_version_id if syllabus.approved_version_id else True)
         .order_by(SyllabusCandidate.source_page.asc(), SyllabusCandidate.id.asc())
     ).all()
 
@@ -147,6 +192,17 @@ def get_syllabus_status(
         status=syllabus.status,
         extractedEventsCount=syllabus.extracted_events_count,
         errorMessage=syllabus.error_message,
+        errorCode=syllabus.erro_codigo,
+        pageCount=syllabus.paginas,
+        attempts=syllabus.execucao_atual,
+        processingStartedAt=syllabus.processamento_iniciado_em,
+        processedAt=syllabus.processado_em,
+        processingDurationMs=syllabus.processing_duration_ms,
+        totalDurationMs=duration_ms(syllabus.queued_at or syllabus.created_at, syllabus.processado_em),
+        authorizationRequired=syllabus.authorization_required,
+        preparedTextAvailable=bool(syllabus.prepared_pages),
+        preparationDurationMs=syllabus.preparation_duration_ms,
+        reviewDurationMs=duration_ms(syllabus.created_at, syllabus.authorized_at),
         disciplina=syllabus.disciplina,
         turma=syllabus.turma,
         ano=syllabus.ano,
@@ -189,6 +245,7 @@ def confirm_syllabus_candidates(
             select(SyllabusCandidate).where(
                 SyllabusCandidate.syllabus_id == syllabus.id,
                 SyllabusCandidate.id.in_(requested_ids),
+                SyllabusCandidate.version_id == syllabus.approved_version_id if syllabus.approved_version_id else True,
             )
         ).all()
         by_id = {candidate.id: candidate for candidate in candidates}
@@ -218,6 +275,8 @@ def confirm_syllabus_candidates(
                 )
             if candidate.id in existing_by_candidate:
                 continue
+            if candidate.status == "confirmado":
+                continue  # Evento removido não reaparece por retry da confirmação.
 
             title = reviewed.title or candidate.title
             starts_at = reviewed.starts_at or candidate.starts_at
@@ -237,6 +296,7 @@ def confirm_syllabus_candidates(
                 category_id=_category_id(db, reviewed.category),
                 origin_syllabus_id=syllabus.id,
                 origin_candidate_id=candidate.id,
+                origin_version_id=candidate.version_id,
                 origin_page=candidate.source_page,
                 origin_excerpt=candidate.source_excerpt,
             )
