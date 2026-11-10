@@ -100,7 +100,15 @@ Eventos coletados da Agenda UnB Notícias ficam na própria tabela `eventos`, id
 *   **Tabela `coletas_eventos`:** uma linha por execução do coletor (`status`, horários, contadores e `erro_codigo` curto). Sem conteúdo da fonte.
 *   **Revisão:** `listar_revisoes_coleta(status, offset)` para professor e admin; a decisão usa `moderar_sugestao`, que registra `moderado_por` e `moderado_em` e recusa publicar item sem data.
 
-O uso dessas estruturas pela API e pelo coletor está em [Dados de eventos](dados-de-eventos.md).
+### 3.5. Tabela `lembretes` (S8-B03, ADR-013)
+Avisos na plataforma 24 horas antes do início de cada evento da agenda da conta.
+*   **Colunas:** `user_id` (FK `profiles`, `ON DELETE CASCADE`), `tipo_evento` (`pessoal` ou `publico_salvo`), `evento_pessoal_id` ou `evento_id` (FK com `ON DELETE CASCADE`), `inicio_referencia`, `agendado_para`, `status` (`pendente` ou `disparado`), `disparado_em`, `lido_em`.
+*   **Idempotência:** índices únicos parciais `(user_id, evento_pessoal_id, inicio_referencia)` e `(user_id, evento_id, inicio_referencia)`.
+*   **Triggers:** em `eventos_pessoais`, `eventos_salvos` e `eventos`, agendam ao entrar na agenda, trocam o aviso quando o início muda e cancelam na exclusão, na remoção do vínculo ou quando o evento sai do catálogo. Entrada na agenda com 24 horas ou menos não gera aviso.
+*   **Função** `disparar_lembretes(limite)`: torna visíveis os avisos vencidos, uma única vez cada (`FOR UPDATE SKIP LOCKED`), conferindo de novo a elegibilidade.
+*   **Políticas RLS:** a conta lê apenas os próprios avisos já disparados e só altera `lido_em`; o primeiro `lido_em` é mantido. Sem acesso para visitantes.
+
+O uso dessas estruturas pela API, pelo coletor e pelo agendador está em [Dados de eventos](dados-de-eventos.md).
 
 ---
 

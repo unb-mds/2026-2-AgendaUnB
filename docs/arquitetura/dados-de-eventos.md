@@ -1,15 +1,16 @@
 ---
-title: "Dados de eventos: datas, coleta"
-description: "Como a API, o coletor usam as estruturas de eventos da Release 2."
+title: "Dados de eventos: datas, coleta e lembretes"
+description: "Como a API, o coletor e o agendador usam as estruturas de eventos da Release 2."
 ---
 
-# Dados de eventos: datas, coleta
+# Dados de eventos: datas, coleta e lembretes
 
-Guia de integração das migrações `20261110140000_eventos_datas_e_coleta.sql`. Elas entregam a parte de dados das issues abaixo; a API, o coletor e o agendador são implementados nas próprias issues.
+Guia de integração das migrações `20261110140000_eventos_datas_e_coleta.sql` e `20261110152000_eventos_lembretes.sql`. Elas entregam a parte de dados das issues abaixo; a API, o coletor e o agendador são implementados nas próprias issues.
 
 | Issue | O que o banco já faz | O que falta na aplicação |
 | --- | --- | --- |
 | [S7-B05 (#75)](https://github.com/unb-mds/2026-2-AgendaUnB/issues/75) | Upsert por origem, decisão publicar/revisar, conciliação por URL, proteção de edições locais e de decisões de moderação, registro das execuções | Ler e normalizar a fonte, agendar a execução, tela de revisão |
+| [S8-B03 (#81)](https://github.com/unb-mds/2026-2-AgendaUnB/issues/81) | Agendar, trocar, cancelar e disparar avisos, sem duplicar | Chamar o disparo periodicamente, endpoints e central de avisos |
 
 **Regra geral:** o que precisa valer em qualquer caminho de escrita está em chaves únicas, triggers e funções. A aplicação chama as funções; não reimplementa as regras. Nada daqui é gravável pelo navegador.
 
@@ -126,7 +127,43 @@ Pontos de atenção para o coletor:
 
 Procedência visível (RF16): eventos com `fonte` preenchida devem exibir a origem e o link `fonte_url`. `autor_id` é nulo nesses eventos; o ORM e a API já tratam organizador ausente.
 
-## 3. Quem pode o quê
+## 3. Lembretes (#81, ADR-013)
+
+A tabela `lembretes` é mantida por triggers. A API **não cria nem cancela** avisos:
+
+| Acontecimento | Efeito |
+| --- | --- |
+| Compromisso criado ou evento público salvo, faltando mais de 24 h | Aviso `pendente` para 24 h antes do início |
+| Entrou na agenda faltando 24 h ou menos | Sem aviso (não há alerta retroativo) |
+| Início alterado | Aviso pendente trocado pelo novo horário |
+| Compromisso excluído, vínculo removido, evento rejeitado ou sem data | Aviso pendente cancelado |
+| Evento volta ao catálogo | Aviso reagendado para quem o mantém salvo |
+| Conta excluída | Avisos removidos |
+
+Para dia inteiro, o início é a meia-noite de Brasília do primeiro dia, então o aviso sai à meia-noite do dia anterior.
+
+### Agendador
+
+Um processo periódico (a cada 5 minutos é suficiente) executa:
+
+```sql
+select public.disparar_lembretes();   -- devolve quantos avisos foram disparados
+```
+
+- Pode rodar quantas vezes for, em um ou vários processos: cada aviso dispara uma única vez (`FOR UPDATE SKIP LOCKED`).
+- A elegibilidade é conferida de novo no disparo. Aviso atrasado ainda é entregue se o evento não começou; depois do início é descartado.
+- Reiniciar o agendador não perde nem duplica avisos: o estado está na tabela.
+
+### Central de avisos
+
+| Contrato | Consulta |
+| --- | --- |
+| `GET /api/v1/me/reminders` | `Reminder` com `user_id` da sessão e `status = 'disparado'`, ordenado por `fired_at desc` |
+| `PUT /api/v1/me/reminders/{id}/read` | `update lembretes set lido_em = now() where id = :id and user_id = :u and status = 'disparado'` |
+
+O banco mantém o primeiro `lido_em` em retries. No contrato, `event_kind` é `personal` ou `saved_public` (`pessoal`/`publico_salvo` no banco), `event_id` é `evento_pessoal_id` ou `evento_id`, e `scheduled_at` é `agendado_para`. Pelo navegador, a conta só enxerga os próprios avisos já disparados e só altera `lido_em`.
+
+## 4. Quem pode o quê
 
 | Recurso | Visitante | Conta logada (navegador) | Professor / admin | Servidor |
 | --- | --- | --- | --- | --- |
@@ -134,8 +171,10 @@ Procedência visível (RF16): eventos com `fonte` preenchida devem exibir a orig
 | Colunas de procedência e de moderação em `eventos` | Não grava | Não grava | Só pelas RPCs | Sim |
 | `coletas_eventos` | Sem acesso | Sem acesso | Sem acesso | Sim |
 | `listar_revisoes_coleta`, `moderar_sugestao` | Não | Recusado | Sim | Sim |
+| `disparar_lembretes` | Não | Não | Não | Sim |
+| `lembretes` | Sem acesso | Lê os próprios disparados; marca leitura | Sem acesso por papel | Sim |
 
-## 4. Testes
+## 5. Testes
 
 `backend/tests/test_event_collection_database.py` cobre os cenários de aceite que dependem do banco: datas civis e intervalos inválidos, coletas sucessivas no mesmo registro, revisão de itens incompletos, ambíguos e informes, possível duplicata, conciliação por URL, edições locais, decisões de moderação, falha da fonte e procedência que o navegador não forja.
 
@@ -146,3 +185,13 @@ TEST_SUPABASE_DB_URL="postgresql+psycopg://postgres:postgres@127.0.0.1:14322/pos
 ```
 
 Continuam fora desta entrega e precisam de evidência no ambiente publicado: execução agendada real do coletor, duas execuções concorrentes contra a fonte, o comportamento com a fonte fora do ar e a cobertura multicampus.
+
+`backend/tests/test_reminders_database.py` cobre os cenários de aceite que dependem do banco: aviso 24 h antes, troca ao mudar o início, cancelamento, dia inteiro, evento criado dentro da janela, disparo repetido sem duplicar, revalidação no disparo e isolamento entre contas.
+
+```bash
+cd backend
+TEST_SUPABASE_DB_URL="postgresql+psycopg://postgres:postgres@127.0.0.1:14322/postgres" \
+  python -m pytest tests/test_reminders_database.py -q
+```
+
+Fora desta entrega: o agendador periódico, os endpoints e a central de avisos.
