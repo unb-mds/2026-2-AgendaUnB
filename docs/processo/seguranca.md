@@ -40,6 +40,7 @@ Severidade segundo o impacto no produto: **Alta** permite agir como outra conta 
 | A14 | Baixa | `npm audit` aponta 2 vulnerabilidades altas em dependências de desenvolvimento (`vite`, `source-map-js`), com correção disponível. Não entram no bundle publicado. | `npm audit fix` no front-end, com build e testes. | **Pendente** (front-end) |
 | A15 | Baixa | Dependências Python sem versão fixada: o mesmo commit pode instalar versões diferentes. `pip-audit` não encontrou vulnerabilidade conhecida em 09/11/2026. | Fixar versões ao definir o runtime do Render. | **Pendente** ([#76](https://github.com/unb-mds/2026-2-AgendaUnB/issues/76)) |
 | A16 | Info | Não havia registro de quem mudou o papel de quem. | Tabela `auditoria_papeis`, alimentada por trigger e legível só por admins. | Corrigido |
+| A17 | Média | `fila_processamento_ia` (#92, já na `dev`) dava INSERT, UPDATE e DELETE a contas logadas sem política, e a leitura usava `professor_id`, nulo em plano particular: o dono não via o próprio job. A tabela também não é usada pelo worker, que controla a fila em `planos_ensino`. | Escrita só pelo servidor, leitura pelo dono via `user_id`, `erro_tecnico` limitado a um código curto. | Corrigido. **Decisão pendente:** manter ou remover a tabela, para não haver duas filas |
 
 A varredura de todo o histórico Git, incluindo as branches remotas, por chaves do Google, do Supabase, JWT de serviço, URLs de banco com senha e chaves privadas **não encontrou segredos versionados**. Credenciais que tenham circulado fora do repositório devem ser trocadas antes da produção.
 
