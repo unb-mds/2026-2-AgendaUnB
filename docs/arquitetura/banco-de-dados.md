@@ -60,6 +60,7 @@ Eventos publicados por professor/admin e sugestões da comunidade sujeitas à mo
     *   `category_id` (UUID): Chave estrangeira para a tabela `categories(id)`.
     *   `status` (TEXT, Not Null): Controle de moderação (`DEFAULT 'pendente'`). Validação: `CHECK (status in ('pendente', 'aprovado', 'rejeitado'))`.
     *   `criado_em` (TIMESTAMPTZ, Not Null): Timestamp de criação (`DEFAULT now()`).
+    *   `interessados_count` (INTEGER): redirecionamentos acionados em **Conferir evento**, um por `click_id`. Só a função `registrar_clique_evento` o altera; a deduplicação fica em `cliques_evento` (`evento_id`, `click_id`, `criado_em`), sem usuário, IP ou agente. Ver [Conferir evento](conferir-evento.md).
 *   **Políticas RLS:** Segurança em Nível de Linha habilitada.
     *   **Leitura (SELECT):** Apenas eventos moderados. Política: *"eventos aprovados sao publicos"* (`USING (status = 'aprovado')`).
     *   **Criação (INSERT):** Apenas o próprio autor autenticado. Política: *"usuarios logados podem criar eventos"* (`WITH CHECK (autor_id = (select auth.uid()))`).
