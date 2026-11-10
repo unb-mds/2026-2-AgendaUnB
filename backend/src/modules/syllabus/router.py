@@ -1,8 +1,9 @@
+import time
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from sqlalchemy import func, select
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session, joinedload
 from starlette.concurrency import run_in_threadpool
 
@@ -21,7 +22,12 @@ from src.modules.syllabus.schemas import (
 )
 from src.modules.syllabus.services import process_syllabus_upload, validate_pdf_file
 from src.modules.syllabus.timing import duration_ms
-from src.services.storage import SupabaseStorageService, get_storage_service
+from src.modules.syllabus.processing_config import ProcessingConfig
+from src.modules.syllabus.preparation import (
+    TextInput, ExtractionAuthorization, PreparationPreview, checked_pages, minimize, extract_pdf_isolated,
+    owned_plan, preview, authorize,
+)
+from src.modules.syllabus.services import UPLOAD_VALIDATION_TIMEOUT_SECONDS
 
 router = APIRouter(prefix="/syllabus", tags=["syllabus"])
 
@@ -77,32 +83,60 @@ async def upload_syllabus(
     semestre: int | None = Form(None, ge=1, le=2, description="Semestre de referência"),
     current_user: CurrentUser = Depends(get_current_user),
     db: Session = Depends(get_db),
-    storage: SupabaseStorageService = Depends(get_storage_service),
 ) -> SyllabusUploadResponse:
     """
     Recebe o arquivo PDF do plano de ensino, realiza validações estruturais rigorosas
     (extensão .pdf, MIME type, assinatura de bytes, integridade, texto legível e tamanho máximo)
-    e envia o arquivo para o bucket privado do Supabase Storage.
+    e extrai o texto localmente, sem enviar ou armazenar o PDF original.
 
-    Gera um registro na tabela de rastreamento com status inicial 'pendente'
-    e retorna HTTP 202 Accepted.
+    Retorna 202 com texto privado preparado. A fila só fica elegível após
+    autorização explícita do dono em /{id}/extractions.
     """
-    content = await validate_pdf_file(file)
-
-    syllabus = await run_in_threadpool(
-        process_syllabus_upload,
-        user_id=current_user.id,
-        filename=file.filename or "syllabus.pdf",
-        content=content,
-        db=db,
-        storage=storage,
-        disciplina=disciplina,
-        turma=turma,
-        ano=ano,
-        semestre=semestre,
-    )
+    started = time.monotonic()
+    try:
+        content = await validate_pdf_file(file)
+        pages = await run_in_threadpool(extract_pdf_isolated, content, UPLOAD_VALIDATION_TIMEOUT_SECONDS)
+        syllabus = await run_in_threadpool(
+            process_syllabus_upload, user_id=current_user.id,
+            filename=file.filename or "syllabus.pdf", content=content, pages=pages,
+            preparation_duration_ms=round((time.monotonic()-started)*1000),
+            db=db, disciplina=disciplina, turma=turma, ano=ano, semestre=semestre,
+        )
+    finally:
+        await file.close()  # Fecha/remove o temporário multipart em sucesso ou falha.
 
     return SyllabusUploadResponse.model_validate(syllabus)
+
+
+@router.post("/text", response_model=SyllabusUploadResponse, status_code=202)
+def prepare_syllabus_text(payload: TextInput, current_user: CurrentUser = Depends(get_current_user),
+                          db: Session = Depends(get_db)):
+    started = time.monotonic()
+    pages = checked_pages([{"pagina": None, "texto": payload.text}])
+    pages = checked_pages([{"pagina": None, "texto": minimize(pages[0]["texto"])}])
+    plan = process_syllabus_upload(user_id=current_user.id, filename="texto-revisado.txt",
+        content=payload.text.encode("utf-8"), pages=pages, file_type="text", db=db,
+        preparation_duration_ms=round((time.monotonic()-started)*1000),
+        disciplina=payload.disciplina, turma=payload.turma)
+    return SyllabusUploadResponse.model_validate(plan)
+
+
+@router.get("/{syllabus_id}/text", response_model=PreparationPreview)
+def get_syllabus_text(syllabus_id: UUID, current_user: CurrentUser = Depends(get_current_user),
+                      db: Session = Depends(get_db)):
+    return preview(owned_plan(db, current_user.id, syllabus_id))
+
+
+@router.post("/{syllabus_id}/extractions", response_model=SyllabusUploadResponse, status_code=202)
+def authorize_syllabus_text(syllabus_id: UUID, payload: ExtractionAuthorization,
+                            current_user: CurrentUser = Depends(get_current_user), db: Session = Depends(get_db)):
+    plan = owned_plan(db, current_user.id, syllabus_id, lock=True)
+    try:
+        plan = authorize(db, plan, payload, ProcessingConfig.from_env())
+        return SyllabusUploadResponse.model_validate(plan)
+    except SQLAlchemyError:
+        db.rollback()
+        raise HTTPException(503, "Não foi possível registrar a autorização. Tente novamente.") from None
 
 
 @router.get(
@@ -154,7 +188,10 @@ def get_syllabus_status(
         processingStartedAt=syllabus.processamento_iniciado_em,
         processedAt=syllabus.processado_em,
         processingDurationMs=syllabus.processing_duration_ms,
-        totalDurationMs=duration_ms(syllabus.created_at, syllabus.processado_em),
+        totalDurationMs=duration_ms(syllabus.queued_at or syllabus.created_at, syllabus.processado_em),
+        authorizationRequired=syllabus.authorized_at is None,
+        preparationDurationMs=syllabus.preparation_duration_ms,
+        reviewDurationMs=duration_ms(syllabus.created_at, syllabus.authorized_at),
         disciplina=syllabus.disciplina,
         turma=syllabus.turma,
         ano=syllabus.ano,

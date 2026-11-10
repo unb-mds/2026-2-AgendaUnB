@@ -10,14 +10,14 @@ from pypdf import PdfReader
 
 from src.modules.syllabus.processing_config import ProcessingConfig, ProcessingError
 
-VERSION = "syllabus-v2"
-Kind = Literal["prova", "trabalho", "projeto", "seminario", "lista", "entrega", "outro"]
+VERSION = "syllabus-v3-approved-text"
+Kind = Literal["prova", "trabalho"]
 AmbiguousField = Literal["titulo", "tipo", "data", "hora"]
 
 
 @dataclass(frozen=True)
 class TextPage:
-    pagina: int
+    pagina: int | None
     texto: str
 
 
@@ -29,7 +29,7 @@ class CandidateData(BaseModel):
     data_sugerida: date | None = None
     hora_sugerida: time | None = None
     campos_ambiguos: list[AmbiguousField] = Field(default_factory=list, max_length=4)
-    pagina_origem: int = Field(ge=1, le=10, strict=True)
+    pagina_origem: int | None = Field(default=None, ge=1, le=10, strict=True)
     trecho_origem: str = Field(min_length=1, max_length=1000)
 
     @field_validator("data_sugerida", mode="before")
@@ -130,6 +130,13 @@ def validate_candidates(raw: str, pages: list[TextPage]) -> ExtractionResult:
         evidence = normalize(item.trecho_origem)
         if evidence not in sources.get(item.pagina_origem, "") or normalize(item.titulo) not in evidence:
             raise ProcessingError("falha_ia")
+        # Defesa conservadora: rótulos de aula/bibliografia não viram provas.
+        title = normalize(item.titulo)
+        if re.match(r"^(aula|bibliografia|refer[eê]ncias?|leitura|feriado)\b", title):
+            continue
+        marker = r"\b(prova|exame)\b" if item.tipo == "prova" else r"\btrabalho(?:s)?\b"
+        if not re.search(marker, title):
+            continue
         ambiguous = set(item.campos_ambiguos)
         # Uma data ISO plausível não basta: exigir data completa e inequívoca
         # no trecho citado. Nunca completar ano, dia ou mês usando o relógio.
@@ -146,8 +153,6 @@ def validate_candidates(raw: str, pages: list[TextPage]) -> ExtractionResult:
             if item.data_sugerida is None or hours != {item.hora_sugerida} or "hora" in ambiguous:
                 item.hora_sugerida = None
                 ambiguous.add("hora")
-        if item.tipo == "outro":
-            ambiguous.add("tipo")
         item.campos_ambiguos = sorted(ambiguous)
         identity = (normalize(item.titulo), item.data_sugerida, item.hora_sugerida, item.pagina_origem)
         if identity not in seen:

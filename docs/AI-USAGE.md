@@ -30,6 +30,15 @@ O campo **verificado** é o mais importante. Sem ele, a entrada declara o uso ma
 
 ## Entradas
 
+### 10/11/2026 — Preparação privada e autorização do texto na S7-B01
+
+- **Quem:** Heitor Gomes Monteiro (solicitante).
+- **Ferramenta:** Codex (OpenAI).
+- **O que foi pedido:** Completar o escopo atualizado da Sprint 07 na branch `feat/geminiapi`, com commits e sem alterar o Supabase na nuvem.
+- **O que entrou no repositório:** Preparação de PDF/texto sem retenção do original, minimização inicial, revisão privada com hash do texto exato, autorização explícita, worker limitado ao snapshot aprovado e bloqueio por termos/elegibilidade S7-B02. Migração versionada de suporte, ainda não aplicada na nuvem.
+- **O que foi verificado:** Dez testes novos passaram com SQLite: nenhuma fila antes da autorização, páginas físicas para PDF e nulas para texto bruto, consentimento e hash obrigatórios, controle do dono, reprocessamento explícito e ausência de eventos automáticos. A suíte legada está sendo atualizada para o novo contrato antes da entrega final.
+- **O que foi rejeitado ou corrigido:** O requisito trazido pelo solicitante substitui a retenção do PDF prevista no plano anterior. A regex não é tratada como anonimização garantida. Credenciais e conteúdo não são registrados em logs; habilitação em produção continua condicionada à S7-B02.
+
 ### 09/11/2026 — Sincronização da branch remota antes do push
 
 - **Quem:** Heitor Gomes Monteiro (solicitante).

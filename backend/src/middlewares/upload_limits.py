@@ -14,9 +14,14 @@ class UploadLimitsMiddleware:
         self.max_body_bytes = MAX_FILE_SIZE_BYTES + 64 * 1024
 
     async def __call__(self, scope, receive, send):
-        if scope["type"] != "http" or scope["method"] != "POST" or scope["path"] != "/api/v1/syllabus/upload":
+        path = scope.get("path", "")
+        is_upload = path == "/api/v1/syllabus/upload"
+        is_text = path == "/api/v1/syllabus/text" or (path.startswith("/api/v1/syllabus/") and path.endswith("/extractions"))
+        if scope["type"] != "http" or scope["method"] != "POST" or not (is_upload or is_text):
             await self.app(scope, receive, send)
             return
+
+        max_body_bytes = self.max_body_bytes if is_upload else 256000
 
         async def reject(status, detail):
             await JSONResponse({"detail": detail}, status_code=status)(scope, receive, send)
@@ -33,7 +38,7 @@ class UploadLimitsMiddleware:
                 declared_size = int(headers.get(b"content-length", b"0"))
             except ValueError:
                 declared_size = 0
-            if declared_size > self.max_body_bytes:
+            if declared_size > max_body_bytes:
                 await reject(413, "O arquivo excede o tamanho máximo permitido.")
                 return
 
@@ -47,7 +52,7 @@ class UploadLimitsMiddleware:
                     continue
                 chunk = message.get("body", b"")
                 total += len(chunk)
-                if total > self.max_body_bytes:
+                if total > max_body_bytes:
                     await reject(413, "O arquivo excede o tamanho máximo permitido.")
                     return
                 chunks.append(chunk)

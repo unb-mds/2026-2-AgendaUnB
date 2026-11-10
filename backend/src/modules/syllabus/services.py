@@ -1,7 +1,6 @@
 import logging
 import math
 import os
-import re
 from datetime import datetime, timedelta, timezone
 from uuid import UUID, uuid4
 
@@ -12,7 +11,6 @@ from starlette.concurrency import run_in_threadpool
 
 from src.database.models import Syllabus
 from src.modules.syllabus.upload_validation import PdfValidationError, validate_pdf_structure
-from src.services.storage import SupabaseStorageService
 
 logger = logging.getLogger("agenda_unb.syllabus")
 
@@ -35,11 +33,6 @@ PDF_VALIDATION_MESSAGES = {
     "unavailable": "A validação do PDF está indisponível no momento. Tente novamente mais tarde.",
 }
 
-
-def sanitize_filename(filename: str) -> str:
-    """Higieniza o nome original do arquivo para uso seguro no caminho de armazenamento."""
-    clean = re.sub(r"[^a-zA-Z0-9_.-]", "_", filename)
-    return clean or "syllabus.pdf"
 
 
 async def validate_pdf_file(file: UploadFile) -> bytes:
@@ -109,19 +102,20 @@ def process_syllabus_upload(
     filename: str,
     content: bytes,
     db: Session,
-    storage: SupabaseStorageService,
+    pages: list[dict],
+    preparation_duration_ms: int = 0,
+    file_type: str = "pdf",
     disciplina: str | None = None,
     turma: str | None = None,
     ano: int | None = None,
     semestre: int | None = None,
 ) -> Syllabus:
     """
-    Coordena o upload físico para o Storage do Supabase e o registro
-    transacional de rastreamento com status inicial 'pendente'.
-    Compensa a gravação no Storage caso a persistência no banco falhe.
+    Registra somente texto minimizado privado, aguardando autorização.
+    O PDF original nunca é enviado ao Storage ou ao provedor.
     """
     # Serialize uploads for this user across API workers before counting the
-    # rolling window. The lock lasts until the plan and its file are committed.
+    # rolling window. The lock lasts until the prepared text is committed.
     if db.bind.dialect.name == "postgresql":
         db.execute(sql_text("SELECT pg_advisory_xact_lock(hashtextextended(:user_id, 0))"),
                    {"user_id": str(user_id)})
@@ -135,26 +129,16 @@ def process_syllabus_upload(
         raise HTTPException(status_code=429, detail="Limite de 10 planos enviados em 5 dias. Tente novamente mais tarde.")
 
     syllabus_id = uuid4()
-    safe_name = sanitize_filename(filename)
-
-    # Convenção de caminho no bucket privado: syllabus_files/<user_id>/<syllabus_id>_<nome>.pdf
-    storage_relative_path = f"{user_id}/{syllabus_id}_{safe_name}"
-
-    # Upload físico para o Supabase Storage
-    full_storage_path = storage.upload_file(
-        path=storage_relative_path,
-        content=content,
-        content_type="application/pdf",
-    )
-
     syllabus_record = Syllabus(
         id=syllabus_id,
         user_id=user_id,
         file_name=filename,
-        file_path=full_storage_path,
-        arquivo_url=full_storage_path,
+        file_path=None,
+        arquivo_url=None,
         file_size=len(content),
-        file_type="pdf",
+        file_type=file_type,
+        prepared_pages=pages,
+        preparation_duration_ms=preparation_duration_ms,
         status="pendente",
         extracted_events_count=0,
         error_message=None,
@@ -170,13 +154,11 @@ def process_syllabus_upload(
         db.refresh(syllabus_record)
     except Exception as exc:
         db.rollback()
-        logger.error("Falha ao registrar envio; compensando arquivo no Storage")
-        # Compensação: remove o arquivo físico já enviado
-        storage.delete_file(storage_relative_path)
+        logger.error("Falha ao registrar preparação privada do plano")
         raise HTTPException(
             status_code=503,
             detail="Falha ao registrar o envio do plano de ensino no banco de dados. Operação cancelada.",
-        ) from exc
+        ) from None
 
     return syllabus_record
 

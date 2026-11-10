@@ -2,7 +2,6 @@
 import argparse
 import logging
 import os
-import re
 import time
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -17,8 +16,8 @@ from src.modules.syllabus.gemini import GeminiProvider
 from src.modules.syllabus.processing_config import ERROR_MESSAGES, ProcessingConfig, ProcessingError
 from src.modules.syllabus.processing_task import run_isolated
 from src.modules.syllabus.privacy import privacy_checks
+from src.modules.syllabus.preparation import checked_pages, text_hash
 from src.modules.syllabus.timing import duration_ms as elapsed_ms
-from src.services.storage import SupabaseStorageService
 
 logger = logging.getLogger("agenda_unb.syllabus.worker")
 
@@ -33,9 +32,11 @@ class Lease:
     token: UUID
     execution: int
     user_id: UUID
-    file_path: str
+    file_path: str | None
     created_at: datetime
     terminal: bool = False
+    approved_pages: list[dict] | None = None
+    approved_hash: str | None = None
 
 
 class SyllabusWorker:
@@ -54,7 +55,8 @@ class SyllabusWorker:
             (Syllabus.processamento_iniciado_em < now - timedelta(seconds=self.config.lease_seconds)),
         )
         with self.sessions() as db:
-            job = db.scalar(select(Syllabus).where(Syllabus.tipo == "particular", ready)
+            job = db.scalar(select(Syllabus).where(Syllabus.tipo == "particular", Syllabus.authorized_at.is_not(None),
+                                  Syllabus.approved_pages.is_not(None), ready)
                             .order_by(Syllabus.created_at, Syllabus.id).with_for_update(skip_locked=True).limit(1))
             if job is None:
                 return None
@@ -75,7 +77,8 @@ class SyllabusWorker:
                               error_message=None, next_attempt_at=None, provedor_ia="google",
                               modelo_ia=self.config.model, versao_processamento=VERSION,
                               cost_reserved_usd=job.cost_reserved_usd + self.config.attempt_reservation)
-            lease = Lease(job.id, token, attempt, job.user_id, job.file_path, job.created_at, terminal=exhausted)
+            lease = Lease(job.id, token, attempt, job.user_id, job.file_path, job.queued_at or job.created_at, terminal=exhausted,
+                          approved_pages=job.approved_pages, approved_hash=job.approved_hash)
             changed = db.execute(update(Syllabus).where(*condition).values(**values),
                                  execution_options={"synchronize_session": False}).rowcount
             db.commit()
@@ -113,14 +116,10 @@ class SyllabusWorker:
             return True
         started = time.monotonic()
         try:
-            prefix = f"syllabus_files/{lease.user_id}/"
-            if not lease.file_path.startswith(prefix):
+            pages = checked_pages(lease.approved_pages or [])
+            if text_hash(pages) != lease.approved_hash:
                 raise ProcessingError("pdf_invalido")
-            relative = lease.file_path.removeprefix("syllabus_files/")
-            filename = relative.split("/")[1:]
-            if len(filename) != 1 or not re.fullmatch(r"[A-Za-z0-9_.-]+\.pdf", filename[0], flags=re.IGNORECASE):
-                raise ProcessingError("pdf_invalido")
-            document = self.runner(relative, self.storage, self.provider, self.config)
+            document = self.runner(pages, None, self.provider, self.config)
             result = document.extraction
             with self.sessions() as db:
                 duration = round((time.monotonic() - started) * 1000)
@@ -162,9 +161,6 @@ def main():
     config = ProcessingConfig.from_env()
     if not config.api_key:
         parser.exit(2, "Configure GEMINI_API_KEY somente no servidor.\n")
-    storage = SupabaseStorageService()
-    if not storage.supabase_url or not (os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_SERVICE_KEY")):
-        parser.exit(2, "Worker exige Storage persistente e credencial de servidor.\n")
     try:
         with SessionLocal() as db:
             checks = privacy_checks(db.connection())
@@ -173,7 +169,9 @@ def main():
     missing = [name for name, passed in checks.items() if not passed]
     if missing:
         parser.exit(2, "Pré-requisitos de privacidade ausentes: " + ", ".join(missing) + ".\n")
-    worker = SyllabusWorker(SessionLocal, storage, GeminiProvider(config), config)
+    if not config.provider_terms_ready:
+        parser.exit(2, "Gemini aguarda validação de termos e elegibilidade S7-B02.\n")
+    worker = SyllabusWorker(SessionLocal, None, GeminiProvider(config), config)
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
     try:
         while True:

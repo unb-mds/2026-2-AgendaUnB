@@ -13,14 +13,15 @@ class SyllabusUploadResponse(BaseModel):
     id: UUID
     user_id: UUID = Field(alias="userId")
     file_name: str = Field(alias="fileName")
-    file_path: str = Field(alias="filePath")
+    file_path: str | None = Field(default=None, alias="filePath")
     file_size: int | None = Field(default=None, alias="fileSize")
     file_type: str = Field(default="pdf", alias="fileType")
     status: str = Field(default="pendente")
     ano: int | None = None
     semestre: int | None = None
     created_at: datetime = Field(alias="createdAt")
-    message: str = "Plano de ensino recebido com sucesso e direcionado para processamento."
+    authorization_required: bool = Field(default=True, alias="authorizationRequired")
+    message: str = "Texto preparado. Revise e autorize o trecho antes de enviar ao Gemini."
 
 
 class SyllabusListItem(BaseModel):
@@ -66,6 +67,9 @@ class SyllabusCandidateRead(BaseModel):
 
 class SyllabusDetailResponse(SyllabusListItem):
     candidates: list[SyllabusCandidateRead] = Field(default_factory=list)
+    authorization_required: bool = Field(default=True, alias="authorizationRequired")
+    preparation_duration_ms: int | None = Field(default=None, alias="preparationDurationMs")
+    review_duration_ms: int | None = Field(default=None, alias="reviewDurationMs")
 
 
 class SyllabusListResponse(BaseModel):

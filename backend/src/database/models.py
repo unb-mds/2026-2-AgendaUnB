@@ -3,7 +3,7 @@ from decimal import Decimal
 from uuid import UUID, uuid4
 
 from sqlalchemy import BigInteger, Date, DateTime, ForeignKey, Integer, JSON, Numeric, SmallInteger, String, Text, Time, UniqueConstraint, Uuid, func
-from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -164,6 +164,18 @@ class Syllabus(Base):
     next_attempt_at: Mapped[datetime | None] = mapped_column("proxima_tentativa_em", DateTime(timezone=True))
     cost_reserved_usd: Mapped[Decimal] = mapped_column("custo_reservado_usd", Numeric(12, 6), default=0, nullable=False)
     processing_duration_ms: Mapped[int | None] = mapped_column("duracao_processamento_ms", Integer)
+    prepared_pages: Mapped[list[dict] | None] = mapped_column("texto_preparado", JSON(none_as_null=True).with_variant(JSONB(none_as_null=True), "postgresql"))
+    approved_pages: Mapped[list[dict] | None] = mapped_column("texto_aprovado", JSON(none_as_null=True).with_variant(JSONB(none_as_null=True), "postgresql"))
+    approved_hash: Mapped[str | None] = mapped_column("hash_texto_aprovado", String(64))
+    authorized_at: Mapped[datetime | None] = mapped_column("autorizado_em", DateTime(timezone=True))
+    queued_at: Mapped[datetime | None] = mapped_column("enfileirado_em", DateTime(timezone=True))
+    preparation_duration_ms: Mapped[int | None] = mapped_column("duracao_preparacao_ms", Integer)
+    text_revision: Mapped[int] = mapped_column("versao_texto", Integer, default=0, nullable=False)
+
+
+    @property
+    def authorization_required(self) -> bool:
+        return self.authorized_at is None
 
 
 class AssessmentCandidate(Base):
@@ -181,7 +193,7 @@ class AssessmentCandidate(Base):
     data_sugerida: Mapped[date | None] = mapped_column(Date)
     hora_sugerida: Mapped[time | None] = mapped_column(Time)
     campos_ambiguos: Mapped[list[str]] = mapped_column(JSON().with_variant(ARRAY(Text), "postgresql"), default=list)
-    pagina_origem: Mapped[int] = mapped_column(Integer)
+    pagina_origem: Mapped[int | None] = mapped_column(Integer)
     trecho_origem: Mapped[str] = mapped_column(Text)
     provedor_ia: Mapped[str] = mapped_column(String)
     modelo_ia: Mapped[str] = mapped_column(String)
