@@ -34,7 +34,13 @@ async def handle_integrity_error(request: Request, exc: IntegrityError) -> JSONR
 
 @app.exception_handler(SQLAlchemyError)
 async def handle_database_error(request: Request, exc: SQLAlchemyError) -> JSONResponse:
-    logger.error("Database failure on %s %s", request.method, request.url.path)
+    # Sem traceback: a mensagem do PostgreSQL pode trazer a linha recusada
+    # (títulos, descrições, texto de planos). Tipo e SQLSTATE bastam ao diagnóstico.
+    logger.error(
+        "Database failure on %s %s (%s, sqlstate=%s)",
+        request.method, request.url.path, type(exc).__name__,
+        getattr(getattr(exc, "orig", None), "sqlstate", None),
+    )
     return JSONResponse(
         status_code=503,
         content={"detail": "O serviço de dados está indisponível no momento."},
