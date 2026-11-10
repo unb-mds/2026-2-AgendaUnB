@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { createCandidateReviewDraft } from '../lib/syllabusReview';
 import SyllabusReviewEditor from './SyllabusReviewEditor';
 
 const states = { pendente: 'Pendente de confirmação', confirmado: 'Confirmado', descartado: 'Descartado' };
@@ -19,10 +21,20 @@ export default function SyllabusReviewPanel({ selected = false, plan, loading = 
     else message = 'Não foi possível identificar o estado da análise. Consulte novamente pelo acompanhamento.';
   }
   return <div className="plan-review-panel">
-    {candidates?.length ? <section className="syllabus-review" aria-labelledby="candidate-review-heading">
-      <h2 id="candidate-review-heading">Revisar avaliações</h2>
-      <p>Confira as avaliações identificadas e os trechos de origem. A seleção, edição e confirmação ainda não estão disponíveis nesta etapa.</p>
-      <ul className="syllabus-candidates">{candidates.map(candidate => <li key={candidate.id} className="syllabus-candidate">
+    {candidates?.length ? <CandidateReview key={JSON.stringify([plan.id, candidates])} candidates={candidates} /> : <SyllabusReviewEditor value={[]} disabled emptyMessage={candidates?.length === 0 ? 'A análise terminou sem avaliações. Você pode cadastrar os prazos manualmente em Meus Eventos.' : message} />}
+    <details className="plan-file-help">
+      <summary>O que poderei revisar?</summary>
+      <p>Você poderá corrigir título e tipo, informar data, horário e fuso e escolher quais avaliações incluir. Descartar um item não deverá criar um compromisso.</p>
+      <p>Você pode selecionar e corrigir as avaliações de um plano concluído. A inclusão na agenda ainda não está disponível nesta página.</p>
+    </details>
+  </div>;
+}
+
+function CandidateReview({ candidates }) {
+  const [draft, setDraft] = useState(() => createCandidateReviewDraft(candidates));
+  return <SyllabusReviewEditor value={draft} onChange={setDraft} renderCandidate={(_, index) => {
+    const candidate = candidates[index];
+    return <div className="syllabus-candidate">
         <h3>{candidate.title}</h3>
         <p>Estado: <strong>{states[candidate.status] || 'Estado indisponível'}</strong></p>
         <dl>
@@ -35,12 +47,6 @@ export default function SyllabusReviewPanel({ selected = false, plan, loading = 
         {(!candidate.suggestedDate || !candidate.suggestedTime) && !candidate.startsAt && <p>Data ou horário incompletos. Será necessário informá-los antes da confirmação, com fuso horário.</p>}
         <p><strong>Origem:</strong> {candidate.sourcePage === null ? 'Sem referência de página' : `Página ${candidate.sourcePage}`}</p>
         {candidate.sourceExcerpt ? <blockquote>{candidate.sourceExcerpt}</blockquote> : <p>Trecho de origem não informado.</p>}
-      </li>)}</ul>
-    </section> : <SyllabusReviewEditor value={[]} disabled emptyMessage={candidates?.length === 0 ? 'A análise terminou sem avaliações. Você pode cadastrar os prazos manualmente em Meus Eventos.' : message} />}
-    <details className="plan-file-help">
-      <summary>O que poderei revisar?</summary>
-      <p>Você poderá corrigir título e tipo, informar data, horário e fuso e escolher quais avaliações incluir. Descartar um item não deverá criar um compromisso.</p>
-      <p>A edição das avaliações e a inclusão na agenda ainda não estão disponíveis nesta página.</p>
-    </details>
-  </div>;
+    </div>;
+  }} />;
 }
