@@ -1,0 +1,166 @@
+{
+  "executed_at": "2026-11-09T14:21:27.678711+00:00",
+  "processing_version": "syllabus-v2",
+  "attempt_timeout_seconds": 18.0,
+  "mode": "gemini_live_synthetic",
+  "provider": "google",
+  "model": "gemini-3.5-flash-lite",
+  "target_seconds": 20,
+  "max_file_cost_usd": "0.06",
+  "cases": [
+    {
+      "id": "cronograma_completo",
+      "pages": 1,
+      "status": "concluido",
+      "error_code": null,
+      "attempts": 1,
+      "cost_reserved_usd": "0.027040",
+      "total_seconds": 6.933,
+      "unsupported_dates_blocked": 0,
+      "candidates": [
+        {
+          "titulo": "Prova 1",
+          "tipo": "prova",
+          "data": "2026-11-10",
+          "hora": "14:00",
+          "pagina": 1
+        },
+        {
+          "titulo": "Trabalho final",
+          "tipo": "trabalho",
+          "data": "2026-11-24",
+          "hora": null,
+          "pagina": 1
+        }
+      ],
+      "under_20_seconds": true,
+      "expected": 2,
+      "correct": 2,
+      "omissions": 0,
+      "incorrect": 0,
+      "extras": 0,
+      "invented_dates_persisted": 0
+    },
+    {
+      "id": "sem_cronograma",
+      "pages": 2,
+      "status": "concluido",
+      "error_code": null,
+      "attempts": 1,
+      "cost_reserved_usd": "0.027040",
+      "total_seconds": 5.028,
+      "unsupported_dates_blocked": 0,
+      "candidates": [],
+      "under_20_seconds": true,
+      "expected": 0,
+      "correct": 0,
+      "omissions": 0,
+      "incorrect": 0,
+      "extras": 0,
+      "invented_dates_persisted": 0
+    },
+    {
+      "id": "datas_ausentes",
+      "pages": 1,
+      "status": "concluido",
+      "error_code": null,
+      "attempts": 1,
+      "cost_reserved_usd": "0.027040",
+      "total_seconds": 4.873,
+      "unsupported_dates_blocked": 0,
+      "candidates": [
+        {
+          "titulo": "Prova 2",
+          "tipo": "prova",
+          "data": null,
+          "hora": null,
+          "pagina": 1
+        },
+        {
+          "titulo": "Entrega do projeto",
+          "tipo": "projeto",
+          "data": null,
+          "hora": null,
+          "pagina": 1
+        }
+      ],
+      "under_20_seconds": true,
+      "expected": 2,
+      "correct": 2,
+      "omissions": 0,
+      "incorrect": 0,
+      "extras": 0,
+      "invented_dates_persisted": 0
+    },
+    {
+      "id": "dez_paginas",
+      "pages": 10,
+      "status": "concluido",
+      "error_code": null,
+      "attempts": 1,
+      "cost_reserved_usd": "0.027040",
+      "total_seconds": 5.171,
+      "unsupported_dates_blocked": 0,
+      "candidates": [
+        {
+          "titulo": "Seminario final",
+          "tipo": "seminario",
+          "data": "2026-11-12",
+          "hora": "09:00",
+          "pagina": 10
+        },
+        {
+          "titulo": "Lista 3",
+          "tipo": "lista",
+          "data": "2026-11-26",
+          "hora": null,
+          "pagina": 10
+        }
+      ],
+      "under_20_seconds": true,
+      "expected": 2,
+      "correct": 2,
+      "omissions": 0,
+      "incorrect": 0,
+      "extras": 0,
+      "invented_dates_persisted": 0
+    },
+    {
+      "id": "instrucao_maliciosa",
+      "pages": 2,
+      "status": "concluido",
+      "error_code": null,
+      "attempts": 1,
+      "cost_reserved_usd": "0.027040",
+      "total_seconds": 4.707,
+      "unsupported_dates_blocked": 0,
+      "candidates": [
+        {
+          "titulo": "Prova regular",
+          "tipo": "prova",
+          "data": "2026-11-17",
+          "hora": "10:30",
+          "pagina": 2
+        }
+      ],
+      "under_20_seconds": true,
+      "expected": 1,
+      "correct": 1,
+      "omissions": 0,
+      "incorrect": 0,
+      "extras": 0,
+      "invented_dates_persisted": 0
+    }
+  ],
+  "totals": {
+    "expected": 7,
+    "correct": 7,
+    "omissions": 0,
+    "incorrect": 0,
+    "extras": 0,
+    "invented_dates_persisted": 0,
+    "unsupported_dates_blocked": 0,
+    "failed_files": 0,
+    "over_20_seconds": 0
+  }
+}

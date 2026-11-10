@@ -120,7 +120,7 @@ Funcionalidades atualizadas até o fim da Sprint 05 (18/10)
 | Sugestões | Estudantes enviam propostas pelo formulário Criar Evento; professores e admins analisam em `/sugestoes` |
 | Notificações | Sino para estudantes com confirmação de envio, aprovação e recusa com justificativa |
 | Administração | `/admin`: busca e filtros de usuários, confirmação de e-mail, último acesso e alteração de cargos |
-| Plano de Ensino | `/plano-de-ensino`: página informativa; upload e extração ainda em preparação |
+| Plano de Ensino | `/plano-de-ensino`: página informativa; backend tem upload/worker Gemini e políticas/revisão transacional S6-D02 validadas em PostgreSQL isolado; ativação depende de homologar o ambiente de destino |
 | Criação de Eventos | Modal com DatePicker e TimePicker customizados, campos completos |
 | Edição e Exclusão | CRUD completo para eventos pessoais |
 | Detalhe do Evento | Página dedicada com descrição, organizador, badges e link externo |
@@ -129,11 +129,11 @@ Funcionalidades atualizadas até o fim da Sprint 05 (18/10)
 
 ### Backend (API)
 
-A API atual reúne 15 operações: catálogo público, CRUD privado, sugestões, eventos salvos e saúde. Dez já existiam na R1. Consulte os [contratos completos](docs/api-specs.md) para rotas, payloads, permissões e códigos HTTP; a administração e a moderação usam RPCs Supabase separadas.
+A API inclui catálogo público, CRUD privado, sugestões, eventos salvos, administração, upload/consulta de planos e saúde. Consulte os [contratos](docs/api-specs.md) e o [guia do worker Gemini](docs/processamento-planos.md). A extração salva candidatos para revisão, sem criar compromissos; permanece desativada por padrão até validar as políticas S6-D02.
 
 ### Banco de Dados
 
-O esquema é versionado em **11 migrações SQL**. Além das tabelas da R1, foram adicionadas `eventos_salvos` e `notificacoes`, regras de sugestões/moderação, RPCs administrativas e o bucket privado `syllabus_files` (PDF, até 10 MB). O bucket prepara a infraestrutura; upload e parser ainda não estão disponíveis na aplicação.
+O esquema é versionado em migrações SQL. Além das tabelas da R1, inclui `eventos_salvos`, `notificacoes`, candidatos a avaliações, regras de moderação, RPCs administrativas e o bucket privado `syllabus_files` (PDF, até 10 MB). Upload, modelo de candidatos e fila do worker exigem as migrações #40/S6-D01/S6-B01; as políticas S6-D02 precisam ser validadas antes de usar dados reais.
 
 Destaques de segurança:
 

@@ -26,6 +26,10 @@ nav:
     - ADR-012 — Exportar por ação explícita para uma agenda Google secundária: arquitetura/adrs/adr-012-exportacao-google-idempotente.md
     - ADR-013 — Persistir lembretes com agendamento idempotente e revalidação: arquitetura/adrs/adr-013-lembretes-persistentes.md
   - Contratos do Backend: api-specs.md
+  - Extração Autorizada S7: processamento-planos-s7.md
+  - Validação S7-B01: s7-b01-validacao.md
+  - Histórico de Processamento S6: processamento-planos.md
+  - Privacidade dos Planos: privacidade-planos.md
   - Matriz de aceite da Release 2: matriz-release-2.md
   - Plano de Implantação: implantacao.md
   - Modelo de Dados: arquitetura/modelo-de-dados.md

@@ -54,6 +54,7 @@ A [v0.1.0](processo/release-notes/v0-1-0.md) registra a entrega de 28/09/2026. C
 * [Painel administrativo e sugestões](painel-administrativo.md) — Permissões, moderação, notificações e testes.
 * [Interface e design](arquitetura/frontend.md) — Navegação e experiência de uso.
 
+A implementação local da [S7-B01](processamento-planos-s7.md) oferece preparação de PDF/texto, revisão do trecho e autorização para o Gemini. O provedor permanece desativado por padrão até homologação e validação de elegibilidade. A implantação e a integração completa com turmas/importação têm acompanhamento separado.
 O guia de [planos de ensino](planos-de-ensino-frontend.md) descreve o envio, o histórico e os limites do fluxo atual.
 
 

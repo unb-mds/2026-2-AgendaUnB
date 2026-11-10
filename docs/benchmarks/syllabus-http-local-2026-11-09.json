@@ -1,0 +1,44 @@
+{
+  "executed_at": "2026-11-09T15:13:04.065456+00:00",
+  "api_port": 15321,
+  "db_port": 15322,
+  "gemini_live": true,
+  "results": [
+    {
+      "case": "upload_processing_review",
+      "provider": "reference",
+      "flow_total_seconds": 14.826,
+      "processing_total_ms": 10414,
+      "last_attempt_ms": 5578,
+      "processing_under_20s": true,
+      "candidates": 2,
+      "events_before_review": 0,
+      "events_after_review": 1,
+      "cross_user_download_denied": true,
+      "public_download_denied": true,
+      "cleanup_completed": true
+    },
+    {
+      "case": "upload_processing_review",
+      "provider": "gemini",
+      "flow_total_seconds": 20.563,
+      "processing_total_ms": 16917,
+      "last_attempt_ms": 5340,
+      "processing_under_20s": true,
+      "candidates": 2,
+      "events_before_review": 0,
+      "events_after_review": 1,
+      "cross_user_download_denied": true,
+      "public_download_denied": true,
+      "cleanup_completed": true
+    },
+    {
+      "case": "storage_constraints",
+      "foreign_folder_upload_denied": true,
+      "nested_folder_upload_denied": true,
+      "invalid_mime_denied": true,
+      "cleanup_completed": true
+    }
+  ],
+  "pytest_exit_code": 0
+}

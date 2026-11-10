@@ -163,3 +163,8 @@ Toda data extraída começa como candidata. Somente a confirmação explícita d
 O estado de domínio “candidata” não determina o nome de uma tabela. Desde a S7-D01 (`20261109120000`), a estrutura física unificada é `avaliacoes`, ligada à versão do plano; `candidatos_avaliacao` foi removida. O worker deve gravar candidatos em `avaliacoes`, informando `versao_id` e `ordem`.
 
 Na R2, exigir `Idempotency-Key` por ação de confirmação, vinculada à conta, à operação e ao conteúdo do lote. Repetições da mesma ação usam a mesma chave; payload diferente com a mesma chave retorna 409. Persistir a operação e seus itens na mesma transação da confirmação e serializar requisições concorrentes. A exclusão do evento preserva o registro da importação e da operação: repetir a chave antiga não recria o evento nem reativa o vínculo. Reimportar exige o comando explícito “Adicionar novamente”, uma nova chave e nova verificação de acesso, versão e datas. Manter no máximo um evento ativo por `(user_id, version_id, candidate_id)`, mesmo com chaves diferentes; novas ações após exclusão não apagam o histórico das anteriores. O resultado de retry informa quando o evento anteriormente criado já foi removido. A transição dos clientes legados deve ser documentada antes de tornar a chave obrigatória; não inventar uma chave nova a cada retry.
+
+
+## Worker e autorização do texto
+
+Preparação local, autorização específica, fila recuperável e candidatos privados estão descritos no [protocolo S7](../processamento-planos-s7.md) e no [registro de validação](../s7-b01-validacao.md). O worker foi alinhado à tabela oficial `avaliacoes` e às versões de S7-D01; nenhuma migração foi aplicada na nuvem.

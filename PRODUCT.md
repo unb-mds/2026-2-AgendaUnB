@@ -10,7 +10,7 @@ web
 Alunos e professores da Universidade de Brasília (UnB) que precisam descobrir eventos extracurriculares, divulgar atividades e organizar suas demandas acadêmicas diárias.
 
 ## Product Purpose
-O produto atua como um organizador central da vida acadêmica de toda a comunidade da UnB. Ele acaba com a dispersão de informações ao unificar eventos acadêmicos, culturais e esportivos. A extração de planos de ensino para mapeamento automático de provas e trabalhos está prevista como funcionalidade futura e ainda não está disponível.
+O produto atua como um organizador central da vida acadêmica de toda a comunidade da UnB. Ele acaba com a dispersão de informações ao unificar eventos acadêmicos, culturais e esportivos. A extração de provas e trabalhos tem implementação local com revisão e autorização do texto; a disponibilização hospedada aguarda validação das integrações e da elegibilidade do provedor.
 
 ## Positioning
 É o único hub digital que une a vivência extraclasse (eventos, extensão, lazer) com as obrigações acadêmicas (planos de ensino), criando uma experiência unificada e essencial para a sobrevivência e aproveitamento do estudante na Universidade.
@@ -21,7 +21,9 @@ A plataforma será utilizada tanto de forma pontual (para descobrir o que está 
 ## Capabilities and Constraints
 - Sistema de dupla autenticação e perfis (Estudantes via Google OAuth e login padrão, Professores via e-mail `@unb.br`).
 - Categorização rígida atrelada aos campi da UnB e aos tipos de atividades.
-- Extração/Leitura de dados de Planos de Ensino (feature futura/core).
+- Lista e calendário mensal/semanal; agenda pessoal reúne eventos privados e públicos salvos por vínculo.
+- Sugestões estudantis, moderação por professores/admins, notificações de decisão e gestão de cargos exclusiva de admins.
+- Backend S7 prepara PDF/texto sem reter o original, exige autorização explícita, processa em worker persistente e possui políticas/revisão transacional validadas em PostgreSQL isolado. O worker e a revisão particular usam candidatos na tabela oficial de avaliações, ligados à versão autorizada. Homologar o Supabase de destino e concluir a jornada com turmas/compartilhamento são etapas pendentes. A leitura de atestados continua planejada.
 - Obrigatório suporte fluido a temas (Claro e Escuro).
 
 ## Brand Commitments

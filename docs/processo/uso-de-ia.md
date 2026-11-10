@@ -106,3 +106,115 @@ O campo **verificado** é o mais importante. Sem ele, a entrada declara o uso ma
 ## Nota de honestidade
 
 Este arquivo foi redigido com auxílio da I.A. A estrutura e o texto das entradas contém ajuda da I.A; os fatos, as verificações e as correções descritas aconteceram de fato e podem ser conferidos no histórico do Git e nos arquivos citados.
+
+
+## Histórico técnico da extração Gemini (S6/S7)
+
+### 10/11/2026 — Interface de autorização e validação final S7-B01
+
+- **Quem:** Heitor Gomes Monteiro (solicitante).
+- **Ferramenta:** Codex (OpenAI), Chromium/Playwright, PostgreSQL/Supabase locais e Gemini com corpus sintético.
+- **O que foi pedido:** Concluir o escopo atualizado da Sprint 07 e realizar commits na `feat/geminiapi`, preservando o Supabase na nuvem.
+- **O que entrou no repositório:** Entrada de texto, revisão editável por página, confirmações independentes e desmarcadas ao editar, hash canônico, reprocessamento explícito e caminho manual. Controle de privacidade/imutabilidade, fechamento do temporário antes do registro, descarte do rascunho anterior às correções, ajustes dos testes legados e evidências/documentação do protocolo S7.
+- **O que foi verificado:** **171 testes de backend aprovados e um ignorado**, incluindo 31 testes SQL reais e o transporte HTTP Auth/Storage/PostgREST local. **25 testes de preparação no Windows**, **16 de lógica frontend** e **38 de navegador** aprovados. Build frontend aprovado. Inspeção visual em desktop escuro/celular claro e detector mecânico sem achados nos alvos. Gemini real: sete acertos, zero omissões/extras/divergências/datas inventadas; máximo de 10,026s entre fila/provedor no corpus de até dez páginas. Preparação e tempo humano registrados separadamente. Nenhum evento antes de revisão explícita; confirmação repetida não duplicou.
+- **O que foi rejeitado ou corrigido:** Teste reproduziu hash instável quando JSONB reordena campos; o formato passou a ser canônico. A revisão legada foi preservada para planos sem preparação S7. A negação de UPDATE por privilégio revogado exige `42501`, não somente contagem zero por RLS. O WSL relay interceptava as portas Windows; a suíte rodou na rede do contêiner descartável, com proxy loopback para seu próprio gateway e credenciais locais só em memória. Não houve migração/alteração na nuvem, habilitação de flags no `.env` ou exposição de credenciais. Revisão humana, aprovação S7-B02, integração dos consumidores e versão implantada permanecem identificadas como pendentes.
+
+### 10/11/2026 — Preparação privada e autorização do texto na S7-B01
+
+- **Quem:** Heitor Gomes Monteiro (solicitante).
+- **Ferramenta:** Codex (OpenAI).
+- **O que foi pedido:** Completar o escopo atualizado da Sprint 07 na branch `feat/geminiapi`, com commits e sem alterar o Supabase na nuvem.
+- **O que entrou no repositório:** Preparação de PDF/texto sem retenção do original, minimização inicial, revisão privada com hash do texto exato, autorização explícita, worker limitado ao snapshot aprovado e bloqueio por termos/elegibilidade S7-B02. Migração versionada de suporte, ainda não aplicada na nuvem.
+- **O que foi verificado:** Dez testes novos passaram com SQLite: nenhuma fila antes da autorização, páginas físicas para PDF e nulas para texto bruto, consentimento e hash obrigatórios, controle do dono, reprocessamento explícito e ausência de eventos automáticos. A suíte legada está sendo atualizada para o novo contrato antes da entrega final.
+- **O que foi rejeitado ou corrigido:** O requisito trazido pelo solicitante substitui a retenção do PDF prevista no plano anterior. A regex não é tratada como anonimização garantida. Credenciais e conteúdo não são registrados em logs; habilitação em produção continua condicionada à S7-B02.
+
+### 09/11/2026 — Sincronização da branch remota antes do push
+
+- **Quem:** Heitor Gomes Monteiro (solicitante).
+- **Ferramenta:** Codex (OpenAI).
+- **O que foi pedido:** Publicar a `feat/geminiapi` para abrir PR, sem alterar o Supabase.
+- **O que entrou no repositório:** Merge das atualizações já presentes na branch remota, preservando os 11 commits locais, as rotas de revisão legadas, limites de upload, autenticação/Storage da equipe e o worker privado. Conflitos de modelos, upload e documentação resolvidos; mocks de Storage restritos aos testes.
+- **O que foi verificado:** 113 testes locais aprovados e 31 ignorados por exigirem PostgreSQL/HTTP local ou Gemini opt-in. Suíte executada com banco SQLite, sem habilitar integrações externas. Documentação estrita e ausência de marcadores de conflito verificadas. Nenhum comando de banco, migração ou configuração do Supabase foi executado nesta etapa; `.env` permanece fora do Git.
+- **O que foi rejeitado ou corrigido:** O push inicial foi recusado porque o remoto continha atualizações da equipe. Foi preservado o histórico remoto em vez de sobrescrevê-lo. A sincronização do código não foi tratada como integração entre as avaliações legadas da API e os candidatos privados do worker; essa conciliação permanece para o próximo PR.
+
+### 09/11/2026 — Leitura limitada e pré-validação de PDF com timeout
+
+- **Quem:** Heitor Gomes Monteiro (solicitante).
+- **Ferramenta:** Codex (OpenAI), PostgreSQL/Auth/Storage locais.
+- **O que foi pedido:** Concluir os ajustes e testes restantes da S6-B01, continuar commits na `feat/geminiapi` e manter a nuvem intacta.
+- **O que entrou no repositório:** Leitura de no máximo limite + 1 byte, parser em subprocesso descartável com timeout configurável, espera e operações de Storage/banco fora do event loop, testes de limite/travamento/responsividade/privacidade, métricas HTTP desde o upload, contrato de erros e checklist S6-B01 com evidências locais.
+- **O que foi verificado:** **129 testes aprovados e um ignorado** (Gemini real, desabilitado nesta execução), incluindo PostgreSQL e transporte HTTP local nas portas 15322/15321. O parser travado foi encerrado sem processo órfão. `/health` respondeu durante validação e Storage bloqueados. Upload de 1,725s e chegada aos candidatos em 9,880s com provedor de referência; dois candidatos, zero eventos antes de revisar e um após confirmação, sem duplicação. Documentação estrita e diff verificados.
+- **O que foi rejeitado ou corrigido:** Timeout apenas de thread deixaria o parser continuar; o processo filho é encerrado. O teste inicial de travamento carregava toda a aplicação ao importar seu inspector no Windows, consumindo o prazo antes de chegar à etapa simulada; o inspector passou a um módulo leve e o teste exige comprovação de entrada nessa etapa. `totalDurationMs` começa após a pré-validação; o relatório HTTP passou a registrar também o tempo desde o início do upload. Não houve chamada externa, migração do banco da aplicação, alteração de `.env` ou operação na nuvem.
+
+### 09/11/2026 — Integração HTTP local e preparação da entrega à equipe
+
+- **Quem:** Heitor Gomes Monteiro (solicitante).
+- **Ferramenta:** Codex (OpenAI), Supabase local e Gemini API com PDF inteiramente sintético.
+- **O que foi pedido:** Continuar desenvolvendo e testando localmente; levar as migrações ao projeto Supabase preparado por Felipe Couto Duque quando estiver disponível.
+- **O que entrou no repositório:** Testes HTTP de Auth/Storage/PostgREST com JWT real, fluxo FastAPI/worker/PostgreSQL, teste de revisão explícita/idempotência, executor restrito à instância local descartável, relatório de métricas sem segredos e orientação de transição para o projeto da equipe.
+- **O que foi verificado:** **121 testes passaram, nenhum ignorado**, com uma chamada real ao Gemini somente com PDF sintético. Download público/cruzado e upload em pasta alheia/subpasta/MIME inválido foram negados. Processamento Gemini total de 16,917s, incluindo fila, e última tentativa de 5,340s. O fluxo completo de checagens/revisão levou 20,563s e foi registrado separadamente. Zero eventos antes da revisão e um após confirmação; repetição não duplicou. Contas/objetos de teste foram removidos ao final.
+- **O que foi rejeitado ou corrigido:** A aprovação SQL de RLS não foi tratada como aprovação do transporte HTTP. As chaves locais foram lidas do CLI só em memória, sem `.env` nem saída com valores; a suíte rejeita hosts remotos e exige opção explícita para Gemini real. Não houve vínculo/alteração em projeto na nuvem nem migração do banco da aplicação 14322.
+
+### 09/11/2026 — Liberação condicionada à verificação do banco S6-D02
+
+- **Quem:** Heitor Gomes Monteiro (solicitante).
+- **Ferramenta:** Codex (OpenAI).
+- **O que foi pedido:** Verificar o que falta para liberar a integração e rodar PostgreSQL local, mantendo commits na `feat/geminiapi`.
+- **O que entrou no repositório:** Checagem de migração/RLS/privilégios/políticas/triggers/RPC/bucket antes de iniciar o worker, comando de auditoria local sem IA, testes de regressão e recuperação nativa com `SKIP LOCKED`/fencing, documentação atualizada para distinguir implementação local de implantação no destino.
+- **O que foi verificado:** Suíte completa com **118 testes passando, nenhum ignorado**, incluindo 28 PostgreSQL na instância isolada 15322. O auditor retornou `ready: true` com oito verificações aprovadas nesse banco. Consulta somente de leitura no banco da aplicação 14322 identificou duas migrações pendentes: `20261109120000` e `20261109130000`. Documentação estrita e diff passaram. Não houve chamadas Gemini, habilitação de flags, alteração do banco da aplicação ou implantação remota.
+- **O que foi rejeitado ou corrigido:** A flag `SYLLABUS_PRIVACY_READY` sozinha não bastava para detectar banco sem políticas. O worker agora recusa pré-requisitos ausentes, inclusive permissões indevidas por coluna ou RPC/política de Storage exposta a anônimos. A auditoria de metadados foi documentada como complemento, não substituta dos testes comportamentais de RLS.
+
+### 09/11/2026 — Políticas e revisão transacional S6-D02
+
+- **Quem:** Heitor Gomes Monteiro (solicitante).
+- **Ferramenta:** Codex (OpenAI).
+- **O que foi pedido:** Identificar/corrigir as pendências S6-D02, executar PostgreSQL local e continuar commits na `feat/geminiapi`.
+- **O que entrou no repositório:** Migração de privacidade de planos, candidatos, avaliações e Storage, proteção de autoria/vínculo, RPC de revisão explícita e atômica, testes reais de acesso/rollback/idempotência/concorrência e guia de operação/contrato S6-B02.
+- **O que foi verificado:** 26 testes PostgreSQL passaram em uma instância Supabase isolada na porta 15322, com todas as migrações aplicadas do zero. Testes incluem `anon`, dono, outro usuário, professor/admin, RLS de objetos do Storage, rollback e duas confirmações simultâneas sem duplicação. O banco já existente na porta 14322 foi preservado.
+- **O que foi rejeitado ou corrigido:** A leitura pública de avaliações foi removida e a inserção direta de planos pelo cliente foi fechada para impedir metadados forjados. A inicialização ampla foi bloqueada pela revisão automática; a alternativa mais restrita `supabase db start`, somente PostgreSQL isolado, foi aceita. A aprovação local não foi tratada como implantação de políticas no ambiente real; flags continuam desativadas.
+
+### 09/11/2026 — Medição de fila/retentativas e orçamento por modelo
+
+- **Quem:** Heitor Gomes Monteiro (solicitante).
+- **Ferramenta:** Codex (OpenAI).
+- **O que foi pedido:** Continuar o fechamento dos critérios de processamento e registrar commits incrementais.
+- **O que entrou no repositório:** `totalDurationMs` na consulta privada, medição de desvios em logs usando o tempo desde o envio, verificação de orçamento antes de reagendar uma falha e exigência de preços explícitos para modelo não padrão.
+- **O que foi verificado:** Suíte completa com 88 testes passando e nove PostgreSQL ignorados sem banco local, incluindo espera de 31s na fila com tentativa rápida, preservação do erro de timeout quando o orçamento termina e cálculo de reserva com tarifas específicas do modelo. Documentação estrita, HTML gerado (tabelas/diagrama e parâmetros), diff e ausência de credenciais nos arquivos alterados foram conferidos. Nenhuma chamada ao provedor foi necessária nesta correção.
+- **O que foi rejeitado ou corrigido:** Usar apenas a duração da última tentativa ocultava fila/retentativas na meta de 20s. Reagendar sem saldo substituía a causa original por erro genérico; agora a falha é finalizada com a causa correta.
+
+### 09/11/2026 — Prazo total e encerramento de tentativas travadas
+
+- **Quem:** Heitor Gomes Monteiro (solicitante).
+- **Ferramenta:** Codex (OpenAI) e Gemini API com PDFs sintéticos.
+- **O que foi pedido:** Retomar a implementação e continuar realizando commits na `feat/geminiapi`.
+- **O que entrou no repositório:** Subprocesso por tentativa com prazo total de 18s, limpeza/encerramento após timeout, comunicação JSON validada e sem logs de conteúdo; benchmark atualizado para incluir a criação do subprocesso.
+- **O que foi verificado:** Suíte completa com 82 testes passando e nove PostgreSQL ignorados sem banco local, incluindo subprocessos reais travados em Storage/parser/provedor, limpeza sem processos órfãos, exceções sanitizadas e persistência de timeout com tentativas/orçamento limitados. Nova execução Gemini identificou sete candidatos corretos em cinco PDFs sintéticos, sem omissões, extras ou datas inventadas persistidas. O documento de dez páginas levou 5,171s e o caso mais lento 6,933s, incluindo subprocessos. Documentação estrita e verificação do diff passaram.
+- **O que foi rejeitado ou corrigido:** Timeout de rede por operação não limitava a leitura do PDF nem a tentativa inteira. A transação da fila permanece no processo pai e somente o trabalho sem banco roda no subprocesso; isso mantém a recuperação por lease e impede que o encerramento deixe uma transação de candidatos incompleta.
+
+### 09/11/2026 — Ambiguidade de horários no extrator Gemini
+
+- **Quem:** Heitor Gomes Monteiro (solicitante).
+- **Ferramenta:** Codex (OpenAI).
+- **O que foi pedido:** Continuar a implementação da issue e registrar commits na branch `feat/geminiapi`.
+- **O que entrou no repositório:** Validação de horários alternativos/intervalos e horários explicitamente incertos, sem escolher um horário para o estudante; versão do processamento atualizada para `syllabus-v2`.
+- **O que foi verificado:** 32 testes do processamento passaram, incluindo nove novos casos de horários; datas válidas permanecem intactas e horários únicos por extenso numérico são preservados.
+- **O que foi rejeitado ou corrigido:** A presença de um horário no trecho não bastava quando o mesmo trecho continha outra alternativa. A escolha foi substituída por hora nula com marcação de ambiguidade.
+
+### 09/11/2026 — Processamento de planos particulares com Gemini (S6-B01)
+
+- **Quem:** Heitor Gomes Monteiro (solicitante).
+- **Ferramenta:** Codex (OpenAI) e Gemini API (`gemini-3.5-flash-lite`, somente corpus sintético).
+- **O que foi pedido:** Implementar extração de avaliações de PDFs em candidatos estruturados, com processamento persistente fora da requisição, sem criar compromissos.
+- **O que entrou no repositório:** Worker SQL com lease/fencing e orçamento acumulado, integração REST Gemini, validação de evidências e datas, modelo ORM de candidatos, migração da fila, metadados no GET privado, corpus e benchmark sintéticos, testes e documentação operacional.
+- **O que foi verificado:** 66 testes passaram e nove testes PostgreSQL foram ignorados sem configuração local; chamada real com cinco PDFs sintéticos identificou sete candidatos corretos, sem omissões, extras ou datas inventadas persistidas. Documento de dez páginas com conteúdo adicional concluiu em 4,143s; nenhum caso excedeu 20s. `mkdocs build --strict` e `git diff --check` passaram. Logs/erros próprios foram revisados para não registrar texto integral, respostas brutas ou credenciais. Worker desativado por padrão; nenhum PDF real, migração remota ou deploy foi realizado.
+- **O que foi rejeitado ou corrigido:** O Gemini rejeitou o primeiro esquema JSON por complexidade; o esquema enviado foi simplificado, mantendo validação local completa. A avaliação passou a associar título literal com sufixo e página para não contar variações válidas como datas inventadas. O teste de upload foi isolado do Supabase configurado no `.env`. A S6-D02 não foi presumida pronta: integração real e homologação de RLS/PostgreSQL continuam pendentes.
+
+
+### 10/11/2026 — Conciliação da extração com a `dev`
+
+- **Quem:** Heitor Gomes Monteiro (solicitante).
+- **Ferramenta:** Codex, testes Python/Playwright e Supabase local.
+- **O que foi pedido:** Atualizar `feat/geminiapi` contra a base `dev`, resolver conflitos e corrigir incompatibilidades, continuando os commits sem alterar a nuvem.
+- **O que entrou:** Merge da base `3922797`, documentação nos diretórios oficiais, migrações inéditas sem números duplicados e extrator na tabela oficial `avaliacoes`, com versão privada fixada, datas civis separadas, proveniência e preservação de versões compartilhadas. Retry particular não recria evento apagado.
+- **Verificado:** 191 testes de backend aprovados e um ignorado no ambiente local, 17 testes de lógica, 38 de navegador, build frontend/documentação e lint SQL sem achados. Corpus de referência: sete acertos e nenhuma data inventada. Nenhuma chamada Gemini nova ou alteração no Supabase hospedado nesta revisão.
+- **Corrigido/rejeitado:** Manter duas tabelas de candidatos contrariaria S7-D01. Políticas de compartilhamento não foram apagadas para impor privacidade indiscriminada; o texto aprovado permanece privado. A fila S7-B02 não foi ativada como segundo executor. Produção, revisão humana e integrações dependentes continuam pendentes.

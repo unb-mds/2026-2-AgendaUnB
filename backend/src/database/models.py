@@ -1,8 +1,10 @@
-from datetime import datetime
+from datetime import date, datetime, time
+from decimal import Decimal
 from uuid import UUID, uuid4
 
-from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Integer, SmallInteger, String, Text, UniqueConstraint, Uuid, func
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy import BigInteger, Boolean, Date, DateTime, ForeignKey, Integer, JSON, Numeric, SmallInteger, String, Text, Time, UniqueConstraint, Uuid, func
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, synonym
 
 
 class Base(DeclarativeBase):
@@ -159,6 +161,41 @@ class Syllabus(Base):
     )
 
     user: Mapped[Profile] = relationship(foreign_keys=[user_id])
+    tipo: Mapped[str] = mapped_column(String, default="particular", nullable=False)
+    paginas: Mapped[int | None] = mapped_column(Integer)
+    execucao_atual: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    provedor_ia: Mapped[str | None] = mapped_column(String)
+    modelo_ia: Mapped[str | None] = mapped_column(String)
+    versao_processamento: Mapped[str | None] = mapped_column(String)
+    erro_codigo: Mapped[str | None] = mapped_column(String)
+    processamento_iniciado_em: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    processado_em: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    processing_token: Mapped[UUID | None] = mapped_column("token_processamento", Uuid(as_uuid=True))
+    next_attempt_at: Mapped[datetime | None] = mapped_column("proxima_tentativa_em", DateTime(timezone=True))
+    cost_reserved_usd: Mapped[Decimal] = mapped_column("custo_reservado_usd", Numeric(12, 6), default=0, nullable=False)
+    processing_duration_ms: Mapped[int | None] = mapped_column("duracao_processamento_ms", Integer)
+    prepared_pages: Mapped[list[dict] | None] = mapped_column("texto_preparado", JSON(none_as_null=True).with_variant(JSONB(none_as_null=True), "postgresql"))
+    approved_pages: Mapped[list[dict] | None] = mapped_column("texto_aprovado", JSON(none_as_null=True).with_variant(JSONB(none_as_null=True), "postgresql"))
+    approved_hash: Mapped[str | None] = mapped_column("hash_texto_aprovado", String(64))
+    authorized_at: Mapped[datetime | None] = mapped_column("autorizado_em", DateTime(timezone=True))
+    queued_at: Mapped[datetime | None] = mapped_column("enfileirado_em", DateTime(timezone=True))
+    preparation_duration_ms: Mapped[int | None] = mapped_column("duracao_preparacao_ms", Integer)
+    text_revision: Mapped[int] = mapped_column("versao_texto", Integer, default=0, nullable=False)
+    approved_version_id: Mapped[UUID | None] = mapped_column(
+        "versao_aprovada_id", Uuid(as_uuid=True), ForeignKey(
+            "versoes_plano.id", ondelete="RESTRICT", use_alter=True,
+            name="planos_versao_aprovada_fkey"
+        )
+    )
+
+
+    @property
+    def prepared_text_available(self) -> bool:
+        return bool(self.prepared_pages)
+
+    @property
+    def authorization_required(self) -> bool:
+        return self.prepared_pages is not None and self.authorized_at is None
 
 
 class SyllabusCandidate(Base):
@@ -187,6 +224,30 @@ class SyllabusCandidate(Base):
         "versao_id", Uuid(as_uuid=True), ForeignKey("versoes_plano.id", ondelete="CASCADE"), nullable=True, index=True
     )
     order: Mapped[int | None] = mapped_column("ordem", SmallInteger, nullable=True)
+
+
+    # Campos civis e rastreamento do extrator: nunca inferem um instante/fuso.
+    execucao: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    data_sugerida: Mapped[date | None] = mapped_column(Date)
+    hora_sugerida: Mapped[time | None] = mapped_column(Time)
+    campos_ambiguos: Mapped[list[str]] = mapped_column(JSON().with_variant(ARRAY(Text), "postgresql"), default=list)
+    modelo_ia: Mapped[str | None] = mapped_column(String)
+    revisado_em: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    criado_em: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    # Compatibilidade de nomes do extrator; uma única tabela física (S7-D01).
+    plano_id = synonym("syllabus_id")
+    titulo = synonym("title")
+    tipo = synonym("kind")
+    pagina_origem = synonym("source_page")
+    trecho_origem = synonym("source_excerpt")
+    provedor_ia = synonym("provider")
+    versao_processamento = synonym("processing_version")
+    ordem = synonym("order")
+    ambiguo = synonym("ambiguous")
+
+
+AssessmentCandidate = SyllabusCandidate
 
 
 class Subject(Base):

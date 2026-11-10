@@ -4,20 +4,20 @@ BEGIN;
 CREATE TABLE public.fila_processamento_ia (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     plano_id UUID NOT NULL REFERENCES public.planos_ensino(id) ON DELETE CASCADE,
-    
+
     -- Controle de Estado (Atende ao requisito de timeout e 429)
-    status TEXT NOT NULL DEFAULT 'pendente' 
+    status TEXT NOT NULL DEFAULT 'pendente'
         CHECK (status IN ('pendente', 'processando', 'concluido', 'erro', 'rate_limit', 'timeout')),
-    
+
     -- Controle de Recuperação (Atende ao "processamento recuperável")
     tentativas INT NOT NULL DEFAULT 0,
     limite_tentativas INT NOT NULL DEFAULT 3,
     proxima_tentativa TIMESTAMPTZ DEFAULT NOW(),
-    
+
     -- Logs isolados (Atende ao "logs sem conteúdo acadêmico")
     -- Instrução de negócio: Salvar apenas códigos HTTP (ex: 429, 504) ou mensagens de falha de conexão.
     erro_tecnico TEXT,
-    
+
     criado_em TIMESTAMPTZ DEFAULT NOW(),
     atualizado_em TIMESTAMPTZ DEFAULT NOW()
 );

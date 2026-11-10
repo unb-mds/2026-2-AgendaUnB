@@ -249,7 +249,7 @@ def test_plan_candidates_are_private_and_read_only(database):
     assume(conn, users['ana'])
     assert scalar(conn, 'select count(*) from public.avaliacoes where id=:c', {'c': candidate_id}) == 1
     # Nem o dono altera candidatos direto: revisão e confirmação passam pela API.
-    assert conn.execute(text("update public.avaliacoes set status='confirmado' where id=:c"), {'c': candidate_id}).rowcount == 0
+    denied(conn, "update public.avaliacoes set status='confirmado' where id=:c", {'c': candidate_id})
     denied(conn, "insert into public.avaliacoes(plano_id, titulo) values (:p, 'Plantada')", {'p': plan_id})
 
     assume(conn, users['bruno'])
@@ -257,4 +257,4 @@ def test_plan_candidates_are_private_and_read_only(database):
     assert scalar(conn, 'select count(*) from public.planos_ensino where id=:p', {'p': plan_id}) == 0
 
     assume(conn)
-    assert scalar(conn, 'select count(*) from public.avaliacoes') == 0
+    denied(conn, 'select count(*) from public.avaliacoes')

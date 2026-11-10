@@ -1,3 +1,4 @@
+import asyncio
 import io
 from datetime import datetime, timedelta, timezone
 from unittest.mock import create_autospec
@@ -5,12 +6,14 @@ from uuid import UUID, uuid4
 
 import pypdf
 import pytest
-from fastapi import HTTPException
+from fastapi import HTTPException, UploadFile
+from starlette.datastructures import Headers
 from sqlalchemy import select
 
 from src.database.models import Profile, Syllabus
 from src.main import app
 from src.middlewares.auth import CurrentUser, get_current_user
+from src.modules.syllabus.services import validate_pdf_file
 from src.services.storage import SupabaseStorageService, get_storage_service
 
 
@@ -104,15 +107,12 @@ def test_upload_syllabus_success(api, storage_mock):
     assert "id" in body
     assert body["status"] == "pendente"
     assert body["fileName"] == "plano_de_ensino.pdf"
-    assert str(user_id) in body["filePath"]
+    assert body["filePath"] is None
+    assert body["authorizationRequired"] is True
     assert body["fileType"] == "pdf"
     assert body["fileSize"] == len(pdf_bytes)
     assert (body["ano"], body["semestre"]) == (2026, 2)
-    storage_mock.upload_file.assert_called_once()
-    uploaded = storage_mock.upload_file.call_args.kwargs
-    assert uploaded["path"].startswith(f"{user_id}/")
-    assert uploaded["content"] == pdf_bytes
-    assert uploaded["content_type"] == "application/pdf"
+    storage_mock.upload_file.assert_not_called()
 
     # Verifica no banco se o registro foi salvo com status 'pendente'
     with TestSession() as session:
@@ -175,7 +175,7 @@ def test_upload_syllabus_quota_is_ten_in_five_days(api, storage_mock):
         "file": ("plano.pdf", io.BytesIO(make_valid_pdf_bytes()), "application/pdf")
     })
     assert response.status_code == 429
-    assert storage_mock.upload_file.call_count == 10
+    storage_mock.upload_file.assert_not_called()
 
 def test_upload_syllabus_unauthenticated(api):
     client, _, _, _ = api
@@ -287,7 +287,30 @@ def test_upload_syllabus_payload_too_large(api, monkeypatch):
     assert "excede o limite máximo permitido" in response.json()["detail"]
 
 
-def test_upload_syllabus_storage_failure(api):
+def test_oversized_upload_reads_only_limit_plus_one(monkeypatch):
+    monkeypatch.setattr("src.modules.syllabus.services.MAX_FILE_SIZE_BYTES", 50)
+
+    class BoundedFile(io.BytesIO):
+        def read(self, size=-1):
+            assert size == 51, "O upload não deve carregar o arquivo inteiro antes de rejeitá-lo"
+            return super().read(size)
+
+    stream = BoundedFile(b"%PDF-" + b"x" * 100_000)
+    upload = UploadFile(stream, filename="plano.pdf", headers=Headers({"content-type": "application/pdf"}))
+    with pytest.raises(HTTPException) as caught:
+        asyncio.run(validate_pdf_file(upload))
+    assert caught.value.status_code == 413
+    assert stream.tell() == 51
+
+
+def test_upload_accepts_pdf_at_exact_size_limit(monkeypatch):
+    monkeypatch.setattr("src.modules.syllabus.services.MAX_FILE_SIZE_BYTES", len(BASE_VALID_PDF))
+    upload = UploadFile(io.BytesIO(BASE_VALID_PDF), filename="plano.pdf",
+                        headers=Headers({"content-type": "application/pdf"}))
+    assert asyncio.run(validate_pdf_file(upload)) == BASE_VALID_PDF
+
+
+def test_upload_syllabus_does_not_depend_on_storage(api):
     client, _, authenticated_user, _ = api
 
     class FailingStorage(SupabaseStorageService):
@@ -303,12 +326,13 @@ def test_upload_syllabus_storage_failure(api):
     files = {"file": ("plano.pdf", io.BytesIO(pdf_bytes), "application/pdf")}
 
     response = client.post("/api/v1/syllabus/upload", files=files)
-    assert response.status_code == 502
+    assert response.status_code == 202
+    assert response.json()["filePath"] is None
 
     app.dependency_overrides.pop(get_storage_service, None)
 
 
-def test_upload_syllabus_db_failure_compensates_storage(api, monkeypatch):
+def test_preparation_db_failure_does_not_touch_storage(api, monkeypatch):
     client, _, authenticated_user, _ = api
 
     deleted_paths = []
@@ -337,9 +361,8 @@ def test_upload_syllabus_db_failure_compensates_storage(api, monkeypatch):
     assert response.status_code == 503
     assert "Falha ao registrar o envio do plano de ensino" in response.json()["detail"]
 
-    # Verifica se a compensação no Storage foi executada
-    assert len(deleted_paths) == 1
-    assert str(authenticated_user["value"].id) in deleted_paths[0]
+    # O PDF nunca foi enviado: não há objeto no Storage para compensar.
+    assert deleted_paths == []
 
     app.dependency_overrides.pop(get_storage_service, None)
 
@@ -444,6 +467,7 @@ def test_legacy_plan_without_upload_metadata_is_readable(api):
         plan = body["items"][0] if "items" in body else body
         assert plan["id"] == str(plan_id)
         assert plan["fileName"] is None and plan["filePath"] is None
+        assert plan["authorizationRequired"] is False
 
 
 @pytest.mark.parametrize("query", ["limit=0", "limit=101", "offset=-1", "limit=invalid"])

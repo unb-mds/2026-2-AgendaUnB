@@ -66,6 +66,9 @@
           "docs/arquitetura/banco-de-dados",
           "docs/arquitetura/frontend",
           "docs/api-specs",
+          "docs/processamento-planos-s7",
+          "docs/s7-b01-validacao",
+          "docs/privacidade-planos",
           "docs/implantacao",
           {
             "group": "Decisões arquiteturais",
