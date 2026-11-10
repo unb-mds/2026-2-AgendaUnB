@@ -106,5 +106,8 @@ Mudanças de contratos e convenções devem atualizar esta documentação no mes
 - `SavedPublicEvent` / `eventos_salvos`: chave composta `(user_id, event_id)`, `criado_em`, referências com exclusão em cascata e RLS por proprietário; sem política de UPDATE.
 - `notificacoes`: `id`, `usuario_id`, `evento_id`, `tipo` (`submissao`, `aprovacao`, `recusa`), `titulo_evento`, `justificativa`, `criado_em`, `lida_em`. Somente o destinatário lê e marca como lida.
 - `eventos`: acrescenta `justificativa_recusa`, `interessados_count` e `sugestao_estudante`. Status persistidos continuam em português: `pendente`, `aprovado`, `rejeitado`.
+- `Subject` / `disciplinas` e `ClassOffering` / `ofertas_turma` (S7-D01): disciplina abstrata e sua oferta em um período (`turma`, `ano`, `semestre` 1 ou 2). Catálogo com leitura pública; escrita pelo back-end.
+- `ClassFollow` / `vinculos_turma` (S7-D01): chave `(user_id, oferta_id)`, vínculo autodeclarado; leitura só do próprio usuário.
+- `SyllabusVersion` / `versoes_plano` (S7-D01): versões do plano, `privada` por padrão ou `compartilhada`; leitura pelo dono ou por quem segue a oferta quando compartilhada. `avaliacoes` passa a ter `versao_id` e `ordem`, e `eventos_pessoais` ganha `origem_versao_id` com unicidade por `(user_id, origem_avaliacao_id)`.
 
 O estado atual está em [Atualizações pós-R1](../atualizacoes.md). As exceções de nomes existentes e o plano de migração estão nos [contratos da Release 2](../atualizacoes.md#contratos-da-release-2).

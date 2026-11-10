@@ -3,7 +3,7 @@ title: "Modelo de dados"
 description: "Diagrama das entidades e dos relacionamentos do banco de dados da Agenda UnB."
 ---
 
-O diagrama mostra as entidades do catálogo, da agenda, da moderação e dos planos de ensino. Consulte colunas, restrições e políticas de acesso na [especificação física](banco-de-dados.md). As tabelas e políticas vigentes são definidas pelas migrações em `supabase/migrations/`. As mudanças planejadas de turmas e versões estão nos [contratos da Release 2](../atualizacoes.md#contratos-da-release-2).
+O diagrama mostra as entidades do catálogo, da agenda, da moderação e dos planos de ensino. Consulte colunas, restrições e políticas de acesso na [especificação física](banco-de-dados.md). As tabelas e políticas vigentes são definidas pelas migrações em `supabase/migrations/`. Turmas, vínculos e versões foram modelados na S7-D01 (`20261109120000`), conforme as ADR-009 e ADR-010 e os [contratos da Release 2](../atualizacoes.md#contratos-da-release-2).
 
 ## Diagrama Entidade-Relacionamento (DER)
 
@@ -73,19 +73,43 @@ erDiagram
     AVALIACOES {
         UUID id PK
         UUID plano_id FK
+        UUID versao_id FK
+        SMALLINT ordem
         TIMESTAMPTZ data_avaliacao
         TEXT status
     }
 
-    CANDIDATOS_AVALIACAO {
+    VERSOES_PLANO {
         UUID id PK
         UUID plano_id FK
-        UUID evento_pessoal_id FK,UK
-        SMALLINT execucao
-        SMALLINT ordem
-        DATE data_sugerida
-        TIME hora_sugerida
-        TEXT status
+        SMALLINT numero
+        UUID autor_id FK
+        TEXT autor_papel
+        UUID versao_origem_id FK
+        BOOLEAN procedencia_institucional
+        TEXT visibilidade
+    }
+
+    DISCIPLINAS {
+        UUID id PK
+        TEXT origem_id
+        TEXT codigo
+        TEXT nome
+    }
+
+    OFERTAS_TURMA {
+        UUID id PK
+        UUID disciplina_id FK
+        TEXT turma
+        SMALLINT ano
+        SMALLINT semestre
+        TEXT professor
+        TEXT horarios
+    }
+
+    VINCULOS_TURMA {
+        UUID user_id PK,FK
+        UUID oferta_id PK,FK
     }
 
     PROFILES ||--o{ EVENTOS : "cria"
@@ -100,9 +124,16 @@ erDiagram
     EVENTOS ||--o{ EVENTOS_SALVOS : "tem vinculos"
     EVENTOS o|--o{ NOTIFICACOES : "origina"
     PLANOS_ENSINO ||--o{ AVALIACOES : "tem"
-    PLANOS_ENSINO ||--o{ CANDIDATOS_AVALIACAO : "tem"
+    PLANOS_ENSINO ||--|{ VERSOES_PLANO : "versiona"
+    VERSOES_PLANO ||--o{ AVALIACOES : "contem"
+    VERSOES_PLANO o|--o{ VERSOES_PLANO : "revisa"
+    PROFILES ||--o{ VERSOES_PLANO : "autor"
+    DISCIPLINAS ||--o{ OFERTAS_TURMA : "ofertada em"
+    OFERTAS_TURMA o|--o{ PLANOS_ENSINO : "turma do plano"
+    PROFILES ||--o{ VINCULOS_TURMA : "segue"
+    OFERTAS_TURMA ||--o{ VINCULOS_TURMA : "seguida por"
     PLANOS_ENSINO o|--o{ PLANOS_ENSINO : "referencia plano oficial"
-    CANDIDATOS_AVALIACAO o|--o| EVENTOS_PESSOAIS : "gera quando confirmado"
+    VERSOES_PLANO o|--o{ EVENTOS_PESSOAIS : "origem da importacao"
 ```
 
-O dono de `eventos_pessoais` referencia `auth.users.id`. O fluxo de confirmação da API registra a procedência de `avaliacoes` em `eventos_pessoais.origem_avaliacao_id`. Esse campo tem índice único parcial e não é uma chave estrangeira. As tabelas `avaliacoes` e `candidatos_avaliacao` têm contratos diferentes, descritos na [especificação física](banco-de-dados.md).
+O dono de `eventos_pessoais` referencia `auth.users.id`. O fluxo de confirmação da API registra a procedência em `eventos_pessoais.origem_avaliacao_id` (sem FK) e `origem_versao_id` (FK para `versoes_plano`). A unicidade é por usuário, `(user_id, origem_avaliacao_id)`. `avaliacoes` é a tabela única de candidatos desde a S7-D01; detalhes na [especificação física](banco-de-dados.md).
