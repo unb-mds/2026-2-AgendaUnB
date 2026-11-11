@@ -6,6 +6,9 @@ import { useSyllabusResource } from '../hooks/useSyllabusResource';
 import { syllabusApi } from '../lib/syllabusApi';
 import SyllabusReviewPanel from '../components/SyllabusReviewPanel';
 import SyllabusTextReview, { SyllabusTextInput } from '../components/SyllabusTextReview';
+import JourneyPlanReview from '../components/JourneyPlanReview';
+import SharedClassPlans from '../components/SharedClassPlans';
+import { OfferingDetails } from '../components/RealClassCatalog';
 import TeachingPlanJourney from '../components/TeachingPlanJourney';
 import { formatFileSize, formatPlanDate, isProcessing, PLAN_STATES, syllabusError, SYLLABUS_PAGE_SIZE, validatePdf } from '../lib/syllabus';
 import '../styles/teaching-plan.css';
@@ -22,7 +25,7 @@ function PlanHelp() {
   return <aside className="plan-help" aria-labelledby="plan-help-title">
     <h2 id="plan-help-title">Do PDF ao seu planejamento</h2>
     <ol className="plan-steps">
-      <li><span aria-hidden="true">1</span><div><h3>Envie o plano</h3><p>Informe a disciplina e o período do documento.</p></div></li>
+      <li><span aria-hidden="true">1</span><div><h3>Envie o plano</h3><p>Selecione a oferta correta no catálogo de turmas.</p></div></li>
       <li><span aria-hidden="true">2</span><div><h3>Revise e autorize o texto</h3><p>Remova informações pessoais antes de decidir pelo envio ao Gemini.</p></div></li>
       <li><Icon>event_available</Icon><div><h3>Você decide o que entra na agenda</h3><p>O envio não cria compromissos. As avaliações precisam de revisão e confirmação.</p></div></li>
     </ol>
@@ -31,11 +34,8 @@ function PlanHelp() {
   </aside>;
 }
 
-function PlanUpload({ onUploaded }) {
+function PlanUpload({ onUploaded, offer }) {
   const [file, setFile] = useState(null);
-  const [disciplina, setDisciplina] = useState('');
-  const [semestre, setSemestre] = useState('');
-  const [ano, setAno] = useState('');
   const [error, setError] = useState('');
   const [fileError, setFileError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -57,14 +57,13 @@ function PlanUpload({ onUploaded }) {
     if (uploadRef.current) return;
     const validation = validatePdf(file);
     if (validation) { setFileError(validation); inputRef.current?.focus(); return; }
-    if (!disciplina.trim()) { setError('Informe o nome da disciplina.'); return; }
     const controller = new AbortController();
     uploadRef.current = controller;
     setBusy(true); setError('');
     try {
-      const result = await syllabusApi.upload({ file, disciplina, semestre, ano }, controller.signal);
+      const result = await syllabusApi.upload({ file, offeringId: offer.id }, controller.signal);
       if (controller.signal.aborted) return;
-      setFile(null); setDisciplina(''); setSemestre(''); setAno('');
+      setFile(null);
       onUploaded(result);
     } catch (err) {
       if (!controller.signal.aborted) {
@@ -80,11 +79,7 @@ function PlanUpload({ onUploaded }) {
     <form onSubmit={submit} aria-busy={busy}>
       <fieldset disabled={busy}>
         <legend className="sr-only">Arquivo e período de referência</legend>
-        <div className="management-field"><label htmlFor="plan-subject">Disciplina</label><input id="plan-subject" name="disciplina" required maxLength={200} value={disciplina} onChange={event => setDisciplina(event.target.value)} placeholder="Ex.: Métodos de Desenvolvimento de Software" /></div>
-        <div className="plan-period">
-          <div className="management-field"><label htmlFor="plan-semester">Semestre</label><select id="plan-semester" name="semestre" required value={semestre} onChange={event => setSemestre(event.target.value)}><option value="" disabled>Selecione</option><option value="1">1º semestre</option><option value="2">2º semestre</option></select></div>
-          <div className="management-field"><label htmlFor="plan-year">Ano de referência</label><input id="plan-year" name="ano" type="number" inputMode="numeric" min="2000" max="2100" required value={ano} onChange={event => setAno(event.target.value)} placeholder="Ex.: 2026" /></div>
-        </div>
+        <OfferingDetails offer={offer} />
         <div className={`plan-dropzone${dragging ? ' dragging' : ''}${file ? ' has-file' : ''}`}
           onDragOver={event => { event.preventDefault(); if (!busy) setDragging(true); }}
           onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget)) setDragging(false); }}
@@ -105,8 +100,12 @@ function PlanUpload({ onUploaded }) {
   </section>;
 }
 
-function PlanTracking({ id, onClose }) {
-  const load = useCallback(signal => syllabusApi.get(id, signal), [id]);
+function PlanTracking({ id, onClose, offeringId, onConfirmed }) {
+  const load = useCallback(async signal => {
+    const plan = await syllabusApi.get(id, signal);
+    if (offeringId && plan.offeringId !== offeringId) throw new Error('Este plano pertence a outra oferta. Abra um plano pelo histórico desta turma.');
+    return plan;
+  }, [id, offeringId]);
   const { data: plan, loading, error, retry } = useSyllabusResource(id, load, isProcessing);
   const headingRef = useRef(null);
   useEffect(() => { headingRef.current?.focus(); }, [id]);
@@ -132,20 +131,20 @@ function PlanTracking({ id, onClose }) {
       {(empty || plan.status === 'falha') && <div className="plan-recovery"><a className="manage-button" href="#plan-subject">Enviar outro PDF</a><Link className="management-text-button" to={manualPath}>Cadastrar prazos manualmente</Link></div>}
     </>}
     {plan?.preparedTextAvailable && <SyllabusTextReview plan={plan} onAuthorized={retry} />}
-    {!plan?.authorizationRequired && <SyllabusReviewPanel selected plan={plan} loading={loading} error={error} />}
+    {!plan?.authorizationRequired && (plan?.status === "concluido" && plan.candidates?.length ? <JourneyPlanReview key={plan.id} plan={plan} onConfirmed={onConfirmed} /> : <SyllabusReviewPanel selected plan={plan} loading={loading} error={error} />)}
   </section>;
 }
 
-function PlanWorkspace({ userId }) {
+function PlanWorkspace({ userId, offer, step, onStep }) {
   const [params, setParams] = useSearchParams();
   const selectedId = params.get('plano');
   const requestedPage = Number(params.get('pagina') || 1);
   const page = Number.isSafeInteger(requestedPage) && requestedPage > 0 && requestedPage <= 100000 ? requestedPage - 1 : 0;
-  const loadList = useCallback(signal => syllabusApi.list(page, signal), [page]);
-  const history = useSyllabusResource(`${userId}:${page}`, loadList, pollList, 15000);
+  const loadList = useCallback(signal => syllabusApi.list(page, signal, offer?.id), [page, offer?.id]);
+  const history = useSyllabusResource(`${userId}:${offer?.id}:${page}`, loadList, pollList, 15000);
   const setSelection = id => setParams(previous => {
     const next = new URLSearchParams(previous);
-    if (id) next.set('plano', id); else next.delete('plano');
+    if (id) { next.set('plano', id); next.set('etapa', '3'); } else next.delete('plano');
     return next;
   });
   const changePage = nextPage => setParams(previous => {
@@ -154,12 +153,14 @@ function PlanWorkspace({ userId }) {
     return next;
   });
   const onUploaded = plan => {
-    setParams(previous => { const next = new URLSearchParams(previous); next.set('plano', plan.id); next.delete('pagina'); return next; });
+    setParams(previous => { const next = new URLSearchParams(previous); next.set('plano', plan.id); next.set('etapa', '3'); next.delete('pagina'); return next; });
     history.retry();
+
   };
   return <>
-    <p className="plan-legacy-note"><Icon>info</Icon>Os envios desta área são particulares e ainda não são vinculados ao catálogo de turmas.</p>
-    <div className="plan-layout"><div><PlanUpload onUploaded={onUploaded} /><SyllabusTextInput onPrepared={onUploaded} /></div><div className="plan-sidebar">{selectedId ? <PlanTracking key={selectedId} id={selectedId} onClose={() => { setSelection(null); document.getElementById('plan-subject')?.focus(); }} /> : <PlanHelp />}</div></div>
+    <Link className="management-text-button" to="/plano-de-ensino">Voltar ao catálogo de turmas</Link>{offer && <OfferingDetails offer={offer} />}
+    <div className="plan-layout"><div>{step === 2 && offer?.available ? <><PlanUpload key={offer.id} offer={offer} onUploaded={onUploaded} /><SyllabusTextInput key={`text-${offer.id}`} offeringId={offer.id} onPrepared={onUploaded} /></> : step === 2 ? <p>Selecione uma oferta disponível no catálogo para enviar um plano. Seus envios anteriores continuam no histórico.</p> : null}</div><div className="plan-sidebar">{selectedId ? <PlanTracking key={selectedId} id={selectedId} offeringId={offer?.id} onConfirmed={() => onStep(4)} onClose={() => { setSelection(null); document.getElementById('plan-subject')?.focus(); }} /> : <PlanHelp />}</div></div>
+    {offer && <SharedClassPlans key={offer.id} offeringId={offer.id} />}
     {!selectedId && <SyllabusReviewPanel />}
     <section className="plan-history" aria-labelledby="plan-history-title" aria-busy={history.loading}>
       <header className="plan-section-heading"><div><h2 id="plan-history-title">Seus planos enviados</h2><p>Retome um acompanhamento a qualquer momento.</p></div><button className="manage-button" onClick={history.retry} disabled={history.loading}><Icon>refresh</Icon>Atualizar</button></header>
@@ -177,10 +178,8 @@ function PlanWorkspace({ userId }) {
 
 export default function TeachingPlanPage() {
   const { user } = useAuth();
-  const [params, setParams] = useSearchParams();
-  const realMode = params.get('modo') === 'envios' || params.has('plano');
-  return <ManagementShell title="Planos de ensino" description="Envie o plano da sua disciplina e acompanhe a análise das avaliações, no seu ritmo.">
-    <nav className="tp-mode-switch" aria-label="Modo da página"><button type="button" className={`manage-button ${!realMode ? 'primary' : ''}`} aria-pressed={!realMode} onClick={() => setParams({})}>Demonstração interativa</button><button type="button" className={`manage-button ${realMode ? 'primary' : ''}`} aria-pressed={realMode} onClick={() => setParams({ modo: 'envios' })}>Envios e histórico reais</button></nav>
-    {!realMode ? <TeachingPlanJourney key={user?.id || 'guest'} userId={user?.id} /> : user ? <PlanWorkspace key={user.id} userId={user.id} /> : <section className="plan-guest"><Icon>description</Icon><h2>Seus planos, em um só lugar</h2><p>Entre na sua conta para enviar PDFs e acompanhar o processamento das suas disciplinas. Seus planos são particulares.</p><Link className="manage-button primary" to="/">Entrar para enviar um plano<Icon>arrow_forward</Icon></Link><p className="management-muted">PDF de até 10 MB e 10 páginas, com texto selecionável.</p></section>}
+  return <ManagementShell title="Planos de ensino" description="Da escolha da turma às datas na sua agenda, confira cada etapa no seu ritmo.">
+    <TeachingPlanJourney key={user?.id || 'guest'} userId={user?.id}
+      renderWorkspace={(offer, step, onStep) => <PlanWorkspace userId={user.id} offer={offer} step={step} onStep={onStep} />} />
   </ManagementShell>;
 }

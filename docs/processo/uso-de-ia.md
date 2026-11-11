@@ -236,3 +236,10 @@ Este arquivo foi redigido com auxílio da I.A. A estrutura e o texto das entrada
 - **O que entrou:** Merge da base `3922797`, documentação nos diretórios oficiais, migrações inéditas sem números duplicados e extrator na tabela oficial `avaliacoes`, com versão privada fixada, datas civis separadas, proveniência e preservação de versões compartilhadas. Retry particular não recria evento apagado.
 - **Verificado:** 191 testes de backend aprovados e um ignorado no ambiente local, 17 testes de lógica, 38 de navegador, build frontend/documentação e lint SQL sem achados. Corpus de referência: sete acertos e nenhuma data inventada. Nenhuma chamada Gemini nova ou alteração no Supabase hospedado nesta revisão.
 - **Corrigido/rejeitado:** Manter duas tabelas de candidatos contrariaria S7-D01. Políticas de compartilhamento não foram apagadas para impor privacidade indiscriminada; o texto aprovado permanece privado. A fila S7-B02 não foi ativada como segundo executor. Produção, revisão humana e integrações dependentes continuam pendentes.
+
+### 10/11/2026 — Integração de catálogo e seleção de ofertas (#70/#71)
+
+- **Solicitante:** Thomas. **Ferramenta:** Codex.
+- **Pedido:** testar implementações da API do Followw.
+- **Verificações:** testes automatizados HTTP, adaptador, PostgreSQL isolado e Playwright; build frontend; migrações na atualização e em base sem tabelas da aplicação. Sondagem pública pequena retornou 211 unidades e duas ofertas de FGA0108/2026.2, ambas com ID inequívoco. Detalhes e limitações em `docs/arquitetura/catalogo-de-turmas.md`.
+- **Limites:** sem deploy, escrita no Supabase hospedado, varredura integral, mensagens em issues ou fechamento de issues. Revisor humano e homologação ainda pendentes.
