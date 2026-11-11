@@ -21,7 +21,7 @@ export function useSyllabusResource(key, load, shouldPoll, interval = 5000) {
         const data = await load(current.signal);
         if (!active || current.signal.aborted) return;
         setState({ key, data, error: null, loading: false });
-        stopped = !shouldPoll(data);
+        stopped = !shouldPoll?.(data);
         if (!stopped) timer = setTimeout(run, Math.min(interval * (1 + attempt++ / 4), 30000));
       } catch (error) {
         if (!active || current.signal.aborted) return;

@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { createHash } from 'node:crypto';
-const plan = { id: 'd79eeb53-aed8-4369-936b-156e01cc455c', disciplina: 'Disciplina sintética', fileName: 'sintetico.pdf', status: 'pendente', authorizationRequired: true, preparedTextAvailable: true };
+const plan = { offeringId: '70000000-0000-4000-8000-000000000071', id: 'd79eeb53-aed8-4369-936b-156e01cc455c', disciplina: 'Disciplina sintética', fileName: 'sintetico.pdf', status: 'pendente', authorizationRequired: true, preparedTextAvailable: true };
 async function setup(page, { guest = false, items = [], total = items.length, detail = plan, listStatus = 200 } = {}) {
   // Substitute only the external auth/data provider, never the page or API client.
   await page.route('**/src/lib/supabase.js*', route => route.fulfill({ contentType: 'application/javascript', body: `
@@ -24,6 +24,8 @@ async function setup(page, { guest = false, items = [], total = items.length, de
       }
     };
   ` }));
+  await page.route('**/api/v1/class-offerings/70000000-0000-4000-8000-000000000071', route => route.fulfill({ json: { id: '70000000-0000-4000-8000-000000000071', subject_name: plan.disciplina, subject_code: 'FGA0138', class_number: '01', year: 2026, semester: 2, unit: '673', available: true } }));
+  await page.route('**/api/v1/class-offerings/*/shared-plans?*', route => route.fulfill({ json: { items: [], total: 0 } }));
   await page.route('**/api/v1/syllabus?*', route => route.fulfill({ status: listStatus, json: listStatus === 200 ? { items, total } : { detail: 'Not Found' } }));
   await page.route(`**/api/v1/syllabus/${plan.id}`, route => route.fulfill({ json: detail }));
   await page.route('**/api/v1/events?*', route => route.fulfill({ json: [] }));
@@ -71,13 +73,13 @@ test('texto colado passa por preparação e provedor indisponível oferece camin
   let prepared = 0;
   await page.route('**/api/v1/syllabus/text', route => {
     prepared++;
-    expect(route.request().postDataJSON()).toEqual({ text: 'Trabalho final - data a definir.' });
+    expect(route.request().postDataJSON()).toEqual({ text: 'Trabalho final - data a definir.', offering_id: '70000000-0000-4000-8000-000000000071' });
     return route.fulfill({ status: 202, json: plan });
   });
   await page.route(`**/api/v1/syllabus/${plan.id}/text`, route => route.fulfill({ json: {
     pages: [{ pagina: null, texto: 'Trabalho final - data a definir.' }], provider: 'Google Gemini API', providerAvailable: false,
   } }));
-  await page.goto('/plano-de-ensino?modo=envios');
+  await page.goto('/plano-de-ensino?modo=envios&oferta=70000000-0000-4000-8000-000000000071');
   await page.getByLabel('Texto do plano', { exact: true }).fill('Trabalho final - data a definir.');
   await page.getByRole('button', { name: 'Preparar texto para revisão' }).click();
   await expect(page.getByLabel('Texto sem referência de página')).toHaveValue('Trabalho final - data a definir.');
