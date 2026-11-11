@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 from src.database.models import PersonalEvent, Profile, Syllabus, SyllabusCandidate
+from src.middlewares.auth import CurrentUser
 
 
 def _create_syllabus(TestSession, user_id, *, status="completed"):
@@ -49,6 +50,14 @@ def _create_syllabus(TestSession, user_id, *, status="completed"):
         return syllabus_id, first.id, second.id
 
 
+def _confirm(client, syllabus_id, payload, key="test-confirm-0001"):
+    return client.post(
+        f"/api/v1/syllabus/{syllabus_id}/confirm",
+        json=payload,
+        headers={"Idempotency-Key": key},
+    )
+
+
 def test_list_syllabi_is_paginated_and_scoped_to_owner(api):
     client, TestSession, authenticated_user, _ = api
     owner_id = authenticated_user["value"].id
@@ -81,6 +90,16 @@ def test_syllabus_detail_includes_candidates_and_provenance(api):
     assert first["sourceExcerpt"] == "A primeira prova será em 10/11."
 
 
+def test_syllabus_detail_hides_another_users_private_plan(api):
+    client, TestSession, authenticated_user, _ = api
+    syllabus_id, _, _ = _create_syllabus(TestSession, authenticated_user["value"].id)
+    authenticated_user["value"] = CurrentUser(id=uuid4(), role="student")
+
+    response = client.get(f"/api/v1/syllabus/{syllabus_id}")
+
+    assert response.status_code == 404
+
+
 def test_confirmation_creates_only_selected_events_and_is_idempotent(api):
     client, TestSession, authenticated_user, _ = api
     syllabus_id, candidate_id, unselected_id = _create_syllabus(TestSession, authenticated_user["value"].id)
@@ -89,17 +108,22 @@ def test_confirmation_creates_only_selected_events_and_is_idempotent(api):
             {
                 "candidateId": str(candidate_id),
                 "title": "Prova 1 revisada",
+                "type": "prova escrita",
                 "startsAt": "2026-11-10T10:00:00-03:00",
             }
         ]
     }
 
-    first = client.post(f"/api/v1/syllabus/{syllabus_id}/confirm", json=payload)
-    second = client.post(f"/api/v1/syllabus/{syllabus_id}/confirm", json=payload)
+    first = _confirm(client, syllabus_id, payload, "selected-action-001")
+    second = _confirm(client, syllabus_id, payload, "selected-action-001")
     agenda = client.get("/api/v1/me/events")
 
     assert first.status_code == 200
     assert second.status_code == 200
+    assert first.json()["repeated"] is False
+    assert second.json()["repeated"] is True
+    assert first.json()["items"][0]["candidateId"] == str(candidate_id)
+    assert first.json()["items"][0]["type"] == "prova escrita"
     assert agenda.status_code == 200
     assert agenda.json()[0]["origin"]["candidateId"] == str(candidate_id)
     assert first.json()["events"][0]["id"] == second.json()["events"][0]["id"]
@@ -115,7 +139,34 @@ def test_confirmation_creates_only_selected_events_and_is_idempotent(api):
         saved = session.scalars(select(PersonalEvent)).all()
         assert len(saved) == 1
         assert saved[0].origin_candidate_id == candidate_id
+        assert session.get(SyllabusCandidate, candidate_id).kind == "prova escrita"
         assert session.get(SyllabusCandidate, unselected_id).status == "pendente"
+
+
+def test_new_confirmation_action_revises_event_and_preserves_origin(api):
+    client, sessions, authenticated_user, _ = api
+    syllabus_id, candidate_id, _ = _create_syllabus(sessions, authenticated_user["value"].id)
+    initial = _confirm(client, syllabus_id, {"candidates": [{
+        "candidateId": str(candidate_id), "startsAt": "2026-11-10T09:00:00Z",
+    }]}, "revision-initial-001")
+    original = initial.json()["events"][0]
+
+    revised = _confirm(client, syllabus_id, {"candidates": [{
+        "candidateId": str(candidate_id),
+        "title": "Prova revisada",
+        "type": "avaliação escrita",
+        "startsAt": "2026-11-12T12:00:00-03:00",
+    }]}, "revision-explicit-001")
+
+    assert revised.status_code == 200
+    assert revised.json()["items"][0]["result"] == "ja_importado"
+    event = revised.json()["events"][0]
+    assert event["id"] == original["id"]
+    assert event["title"] == "Prova revisada"
+    assert event["starts_at"] != original["starts_at"]
+    assert event["origin"]["candidateId"] == str(candidate_id)
+    assert event["origin"]["excerpt"] == "A primeira prova será em 10/11."
+    assert revised.json()["items"][0]["type"] == "avaliação escrita"
 
 
 def test_confirmation_rejects_processing_plan_and_cross_plan_candidate(api):
@@ -127,18 +178,9 @@ def test_confirmation_rejects_processing_plan_and_cross_plan_candidate(api):
     other_user_id = uuid4()
     _, foreign_candidate_id, _ = _create_syllabus(TestSession, other_user_id)
 
-    pending = client.post(
-        f"/api/v1/syllabus/{processing_id}/confirm",
-        json={"candidates": [{"candidateId": str(uuid4()), "startsAt": "2026-11-10T10:00:00Z"}]},
-    )
-    failed = client.post(
-        f"/api/v1/syllabus/{failed_id}/confirm",
-        json={"candidates": [{"candidateId": str(uuid4()), "startsAt": "2026-11-10T10:00:00Z"}]},
-    )
-    crossed = client.post(
-        f"/api/v1/syllabus/{completed_id}/confirm",
-        json={"candidates": [{"candidateId": str(foreign_candidate_id), "startsAt": "2026-11-10T10:00:00Z"}]},
-    )
+    pending = _confirm(client, processing_id, {"candidates": [{"candidateId": str(uuid4()), "startsAt": "2026-11-10T10:00:00Z"}]}, "processing-action-01")
+    failed = _confirm(client, failed_id, {"candidates": [{"candidateId": str(uuid4()), "startsAt": "2026-11-10T10:00:00Z"}]}, "failed-action-001")
+    crossed = _confirm(client, completed_id, {"candidates": [{"candidateId": str(foreign_candidate_id), "startsAt": "2026-11-10T10:00:00Z"}]}, "foreign-action-001")
 
     assert pending.status_code == 409
     assert failed.status_code == 409
@@ -153,14 +195,16 @@ def test_confirmation_validation_failure_does_not_write_partial_events(api):
         TestSession, authenticated_user["value"].id
     )
 
-    response = client.post(
-        f"/api/v1/syllabus/{syllabus_id}/confirm",
-        json={
+    response = _confirm(
+        client,
+        syllabus_id,
+        {
             "candidates": [
                 {"candidateId": str(valid_candidate_id), "startsAt": "2026-11-10T10:00:00-03:00"},
                 {"candidateId": str(undated_candidate_id)},
             ]
         },
+        "partial-invalid-001",
     )
 
     assert response.status_code == 422
@@ -203,11 +247,65 @@ def test_retry_does_not_recreate_deleted_confirmed_event(api):
     client, sessions, auth, _ = api
     sid, cid, _ = _create_syllabus(sessions, auth["value"].id)
     payload = {"candidates": [{"candidateId": str(cid), "startsAt": "2026-11-10T09:00:00Z"}]}
-    result = client.post(f"/api/v1/syllabus/{sid}/confirm", json=payload)
+    result = _confirm(client, sid, payload, "delete-retry-001")
     assert result.status_code == 200 and len(result.json()["events"]) == 1
     with sessions() as db:
         event = db.scalar(select(PersonalEvent).where(PersonalEvent.origin_candidate_id == cid))
         db.delete(event)
         db.commit()
-    retry = client.post(f"/api/v1/syllabus/{sid}/confirm", json=payload)
+    retry = _confirm(client, sid, payload, "delete-retry-001")
     assert retry.status_code == 200 and retry.json()["events"] == []
+    assert retry.json()["items"][0]["removed"] is True
+    explicit_reimport = _confirm(client, sid, payload, "delete-reimport-001")
+    assert explicit_reimport.status_code == 200
+    assert explicit_reimport.json()["items"][0]["removed"] is False
+    assert len(explicit_reimport.json()["events"]) == 1
+
+
+def test_idempotency_key_cannot_be_reused_with_different_content(api):
+    client, sessions, auth, _ = api
+    syllabus_id, candidate_id, _ = _create_syllabus(sessions, auth["value"].id)
+    key = "same-action-key-001"
+    first = _confirm(client, syllabus_id, {"candidates": [{
+        "candidateId": str(candidate_id), "title": "Prova revisada", "startsAt": "2026-11-10T09:00:00Z",
+    }]}, key)
+    changed = _confirm(client, syllabus_id, {"candidates": [{
+        "candidateId": str(candidate_id), "title": "Outro título", "startsAt": "2026-11-11T09:00:00Z",
+    }]}, key)
+
+    assert first.status_code == 200
+    assert changed.status_code == 409
+    with sessions() as db:
+        events = db.scalars(select(PersonalEvent)).all()
+        assert len(events) == 1
+        assert events[0].title == "Prova revisada"
+
+
+def test_discard_candidate_is_soft_and_blocks_confirmation(api):
+    client, sessions, auth, _ = api
+    syllabus_id, candidate_id, _ = _create_syllabus(sessions, auth["value"].id)
+
+    discarded = client.delete(f"/api/v1/syllabus/{syllabus_id}/candidates/{candidate_id}")
+    confirm = _confirm(client, syllabus_id, {"candidates": [{
+        "candidateId": str(candidate_id), "startsAt": "2026-11-10T09:00:00Z",
+    }]}, "discarded-item-001")
+    detail = client.get(f"/api/v1/syllabus/{syllabus_id}")
+
+    assert discarded.status_code == 204
+    assert confirm.status_code == 422
+    candidate = next(row for row in detail.json()["candidates"] if row["id"] == str(candidate_id))
+    assert candidate["status"] == "descartado"
+    with sessions() as db:
+        assert db.scalar(select(PersonalEvent)) is None
+
+
+def test_idempotency_key_is_required(api):
+    client, sessions, auth, _ = api
+    syllabus_id, candidate_id, _ = _create_syllabus(sessions, auth["value"].id)
+
+    response = client.post(
+        f"/api/v1/syllabus/{syllabus_id}/confirm",
+        json={"candidates": [{"candidateId": str(candidate_id), "startsAt": "2026-11-10T09:00:00Z"}]},
+    )
+
+    assert response.status_code == 422

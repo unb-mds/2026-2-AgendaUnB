@@ -330,6 +330,7 @@ class ClassOffering(Base):
         "atualizado_na_origem_em", DateTime(timezone=True), nullable=True
     )
     synced_at: Mapped[datetime | None] = mapped_column("sincronizado_em", DateTime(timezone=True), nullable=True)
+    publication_id: Mapped[UUID | None] = mapped_column("publicacao_id", Uuid(as_uuid=True), ForeignKey("sincronizacoes_catalogo.id"))
     created_at: Mapped[datetime] = mapped_column(
         "criado_em", DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -456,6 +457,7 @@ class ImportItem(Base):
         "evento_pessoal_id", Uuid(as_uuid=True), ForeignKey("eventos_pessoais.id", ondelete="SET NULL"), nullable=True
     )
     result: Mapped[str] = mapped_column("resultado", String, nullable=False)  # criado | ja_importado
+    candidate_type: Mapped[str | None] = mapped_column("tipo_revisado", String, nullable=True)
 
 
 class CandidateVote(Base):
@@ -476,3 +478,20 @@ class CandidateVote(Base):
     updated_at: Mapped[datetime] = mapped_column(
         "atualizado_em", DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+
+class CatalogSync(Base):
+    __tablename__ = "sincronizacoes_catalogo"
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    source: Mapped[str] = mapped_column("origem", String, default="followw")
+    status: Mapped[str] = mapped_column(String, default="executando")
+    started_at: Mapped[datetime] = mapped_column("iniciada_em", DateTime(timezone=True), server_default=func.now())
+    completed_at: Mapped[datetime | None] = mapped_column("concluida_em", DateTime(timezone=True))
+    offerings_read: Mapped[int] = mapped_column("ofertas_lidas", Integer, default=0)
+    created: Mapped[int] = mapped_column("criadas", Integer, default=0)
+    updated: Mapped[int] = mapped_column("atualizadas", Integer, default=0)
+    error_code: Mapped[str | None] = mapped_column("erro_codigo", String)
+    units: Mapped[list] = mapped_column("unidades", JSON, default=list)
+    periods: Mapped[list] = mapped_column("periodos", JSON, default=list)
+    coverage: Mapped[list] = mapped_column("cobertura", JSON, default=list)
+    rejected: Mapped[list] = mapped_column("rejeitadas", JSON, default=list)

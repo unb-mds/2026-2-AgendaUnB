@@ -127,27 +127,9 @@ setup: check-env check-backend
 run: dev
 
 dev: check-env check-backend check-frontend db-start
+	@$(MAKE) db-migrate
 	@$(MAKE) db-check
-	@echo ""
-	@echo "======================================================================"
-	@echo " Agenda UnB - Servicos em Execucao"
-	@echo "======================================================================"
-	@echo " Frontend:        http://localhost:$(FRONTEND_PORT)"
-	@echo " Backend API:     http://localhost:$(BACKEND_PORT)"
-	@echo " Swagger / Docs:  http://localhost:$(BACKEND_PORT)/docs"
-	@echo " Health Check:    http://localhost:$(BACKEND_PORT)/health"
-	@echo " Supabase Studio: http://localhost:$(SUPABASE_STUDIO_PORT)"
-	@echo "======================================================================"
-	@echo " Pressione [Ctrl+C] para encerrar o Backend e o Frontend."
-	@echo "======================================================================"
-	@echo ""
-	@"$(SHELL)" -c '\
-		(cd "$(ROOT_DIR)/backend" && "$(UVICORN)" src.main:app --reload --port $(BACKEND_PORT)) & \
-		BACK_PID=$$!; \
-		(cd "$(ROOT_DIR)/frontend" && npm run dev -- --port $(FRONTEND_PORT)) & \
-		FRONT_PID=$$!; \
-		trap "echo \"\"; echo \"[INFO] Encerrando Backend e Frontend...\"; kill $$BACK_PID $$FRONT_PID 2>/dev/null; exit 0" INT TERM EXIT; \
-		wait $$BACK_PID $$FRONT_PID'
+	@"$(PYTHON)" "$(ROOT_DIR)/scripts/dev.py" --backend-port $(BACKEND_PORT) --frontend-port $(FRONTEND_PORT)
 
 # ------------------------------------------------------------------------------
 # Servicos Individuais
@@ -155,11 +137,11 @@ dev: check-env check-backend check-frontend db-start
 backend: check-env check-backend
 	@$(MAKE) db-check
 	@echo "[INFO] Iniciando Backend FastAPI na porta $(BACKEND_PORT)..."
-	@cd "$(ROOT_DIR)/backend" && "$(UVICORN)" src.main:app --reload --port $(BACKEND_PORT)
+	@cd "$(ROOT_DIR)/backend" && "$(PYTHON)" -m uvicorn src.main:app --host 127.0.0.1 --port $(BACKEND_PORT)
 
 frontend: check-frontend
 	@echo "[INFO] Iniciando Frontend React na porta $(FRONTEND_PORT)..."
-	@cd "$(ROOT_DIR)/frontend" && npm run dev -- --port $(FRONTEND_PORT)
+	@cd "$(ROOT_DIR)/frontend" && AGENDA_BACKEND_PORT=$(BACKEND_PORT) npm run dev -- --port $(FRONTEND_PORT) --strictPort
 
 docs:
 	@echo "[INFO] Iniciando servidor MkDocs em http://127.0.0.1:8008..."
