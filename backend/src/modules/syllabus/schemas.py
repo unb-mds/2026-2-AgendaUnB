@@ -11,6 +11,7 @@ class SyllabusUploadResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True, from_attributes=True)
 
     id: UUID
+    offering_id: UUID | None = Field(default=None, alias="offeringId")
     user_id: UUID = Field(alias="userId")
     file_name: str = Field(alias="fileName")
     file_path: str | None = Field(default=None, alias="filePath")
@@ -31,6 +32,7 @@ class SyllabusListItem(BaseModel):
     model_config = ConfigDict(populate_by_name=True, from_attributes=True)
 
     id: UUID
+    offering_id: UUID | None = Field(default=None, alias="offeringId")
     user_id: UUID = Field(alias="userId")
     file_name: str | None = Field(alias="fileName")
     file_path: str | None = Field(alias="filePath")

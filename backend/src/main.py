@@ -11,6 +11,7 @@ from fastapi.requests import Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from src.modules.classes.router import router as classes_router
 from src.modules.events.router import router as events_router
 from src.modules.syllabus.router import router as syllabus_router
 from src.middlewares.security import (
@@ -85,7 +86,13 @@ async def handle_validation_error(request: Request, exc: RequestValidationError)
     )
 
 default_origins = "http://localhost:5173,http://127.0.0.1:5173"
-allowed_origins = parse_cors_origins(os.getenv("CORS_ORIGINS", default_origins))
+# Deploys da Vercel entram como origens exatas e passam pela mesma validação.
+vercel_origins = [
+    f"https://{host.strip()}"
+    for host in (os.getenv("VERCEL_URL", ""), os.getenv("VERCEL_PROJECT_PRODUCTION_URL", ""))
+    if host.strip()
+]
+allowed_origins = parse_cors_origins(",".join([os.getenv("CORS_ORIGINS", default_origins), *vercel_origins]))
 
 # A última camada adicionada é a mais externa. Ordem de entrada da requisição:
 # cabeçalhos de segurança -> CORS -> limite de taxa -> limites de corpo -> rotas.
@@ -105,10 +112,12 @@ app.add_middleware(
 )
 app.add_middleware(SecurityHeadersMiddleware)
 
+app.include_router(classes_router, prefix="/api/v1")
 app.include_router(events_router, prefix="/api/v1")
 app.include_router(syllabus_router, prefix="/api/v1")
 
 
 @app.get("/health", tags=["health"])
+@app.get("/api/health", tags=["health"])
 def health_check() -> dict[str, str]:
     return {"status": "ok"}
