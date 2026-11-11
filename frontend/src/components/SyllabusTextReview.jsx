@@ -4,7 +4,7 @@ import { Feedback } from './ManagementUI';
 import { syllabusApi } from '../lib/syllabusApi';
 import { approvedTextSize, MAX_APPROVED_TEXT_BYTES } from '../lib/approvedText';
 
-export function SyllabusTextInput({ onPrepared }) {
+export function SyllabusTextInput({ onPrepared, offeringId }) {
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -17,7 +17,7 @@ export function SyllabusTextInput({ onPrepared }) {
     pending.current = controller;
     setBusy(true); setError('');
     try {
-      const plan = await syllabusApi.prepareText(text, controller.signal);
+      const plan = await syllabusApi.prepareText(text, controller.signal, offeringId);
       if (!controller.signal.aborted) { setText(''); onPrepared(plan); }
     } catch (failure) {
       if (!controller.signal.aborted) setError(failure.message || 'Não foi possível preparar o texto. Tente novamente.');
