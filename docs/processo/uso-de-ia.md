@@ -41,6 +41,24 @@ O campo **verificado** é o mais importante. Sem ele, a entrada declara o uso ma
 - **O que foi verificado:** a IA executou cada branch em PostgreSQL 16 com um substituto mínimo do Supabase (papéis, `auth.users`, `storage.objects` e o histórico de migrações), aplicando todas as migrações do zero: #84 com 229 testes, #75 com 209, #72 com 215, #77 com 223, #81 com 229, #83 com 243, #79 com 194 e #70 com 194, além do build estrito da documentação. **Não foi exercitado** em Supabase hospedado: Auth, Storage, TLS e CORS reais ficam para a homologação. Minha conferência no Supabase local, antes de abrir os PRs: rodei #84 (229 passed), #75 (209), #72 (215) e #77 (223), com os mesmos números da IA; as demais não rodei localmente.
 - **O que foi rejeitado ou corrigido:** os testes encontraram erros da própria IA durante o trabalho: a trava de conteúdo compartilhado impedia excluir um plano inteiro; um teste usava um hash mais curto do que a regra do banco aceita; e a exclusão de conta falhava porque `eventos_pessoais.user_id` não tinha `ON DELETE CASCADE`, um defeito antigo do esquema que virou correção. Ao atualizar com a `dev`, foram corrigidas a numeração das migrações (a nuvem já tinha a `20261110120000` e o `db push` recusa números menores), a escrita aberta na fila de processamento (#92) e uma política que deixava o dono do plano ler o rascunho de revisão de outra conta. A privacidade foi alinhada ao fluxo de texto preparado da S7-B01, sem duplicar o registro de autorização da IA. A primeira entrega reunia várias issues em um PR; foi dividida em um PR por issue. Ficaram como decisões da equipe, e não da IA: o modelo da coleta (#75 e #93), a tabela de fila duplicada e o destino dos eventos públicos e das revisões de terceiros quando uma conta é excluída
 
+### 10/11/2026 — Resolução dos conflitos do PR #108 (dev → main)
+
+- **Quem:** Codex, a pedido de Thomas.
+- **Ferramenta:** OpenAI Codex.
+- **O que foi pedido:** Resolver os três conflitos e mesclar dev em main pelo PR #108.
+- **O que entrou no repositório:** Atualizações da main preservadas nos documentos em `docs/processo/`, referência do template de PR atualizada e schema do Vercel mantido junto ao fallback SPA.
+- **O que foi verificado:** Diff sem erros e sem arquivos não mesclados; JSON do Vercel válido; 17 testes do frontend e build aprovados; backend com 143 testes aprovados e 52 ignorados. MkDocs não executado por ausência do módulo no ambiente.
+- **O que foi rejeitado ou corrigido:** Evitada a restauração dos documentos antigos, preservando seus redirecionamentos e o conteúdo novo nos caminhos canônicos.
+
+### 10/11/2026 — Template de PR e fluxo por issue
+
+- **Quem:** Codex, a pedido de Thomas.
+- **Ferramenta:** OpenAI Codex.
+- **O que foi pedido:** Reaplicar o template de PR na cópia atual do repositório, com uma branch e um PR por issue e status baseado nos checks da issue.
+- **O que entrou no repositório:** `.github/PULL_REQUEST_TEMPLATE.md` e orientações em `docs/CONTRIBUTING.md` e `docs/processo/contribuindo.md`.
+- **O que foi verificado:** Estado inicial limpo na main, ausência do template anterior e `git diff --check`. O build estrito da documentação foi tentado, mas o executável Python disponível não pôde ser iniciado neste ambiente.
+- **O que foi rejeitado ou corrigido:** Evitada a duplicação do checklist da issue no PR. O template orienta atualização manual, sem sincronização automática ou bloqueio de merge.
+
 ### 09/11/2026 — S7-D01: turmas, vínculos, versões e isolamento dos planos (#69)
 
 - **Quem:** Felipe Couto Duque
@@ -226,3 +244,10 @@ Este arquivo foi redigido com auxílio da I.A. A estrutura e o texto das entrada
 - **O que entrou:** Merge da base `3922797`, documentação nos diretórios oficiais, migrações inéditas sem números duplicados e extrator na tabela oficial `avaliacoes`, com versão privada fixada, datas civis separadas, proveniência e preservação de versões compartilhadas. Retry particular não recria evento apagado.
 - **Verificado:** 191 testes de backend aprovados e um ignorado no ambiente local, 17 testes de lógica, 38 de navegador, build frontend/documentação e lint SQL sem achados. Corpus de referência: sete acertos e nenhuma data inventada. Nenhuma chamada Gemini nova ou alteração no Supabase hospedado nesta revisão.
 - **Corrigido/rejeitado:** Manter duas tabelas de candidatos contrariaria S7-D01. Políticas de compartilhamento não foram apagadas para impor privacidade indiscriminada; o texto aprovado permanece privado. A fila S7-B02 não foi ativada como segundo executor. Produção, revisão humana e integrações dependentes continuam pendentes.
+
+### 10/11/2026 — Integração de catálogo e seleção de ofertas (#70/#71)
+
+- **Solicitante:** Thomas. **Ferramenta:** Codex.
+- **Pedido:** testar implementações da API do Followw.
+- **Verificações:** testes automatizados HTTP, adaptador, PostgreSQL isolado e Playwright; build frontend; migrações na atualização e em base sem tabelas da aplicação. Sondagem pública pequena retornou 211 unidades e duas ofertas de FGA0108/2026.2, ambas com ID inequívoco. Detalhes e limitações em `docs/arquitetura/catalogo-de-turmas.md`.
+- **Limites:** sem deploy, escrita no Supabase hospedado, varredura integral, mensagens em issues ou fechamento de issues. Revisor humano e homologação ainda pendentes.
