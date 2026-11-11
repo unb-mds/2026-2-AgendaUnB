@@ -79,6 +79,23 @@ class SupabaseStorageService:
             return False
         return True
 
+    def download_file(self, path: str, *, max_bytes: int = 10 * 1024 * 1024) -> bytes:
+        """Lê um objeto privado, com limite de memória, somente no servidor."""
+        headers = self._headers()
+        url = self._object_url(path)
+        try:
+            with httpx.stream("GET", url, headers=headers, timeout=10.0, follow_redirects=False) as response:
+                if response.status_code != 200:
+                    raise HTTPException(status_code=503, detail="Arquivo indisponível no armazenamento.")
+                content = bytearray()
+                for chunk in response.iter_bytes():
+                    content.extend(chunk)
+                    if len(content) > max_bytes:
+                        raise HTTPException(status_code=413, detail="Arquivo excede o limite de processamento.")
+                return bytes(content)
+        except httpx.RequestError:
+            raise HTTPException(status_code=503, detail="Armazenamento indisponível.") from None
+
 
 def get_storage_service(current_user: CurrentUser = Depends(get_current_user)) -> SupabaseStorageService:
     return SupabaseStorageService()

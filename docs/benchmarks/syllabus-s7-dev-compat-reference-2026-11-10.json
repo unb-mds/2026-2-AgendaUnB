@@ -1,0 +1,181 @@
+{
+  "executed_at": "2026-11-10T04:30:19.043102+00:00",
+  "processing_version": "syllabus-v3-approved-text",
+  "attempt_timeout_seconds": 18.0,
+  "mode": "reference_offline",
+  "provider": "reference",
+  "model": null,
+  "target_seconds": 20,
+  "max_file_cost_usd": "0.06",
+  "cases": [
+    {
+      "id": "cronograma_completo",
+      "pages": 1,
+      "status": "concluido",
+      "error_code": null,
+      "attempts": 1,
+      "cost_reserved_usd": "0.027040",
+      "total_seconds": 4.376,
+      "preparation_seconds": 3.949,
+      "human_review_seconds": 0,
+      "pipeline_seconds": 8.326,
+      "unsupported_dates_blocked": 0,
+      "candidates": [
+        {
+          "titulo": "Prova 1",
+          "tipo": "prova",
+          "data": "2026-11-10",
+          "hora": "14:00",
+          "pagina": 1
+        },
+        {
+          "titulo": "Trabalho final",
+          "tipo": "trabalho",
+          "data": "2026-11-24",
+          "hora": null,
+          "pagina": 1
+        }
+      ],
+      "under_20_seconds": true,
+      "expected": 2,
+      "correct": 2,
+      "omissions": 0,
+      "incorrect": 0,
+      "extras": 0,
+      "invented_dates_persisted": 0
+    },
+    {
+      "id": "sem_cronograma",
+      "pages": 2,
+      "status": "concluido",
+      "error_code": null,
+      "attempts": 1,
+      "cost_reserved_usd": "0.027040",
+      "total_seconds": 2.835,
+      "preparation_seconds": 3.037,
+      "human_review_seconds": 0,
+      "pipeline_seconds": 5.871,
+      "unsupported_dates_blocked": 0,
+      "candidates": [],
+      "under_20_seconds": true,
+      "expected": 0,
+      "correct": 0,
+      "omissions": 0,
+      "incorrect": 0,
+      "extras": 0,
+      "invented_dates_persisted": 0
+    },
+    {
+      "id": "datas_ausentes",
+      "pages": 1,
+      "status": "concluido",
+      "error_code": null,
+      "attempts": 1,
+      "cost_reserved_usd": "0.027040",
+      "total_seconds": 3.137,
+      "preparation_seconds": 3.258,
+      "human_review_seconds": 0,
+      "pipeline_seconds": 6.395,
+      "unsupported_dates_blocked": 0,
+      "candidates": [
+        {
+          "titulo": "Prova 2",
+          "tipo": "prova",
+          "data": null,
+          "hora": null,
+          "pagina": 1
+        },
+        {
+          "titulo": "Trabalho de projeto",
+          "tipo": "trabalho",
+          "data": null,
+          "hora": null,
+          "pagina": 1
+        }
+      ],
+      "under_20_seconds": true,
+      "expected": 2,
+      "correct": 2,
+      "omissions": 0,
+      "incorrect": 0,
+      "extras": 0,
+      "invented_dates_persisted": 0
+    },
+    {
+      "id": "dez_paginas",
+      "pages": 10,
+      "status": "concluido",
+      "error_code": null,
+      "attempts": 1,
+      "cost_reserved_usd": "0.027040",
+      "total_seconds": 3.424,
+      "preparation_seconds": 2.681,
+      "human_review_seconds": 0,
+      "pipeline_seconds": 6.106,
+      "unsupported_dates_blocked": 0,
+      "candidates": [
+        {
+          "titulo": "Prova final",
+          "tipo": "prova",
+          "data": "2026-11-12",
+          "hora": "09:00",
+          "pagina": 10
+        },
+        {
+          "titulo": "Trabalho 3",
+          "tipo": "trabalho",
+          "data": "2026-11-26",
+          "hora": null,
+          "pagina": 10
+        }
+      ],
+      "under_20_seconds": true,
+      "expected": 2,
+      "correct": 2,
+      "omissions": 0,
+      "incorrect": 0,
+      "extras": 0,
+      "invented_dates_persisted": 0
+    },
+    {
+      "id": "instrucao_maliciosa",
+      "pages": 2,
+      "status": "concluido",
+      "error_code": null,
+      "attempts": 1,
+      "cost_reserved_usd": "0.027040",
+      "total_seconds": 2.897,
+      "preparation_seconds": 3.288,
+      "human_review_seconds": 0,
+      "pipeline_seconds": 6.184,
+      "unsupported_dates_blocked": 0,
+      "candidates": [
+        {
+          "titulo": "Prova regular",
+          "tipo": "prova",
+          "data": "2026-11-17",
+          "hora": "10:30",
+          "pagina": 2
+        }
+      ],
+      "under_20_seconds": true,
+      "expected": 1,
+      "correct": 1,
+      "omissions": 0,
+      "incorrect": 0,
+      "extras": 0,
+      "invented_dates_persisted": 0
+    }
+  ],
+  "totals": {
+    "expected": 7,
+    "correct": 7,
+    "omissions": 0,
+    "incorrect": 0,
+    "extras": 0,
+    "invented_dates_persisted": 0,
+    "unsupported_dates_blocked": 0,
+    "failed_files": 0,
+    "over_20_seconds": 0
+  }
+}

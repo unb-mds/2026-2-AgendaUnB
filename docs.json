@@ -45,8 +45,7 @@
       {
         "group": "Início",
         "pages": [
-          "docs/introducao",
-          "docs/quickstart"
+          "docs/index"
         ]
       },
       {
@@ -54,7 +53,9 @@
         "pages": [
           "docs/produto/visao",
           "docs/produto/personas",
-          "docs/produto/requisitos"
+          "docs/produto/requisitos",
+          "docs/produto/padroes",
+          "docs/matriz-release-2"
         ]
       },
       {
@@ -64,7 +65,30 @@
           "docs/arquitetura/modelo-de-dados",
           "docs/arquitetura/banco-de-dados",
           "docs/arquitetura/frontend",
-          "docs/arquitetura/padroes"
+          "docs/api-specs",
+          "docs/processamento-planos-s7",
+          "docs/s7-b01-validacao",
+          "docs/privacidade-planos",
+          "docs/implantacao",
+          {
+            "group": "Decisões arquiteturais",
+            "pages": [
+              "docs/arquitetura/adrs/index",
+              "docs/arquitetura/adrs/adr-001-integracao-fastapi-supabase",
+              "docs/arquitetura/adrs/adr-002-separar-hospedagem-e-ambientes",
+              "docs/arquitetura/adrs/adr-003-minimizar-dados-de-planos",
+              "docs/arquitetura/adrs/adr-004-api-monolitica",
+              "docs/arquitetura/adrs/adr-005-validacao-de-sessao",
+              "docs/arquitetura/adrs/adr-006-autorizacao-em-camadas",
+              "docs/arquitetura/adrs/adr-007-migracoes-sql",
+              "docs/arquitetura/adrs/adr-008-vinculos-de-eventos-publicos",
+              "docs/arquitetura/adrs/adr-009-catalogo-publico-de-turmas",
+              "docs/arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos",
+              "docs/arquitetura/adrs/adr-011-datas-civis-e-instantes",
+              "docs/arquitetura/adrs/adr-012-exportacao-google-idempotente",
+              "docs/arquitetura/adrs/adr-013-lembretes-persistentes"
+            ]
+          }
         ]
       },
       {
@@ -117,14 +141,33 @@
     }
   },
   "redirects": [
-    { "source": "/", "destination": "/docs/introducao" },
-    { "source": "/index", "destination": "/docs/introducao" },
+    { "source": "/docs/contratos-release-2", "destination": "/docs/atualizacoes#contratos-da-release-2" },
+    { "source": "/docs/Architecture", "destination": "/docs/arquitetura/visao-geral" },
+    { "source": "/docs/modelo-de-dados", "destination": "/docs/arquitetura/modelo-de-dados" },
+    { "source": "/docs/especificacao-banco-de-dados", "destination": "/docs/arquitetura/banco-de-dados" },
+    { "source": "/docs/especificacao-frontend", "destination": "/docs/arquitetura/frontend" },
+    { "source": "/docs/CONTRIBUTING", "destination": "/docs/processo/contribuindo" },
+    { "source": "/docs/introducao", "destination": "/docs/index" },
+    { "source": "/docs/quickstart", "destination": "/docs/processo/contribuindo" },
+    { "source": "/docs/requisitos", "destination": "/docs/produto/requisitos" },
+    { "source": "/docs/personas", "destination": "/docs/produto/personas" },
+    { "source": "/docs/padroes", "destination": "/docs/produto/padroes" },
+    { "source": "/docs/documento-de-visao", "destination": "/docs/produto/visao" },
+    { "source": "/docs/arquitetura/padroes", "destination": "/docs/produto/padroes" },
+    { "source": "/docs/AI-USAGE", "destination": "/docs/processo/uso-de-ia" },
+    { "source": "/docs/release-notes/v0.1.0", "destination": "/docs/processo/release-notes/v0-1-0" },
+    { "source": "/docs/planejamento-r2-sprints-7-8", "destination": "/docs/matriz-release-2" },
+    { "source": "/docs/prototipo-planos-react", "destination": "/docs/planos-de-ensino-frontend" },
+    { "source": "/docs/s6-f02-editor-parcial", "destination": "/docs/sprints/sprint-6" },
+    { "source": "/arquitetura/padroes", "destination": "/docs/produto/padroes" },
+    { "source": "/", "destination": "/docs/index" },
+    { "source": "/index", "destination": "/docs/index" },
     { "source": "/docs/processo/sprints/sprint-1", "destination": "/docs/sprints/sprint-1" },
     { "source": "/docs/processo/sprints/sprint-2", "destination": "/docs/sprints/sprint-2" },
     { "source": "/docs/processo/sprints/sprint-3", "destination": "/docs/sprints/sprint-3" },
     { "source": "/docs/processo/sprints/sprint-4", "destination": "/docs/sprints/sprint-4" },
     { "source": "/processo/sprints/:slug*", "destination": "/docs/sprints/:slug*" },
-    { "source": "/quickstart", "destination": "/docs/quickstart" },
+    { "source": "/quickstart", "destination": "/docs/processo/contribuindo" },
     {
       "source": "/produto/:slug*",
       "destination": "/docs/produto/:slug*"

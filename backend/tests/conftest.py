@@ -1,5 +1,6 @@
 import os
 from uuid import uuid4
+from unittest.mock import create_autospec
 
 import pytest
 from fastapi.testclient import TestClient
@@ -13,6 +14,7 @@ from src.database.connection import get_db
 from src.database.models import Base, Campus, Category, PersonalEvent, PublicEvent
 from src.main import app
 from src.middlewares.auth import CurrentUser, get_current_user
+from src.services.storage import SupabaseStorageService, get_storage_service
 
 
 @pytest.fixture
@@ -32,6 +34,11 @@ def api():
     authenticated_user = {"value": CurrentUser(id=uuid4(), role="student")}
     app.dependency_overrides[get_db] = override_db
     app.dependency_overrides[get_current_user] = lambda: authenticated_user["value"]
+    # Testes unitários não usam o Supabase real configurado no .env local.
+    storage = create_autospec(SupabaseStorageService, instance=True)
+    storage.upload_file.side_effect = lambda path, **kwargs: f"syllabus_files/{path}"
+    storage.delete_file.return_value = True
+    app.dependency_overrides[get_storage_service] = lambda: storage
 
     with TestClient(app) as client:
         with TestSession() as session:

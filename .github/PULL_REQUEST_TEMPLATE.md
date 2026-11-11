@@ -84,6 +84,6 @@ Para itens não aplicáveis, substitua a checkbox por "Não se aplica — justif
 - [ ] Atualizei os itens concluídos na issue e conferi o status deste PR.
 - [ ] Descrevi as mudanças, as pendências e os passos de teste.
 - [ ] Executei as verificações aplicáveis e registrei resultados e limitações.
-- [ ] Atualizei a documentação afetada e registrei o uso relevante de IA em `docs/AI-USAGE.md`.
+- [ ] Atualizei a documentação afetada e registrei o uso relevante de IA em `docs/processo/uso-de-ia.md`.
 - [ ] Documentei impactos e cuidados de implantação/reversão, quando aplicáveis.
 - [ ] Revisei o diff, sem segredos nem alterações fora do escopo.

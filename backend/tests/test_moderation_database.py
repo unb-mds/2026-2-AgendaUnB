@@ -144,7 +144,7 @@ def test_syllabus_upload_cannot_bypass_api_through_supabase(database):
     assert conn.execute(text('select name from storage.objects where name=:name'), {'name': object_name}).scalar_one() == object_name
     denied(conn, stored_file, {'name': f'{owner}/{uuid4()}.pdf'})
     denied(conn, plan_sql, {'owner': owner, 'path': f'syllabus_files/{owner}/{uuid4()}.pdf'})
-    assert conn.execute(text("update public.planos_ensino set status='processando' where id=:id"), {'id': plan_id}).rowcount == 0
+    denied(conn, "update public.planos_ensino set status='processando' where id=:id", {'id': plan_id})
     # Simula a exclusão pela API do Storage, que habilita esse parâmetro por transação.
     conn.execute(text("select set_config('storage.allow_delete_query', 'true', true)"))
     assert conn.execute(text('delete from storage.objects where name=:name'), {'name': object_name}).rowcount == 0

@@ -160,12 +160,21 @@ Tasks:
 
 Tasks:
 
-- [ ] Extrair texto com referência de página e implementar processamento fora do ciclo da requisição, com estado persistido e recuperação de tarefas interrompidas.
-- [ ] Definir e documentar provedor/modelo de IA, configuração por ambiente, limite de custo por arquivo, timeout e tentativas limitadas; manter credenciais somente no servidor.
-- [ ] Validar saída estruturada contendo título, tipo, data/horário quando presentes e evidência de origem; marcar ambiguidades sem inventar informações ausentes.
-- [ ] Tratar o conteúdo do PDF como dados e validar a resposta da IA antes de persistir candidatos privados; não gravar PDFs ou texto integral em logs.
-- [ ] Tratar falhas do provedor e documentos sem cronograma, registrando `falha` ou resultado vazio conforme o caso.
-- [ ] Criar amostras anonimizadas com referência esperada e medir extrações corretas, omissões, datas inventadas e tempo total; verificar a meta de menos de 20s para PDFs de até 10 páginas e registrar desvios.
+- [x] Extrair texto com referência de página e implementar processamento fora do ciclo da requisição, com estado persistido e recuperação de tarefas interrompidas.
+- [x] Definir e documentar provedor/modelo de IA, configuração por ambiente, limite de custo por arquivo, timeout e tentativas limitadas; manter credenciais somente no servidor.
+- [x] Validar saída estruturada contendo título, tipo, data/horário quando presentes e evidência de origem; marcar ambiguidades sem inventar informações ausentes.
+- [x] Tratar o conteúdo do PDF como dados e validar a resposta da IA antes de persistir candidatos privados; não gravar PDFs ou texto integral em logs.
+- [x] Tratar falhas do provedor e documentos sem cronograma, registrando `falha` ou resultado vazio conforme o caso.
+- [x] Criar amostras anonimizadas com referência esperada e medir extrações corretas, omissões, datas inventadas e tempo total; verificar a meta de menos de 20s para PDFs de até 10 páginas e registrar desvios.
+
+**Evidência local (09/11/2026):** implementação e testes descritos no
+[guia de processamento](../processamento-planos.md), com
+[corpus Gemini sintético](../benchmarks/syllabus-gemini-2026-11-09.json),
+[integração HTTP local](../benchmarks/syllabus-http-local-2026-11-09.json) e
+[regressão do upload isolado](../benchmarks/syllabus-upload-local-2026-11-09.json).
+A conclusão local não representa implantação/homologação no Supabase da equipe.
+Dados reais continuam condicionados à S6-D02 no destino; a tela e os endpoints
+de revisão continuam na S6-B02/S6-F02. Desvios da meta RNF06 permanecem registrados.
 
 ### S6-B01 — Consulta, Revisão e Confirmação de Planos na API
 
@@ -230,9 +239,9 @@ Tasks:
 
 ## Base documental
 
-- [Requisitos](../requisitos.md): RF05–RF09, RNF02, RNF04, RNF06, RNF07, RNF09 e RNF10.
-- [Documento de visão](../documento-de-visao.md): Modelo Dual e prioridade da extração assistida.
-- [Arquitetura](../Architecture.md): FastAPI, Supabase Auth/Storage e estado atual do processamento.
-- [Especificação de banco](../especificacao-banco-de-dados.md) e [modelo de dados](../modelo-de-dados.md): estruturas existentes, que precisam evoluir para propriedade estudantil e estados.
+- [Requisitos](../produto/requisitos.md): RF05–RF09, RNF02, RNF04, RNF06, RNF07, RNF09 e RNF10.
+- [Documento de visão](../produto/visao.md): Modelo Dual e prioridade da extração assistida.
+- [Arquitetura](../arquitetura/visao-geral.md): FastAPI, Supabase Auth/Storage e estado atual do processamento.
+- [Especificação de banco](../arquitetura/banco-de-dados.md) e [modelo de dados](../arquitetura/modelo-de-dados.md): estruturas existentes, que precisam evoluir para propriedade estudantil e estados.
 - [Painel administrativo](../painel-administrativo.md): permissões, RPCs e notificações já entregues.
 - Migrações `20260923172640` e `20261014120200`: planos atuais com `professor_id` obrigatório, leitura pública de avaliações e bucket PDF privado de até 10 MB. Essas limitações fundamentam as issues de dados.

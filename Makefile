@@ -21,7 +21,7 @@ ROOT_DIR            := $(CURDIR)
 # Configuracoes de Portas
 BACKEND_PORT        ?= 8000
 FRONTEND_PORT       ?= 5173
-SUPABASE_STUDIO_PORT?= 54323
+SUPABASE_STUDIO_PORT?= 14323
 
 # Diretorio do venv Python
 VENV_DIR            := $(ROOT_DIR)/backend/venv
@@ -49,7 +49,7 @@ ifeq ($(wildcard $(VENV_DIR)/bin/python),$(VENV_DIR)/bin/python)
     PIP         := $(VENV_BIN)/pip
 endif
 
-.PHONY: all help setup dev run stop down db-start db-stop db-reset db-status backend frontend docs test test-backend clean check-env check-backend check-frontend
+.PHONY: all help setup dev run stop down db-start db-stop db-reset db-status db-migrate db-check backend frontend docs test test-backend clean check-env check-backend check-frontend
 
 # Alvo padrao: exibe ajuda com os comandos disponiveis
 all: help
@@ -76,6 +76,8 @@ help:
 	@echo "  make db-stop      - Para os containers do Supabase"
 	@echo "  make db-reset     - Reaplica todas as migracoes e o seed inicial"
 	@echo "  make db-status    - Exibe o status e URLs dos servicos Supabase"
+	@echo "  make db-migrate   - Aplica migracoes pendentes no Supabase local, sem reset"
+	@echo "  make db-check     - Verifica tabelas e colunas exigidas pela API"
 	@echo ""
 	@echo " Qualidade e Testes:"
 	@echo "  make test         - Executa a suite de testes automatizados"
@@ -125,6 +127,7 @@ setup: check-env check-backend
 run: dev
 
 dev: check-env check-backend check-frontend db-start
+	@$(MAKE) db-check
 	@echo ""
 	@echo "======================================================================"
 	@echo " Agenda UnB - Servicos em Execucao"
@@ -150,6 +153,7 @@ dev: check-env check-backend check-frontend db-start
 # Servicos Individuais
 # ------------------------------------------------------------------------------
 backend: check-env check-backend
+	@$(MAKE) db-check
 	@echo "[INFO] Iniciando Backend FastAPI na porta $(BACKEND_PORT)..."
 	@cd "$(ROOT_DIR)/backend" && "$(UVICORN)" src.main:app --reload --port $(BACKEND_PORT)
 
@@ -178,6 +182,12 @@ db-reset:
 
 db-status:
 	@npx supabase status
+
+db-migrate:
+	@npx supabase migration up --local
+
+db-check: check-env check-backend
+	@cd "$(ROOT_DIR)/backend" && "$(PYTHON)" -m src.database.check_schema
 
 stop: db-stop
 	@echo "[OK] Todos os servicos foram paralisados."
