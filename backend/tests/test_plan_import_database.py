@@ -363,3 +363,14 @@ def test_concurrent_confirmations_create_a_single_event(database):
         setup.commit()
         setup.close()
         engine.dispose()
+
+
+def test_item_to_operation_link_is_checked_at_commit(database):
+    # Ao excluir a conta, a cascata apaga a operação e zera evento_pessoal_id dos
+    # itens na mesma instrução. Conferido na hora, o vínculo item -> operação
+    # dependia da ordem dos gatilhos, que muda depois de um pg_dump/restore.
+    conn, _ = database
+    deferrable, deferred = conn.execute(text("""
+        select condeferrable, condeferred from pg_constraint
+        where conname = 'itens_importacao_operacao_id_fkey'""")).one()
+    assert deferrable and deferred
