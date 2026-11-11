@@ -17,6 +17,11 @@ async function syllabusRequest(path, { signal, timeout = 30000, ...options } = {
 }
 
 export const syllabusApi = {
+  confirm: (id, candidates, idempotencyKey = crypto.randomUUID()) => syllabusRequest(`/${encodeURIComponent(id)}/confirm`, {
+    method: 'POST',
+    headers: { 'Idempotency-Key': idempotencyKey },
+    body: JSON.stringify({ candidates }),
+  }),
   async prepareText(text, signal) {
     return normalizePlan(await syllabusRequest('/text', { method: 'POST', body: JSON.stringify({ text }), signal }));
   },
