@@ -57,6 +57,10 @@ jobs:
       - name: Verificar erros de lint no banco
         run: supabase db lint --fail-on error
 
+      - name: Executar testes unitários do coletor institucional
+        working-directory: backend
+        run: python -m pytest tests/test_event_collector.py -q
+
       - name: Preparar banco descartável para pytest
         shell: bash
         run: |
