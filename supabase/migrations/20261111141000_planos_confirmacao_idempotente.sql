@@ -111,7 +111,11 @@ create table public.operacoes_importacao (
 );
 
 create table public.itens_importacao (
-  operacao_id        uuid not null references public.operacoes_importacao(id) on delete cascade,
+  -- Conferida no fim da transação: ao excluir a conta, a mesma cascata apaga a
+  -- operação e zera evento_pessoal_id destes itens; conferida na hora, a ordem
+  -- dos gatilhos podia barrar a exclusão (o resultado mudava após pg_dump/restore).
+  operacao_id        uuid not null references public.operacoes_importacao(id) on delete cascade
+                     deferrable initially deferred,
   avaliacao_id       uuid not null,
   evento_pessoal_id  uuid references public.eventos_pessoais(id) on delete set null,
   resultado          text not null check (resultado in ('criado', 'ja_importado')),
