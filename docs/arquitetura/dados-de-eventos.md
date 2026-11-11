@@ -5,7 +5,7 @@ description: "Como a API, o coletor e o agendador usam as estruturas de eventos 
 
 # Dados de eventos: datas, coleta e lembretes
 
-Guia de integração das migrações `20261110140000_eventos_datas_e_coleta.sql` e `20261110152000_eventos_lembretes.sql`. Elas entregam a parte de dados das issues abaixo; a API, o coletor e o agendador são implementados nas próprias issues.
+Guia de integração das migrações `20261111140000_eventos_datas_e_coleta.sql` e `20261111152000_eventos_lembretes.sql`. Elas entregam a parte de dados das issues abaixo; a API, o coletor e o agendador são implementados nas próprias issues.
 
 | Issue | O que o banco já faz | O que falta na aplicação |
 | --- | --- | --- |
