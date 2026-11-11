@@ -94,6 +94,7 @@ class ConfirmCandidateInput(BaseModel):
     candidate_id: UUID = Field(alias="candidateId")
     title: str | None = Field(default=None, min_length=3, max_length=200)
     description: str | None = Field(default=None, max_length=10000)
+    kind: str | None = Field(default=None, min_length=2, max_length=80, alias="type")
     starts_at: datetime | None = Field(default=None, alias="startsAt")
     category: str | None = Field(default=None, min_length=2, max_length=80)
 
@@ -104,7 +105,7 @@ class ConfirmCandidateInput(BaseModel):
             raise ValueError("Informe data e hora com fuso horário (ISO 8601)")
         return value
 
-    @field_validator("description", "category", mode="before")
+    @field_validator("description", "category", "kind", mode="before")
     @classmethod
     def empty_values_to_none(cls, value):
         if isinstance(value, str) and not value.strip():
@@ -123,8 +124,21 @@ class ConfirmSyllabusRequest(BaseModel):
         return self
 
 
+class ConfirmItemResult(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    candidate_id: UUID = Field(alias="candidateId")
+    event_id: UUID | None = Field(default=None, alias="eventId")
+    result: str
+    removed: bool = False
+    kind: str | None = Field(default=None, alias="type")
+
+
 class ConfirmSyllabusResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     syllabus_id: UUID = Field(alias="syllabusId")
+    operation_id: UUID = Field(alias="operationId")
+    repeated: bool
+    items: list[ConfirmItemResult]
     events: list[PersonalEventRead]

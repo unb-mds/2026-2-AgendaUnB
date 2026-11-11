@@ -444,3 +444,4 @@ class ImportItem(Base):
         "evento_pessoal_id", Uuid(as_uuid=True), ForeignKey("eventos_pessoais.id", ondelete="SET NULL"), nullable=True
     )
     result: Mapped[str] = mapped_column("resultado", String, nullable=False)  # criado | ja_importado
+    candidate_type: Mapped[str | None] = mapped_column("tipo_revisado", String, nullable=True)

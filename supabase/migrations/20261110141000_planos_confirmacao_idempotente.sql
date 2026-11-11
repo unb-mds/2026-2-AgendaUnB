@@ -115,6 +115,7 @@ create table public.itens_importacao (
   avaliacao_id       uuid not null,
   evento_pessoal_id  uuid references public.eventos_pessoais(id) on delete set null,
   resultado          text not null check (resultado in ('criado', 'ja_importado')),
+  tipo_revisado      text,
   primary key (operacao_id, avaliacao_id)
 );
 
@@ -128,7 +129,7 @@ comment on column public.itens_importacao.evento_pessoal_id is
   'Evento criado ou já existente. Fica nulo quando a pessoa apaga o evento: retry da mesma chave não o recria.';
 
 -- p_itens = [{"candidato_id": uuid, "titulo"?: text, "descricao"?: text, "categoria"?: text,
---             "inicio"?: ISO 8601 com fuso,
+--             "tipo"?: text, "inicio"?: ISO 8601 com fuso,
 --             "dia_inteiro"?: true, "data_inicio"?: date, "data_fim"?: date (exclusivo)}]
 --
 -- Retorno: {"operacao_id", "repetida", "itens": [{"candidato_id", "evento_id", "resultado", "removido"}]}
@@ -149,6 +150,7 @@ declare
   v_ids        uuid[] := '{}';
   v_id         uuid;
   v_titulo     text;
+  v_tipo       text;
   v_inicio     timestamptz;
   v_dia        boolean;
   v_data_ini   date;
@@ -225,9 +227,11 @@ begin
     end if;
 
     v_titulo := btrim(coalesce(nullif(v_item ->> 'titulo', ''), v_candidato.titulo));
+    v_tipo := nullif(btrim(v_item ->> 'tipo'), '');
     if char_length(v_titulo) not between 3 and 200
+       or char_length(coalesce(v_tipo, '')) > 80
        or char_length(coalesce(v_item ->> 'descricao', '')) > 10000 then
-      raise exception 'Título entre 3 e 200 caracteres e descrição de até 10000' using errcode = '22023';
+      raise exception 'Título entre 3 e 200 caracteres, tipo de até 80 e descrição de até 10000' using errcode = '22023';
     end if;
 
     v_dia := coalesce((v_item ->> 'dia_inteiro')::boolean, false);
@@ -273,17 +277,37 @@ begin
       v_resultado := 'criado';
     else
       v_resultado := 'ja_importado';
-      select id into v_evento from public.eventos_pessoais
-       where user_id = p_ator and origem_avaliacao_id = v_candidato.id;
+      update public.eventos_pessoais
+         set titulo = case when nullif(v_item ->> 'titulo', '') is not null then v_titulo else titulo end,
+             descricao = case when v_item ? 'descricao'
+               then coalesce(nullif(v_item ->> 'descricao', ''), v_candidato.trecho_origem) else descricao end,
+             data_hora = case when v_item ? 'inicio' or v_item ? 'dia_inteiro'
+                                    or v_item ? 'data_inicio' or v_item ? 'data_fim'
+                              then v_inicio else data_hora end,
+             dia_inteiro = case when v_item ? 'inicio' or v_item ? 'dia_inteiro'
+                                      or v_item ? 'data_inicio' or v_item ? 'data_fim'
+                                then v_dia else dia_inteiro end,
+             data_inicio_civil = case when v_item ? 'inicio' or v_item ? 'dia_inteiro'
+                                            or v_item ? 'data_inicio' or v_item ? 'data_fim'
+                                      then v_data_ini else data_inicio_civil end,
+             data_fim_civil = case when v_item ? 'inicio' or v_item ? 'dia_inteiro'
+                                         or v_item ? 'data_inicio' or v_item ? 'data_fim'
+                                   then v_data_fim else data_fim_civil end,
+             category_id = coalesce(v_categoria, category_id)
+       where user_id = p_ator and origem_avaliacao_id = v_candidato.id
+       returning id into v_evento;
     end if;
 
-    insert into public.itens_importacao (operacao_id, avaliacao_id, evento_pessoal_id, resultado)
-    values (v_operacao.id, v_candidato.id, v_evento, v_resultado);
+    insert into public.itens_importacao (operacao_id, avaliacao_id, evento_pessoal_id, resultado, tipo_revisado)
+    values (v_operacao.id, v_candidato.id, v_evento, v_resultado, v_tipo);
 
     -- Fluxo particular: o autor marca o próprio candidato como confirmado.
     -- Em versão compartilhada a decisão é de cada conta e não toca o candidato.
-    if v_versao.autor_id = p_ator and v_versao.visibilidade = 'privada' and v_candidato.status = 'pendente' then
-      update public.avaliacoes set status = 'confirmado' where id = v_candidato.id;
+    if v_versao.autor_id = p_ator and v_versao.visibilidade = 'privada' then
+      update public.avaliacoes
+         set status = case when status = 'pendente' then 'confirmado' else status end,
+             tipo = coalesce(v_tipo, tipo)
+       where id = v_candidato.id;
     end if;
   end loop;
 
