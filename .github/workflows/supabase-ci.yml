@@ -1,34 +1,88 @@
 name: CI Supabase (Database)
 
 on:
+  workflow_dispatch:
   pull_request:
     paths:
       - 'supabase/**'
+      - 'backend/**'
+      - '.github/workflows/supabase-ci.yml'
   push:
     branches:
       - main
     paths:
       - 'supabase/**'
+      - 'backend/**'
+      - '.github/workflows/supabase-ci.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test-database:
-    name: Validar Migrations e Schema
+    name: Validar migrations, schema e regras de acesso
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # Valores fictícios: este job não realiza login no Google nem usa produção.
+      SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID: ci-local-client
+      SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET: ci-local-secret
 
     steps:
       - name: Checkout do código
         uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: backend/requirements*.txt
+
+      - name: Instalar dependências dos testes
+        run: python -m pip install -r backend/requirements-dev.txt
 
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
           version: latest
 
-      - name: Iniciar Supabase Local
+      - name: Iniciar Supabase local e aplicar migrations e seed
         run: supabase start
 
       - name: Verificar erros de lint no banco
-        run: supabase db lint
+        run: supabase db lint --fail-on error
 
-      - name: Executar testes de banco de dados (se existirem)
+      - name: Preparar banco descartável para pytest
+        shell: bash
+        run: |
+          # O teste de publicação faz commits e exige agenda_catalog_*.
+          project_id=$(python -c 'import tomllib; print(tomllib.load(open("supabase/config.toml", "rb"))["project_id"])')
+          container="supabase_db_${project_id}"
+          docker exec "$container" createdb -U postgres agenda_catalog_ci
+          docker exec "$container" pg_dump -U supabase_admin postgres \
+            | docker exec -i "$container" psql -U supabase_admin -d agenda_catalog_ci -v ON_ERROR_STOP=1
+          python - <<'PY'
+          import os
+          import tomllib
+          with open('supabase/config.toml', 'rb') as config:
+              port = tomllib.load(config)['db']['port']
+          with open(os.environ['GITHUB_ENV'], 'a') as output:
+              output.write(f'TEST_SUPABASE_DB_URL=postgresql+psycopg://postgres:postgres@127.0.0.1:{port}/agenda_catalog_ci\n')
+          PY
+
+      - name: Executar testes PostgreSQL de RLS, RPCs e triggers
+        working-directory: backend
+        run: python -m pytest tests/test_*database.py -q -ra
+
+      - name: Executar testes pgTAP quando presentes
+        if: ${{ hashFiles('supabase/tests/**/*.sql') != '' }}
         run: supabase test db
+
+      - name: Encerrar Supabase local
+        if: ${{ always() }}
+        run: supabase stop --no-backup
