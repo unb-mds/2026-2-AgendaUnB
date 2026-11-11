@@ -100,6 +100,18 @@ def test_syllabus_detail_hides_another_users_private_plan(api):
     assert response.status_code == 404
 
 
+def test_confirmation_hides_processing_state_of_another_users_private_plan(api):
+    client, TestSession, authenticated_user, _ = api
+    syllabus_id, _, _ = _create_syllabus(TestSession, authenticated_user["value"].id, status="processing")
+    authenticated_user["value"] = CurrentUser(id=uuid4(), role="student")
+
+    response = _confirm(client, syllabus_id, {"candidates": [{
+        "candidateId": str(uuid4()), "startsAt": "2026-11-10T10:00:00Z",
+    }]}, "private-processing-01")
+
+    assert response.status_code == 404
+
+
 def test_confirmation_creates_only_selected_events_and_is_idempotent(api):
     client, TestSession, authenticated_user, _ = api
     syllabus_id, candidate_id, unselected_id = _create_syllabus(TestSession, authenticated_user["value"].id)
