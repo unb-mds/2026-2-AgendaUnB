@@ -5,6 +5,8 @@ from dataclasses import replace
 from uuid import UUID
 
 import pytest
+
+pytestmark = pytest.mark.usefixtures("published_offering")
 from sqlalchemy import select
 
 from src.database.models import AssessmentCandidate, PersonalEvent, Profile, Syllabus
@@ -23,7 +25,7 @@ def prepare(api, text=TEXT):
         if not db.get(Profile, auth["value"].id):
             db.add(Profile(id=auth["value"].id, papel="student"))
             db.commit()
-    response = client.post("/api/v1/syllabus/text", json={"text": text})
+    response = client.post("/api/v1/syllabus/text", json={**({"text": text}), "offering_id": "70000000-0000-4000-8000-000000000071"})
     assert response.status_code == 202
     sid = response.json()["id"]
     preview = client.get(f"/api/v1/syllabus/{sid}/text")
@@ -58,7 +60,7 @@ def test_pdf_prepares_page_references_without_using_storage(api):
     with sessions() as db:
         db.add(Profile(id=auth["value"].id, papel="student"))
         db.commit()
-    response = client.post("/api/v1/syllabus/upload", files={
+    response = client.post("/api/v1/syllabus/upload", data={"offering_id": "70000000-0000-4000-8000-000000000071"}, files={
         "file": ("sintetico.pdf", make_pdf([TEXT, "Trabalho final - data a definir."]), "application/pdf")})
     assert response.status_code == 202
     assert response.json()["filePath"] is None
@@ -130,7 +132,7 @@ def test_other_user_cannot_read_or_approve_text(api, monkeypatch):
 
 
 def test_raw_text_utf8_limit(api):
-    assert api[0].post("/api/v1/syllabus/text", json={"text": "é" * 20001}).status_code == 413
+    assert api[0].post("/api/v1/syllabus/text", json={**({"text": "é" * 20001}), "offering_id": "70000000-0000-4000-8000-000000000071"}).status_code == 413
 
 
 def test_text_preview_is_not_cacheable(api):
@@ -140,7 +142,7 @@ def test_text_preview_is_not_cacheable(api):
 
 @pytest.mark.parametrize("text", ["invalid\x00text", " ", "\n\t"])
 def test_invalid_or_blank_text_is_rejected(api, text):
-    assert api[0].post("/api/v1/syllabus/text", json={"text": text}).status_code == 422
+    assert api[0].post("/api/v1/syllabus/text", json={**({"text": text}), "offering_id": "70000000-0000-4000-8000-000000000071"}).status_code == 422
 
 
 def test_pdf_temporary_is_closed_before_text_is_persisted(api, monkeypatch):
@@ -158,7 +160,7 @@ def test_pdf_temporary_is_closed_before_text_is_persisted(api, monkeypatch):
         return original_register(**kwargs)
     monkeypatch.setattr(UploadFile, "close", close)
     monkeypatch.setattr(router, "process_syllabus_upload", register)
-    response = api[0].post("/api/v1/syllabus/upload", files={
+    response = api[0].post("/api/v1/syllabus/upload", data={"offering_id": "70000000-0000-4000-8000-000000000071"}, files={
         "file": ("sintetico.pdf", make_pdf([TEXT]), "application/pdf")})
     assert response.status_code == 202
     assert closed and all(closed)
@@ -235,7 +237,7 @@ def test_preparation_failure_closes_pdf_and_leaves_no_job(api, monkeypatch, fail
         monkeypatch.setattr(services, "validate_pdf_structure", unavailable)
     else:
         monkeypatch.setattr(router, "extract_pdf_isolated", unavailable)
-    response = api[0].post("/api/v1/syllabus/upload", files={
+    response = api[0].post("/api/v1/syllabus/upload", data={"offering_id": "70000000-0000-4000-8000-000000000071"}, files={
         "file": ("sintetico.pdf", make_pdf([TEXT]), "application/pdf")})
     assert response.status_code == 422
     assert closed and all(closed)
