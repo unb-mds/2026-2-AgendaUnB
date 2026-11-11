@@ -19,6 +19,8 @@ class CurrentUser:
     id: UUID
     role: str
     access_token: str | None = field(default=None, repr=False, compare=False)
+    email: str | None = field(default=None, repr=False, compare=False)
+    email_confirmed: bool = False
 
 
 def get_current_user(
@@ -57,15 +59,27 @@ def get_current_user(
         raise HTTPException(status_code=503, detail="Falha ao validar a sessão")
 
     try:
-        user_id = UUID(response.json()["id"])
+        auth_user = response.json()
+        user_id = UUID(auth_user["id"])
+        email = auth_user.get("email")
+        email_confirmed = bool(auth_user.get("email_confirmed_at") or auth_user.get("confirmed_at"))
     except (KeyError, TypeError, ValueError) as exc:
         raise HTTPException(status_code=401, detail="Resposta de autenticação inválida") from exc
+
+    if not isinstance(email, str) or not email.strip() or not email_confirmed:
+        raise HTTPException(status_code=403, detail="Confirme seu e-mail antes de usar este recurso")
 
     role = db.scalar(select(Profile.papel).where(Profile.id == user_id))
     if role is None:
         raise HTTPException(status_code=403, detail="Perfil da aplicação não encontrado")
 
-    return CurrentUser(id=user_id, role=role, access_token=credentials.credentials)
+    return CurrentUser(
+        id=user_id,
+        role=role,
+        access_token=credentials.credentials,
+        email=email,
+        email_confirmed=email_confirmed,
+    )
 
 
 def require_event_manager(
