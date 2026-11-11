@@ -33,6 +33,24 @@ O campo **verificado** é o mais importante. Sem ele, a entrada declara o uso ma
 
 ## Entradas
 
+### 11/11/2026 — Recuperação da jornada particular (#73)
+
+- **Quem:** Gabriel Escramin 
+- **Ferramenta:** Codex (OpenAI), project-standards e Impeccable (harden/polish).
+- **O que foi pedido:** Completar validações, histórico e recuperação de falhas da jornada de planos.
+- **O que entrou no repositório:** Contagem UTF-8, validação da prévia, consulta obrigatória após autorização incerta, proteção de respostas assíncronas, atualização do histórico e navegação de recuperação por PDF/texto.
+- **O que foi corrigido:** Limite por caracteres divergente do servidor, prévia malformada causando falha de renderização, possibilidade de repetir autorização sem conferir estado salvo e histórico desatualizado após autorizar.
+- **Limites da verificação:** Testes locais do frontend e navegador com respostas controladas. A jornada real e o tempo RNF06 precisam de homologação com backend, banco e provedor disponíveis.
+
+### 11/11/2026 — Oferta seguida obrigatória no envio de planos (#73)
+
+- **Quem:** Gabriel Escramin 
+- **Ferramenta:** Codex (OpenAI), skills project-standards, code-review e Impeccable (harden/polish).
+- **O que foi pedido:** Revisar as dependências e exigir vínculo da própria conta para PDF/texto, com autorização explícita para o ajuste de backend.
+- **O que entrou no repositório:** Verificação de oferta disponível e vínculo antes da extração e antes da persistência, bloqueio de envio na interface até consultar as turmas seguidas, testes de regressão, ajuste da paginação em celular e contrato HTTP atualizado.
+- **O que foi corrigido:** O identificador de uma oferta disponível podia ser inserido diretamente na URL ou enviado à API sem seguir a turma. O histórico particular permanece acessível ao dono após remover o vínculo.
+- **Limites:** Testes locais utilizam SQLite e fixtures de autenticação; testes de navegador controlam as respostas da API. PostgreSQL concorrente e a jornada completa em homologação exigem validação própria. O merge da main preparado anteriormente permanece separado das alterações desta etapa no índice do Git.
+
 ### 10/11/2026 — Resolução dos conflitos do PR #108 (dev → main)
 
 - **Quem:** Codex, a pedido de Thomas.

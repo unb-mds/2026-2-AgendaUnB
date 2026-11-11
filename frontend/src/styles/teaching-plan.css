@@ -79,7 +79,7 @@ body.light .plan-badge-falha { color: #a3221b; }
 .plan-history-loading { padding: 24px 0; color: var(--manage-muted); }
 .plan-pagination { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-top: 24px; }
 .plan-pagination > span { color: var(--manage-muted); font-size: .9rem; font-variant-numeric: tabular-nums; }
-.plan-pagination > div { display: flex; gap: 12px; }
+.plan-pagination > div { display: flex; flex-wrap: wrap; gap: 12px; }
 .plan-guest { display: grid; justify-items: start; gap: 20px; padding: 36px 0; border-block: 1px solid var(--manage-border); }
 .plan-guest > .material-symbols-outlined { font-size: 36px; color: var(--manage-link); }
 .plan-guest p { max-width: 65ch; color: var(--manage-muted); line-height: 1.7; }

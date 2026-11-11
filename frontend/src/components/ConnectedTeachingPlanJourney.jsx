@@ -26,7 +26,14 @@ export default function ConnectedTeachingPlanJourney({ userId, renderWorkspace }
   const step = [1, 2, 3, 4].includes(requestedStep) ? requestedStep : initial;
   const heading = useRef(null);
   const previous = useRef(step);
-  const loadOffer = useCallback(signal => offeringId ? catalogApi.get(offeringId, signal) : Promise.resolve(null), [offeringId]);
+  const loadOffer = useCallback(async signal => {
+    if (!offeringId) return null;
+    const [selected, followed] = await Promise.all([catalogApi.get(offeringId, signal), catalogApi.followed(signal)]);
+    if (selected?.id !== offeringId || typeof selected.available !== 'boolean' || !Array.isArray(followed?.items)) {
+      throw new Error('Resposta da turma inválida. Tente consultar novamente.');
+    }
+    return { ...selected, following: followed.items.some(item => item?.id === offeringId) };
+  }, [offeringId]);
   const offer = useSyllabusResource(`${userId}:${offeringId}`, loadOffer);
   useEffect(() => { if (previous.current !== step) { heading.current?.focus(); previous.current = step; } }, [step]);
   const changeStep = next => setParams(previous => {
@@ -36,12 +43,12 @@ export default function ConnectedTeachingPlanJourney({ userId, renderWorkspace }
     return updated;
   });
   return <div className="tp-journey">
-    <div className="tp-demo-notice"><strong>Demonstração interativa</strong><p>Escolha sua turma, conecte o plano, confira as datas e envie à sua agenda. Com login, seus vínculos e planos ficam salvos na sua conta.</p></div>
+    <div className="tp-demo-notice"><strong>Seus planos de ensino</strong><p>Escolha sua turma, conecte o plano, confira as datas e envie à sua agenda. Com login, seus vínculos e planos ficam salvos na sua conta.</p></div>
     <nav className="tp-steps" aria-label="Etapas do plano de ensino">{steps.map((label, index) => <button key={label} type="button" aria-current={step === index + 1 ? 'step' : undefined}
       disabled={(index === 1 && !offeringId && !params.has('plano')) || (index === 2 && !params.has('plano'))} onClick={() => changeStep(index + 1)}><span>{index + 1}</span>{label}</button>)}</nav>
     <h2 className="sr-only" ref={heading} tabIndex={-1}>Etapa {step}: {steps[step - 1]}</h2>
     {step === 1 && <RealClassCatalog userId={userId} onOpen={selected => { setParams({ oferta: selected.id, etapa: '2' }); }} />}
-    {(step === 2 || step === 3) && (offer.loading ? <p role="status">Carregando oferta…</p> : offer.error ? <Feedback error="Não foi possível carregar a oferta." onRetry={offer.retry} /> :
+    {(step === 2 || step === 3) && (offer.loading ? <p role="status">Carregando oferta…</p> : offer.error ? <><Feedback error="Não foi possível verificar a oferta e suas turmas seguidas." onRetry={offer.retry} /><Link className="management-text-button" to="/plano-de-ensino">Voltar ao catálogo de turmas</Link></> :
       <div className="tp-panel">{renderWorkspace(offer.data, step, changeStep)}</div>)}
     {step === 4 && <JourneyAgenda />}
   </div>;

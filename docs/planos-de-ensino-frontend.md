@@ -117,3 +117,20 @@ separados. A oferta deve continuar disponível para novos envios de PDF/texto.
 Planos antigos continuam acessíveis pelo histórico e compromissos importados
 permanecem na agenda ao deixar de seguir. O modo demonstrativo continua separado.
 Os detalhes de operação e limites estão em [Catálogo de turmas](arquitetura/catalogo-de-turmas.md).
+
+## Recuperação da jornada — S7-F03
+
+Na jornada autenticada, o texto colado mostra o tamanho UTF-8 e bloqueia entradas
+acima de 40.000 bytes. Uma falha de envio preserva o conteúdo e orienta consultar
+o histórico antes de repetir. A preparação por texto e a organização manual
+continuam disponíveis como alternativas a PDFs inválidos ou sem texto extraível.
+
+A prévia do texto é validada antes de renderizar os campos. Uma resposta inválida
+oferece nova consulta, sem habilitar a autorização. Falhas com resultado incerto
+na autorização bloqueiam outro envio até usar **Consultar autorização**. Essa ação
+reconsulta o estado persistido; as declarações de revisão e consentimento precisam
+ser marcadas novamente para uma nova ação. O histórico é atualizado após autorizar.
+
+Recarga e retorno à página consultam o plano pelo ID da URL. Edições locais ainda
+não autorizadas não são persistidas pelo navegador. Acompanhamento e controles de
+autorização ficam suspensos em falha de consulta, com ação de recuperação visível.
