@@ -324,6 +324,24 @@ class ClassFollow(Base):
     )
 
 
+class CatalogSyncRun(Base):
+    """Uma execução do adaptador do catálogo de turmas (S7-B03)."""
+
+    __tablename__ = "sincronizacoes_catalogo"
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    source: Mapped[str] = mapped_column("origem", String, default="followw", nullable=False)
+    status: Mapped[str] = mapped_column(String, default="executando", nullable=False)
+    started_at: Mapped[datetime] = mapped_column(
+        "iniciada_em", DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    finished_at: Mapped[datetime | None] = mapped_column("concluida_em", DateTime(timezone=True), nullable=True)
+    offerings_read: Mapped[int] = mapped_column("ofertas_lidas", Integer, default=0, nullable=False)
+    created: Mapped[int] = mapped_column("criadas", Integer, default=0, nullable=False)
+    updated: Mapped[int] = mapped_column("atualizadas", Integer, default=0, nullable=False)
+    error_code: Mapped[str | None] = mapped_column("erro_codigo", String, nullable=True)
+
+
 class SyllabusVersion(Base):
     """Versão de um plano. Privada por padrão; compartilhar registra a data."""
 
