@@ -462,15 +462,33 @@ def confirm_syllabus_candidates(
     syllabus = db.get(Syllabus, syllabus_id)
     if syllabus is None:
         raise HTTPException(status_code=404, detail="Plano de ensino não encontrado.")
-    if syllabus.status not in {"completed", "concluido"}:
-        raise HTTPException(status_code=409, detail="O plano ainda não está pronto para confirmação.")
 
+    is_owner = syllabus.user_id == current_user.id
     version_id = syllabus.approved_version_id
     if version_id is None:
         version_id = db.scalar(select(SyllabusCandidate.version_id).where(
             SyllabusCandidate.syllabus_id == syllabus_id,
             SyllabusCandidate.id == payload.candidates[0].candidate_id,
         ))
+
+    # O backend ignora RLS. Portanto, autorização sobre a versão deve ser
+    # checada antes de expor estado do plano (por exemplo, que ainda processa).
+    if db.bind.dialect.name == "postgresql" and version_id is not None:
+        try:
+            can_read = db.scalar(text(
+                "select public.ator_pode_ler_versao(:actor_id, :version_id)"
+            ), {"actor_id": current_user.id, "version_id": version_id})
+        except DBAPIError as error:
+            db.rollback()
+            raise HTTPException(status_code=503, detail="Não foi possível verificar o acesso ao plano.") from error
+        if not can_read:
+            raise HTTPException(status_code=404, detail="Plano de ensino não encontrado.")
+    elif not is_owner:
+        raise HTTPException(status_code=404, detail="Plano de ensino não encontrado.")
+
+    if syllabus.status not in {"completed", "concluido"}:
+        raise HTTPException(status_code=409, detail="O plano ainda não está pronto para confirmação.")
+
     if db.bind.dialect.name != "postgresql":
         return _confirm_sqlite(syllabus_id, payload, current_user.id, idempotency_key, db)
     if version_id is None:
