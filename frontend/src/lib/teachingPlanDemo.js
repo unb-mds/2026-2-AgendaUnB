@@ -1,37 +1,28 @@
 import { validateReviewItem } from './syllabusReview.js';
-import { catalogPeriods, demoOffering } from './classCatalogDemo.js';
 
-export const demoMonths = period => {
-  const [year, semester] = period.split('.');
-  return semester === '1' ? [`${year}-05`, `${year}-06`] : [`${year}-11`, `${year}-12`];
-};
+// Explicit demonstration data, never an API response or extracted PDF content.
+export const DEMO_COURSES = [
+  { id: 'mds', initials: 'MDS', title: 'Métodos de Desenvolvimento de Software', group: 'A', campus: 'Faculdade do Gama' },
+  { id: 'fac', initials: 'FAC', title: 'Fundamentos de Arquitetura de Computadores', group: 'B', campus: 'Darcy Ribeiro' },
+  { id: 'cal', initials: 'C1', title: 'Cálculo 1', group: 'C', campus: 'Darcy Ribeiro' },
+  { id: 'icc', initials: 'ICC', title: 'Introdução à Ciência da Computação', group: 'A', campus: 'Darcy Ribeiro' },
+  { id: 'ea', initials: 'EA', title: 'Engenharia e Ambiente', group: 'B', campus: 'Faculdade do Gama' },
+];
 
-function sampleCandidates(period) {
-  const [first, last] = demoMonths(period);
+export function sampleCandidates() {
   return [
-    { id: 'first', title: 'Prova 1', type: 'Prova', date: `${first}-12`, time: '14:00', utcOffset: '', decision: 'pending', page: 4, excerpt: `12/${first.slice(-2)} — Primeira avaliação, às 14h, em sala.` },
-    { id: 'final', title: 'Entrega do projeto final', type: 'Trabalho', date: `${last}-03`, time: '', utcOffset: '', decision: 'pending', page: 5, excerpt: `Entrega do projeto final: 03/${last.slice(-2)}.` },
+    { id: 'first', title: 'Prova 1', type: 'Prova', date: '2026-11-12', time: '14:00', utcOffset: '', decision: 'pending', page: 4, excerpt: '12/11 — Primeira avaliação, às 14h, em sala.' },
+    { id: 'final', title: 'Entrega do projeto final', type: 'Trabalho', date: '2026-12-03', time: '', utcOffset: '', decision: 'pending', page: 5, excerpt: 'Entrega do projeto final: 03 de dezembro.' },
   ];
 }
 
-export function initialDemoState({ periods = catalogPeriods(), ids = [] } = {}) {
-  const [month] = demoMonths(periods[0]);
-  return { periods, step: 1, followedCourses: ids, activeCourse: ids[0] || null, plans: {
-    [`cal:${periods[0]}`]: { status: 'ready', fileName: 'plano_calculo_exemplo.pdf', candidates: [
-      { id: 'cal-1', title: 'Prova 2', type: 'Prova', date: `${month}-18`, time: '10:00', utcOffset: '-03:00', decision: 'selected' },
-      { id: 'cal-2', title: 'Prova final', type: 'Prova', date: `${month}-30`, time: '10:00', utcOffset: '-03:00', decision: 'selected' },
+export function initialDemoState() {
+  return { step: 1, enrollment: '', followedCourses: [], activeCourse: 'mds', plans: {
+    cal: { status: 'ready', fileName: 'plano_calculo_exemplo.pdf', candidates: [
+      { id: 'cal-1', title: 'Prova 2', type: 'Prova', date: '2026-11-18', time: '10:00', utcOffset: '-03:00', decision: 'selected' },
+      { id: 'cal-2', title: 'Prova final', type: 'Prova', date: '2026-11-30', time: '10:00', utcOffset: '-03:00', decision: 'selected' },
     ] },
   }, events: [], selectedCourses: [], acknowledged: false };
-}
-
-export function canOpenDemoStep(state, step) {
-  switch (step) {
-    case 1: return true;
-    case 2: return !!state.activeCourse;
-    case 3: return !!state.plans[state.activeCourse]?.candidates;
-    case 4: return !!(state.followedCourses.length || state.events.length);
-    default: return false;
-  }
 }
 
 export function canConfirm(plan, acknowledged) {
@@ -42,38 +33,30 @@ export function canConfirm(plan, acknowledged) {
 
 export function demoReducer(state, action) {
   switch (action.type) {
-    case 'RESET': return initialDemoState({ periods: state.periods });
-    case 'FOLLOW': {
-      const offer = demoOffering(action.id);
-      if (!action.available || !offer || !state.periods.includes(offer.period) || state.followedCourses.includes(action.id)) return state;
-      return { ...state, followedCourses: [...state.followedCourses, action.id], activeCourse: state.activeCourse || action.id };
-    }
-    case 'UNFOLLOW': {
-      if (!state.followedCourses.includes(action.id)) return state;
-      const followedCourses = state.followedCourses.filter(id => id !== action.id);
-      const removedActive = state.activeCourse === action.id;
-      return { ...state, followedCourses, selectedCourses: state.selectedCourses.filter(id => id !== action.id),
-        activeCourse: removedActive ? followedCourses[0] || null : state.activeCourse,
-        step: removedActive && (state.step === 2 || state.step === 3) ? 1 : state.step,
-        acknowledged: removedActive ? false : state.acknowledged };
+    case 'RESET': return initialDemoState();
+    case 'ENROLL': {
+      const ids = [...new Set(action.ids || [])].filter(id => DEMO_COURSES.some(c => c.id === id));
+      if (state.enrollment || !ids.length) return state;
+      return { ...state, enrollment: 'Vínculo autodeclarado', followedCourses: ids, activeCourse: ids[0], step: 2 };
     }
     case 'STEP': {
-      if (!canOpenDemoStep(state, action.step)) return state;
+      if (![1, 2, 3, 4].includes(action.step) || (action.step > 1 && !state.enrollment)) return state;
+      if (action.step === 3 && !state.plans[state.activeCourse]?.candidates) return state;
       return { ...state, step: action.step };
     }
     case 'OPEN': {
-      if (!state.followedCourses.includes(action.id)) return state;
+      if (!state.enrollment || !state.followedCourses.includes(action.id)) return state;
       return { ...state, activeCourse: action.id, acknowledged: false,
         step: state.plans[action.id]?.candidates ? 3 : 2 };
     }
     case 'PROCESS': {
-      if (!action.available || !state.followedCourses.includes(state.activeCourse) || state.plans[state.activeCourse]) return state;
+      if (!state.enrollment || state.plans[state.activeCourse]) return state;
       return { ...state, plans: { ...state.plans, [state.activeCourse]: { status: 'processing', fileName: action.name } } };
     }
     case 'PROCESSED': {
       const plan = state.plans[action.id];
       if (plan?.status !== 'processing') return state;
-      return { ...state, plans: { ...state.plans, [action.id]: { ...plan, status: 'review', candidates: sampleCandidates(demoOffering(action.id).period) } },
+      return { ...state, plans: { ...state.plans, [action.id]: { ...plan, status: 'review', candidates: sampleCandidates() } },
         step: state.activeCourse === action.id && state.step === 2 ? 3 : state.step };
     }
     case 'EDIT': {
@@ -89,13 +72,13 @@ export function demoReducer(state, action) {
       return { ...state, step: 4, plans: { ...state.plans, [state.activeCourse]: { ...plan, status: 'ready' } } };
     }
     case 'SELECT_COURSE': {
-      if (state.plans[action.id]?.status !== 'ready' || !state.followedCourses.includes(action.id)) return state;
+      if (state.plans[action.id]?.status !== 'ready' || !state.enrollment || !state.followedCourses.includes(action.id)) return state;
       return { ...state, selectedCourses: action.selected
         ? [...new Set([...state.selectedCourses, action.id])]
         : state.selectedCourses.filter(id => id !== action.id) };
     }
     case 'IMPORT': {
-      if (!state.selectedCourses.length) return state;
+      if (!state.enrollment) return state;
       const events = new Map(state.events.map(event => [event.id, event]));
       for (const id of state.selectedCourses) {
         const plan = state.plans[id];

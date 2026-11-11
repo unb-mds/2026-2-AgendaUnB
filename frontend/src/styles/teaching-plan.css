@@ -1,7 +1,5 @@
 .plan-layout { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(300px, 1fr); gap: 36px; align-items: start; }
 .plan-layout > *, .plan-history-info { min-width: 0; }
-.plan-legacy-note { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 20px; color: var(--manage-muted); line-height: 1.6; }
-.plan-legacy-note .material-symbols-outlined { color: var(--manage-link); }
 .plan-review-panel { margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--manage-border); min-width: 0; }
 .plan-review-panel .plan-file-help { margin-top: 20px; border-bottom: 0; padding-bottom: 0; }
 .plan-upload { border: 1px solid var(--manage-border); border-radius: 14px; background: var(--manage-surface); padding: 28px; }

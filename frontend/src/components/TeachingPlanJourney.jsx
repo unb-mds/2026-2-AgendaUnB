@@ -1,38 +1,34 @@
-import { useCallback, useEffect, useId, useReducer, useRef, useState } from 'react';
+import { useEffect, useId, useReducer, useRef, useState } from 'react';
 import { Icon, Modal } from './ManagementUI';
-import ClassCatalog from './ClassCatalog';
-import { useSyllabusResource } from '../hooks/useSyllabusResource';
-import { catalogPeriods, demoOffering, loadDemoCatalog, loadDemoFollows, offeringLabel, saveDemoFollows } from '../lib/classCatalogDemo';
 import { validatePdf } from '../lib/syllabus';
 import { validateReviewItem } from '../lib/syllabusReview';
-import { canConfirm, canOpenDemoStep, demoMonths, demoReducer, initialDemoState } from '../lib/teachingPlanDemo';
+import { canConfirm, DEMO_COURSES, demoReducer, initialDemoState } from '../lib/teachingPlanDemo';
 
 const steps = ['Selecionar turmas', 'Conectar planos', 'Revisar datas', 'Enviar à agenda'];
 const statusLabels = { processing: 'Preparando exemplo', review: 'Revisão pendente', ready: 'Plano vinculado' };
-const courseLabel = offeringLabel;
-const noPolling = () => false;
-const monthLabel = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+const courseLabel = course => `Turma ${course.group} · ${course.campus} · 2026.2`;
 
-function FilePicker({ label, onFile, example, name }) {
+function FilePicker({ label, onFile, example, disabled = false }) {
   const errorId = useId();
+  const [name, setName] = useState('');
   const [error, setError] = useState('');
   const input = useRef(null);
   return <div className="tp-file-picker">
     <Icon>upload_file</Icon><h3>{label}</h3>
     <p>Escolha um PDF local ou use um arquivo de exemplo.</p>
     <label className="manage-button tp-file-button">Selecionar PDF
-      <input ref={input} type="file" accept=".pdf,application/pdf" aria-label={label} aria-invalid={!!error} aria-describedby={error ? errorId : undefined}
+      <input ref={input} type="file" accept=".pdf,application/pdf" aria-label={label} disabled={disabled} aria-invalid={!!error} aria-describedby={error ? errorId : undefined}
         onChange={event => {
           const file = event.target.files?.[0];
           if (!file) return;
           const message = validatePdf(file);
           setError(message);
-          onFile(message ? '' : file.name);
+          if (!message) { setName(file.name); onFile(file.name); }
           event.target.value = '';
         }} />
     </label>
-    <button type="button" className="management-text-button" onClick={() => {
-      setError(''); onFile(example);
+    <button type="button" className="management-text-button" disabled={disabled} onClick={() => {
+      setError(''); setName(example); onFile(example);
     }}>Usar PDF de exemplo</button>
     {name && <strong className="tp-file-name">{name}</strong>}
     {error && <p id={errorId} className="tp-error" role="alert">{error}</p>}
@@ -48,7 +44,7 @@ function DemoReview({ state, dispatch }) {
   const [attempted, setAttempted] = useState(false);
   const container = useRef(null);
   const plan = state.plans[state.activeCourse];
-  const course = demoOffering(state.activeCourse);
+  const course = DEMO_COURSES.find(c => c.id === state.activeCourse);
   const locked = plan.status === 'ready';
   const selected = plan.candidates.filter(item => item.decision === 'selected');
   const confirm = () => {
@@ -88,8 +84,7 @@ function DemoReview({ state, dispatch }) {
 
 function DemoAgenda({ state, dispatch }) {
   const [message, setMessage] = useState('');
-  const months = [...new Set([...state.periods.flatMap(demoMonths), ...state.events.map(event => event.date.slice(0, 7))])].sort();
-  const [month, setMonth] = useState(() => demoMonths(state.activeCourse ? demoOffering(state.activeCourse).period : state.periods[0])[0]);
+  const [month, setMonth] = useState('2026-11');
   const selectedCount = state.selectedCourses.reduce((sum, id) => sum + state.plans[id].candidates.filter(item => item.decision === 'selected' && !state.events.some(e => e.id === `${id}:${item.id}`)).length, 0);
   const monthEvents = state.events.filter(event => event.date.startsWith(month));
   const [year, monthNumber] = month.split('-').map(Number);
@@ -97,40 +92,37 @@ function DemoAgenda({ state, dispatch }) {
   const dayCount = new Date(year, monthNumber, 0).getDate();
   return <div>
     <header className="tp-section-heading"><div><h2>Leve as datas para o seu calendário.</h2><p>Prévia local de Meus Eventos. Nada será gravado na agenda real.</p></div></header>
-    <div className="tp-agenda-layout"><div>{state.followedCourses.map(demoOffering).map(course => {
+    <div className="tp-agenda-layout"><div>{DEMO_COURSES.filter(c => state.followedCourses.includes(c.id)).map(course => {
       const plan = state.plans[course.id];
       const imported = plan?.status === 'ready' && plan.candidates.filter(item => item.decision === 'selected').every(item => state.events.some(e => e.id === `${course.id}:${item.id}`));
-      return <div className="tp-agenda-choice" key={course.id}><label className="tp-choice"><input type="checkbox" disabled={plan?.status !== 'ready' || imported} checked={state.selectedCourses.includes(course.id)} onChange={e => dispatch({ type: 'SELECT_COURSE', id: course.id, selected: e.target.checked })} /><span><strong>{course.title}</strong><small>{courseLabel(course)}</small><small>{imported ? 'Incluída na prévia' : plan?.status === 'ready' ? 'Plano pronto para selecionar' : 'Conclua o plano antes de selecionar'}</small></span></label><CourseStatus plan={plan} /></div>;
+      return <div className="tp-agenda-choice" key={course.id}><label className="tp-choice"><input type="checkbox" disabled={plan?.status !== 'ready' || imported} checked={state.selectedCourses.includes(course.id)} onChange={e => dispatch({ type: 'SELECT_COURSE', id: course.id, selected: e.target.checked })} /><span><strong>{course.title}</strong><small>Turma {course.group} · {imported ? 'Incluída na prévia' : plan?.status === 'ready' ? 'Plano pronto para selecionar' : 'Conclua o plano antes de selecionar'}</small></span></label><CourseStatus plan={plan} /></div>;
     })}<div className="tp-agenda-summary"><strong>{selectedCount} avaliação(ões) para incluir</strong><button type="button" className="manage-button primary" disabled={!selectedCount} onClick={() => {
       dispatch({ type: 'IMPORT' }); setMessage(`${selectedCount} avaliação(ões) incluída(s) na prévia local. Sua agenda real não foi alterada.`);
     }}><Icon>event_available</Icon>Simular envio para Meus Eventos</button><p role="status">{message || 'A confirmação repetida não duplica itens na prévia.'}</p></div></div>
-    <aside className="tp-calendar"><header><h3>Prévia do calendário</h3><label className="sr-only" htmlFor="tp-month">Mês da prévia</label><select id="tp-month" value={month} onChange={e => setMonth(e.target.value)}>{[...new Set([...months, month])].sort().map(value => <option key={value} value={value}>{monthLabel.format(new Date(`${value}-01T00:00:00Z`))}</option>)}</select></header>
+    <aside className="tp-calendar"><header><h3>Prévia do calendário</h3><label className="sr-only" htmlFor="tp-month">Mês da prévia</label><select id="tp-month" value={month} onChange={e => setMonth(e.target.value)}><option value="2026-11">Novembro de 2026</option><option value="2026-12">Dezembro de 2026</option></select></header>
       <div className="tp-calendar-grid" aria-hidden="true">{['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((day, i) => <span className="tp-weekday" key={`w${i}`}>{day}</span>)}{Array.from({ length: firstWeekday }, (_, i) => <span key={`empty${i}`} />)}{Array.from({ length: dayCount }, (_, i) => <span key={i} className={monthEvents.some(e => Number(e.date.slice(-2)) === i + 1) ? 'has-event' : ''}>{i + 1}</span>)}</div>
       {!monthEvents.length && <p className="tp-help">Nenhuma avaliação na prévia deste mês.</p>}
-      <ul className="tp-calendar-events">{monthEvents.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time)).map(event => <li key={event.id}><strong>{event.title}</strong><p>{event.date.split('-').reverse().join('/')} · {event.time} · UTC{event.utcOffset}</p><small>{demoOffering(event.courseId).title} · Plano de exemplo</small></li>)}</ul>
+      <ul className="tp-calendar-events">{monthEvents.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time)).map(event => <li key={event.id}><strong>{event.title}</strong><p>{event.date.split('-').reverse().join('/')} · {event.time} · UTC{event.utcOffset}</p><small>{DEMO_COURSES.find(c => c.id === event.courseId).title} · Plano de exemplo</small></li>)}</ul>
       <small>Datas fora destes meses continuam na lista completa abaixo.</small>
     </aside></div>
     {!!state.events.length && <details className="tp-event-details"><summary>Ver todas as avaliações incluídas ({state.events.length})</summary><ul>{state.events.map(event => <li key={event.id}>{event.title} · {event.date.split('-').reverse().join('/')} às {event.time} · UTC{event.utcOffset}</li>)}</ul></details>}
   </div>;
 }
 
-export default function TeachingPlanJourney({ userId }) {
-  const [saved] = useState(() => loadDemoFollows(userId));
-  const [state, dispatch] = useReducer(demoReducer, saved.ids, ids => initialDemoState({ periods: catalogPeriods(), ids }));
+export default function TeachingPlanJourney() {
+  const [state, dispatch] = useReducer(demoReducer, undefined, initialDemoState);
+  const [chosenCourses, setChosenCourses] = useState([]);
   const [files, setFiles] = useState({});
-  const [message, setMessage] = useState(saved.error ? 'Não foi possível recuperar suas turmas neste navegador.' : '');
+  const [query, setQuery] = useState('');
+  const [campus, setCampus] = useState('');
   const [resetOpen, setResetOpen] = useState(false);
-  const [catalogVersion, setCatalogVersion] = useState(0);
+  const [pickerVersion, setPickerVersion] = useState(0);
   const heading = useRef(null);
   const stepNavigation = useRef(null);
   const previousStep = useRef(state.step);
-  const load = useCallback(() => loadDemoCatalog(state.periods), [state.periods]);
-  const catalog = useSyllabusResource('demo-class-catalog', load, noPolling);
-  const available = id => !catalog.loading && !catalog.error && !!catalog.data?.items.some(offer => offer.id === id);
   const plan = state.plans[state.activeCourse];
-  const course = state.activeCourse ? demoOffering(state.activeCourse) : null;
+  const course = DEMO_COURSES.find(c => c.id === state.activeCourse);
   const processingId = Object.keys(state.plans).find(id => state.plans[id].status === 'processing');
-
   useEffect(() => {
     if (!processingId) return undefined;
     const timer = setTimeout(() => dispatch({ type: 'PROCESSED', id: processingId }), 650);
@@ -143,45 +135,38 @@ export default function TeachingPlanJourney({ userId }) {
       previousStep.current = state.step;
     }
   }, [state.step]);
-
-  const save = (ids, feedback) => {
-    try {
-      saveDemoFollows(userId, ids);
-      setMessage(feedback);
-    } catch {
-      setMessage(`${feedback} Não foi possível salvar esta alteração no navegador.`);
-    }
-  };
-  const follow = (offer, following) => {
-    if (following && !available(offer.id)) return;
-    dispatch({ type: following ? 'FOLLOW' : 'UNFOLLOW', id: offer.id, available: available(offer.id) });
-    save(following ? [...state.followedCourses, offer.id] : state.followedCourses.filter(id => id !== offer.id),
-      following ? `${offer.title} · ${courseLabel(offer)} adicionada a Minhas turmas.` :
-        `Você deixou de seguir ${offer.title} · ${courseLabel(offer)}. A agenda foi preservada.`);
-  };
-
+  const normalize = text => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const filtered = DEMO_COURSES.filter(c => normalize(`${c.title} ${c.initials}`).includes(normalize(query)) && (!campus || c.campus === campus));
   return <div className="tp-journey">
-    <div className="tp-demo-notice"><strong>Catálogo de demonstração</strong><p>Turmas, professores e planos são exemplos até a integração com o Followw. {userId ? 'As turmas seguidas ficam salvas neste navegador para a sua conta.' : 'Sem login, a seleção dura só nesta visita.'}</p></div>
+    <div className="tp-demo-notice"><div><strong>Demonstração interativa · 2026.2</strong><p>Turmas e avaliações ilustrativas. Sem leitura de PDFs, envio ao servidor ou alteração de Meus Eventos. Recarregar ou sair desta demonstração reinicia os dados.</p></div><button type="button" className="manage-button" onClick={() => setResetOpen(true)}>Reiniciar demonstração</button></div>
     <nav ref={stepNavigation} className="tp-steps" aria-label="Etapas do plano de ensino">{steps.map((label, i) => <button type="button" key={label} aria-current={state.step === i + 1 ? 'step' : undefined}
-      disabled={!canOpenDemoStep(state, i + 1)} onClick={() => dispatch({ type: 'STEP', step: i + 1 })}><span>{i + 1}</span>{label}</button>)}</nav>
+      disabled={(i > 0 && !state.enrollment) || (i === 2 && !plan?.candidates)} onClick={() => dispatch({ type: 'STEP', step: i + 1 })}><span>{i + 1}</span>{label}</button>)}</nav>
     <h2 ref={heading} tabIndex={-1} className="sr-only">Etapa {state.step}: {steps[state.step - 1]}</h2>
-    <div hidden={state.step !== 1}>
-      <ClassCatalog key={catalogVersion} state={state} catalog={catalog} onFollow={follow} message={message}
-        onOpen={id => { if (state.plans[id]?.candidates || available(id)) dispatch({ type: 'OPEN', id }); }} />
-    </div>
-    {state.step === 2 && course && <section className="tp-upload-layout" aria-labelledby="tp-plan-destination"><div className="tp-panel">
-      <header className="tp-section-heading"><div><h2 id="tp-plan-destination">Plano de {course.title}</h2><p>{courseLabel(course)}</p></div><Icon>description</Icon></header>
-      {!plan && !available(course.id) ? <div className="tp-linked"><h3>Oferta indisponível para envio</h3><p>Volte ao catálogo e selecione uma oferta disponível antes de preparar um plano.</p><button type="button" className="manage-button" onClick={() => dispatch({ type: 'STEP', step: 1 })}>Voltar ao catálogo</button></div>
-        : !plan ? <><FilePicker key={course.id} label="Plano de ensino" name={files[course.id]} example={`plano_${course.code}_exemplo.pdf`} onFile={name => setFiles(previous => ({ ...previous, [course.id]: name }))} />
-          <div className="tp-panel-footer"><small>As sugestões serão exemplos fixos.</small><button type="button" className="manage-button primary" disabled={!files[course.id]} onClick={() => dispatch({ type: 'PROCESS', available: available(course.id), name: files[course.id] })}>Simular extração<Icon>arrow_forward</Icon></button></div></>
+    {state.step === 1 && <section className="tp-upload-layout"><div className="tp-panel"><header className="tp-section-heading"><div><h2>Selecione as turmas do seu semestre.</h2><p>O vínculo é autodeclarado e não comprova matrícula oficial.</p></div><Icon>school</Icon></header>
+      {state.enrollment ? <div className="tp-linked"><Icon>check_circle</Icon><h3>{state.followedCourses.length} turma(s) selecionada(s)</h3><p>Vínculo autodeclarado nesta demonstração.</p><button className="manage-button primary" onClick={() => dispatch({ type: 'STEP', step: 2 })}>Ver minhas turmas<Icon>arrow_forward</Icon></button></div> : <>
+        <fieldset><legend>Turmas do catálogo de exemplo</legend>{DEMO_COURSES.map(c => <label className="tp-choice" key={c.id}><input type="checkbox" checked={chosenCourses.includes(c.id)} onChange={e => setChosenCourses(previous => e.target.checked ? [...previous, c.id] : previous.filter(id => id !== c.id))} /><span><strong>{c.title}</strong><small>{courseLabel(c)}</small></span></label>)}</fieldset>
+        <div className="tp-panel-footer"><small>Ao confirmar, você declara seu vínculo com as turmas selecionadas.</small><button type="button" className="manage-button primary" disabled={!chosenCourses.length} onClick={() => dispatch({ type: 'ENROLL', ids: chosenCourses })}>Confirmar seleção de turmas<Icon>arrow_forward</Icon></button></div>
+      </>}</div><aside className="tp-guidance"><h2>Do plano ao próximo compromisso.</h2><ol><li><strong>Selecione suas turmas</strong><p>Escolha as ofertas do catálogo ilustrativo. Não é necessário enviar comprovante de matrícula.</p></li><li><strong>Complete os planos ausentes</strong><p>Escolha a turma certa e confira as datas sugeridas antes de vincular o plano.</p></li><li><strong>Escolha o que vai para a agenda</strong><p>Somente avaliações selecionadas e conferidas entram na prévia.</p></li></ol></aside></section>}
+    {state.step === 2 && <section><header className="tp-section-heading"><div><h2>Minhas turmas</h2><p>{state.followedCourses.length} turma(s) com vínculo autodeclarado · período 2026.2</p></div><a className="management-text-button" href="#tp-catalog">Explorar catálogo de exemplo<Icon>arrow_forward</Icon></a></header>
+      <div className="tp-course-list">{DEMO_COURSES.filter(c => state.followedCourses.includes(c.id)).map(c => <article className="tp-course" key={c.id}><span className="tp-initials">{c.initials}</span><div><h3>{c.title}</h3><p>{courseLabel(c)}</p></div><CourseStatus plan={state.plans[c.id]} /><button type="button" className="manage-button" disabled={state.plans[c.id]?.status === 'processing'} onClick={() => dispatch({ type: 'OPEN', id: c.id })}>{state.plans[c.id]?.candidates ? 'Ver avaliações' : 'Selecionar turma'}<Icon>arrow_forward</Icon></button></article>)}</div>
+      <div className="tp-upload-layout tp-spaced"><div className="tp-panel"><header className="tp-section-heading"><div><h2>Complete o plano da turma</h2><p>{course.title}</p></div><Icon>description</Icon></header><div className="tp-destination"><strong>Turma de destino</strong><p>{courseLabel(course)}</p></div>
+        {!plan ? <><FilePicker key={`${state.activeCourse}-${pickerVersion}`} label="Plano de ensino" example={`plano_${state.activeCourse}_exemplo.pdf`} onFile={name => setFiles(previous => ({ ...previous, [state.activeCourse]: name }))} />
+          {files[state.activeCourse] && <p className="tp-help">Selecionado: {files[state.activeCourse]}</p>}
+          <div className="tp-panel-footer"><small>As sugestões serão exemplos fixos.</small><button type="button" className="manage-button primary" disabled={!files[state.activeCourse]} onClick={() => dispatch({ type: 'PROCESS', name: files[state.activeCourse] })}>Simular extração<Icon>arrow_forward</Icon></button></div></>
           : plan.status === 'processing' ? <p role="status" className="tp-processing"><Icon>hourglass_top</Icon>Preparando avaliações de exemplo…</p>
           : <div className="tp-linked"><CourseStatus plan={plan} /><p>{plan.fileName}</p><button type="button" className="manage-button primary" onClick={() => dispatch({ type: 'STEP', step: 3 })}>Abrir avaliações<Icon>arrow_forward</Icon></button></div>}
-    </div><aside className="tp-guidance"><h2>A turma certa, o plano certo.</h2><p>Confira o código, a turma e o período. Uma mesma disciplina pode ter cronogramas diferentes em cada oferta.</p><button type="button" className="manage-button" onClick={() => dispatch({ type: 'STEP', step: 1 })}>Voltar a Minhas turmas</button></aside></section>}
+      </div><aside className="tp-guidance"><h2>A turma certa, o plano certo.</h2><p>Confira disciplina, turma e período. Planos de semestres diferentes podem ter cronogramas diferentes.</p><div className="tp-quiet-note"><strong>O que já está pronto?</strong><p>Cálculo 1 vem com um plano de exemplo já vinculado. Você pode usá-lo para experimentar a etapa de agenda imediatamente.</p><button type="button" className="manage-button" onClick={() => dispatch({ type: 'STEP', step: 4 })}>Experimentar a agenda</button></div></aside></div>
+    </section>}
     {state.step === 3 && plan?.candidates && <DemoReview key={state.activeCourse} state={state} dispatch={dispatch} />}
     {state.step === 4 && <DemoAgenda state={state} dispatch={dispatch} />}
-    <footer className="tp-demo-footer"><button type="button" className="management-text-button" onClick={() => setResetOpen(true)}>Reiniciar demonstração</button></footer>
-    {resetOpen && <Modal title="Reiniciar demonstração?" onClose={() => setResetOpen(false)}><p>As turmas seguidas, as edições e a prévia serão apagadas desta demonstração.</p><div className="dialog-actions"><button type="button" className="manage-button" onClick={() => setResetOpen(false)}>Cancelar</button><button type="button" className="manage-button primary" onClick={() => {
-      save([], 'Demonstração reiniciada.'); dispatch({ type: 'RESET' }); setFiles({}); setCatalogVersion(version => version + 1); setResetOpen(false);
+    <section id="tp-catalog" className="tp-catalog"><header className="tp-section-heading"><div><h2>Explore as turmas da UnB</h2><p>Catálogo ilustrativo · a busca filtra apenas os cinco exemplos abaixo.</p></div><span className="tp-badge">Amostra de turmas</span></header>
+      <div className="tp-filters"><label>Disciplina ou sigla<input value={query} onChange={e => setQuery(e.target.value)} placeholder="Buscar disciplina ou sigla" /></label><div><label htmlFor="tp-campus">Campus</label><select id="tp-campus" value={campus} onChange={e => setCampus(e.target.value)}><option value="">Todos os campi</option><option>Darcy Ribeiro</option><option>Faculdade do Gama</option></select></div><button type="button" className="manage-button" onClick={() => { setQuery(''); setCampus(''); }} disabled={!query && !campus}>Limpar filtros</button></div>
+      <p className="tp-help" role="status">{filtered.length} turma(s) encontrada(s)</p>
+      {!filtered.length && <p className="tp-empty">Nenhuma turma corresponde aos filtros. Tente outro nome ou limpe os filtros.</p>}
+      {filtered.map(c => <article key={c.id} className="tp-catalog-row"><div><h3>{c.title}</h3><p>{courseLabel(c)}</p></div><CourseStatus plan={state.plans[c.id]} /><span>{state.followedCourses.includes(c.id) ? 'Vínculo autodeclarado' : 'Turma não selecionada'}</span></article>)}
+    </section>
+    {resetOpen && <Modal title="Reiniciar demonstração?" onClose={() => setResetOpen(false)}><p>As edições e a prévia local serão descartadas. Nenhum dado real será alterado.</p><div className="dialog-actions"><button type="button" className="manage-button" onClick={() => setResetOpen(false)}>Cancelar</button><button type="button" className="manage-button primary" onClick={() => {
+      dispatch({ type: 'RESET' }); setChosenCourses([]); setFiles({}); setQuery(''); setCampus(''); setPickerVersion(v => v + 1); setResetOpen(false);
     }}>Reiniciar</button></div></Modal>}
   </div>;
 }

@@ -158,7 +158,6 @@ function PlanWorkspace({ userId }) {
     history.retry();
   };
   return <>
-    <p className="plan-legacy-note"><Icon>info</Icon>Os envios desta área são particulares e ainda não são vinculados ao catálogo de turmas.</p>
     <div className="plan-layout"><div><PlanUpload onUploaded={onUploaded} /><SyllabusTextInput onPrepared={onUploaded} /></div><div className="plan-sidebar">{selectedId ? <PlanTracking key={selectedId} id={selectedId} onClose={() => { setSelection(null); document.getElementById('plan-subject')?.focus(); }} /> : <PlanHelp />}</div></div>
     {!selectedId && <SyllabusReviewPanel />}
     <section className="plan-history" aria-labelledby="plan-history-title" aria-busy={history.loading}>
@@ -180,7 +179,7 @@ export default function TeachingPlanPage() {
   const [params, setParams] = useSearchParams();
   const realMode = params.get('modo') === 'envios' || params.has('plano');
   return <ManagementShell title="Planos de ensino" description="Envie o plano da sua disciplina e acompanhe a análise das avaliações, no seu ritmo.">
-    <nav className="tp-mode-switch" aria-label="Modo da página"><button type="button" className={`manage-button ${!realMode ? 'primary' : ''}`} aria-pressed={!realMode} onClick={() => setParams({})}>Demonstração interativa</button><button type="button" className={`manage-button ${realMode ? 'primary' : ''}`} aria-pressed={realMode} onClick={() => setParams({ modo: 'envios' })}>Envios e histórico reais</button></nav>
-    {!realMode ? <TeachingPlanJourney key={user?.id || 'guest'} userId={user?.id} /> : user ? <PlanWorkspace key={user.id} userId={user.id} /> : <section className="plan-guest"><Icon>description</Icon><h2>Seus planos, em um só lugar</h2><p>Entre na sua conta para enviar PDFs e acompanhar o processamento das suas disciplinas. Seus planos são particulares.</p><Link className="manage-button primary" to="/">Entrar para enviar um plano<Icon>arrow_forward</Icon></Link><p className="management-muted">PDF de até 10 MB e 10 páginas, com texto selecionável.</p></section>}
+    <nav className="tp-mode-switch" aria-label="Modo da página"><button type="button" className={`manage-button ${!realMode ? 'primary' : ''}`} aria-pressed={!realMode} onClick={() => setParams({})}>Demonstração interativa</button><button type="button" className={`manage-button ${realMode ? 'primary' : ''}`} aria-pressed={realMode} onClick={() => setParams({ modo: 'envios' })}>Envios reais de PDF</button></nav>
+    {!realMode ? <TeachingPlanJourney key={user?.id || 'guest'} /> : user ? <PlanWorkspace key={user.id} userId={user.id} /> : <section className="plan-guest"><Icon>description</Icon><h2>Seus planos, em um só lugar</h2><p>Entre na sua conta para enviar PDFs e acompanhar o processamento das suas disciplinas. Seus planos são particulares.</p><Link className="manage-button primary" to="/">Entrar para enviar um plano<Icon>arrow_forward</Icon></Link><p className="management-muted">PDF de até 10 MB e 10 páginas, com texto selecionável.</p></section>}
   </ManagementShell>;
 }
