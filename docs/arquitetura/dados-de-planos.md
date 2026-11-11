@@ -8,7 +8,7 @@ description: "Como a API usa as funções de planos da Release 2."
 Guia de integração das migrações `20261111141000_planos_confirmacao_idempotente.sql`, que completam o modelo da [S7-D01 (#69)](https://github.com/unb-mds/2026-2-AgendaUnB/issues/69).
 
 | Issue | O que o banco e a aplicação fazem |
-| --- | --- | --- |
+| --- | --- |
 | [S7-B04 (#72)](https://github.com/unb-mds/2026-2-AgendaUnB/issues/72) | Confirmação em transação, por usuário, com `Idempotency-Key`, validação de acesso, versão e datas. A rota envia o ator validado, lê a versão aprovada, traduz erros SQLSTATE e devolve eventos e resultados por item. |
 
 ## 1. Por que as funções recebem o ator
