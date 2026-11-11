@@ -5,7 +5,7 @@ description: "Como a API, o coletor usam as estruturas de eventos da Release 2."
 
 # Dados de eventos: datas, coleta
 
-Guia de integração das migrações `20261110140000_eventos_datas_e_coleta.sql`. Elas entregam a parte de dados das issues abaixo; a API, o coletor e o agendador são implementados nas próprias issues.
+Guia de integração das migrações `20261111140000_eventos_datas_e_coleta.sql`. Elas entregam a parte de dados das issues abaixo; a API, o coletor e o agendador são implementados nas próprias issues.
 
 | Issue | O que o banco já faz | O que falta na aplicação |
 | --- | --- | --- |
