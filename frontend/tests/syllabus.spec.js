@@ -4,6 +4,60 @@ const plan = { offeringId: '70000000-0000-4000-8000-000000000071', id: 'd79eeb53
 const pdf = { name: 'plano-mds.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4\nTeste de transporte multipart') };
 const candidate = { id: 'candidate-a', title: 'Prova de integração', type: 'prova', status: 'pendente', ambiguous: true, ambiguousFields: ['data'], suggestedDate: null, suggestedTime: null, sourcePage: 2, sourceExcerpt: 'Prova: data a definir.', versionId: 'version-a' };
 
+test('PDF sem texto mantém arquivo e oferece texto e organização manual', async ({ page }) => {
+  await setup(page);
+  await page.route('**/api/v1/syllabus/upload', route => route.fulfill({ status: 400,
+    json: { detail: 'O PDF não contém texto extraível. Use uma versão digital ou envie o cronograma por texto.' } }));
+  await page.goto(`/plano-de-ensino?oferta=${plan.offeringId}&etapa=2`);
+  await fillUpload(page);
+  await page.getByRole('button', { name: 'Preparar PDF para revisão' }).click();
+  await expect(page.getByRole('alert')).toContainText('O PDF não contém texto extraível.');
+  await expect(page.getByRole('link', { name: 'Cadastrar prazos manualmente' })).toBeVisible();
+  await expect(page.getByLabel('Texto do plano', { exact: true })).toBeVisible();
+  await expect(page.getByText(pdf.name, { exact: true })).toBeVisible();
+});
+
+for (const state of ['sem vínculo', 'vínculo de outra oferta', 'oferta retirada', 'resposta inválida', 'falha de rede']) {
+  test(`envio bloqueado por URL direta: ${state}`, async ({ page }, testInfo) => {
+    await setup(page, { items: [plan], total: 1 });
+    await page.setViewportSize({ width: 360, height: 1000 });
+    const writes = [];
+    page.on('request', request => { if (request.method() === 'POST') writes.push(request.url()); });
+    await page.route('**/api/v1/me/class-offerings', route => {
+      if (state === 'falha de rede') return route.abort();
+      const items = state === 'vínculo de outra oferta' ? [{ id: 'other' }] : [];
+      return route.fulfill({ json: state === 'resposta inválida' ? [] : { items } });
+    });
+    if (state === 'oferta retirada') {
+      await page.route(`**/api/v1/class-offerings/${plan.offeringId}`, route => route.fulfill({ json: { id: plan.offeringId, available: false } }));
+    }
+    await page.goto(`/plano-de-ensino?oferta=${plan.offeringId}&etapa=2`);
+    if (['resposta inválida', 'falha de rede'].includes(state)) {
+      await expect(page.getByText('Não foi possível verificar a oferta e suas turmas seguidas.')).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Tentar novamente', exact: true })).toBeVisible();
+    } else {
+      await expect(page.getByText(/Selecione uma oferta disponível que sua conta segue/)).toBeVisible();
+      await expect(page.getByRole('button', { name: `Acompanhar ${plan.disciplina}` })).toBeVisible();
+    }
+    await expect(page.locator('input[type=file]')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Preparar texto para revisão' })).toHaveCount(0);
+    expect(writes).toEqual([]);
+    if (state === 'sem vínculo') await page.screenshot({ path: testInfo.outputPath('offering-blocked.png'), fullPage: true });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  });
+}
+
+test('recarga verifica vínculo removido e bloqueia novo envio mantendo histórico', async ({ page }) => {
+  await setup(page, { items: [plan] });
+  await page.goto(`/plano-de-ensino?oferta=${plan.offeringId}&etapa=2`);
+  await expect(page.getByRole('button', { name: 'Preparar texto para revisão' })).toBeVisible();
+  await page.route('**/api/v1/me/class-offerings', route => route.fulfill({ json: { items: [] } }));
+  await page.reload();
+  await expect(page.getByText(/Selecione uma oferta disponível que sua conta segue/)).toBeVisible();
+  await expect(page.getByRole('button', { name: `Acompanhar ${plan.disciplina}` })).toBeVisible();
+  await expect(page.locator('input[type=file]')).toHaveCount(0);
+});
+
 async function openCheckedReview(page, path = `/plano-de-ensino?plano=${plan.id}`) {
   const first = page.getByRole('group', { name: 'Avaliação 1', exact: true });
   await page.goto(path);
@@ -268,6 +322,7 @@ async function setup(page, { guest = false, items = [], total = items.length, de
   await page.route(`**/api/v1/syllabus/${plan.id}`, route => route.fulfill({ json: detail }));
   await page.route('**/api/v1/events?*', route => route.fulfill({ json: [] }));
   await page.route('**/api/v1/me/**', route => route.fulfill({ json: [] }));
+  await page.route('**/api/v1/me/class-offerings', route => route.fulfill({ json: { items: [{ id: plan.offeringId }] } }));
 }
 
 async function fillUpload(page) {

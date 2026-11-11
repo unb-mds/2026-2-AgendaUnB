@@ -6,7 +6,7 @@ export const PLAN_STATES = {
   pendente: { label: 'Pendente', icon: 'schedule', title: 'Seu plano está na fila', description: 'O arquivo foi recebido e aguarda processamento. Você pode sair desta página e acompanhar depois pelo histórico.' },
   processando: { label: 'Processando', icon: 'autorenew', title: 'Analisando seu plano', description: 'Estamos procurando avaliações no documento. Esta página será atualizada automaticamente.' },
   concluido: { label: 'Concluído', icon: 'check_circle', title: 'Análise concluída', description: 'O processamento terminou. Nenhum compromisso foi adicionado à sua agenda automaticamente.' },
-  falha: { label: 'Falha', icon: 'error', title: 'Não foi possível analisar o plano', description: 'Confira se o PDF permite selecionar o texto, não tem senha e possui até 10 páginas. Você pode enviar outro arquivo ou cadastrar seus prazos manualmente.' },
+  falha: { label: 'Falha', icon: 'error', title: 'Não foi possível analisar o plano', description: 'Consulte a orientação abaixo. Você pode tentar novamente com PDF digital ou texto, ou cadastrar seus prazos manualmente.' },
 };
 
 export function validatePdf(file) {
