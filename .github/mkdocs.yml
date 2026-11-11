@@ -36,6 +36,7 @@ nav:
   - Dados de planos: arquitetura/dados-de-planos.md
   - Especificação do Banco: arquitetura/banco-de-dados.md
   - Dados de eventos: arquitetura/dados-de-eventos.md
+  - Catálogo de turmas: arquitetura/catalogo-de-turmas.md
   - Requisitos: produto/requisitos.md
   - Padrões de Projeto: produto/padroes.md
   - Interface e Design: arquitetura/frontend.md

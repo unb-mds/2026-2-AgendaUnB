@@ -66,6 +66,7 @@
           "docs/arquitetura/dados-de-planos",
           "docs/arquitetura/banco-de-dados",
           "docs/arquitetura/dados-de-eventos",
+          "docs/arquitetura/catalogo-de-turmas",
           "docs/arquitetura/frontend",
           "docs/api-specs",
           "docs/processamento-planos-s7",
