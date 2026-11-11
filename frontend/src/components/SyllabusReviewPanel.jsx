@@ -11,7 +11,7 @@ const fields = { title: 'título', titulo: 'título', type: 'tipo', tipo: 'tipo'
 
 // Uses candidate details from the existing private-plan API contract.
 // Do not turn extractedEventsCount into synthetic candidates or assume a future payload.
-export default function SyllabusReviewPanel({ selected = false, plan, loading = false, error }) {
+export default function SyllabusReviewPanel({ selected = false, plan, loading = false, error, onConfirmed, onEdited, confirmationAllowed = true }) {
   const candidates = selected && !error && !loading && plan?.status === 'concluido' && !plan.authorizationRequired ? plan.candidates : null;
   let message = 'Abra um plano em “Seus planos enviados” para consultar a disponibilidade das avaliações. Se ainda não enviou um plano, comece pelo formulário acima.';
   if (selected) {
@@ -25,7 +25,7 @@ export default function SyllabusReviewPanel({ selected = false, plan, loading = 
     else message = 'Não foi possível identificar o estado da análise. Consulte novamente pelo acompanhamento.';
   }
   return <div className="plan-review-panel">
-    {candidates?.length ? <CandidateReview key={JSON.stringify([plan.id, candidates])} planId={plan.id} initialCandidates={candidates} /> : <SyllabusReviewEditor value={[]} disabled emptyMessage={candidates?.length === 0 ? 'A análise terminou sem avaliações. Você pode cadastrar os prazos manualmente em Meus Eventos.' : message} />}
+    {candidates?.length ? <CandidateReview key={JSON.stringify([plan.id, candidates])} planId={plan.id} initialCandidates={candidates} onConfirmed={onConfirmed} onEdited={onEdited} confirmationAllowed={confirmationAllowed} /> : <SyllabusReviewEditor value={[]} disabled emptyMessage={candidates?.length === 0 ? 'A análise terminou sem avaliações. Você pode cadastrar os prazos manualmente em Meus Eventos.' : message} />}
     <details className="plan-file-help">
       <summary>O que poderei revisar?</summary>
       <p>Você pode corrigir título, tipo, data, horário e fuso. Somente as avaliações selecionadas entram na agenda quando você confirma a importação.</p>
@@ -33,7 +33,7 @@ export default function SyllabusReviewPanel({ selected = false, plan, loading = 
   </div>;
 }
 
-function CandidateReview({ planId, initialCandidates }) {
+function CandidateReview({ planId, initialCandidates, onConfirmed, onEdited, confirmationAllowed }) {
   const [candidates, setCandidates] = useState(initialCandidates);
   const [draft, setDraft] = useState(() => createCandidateReviewDraft(initialCandidates));
   const [busy, setBusy] = useState(false);
@@ -44,7 +44,7 @@ function CandidateReview({ planId, initialCandidates }) {
   useEffect(() => () => requestRef.current?.abort(), []);
 
   async function confirm() {
-    if (requestRef.current || unverifiedIds) return;
+    if (requestRef.current || unverifiedIds || !confirmationAllowed) return;
     const controller = new AbortController();
     requestRef.current = controller;
     setBusy(true);
@@ -65,6 +65,7 @@ function CandidateReview({ planId, initialCandidates }) {
       } else {
         setSuccess(`Confirmação concluída. ${events.length} de ${batch.length} eventos disponíveis na agenda. Eventos removidos não são recriados.`);
       }
+      onConfirmed?.();
     } catch (failure) {
       if (controller.signal.aborted) return;
       if (batch && (!failure.status || failure.status >= 500 || [409, 422].includes(failure.status))) {
@@ -113,8 +114,8 @@ function CandidateReview({ planId, initialCandidates }) {
   }
 
   return <>
-    <SyllabusReviewEditor value={draft} onChange={setDraft} onConfirm={confirm}
-      busy={busy} disabled={busy || Boolean(unverifiedIds)} renderCandidate={(_, index) => {
+    <SyllabusReviewEditor value={draft} onChange={items => { setDraft(items); onEdited?.(); }} onConfirm={confirm}
+      confirmationAllowed={confirmationAllowed} busy={busy} disabled={busy || Boolean(unverifiedIds)} renderCandidate={(_, index) => {
     const candidate = candidates[index];
     return <div className="syllabus-candidate">
         <h3>{candidate.title}</h3>

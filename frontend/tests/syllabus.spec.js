@@ -1,12 +1,12 @@
 import { test, expect } from '@playwright/test';
 
-const plan = { id: 'd79eeb53-aed8-4369-936b-156e01cc455c', disciplina: 'Métodos de Desenvolvimento de Software', fileName: 'plano-mds.pdf', semestre: 2, ano: 2026, fileSize: 12345, createdAt: '2026-10-30T15:00:00Z', status: 'pendente' };
+const plan = { offeringId: '70000000-0000-4000-8000-000000000071', id: 'd79eeb53-aed8-4369-936b-156e01cc455c', disciplina: 'Métodos de Desenvolvimento de Software', fileName: 'plano-mds.pdf', semestre: 2, ano: 2026, fileSize: 12345, createdAt: '2026-10-30T15:00:00Z', status: 'pendente' };
 const pdf = { name: 'plano-mds.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4\nTeste de transporte multipart') };
 const candidate = { id: 'candidate-a', title: 'Prova de integração', type: 'prova', status: 'pendente', ambiguous: true, ambiguousFields: ['data'], suggestedDate: null, suggestedTime: null, sourcePage: 2, sourceExcerpt: 'Prova: data a definir.', versionId: 'version-a' };
 
-async function openCheckedReview(page) {
+async function openCheckedReview(page, path = `/plano-de-ensino?plano=${plan.id}`) {
   const first = page.getByRole('group', { name: 'Avaliação 1', exact: true });
-  await page.goto(`/plano-de-ensino?plano=${plan.id}`);
+  await page.goto(path);
   await first.getByLabel('Decisão').selectOption('selected');
   await first.getByLabel('Título').fill('Trabalho corrigido');
   await first.getByLabel('Tipo').selectOption('trabalho');
@@ -16,9 +16,40 @@ async function openCheckedReview(page) {
   const confirm = page.getByRole('button', { name: 'Confirmar e importar' });
   await expect(confirm).toBeDisabled();
   await page.getByRole('button', { name: 'Conferir selecionados' }).click();
-  await expect(confirm).toBeEnabled();
+  if (!path.includes('oferta=')) await expect(confirm).toBeEnabled();
   return { first, confirm };
 }
+
+test('jornada recebida da main confirma pela revisão integrada e atualiza o calendário', async ({ page }) => {
+  await setup(page, { detail: { ...plan, status: 'concluido', candidates: [candidate] } });
+  let confirmed = false;
+  let agendaReads = 0;
+  const event = { id: 'event-merged', title: 'Trabalho corrigido', starts_at: '2026-12-01T14:30:00-03:00',
+    category: 'Acadêmico', origin: { syllabusId: plan.id, candidateId: candidate.id } };
+  await page.route(`**/api/v1/syllabus/${plan.id}/confirm`, route => {
+    expect(route.request().postDataJSON().candidates[0].candidateId).toBe(candidate.id);
+    confirmed = true;
+    return route.fulfill({ json: { syllabusId: plan.id, events: [event] } });
+  });
+  await page.route('**/api/v1/me/events', route => {
+    agendaReads++;
+    return route.fulfill({ json: confirmed ? [event] : [] });
+  });
+  const { first, confirm } = await openCheckedReview(page, `/plano-de-ensino?oferta=${plan.offeringId}&plano=${plan.id}&etapa=3`);
+  const acknowledgement = page.getByRole('checkbox', { name: 'Conferi as avaliações e a turma de destino.' });
+  await expect(confirm).toBeDisabled();
+  await acknowledgement.check();
+  await expect(confirm).toBeEnabled();
+  await first.getByLabel('Título').fill('Trabalho corrigido novamente');
+  await expect(acknowledgement).not.toBeChecked();
+  await page.getByRole('button', { name: 'Conferir selecionados' }).click();
+  await acknowledgement.check();
+  await confirm.click();
+  await expect(page).toHaveURL(/etapa=4/);
+  await expect(page.getByRole('heading', { name: 'Leve as datas para o seu calendário.' })).toBeVisible();
+  await expect.poll(() => agendaReads).toBe(1);
+  await expect(page.getByRole('link', { name: 'Abrir Meus Eventos' })).toBeVisible();
+});
 
 for (const [width, theme] of [[360, 'light'], [1365, 'dark']]) {
   test(`confirmação envia somente selecionados e bloqueia clique duplicado em ${width}px ${theme}`, async ({ page }, testInfo) => {
@@ -231,6 +262,8 @@ async function setup(page, { guest = false, items = [], total = items.length, de
       }
     };
   ` }));
+  await page.route('**/api/v1/class-offerings/70000000-0000-4000-8000-000000000071', route => route.fulfill({ json: { id: '70000000-0000-4000-8000-000000000071', subject_name: plan.disciplina, subject_code: 'FGA0138', class_number: '01', year: 2026, semester: 2, unit: '673', available: true } }));
+  await page.route('**/api/v1/class-offerings/*/shared-plans?*', route => route.fulfill({ json: { items: [], total: 0 } }));
   await page.route('**/api/v1/syllabus?*', route => route.fulfill({ status: listStatus, json: listStatus === 200 ? { items, total } : { detail: 'Not Found' } }));
   await page.route(`**/api/v1/syllabus/${plan.id}`, route => route.fulfill({ json: detail }));
   await page.route('**/api/v1/events?*', route => route.fulfill({ json: [] }));
@@ -238,9 +271,6 @@ async function setup(page, { guest = false, items = [], total = items.length, de
 }
 
 async function fillUpload(page) {
-  await page.getByLabel('Disciplina', { exact: true }).fill(plan.disciplina);
-  await page.getByLabel('Semestre', { exact: true }).selectOption('2');
-  await page.getByLabel('Ano de referência').fill('2026');
   await page.getByLabel('Selecionar PDF', { exact: true }).setInputFiles(pdf);
 }
 
@@ -258,14 +288,13 @@ test('envio multipart autenticado, clique duplicado, recarga e estado final sem 
     await route.fulfill({ status: 202, json: plan });
   });
   await page.route(`**/api/v1/syllabus/${plan.id}`, route => { details++; return route.fulfill({ json: { ...plan, status: 'concluido', extractedEventsCount: 3 } }); });
-  await page.goto('/plano-de-ensino?modo=envios');
+  await page.goto('/plano-de-ensino?modo=envios&oferta=70000000-0000-4000-8000-000000000071');
   await fillUpload(page);
   await page.getByRole('button', { name: 'Preparar PDF para revisão' }).evaluate(button => { button.click(); button.click(); });
   await expect(page.getByRole('heading', { name: 'Análise concluída' })).toBeVisible();
   expect(uploads).toBe(1);
-  expect(uploadedBody).toContain('name="disciplina"');
-  expect(uploadedBody).toContain('name="semestre"\r\n\r\n2');
-  expect(uploadedBody).toContain('name="ano"\r\n\r\n2026');
+  expect(uploadedBody).toContain('name="offering_id"');
+  expect(uploadedBody).toContain('70000000-0000-4000-8000-000000000071');
   await expect(page).toHaveURL(new RegExp(`plano=${plan.id}`));
   await page.clock.install();
   const completed = details;
@@ -278,7 +307,7 @@ test('envio multipart autenticado, clique duplicado, recarga e estado final sem 
 
 test('paginação, erro recuperável e resultado vazio distintos de falha', async ({ page }) => {
   await setup(page, { items: [plan], total: 11, detail: { ...plan, status: 'falha', errorMessage: 'PDF protegido. Envie uma versão sem senha.' } });
-  await page.goto('/plano-de-ensino?modo=envios');
+  await page.goto('/plano-de-ensino?modo=envios&oferta=70000000-0000-4000-8000-000000000071');
   await page.getByRole('button', { name: `Acompanhar ${plan.disciplina}` }).click();
   await expect(page.getByRole('heading', { name: 'Não foi possível analisar o plano' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Cadastrar prazos manualmente' })).toHaveAttribute('href', '/eventos?aba=meus');
@@ -295,14 +324,14 @@ test('paginação, erro recuperável e resultado vazio distintos de falha', asyn
 test('validação de arquivo, erro de envio preserva campos e recuperação do histórico', async ({ page }) => {
   await setup(page, { listStatus: 404 });
   await page.route('**/api/v1/syllabus/upload', route => route.fulfill({ status: 422, json: { detail: 'O PDF deve possuir no máximo 10 páginas.' } }));
-  await page.goto('/plano-de-ensino?modo=envios');
+  await page.goto('/plano-de-ensino?modo=envios&oferta=70000000-0000-4000-8000-000000000071');
   await expect(page.getByText('O histórico ainda não está disponível.', { exact: false })).toBeVisible();
   await page.getByLabel('Selecionar PDF', { exact: true }).setInputFiles({ name: 'imagem.png', mimeType: 'image/png', buffer: Buffer.from('image') });
   await expect(page.getByText('Escolha um arquivo no formato PDF (.pdf).')).toBeVisible();
   await fillUpload(page);
   await page.getByRole('button', { name: 'Preparar PDF para revisão' }).click();
   await expect(page.getByText('O PDF deve possuir no máximo 10 páginas.')).toBeVisible();
-  await expect(page.getByLabel('Disciplina', { exact: true })).toHaveValue(plan.disciplina);
+  await expect(page.getByRole('heading', { name: plan.disciplina }).first()).toBeVisible();
   await expect(page.getByText('plano-mds.pdf', { exact: true })).toBeVisible();
   await page.route('**/api/v1/syllabus?*', route => route.fulfill({ json: { items: [], total: 0 } }));
   await page.getByRole('button', { name: 'Atualizar', exact: true }).click();
@@ -343,7 +372,7 @@ test('erro de consulta pausa polling; retry funciona; logout remove planos priva
   await expect(page.getByRole('heading', { name: 'Análise concluída' })).toBeVisible();
   await expect(page.getByText('Nenhuma avaliação encontrada')).toHaveCount(0);
   await page.evaluate(() => window.dispatchEvent(new Event('test-signout')));
-  await expect(page.getByRole('link', { name: 'Entrar para enviar um plano' })).toBeVisible();
+  await expect(page.getByText('Catálogo de demonstração', { exact: true })).toBeVisible();
   await expect(page.getByText(plan.disciplina)).toHaveCount(0);
 });
 
@@ -352,17 +381,12 @@ for (const width of [360, 768, 1365]) {
     test(`layout e teclado ${width}px ${theme}`, async ({ page }, testInfo) => {
       await page.setViewportSize({ width, height: 1000 });
       await setup(page, { items: [{ ...plan, disciplina: 'Disciplina de nome extenso '.repeat(6), status: 'concluido' }] });
-      await page.goto('/plano-de-ensino?modo=envios');
+      await page.goto('/plano-de-ensino?modo=envios&oferta=70000000-0000-4000-8000-000000000071');
       if (theme === 'light') await page.getByRole('button', { name: /tema/i }).click();
       await expect(page.getByRole('heading', { name: 'Enviar plano de ensino' })).toBeVisible();
       await expect(page.getByRole('heading', { name: 'Revisar avaliações' })).toBeVisible();
       await page.evaluate(() => document.fonts.ready);
-      await page.getByLabel('Disciplina', { exact: true }).focus();
-      await page.keyboard.press('Tab');
-      await expect(page.getByLabel('Semestre', { exact: true })).toBeFocused();
-      await page.keyboard.press('Tab');
-      await expect(page.getByLabel('Ano de referência')).toBeFocused();
-      await page.keyboard.press('Tab');
+      await page.getByLabel('Selecionar PDF', { exact: true }).focus();
       await expect(page.getByLabel('Selecionar PDF', { exact: true })).toBeFocused();
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
       await page.screenshot({ path: testInfo.outputPath('page.png'), fullPage: true });
@@ -375,7 +399,7 @@ test('visitante não consulta endpoints privados', async ({ page }) => {
   let calls = 0;
   page.on('request', request => { if (request.url().includes('/api/v1/syllabus')) calls++; });
   await page.goto(`/plano-de-ensino?plano=${plan.id}`);
-  await expect(page.getByRole('link', { name: 'Entrar para enviar um plano' })).toBeVisible();
+  await expect(page.getByText('Catálogo de demonstração', { exact: true })).toBeVisible();
   expect(calls).toBe(0);
 });
 
@@ -383,7 +407,7 @@ test('revisão aparece na rota real, explica limites e acompanha abertura e fech
   await setup(page, { items: [plan], detail: { ...plan, status: 'concluido', extractedEventsCount: 3 } });
   let confirmations = 0;
   page.on('request', request => { if (request.url().includes('/confirm')) confirmations++; });
-  await page.goto('/plano-de-ensino?modo=envios');
+  await page.goto('/plano-de-ensino?modo=envios&oferta=70000000-0000-4000-8000-000000000071');
   const review = page.getByRole('region', { name: 'Revisar avaliações' });
   await expect(review).toContainText('Abra um plano');
   await page.getByText('O que poderei revisar?', { exact: true }).focus();

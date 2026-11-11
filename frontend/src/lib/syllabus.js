@@ -21,6 +21,7 @@ export function normalizePlan(plan) {
   if (!plan || typeof plan.id !== 'string' || !plan.id) throw new Error('Resposta do plano inválida. Tente consultar novamente.');
   return {
     id: plan.id,
+    offeringId: plan.offeringId ?? null,
     candidates: normalizeCandidates(plan.candidates),
     status: plan.status,
     authorizationRequired: plan.authorizationRequired === true,

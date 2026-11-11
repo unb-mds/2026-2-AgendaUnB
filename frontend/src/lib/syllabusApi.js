@@ -17,8 +17,8 @@ async function syllabusRequest(path, { signal, timeout = 30000, ...options } = {
 }
 
 export const syllabusApi = {
-  async prepareText(text, signal) {
-    return normalizePlan(await syllabusRequest('/text', { method: 'POST', body: JSON.stringify({ text }), signal }));
+  async prepareText(text, signal, offeringId) {
+    return normalizePlan(await syllabusRequest('/text', { method: 'POST', body: JSON.stringify({ text, offering_id: offeringId }), signal }));
   },
   text(id, signal) {
     return syllabusRequest(`/${encodeURIComponent(id)}/text`, { signal });
@@ -30,16 +30,15 @@ export const syllabusApi = {
       body: JSON.stringify({ pages, textHash, authorize: true, contentEligible: true, reprocess }),
     }));
   },
-  async upload({ file, disciplina, semestre, ano }, signal) {
+  async upload({ file, offeringId }, signal) {
     const body = new FormData();
     body.append('file', file);
-    body.append('disciplina', disciplina.trim());
-    body.append('semestre', String(semestre));
-    body.append('ano', String(ano));
+    body.append('offering_id', offeringId);
     return normalizePlan(await syllabusRequest('/upload', { method: 'POST', body, signal, timeout: 90000 }));
   },
-  async list(page, signal) {
+  async list(page, signal, offeringId) {
     const query = new URLSearchParams({ limit: String(SYLLABUS_PAGE_SIZE), offset: String(page * SYLLABUS_PAGE_SIZE) });
+    if (offeringId) query.set('offering_id', offeringId);
     return normalizePlanList(await syllabusRequest(`?${query}`, { signal }));
   },
   async get(id, signal) {
