@@ -8,12 +8,13 @@ ignora RLS: quem confere a permissão é o banco.
 """
 import json
 import os
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.exc import DBAPIError
+from sqlalchemy.orm import Session
 
 
 @pytest.fixture
@@ -135,10 +136,14 @@ def test_two_followers_import_into_independent_agendas(database):
     for name in ('bruno', 'carla'):
         follow(conn, users[name], turma)
     share(conn, users['ana'], version_id)
-    items = [{'candidato_id': candidates[0]}]
-
     for name in ('bruno', 'carla'):
-        result = confirm(conn, users[name], f'chave-{name}-0001', version_id, items)
+        result = confirm(
+            conn,
+            users[name],
+            f'chave-{name}-0001',
+            version_id,
+            [{'candidato_id': candidates[0], 'tipo': f'tipo de {name}'}],
+        )
         assert result['repetida'] is False and result['itens'][0]['resultado'] == 'criado'
     assert scalar(conn, EVENTS, {'u': users['bruno']}) == scalar(conn, EVENTS, {'u': users['carla']}) == 1
 
@@ -148,12 +153,63 @@ def test_two_followers_import_into_independent_agendas(database):
     assert str(event['origem_versao_id']) == version_id and event['origem_pagina'] == 2
     # a decisão de quem importa não altera o candidato compartilhado
     assert scalar(conn, 'select status from public.avaliacoes where id=:c', {'c': candidates[0]}) == 'pendente'
+    for name in ('bruno', 'carla'):
+        reviewed_type = scalar(conn, """select i.tipo_revisado from public.itens_importacao i
+            join public.operacoes_importacao o on o.id=i.operacao_id
+            where o.user_id=:u and i.avaliacao_id=:c""", {'u': users[name], 'c': candidates[0]})
+        assert reviewed_type == f'tipo de {name}'
 
     # quem não segue a turma, e visitante, são recusados
+    items = [{'candidato_id': candidates[0]}]
     refused(conn, '42501', CONFIRM, {'a': users['professor'], 'k': 'chave-prof-0001', 'v': version_id, 'i': json.dumps(items)})
     for uid in (None, users['bruno']):
         assume(conn, uid)
         denied(conn, CONFIRM, {'a': users['bruno'], 'k': 'chave-navegador', 'v': version_id, 'i': json.dumps(items)})
+
+
+def test_http_routes_use_transactional_import_for_shared_versions(database):
+    conn, users = database
+    turma = offering(conn)
+    syllabus_id, version_id, candidates = plan(conn, users['ana'], turma)
+    for name in ('bruno', 'carla'):
+        follow(conn, users[name], turma)
+    share(conn, users['ana'], version_id)
+    conn.execute(text('update public.planos_ensino set versao_aprovada_id=:v where id=:p'),
+                 {'v': version_id, 'p': syllabus_id})
+
+    from src.middlewares.auth import CurrentUser
+    from src.modules.syllabus.router import confirm_syllabus_candidates, get_syllabus_status
+    from src.modules.syllabus.schemas import ConfirmSyllabusRequest
+
+    session = Session(bind=conn, join_transaction_mode='create_savepoint')
+    try:
+        responses = {}
+        for name in ('bruno', 'carla'):
+            request = ConfirmSyllabusRequest.model_validate({'candidates': [{
+                'candidateId': candidates[0],
+                'startsAt': '2027-04-10T10:00:00-03:00',
+                'type': f'tipo de {name}',
+            }]})
+            responses[name] = confirm_syllabus_candidates(
+                syllabus_id, request, f'http-action-{name}-001',
+                CurrentUser(id=UUID(users[name]), role='student'), session,
+            )
+
+        for name in ('bruno', 'carla'):
+            response = responses[name]
+            assert response.repeated is False
+            assert response.items[0].kind == f'tipo de {name}'
+            assert response.events[0].origin.candidate_id == UUID(candidates[0])
+            detail = get_syllabus_status(
+                UUID(syllabus_id), CurrentUser(id=UUID(users[name]), role='student'), session,
+            )
+            candidate = next(item for item in detail.candidates if item.id == UUID(candidates[0]))
+            assert candidate.status == 'confirmado'
+            assert candidate.kind == f'tipo de {name}'
+        assert responses['bruno'].events[0].id != responses['carla'].events[0].id
+        assert scalar(conn, EVENTS, {'u': users['bruno']}) == scalar(conn, EVENTS, {'u': users['carla']}) == 1
+    finally:
+        session.close()
 
 
 def test_retry_with_the_same_key_never_duplicates_or_restores(database):
@@ -187,6 +243,29 @@ def test_retry_with_the_same_key_never_duplicates_or_restores(database):
     again = confirm(conn, users['ana'], 'chave-acao-0003', version_id, items)
     assert again['itens'][0]['resultado'] == 'criado' and scalar(conn, EVENTS, {'u': users['ana']}) == 1
     assert scalar(conn, 'select count(*) from public.operacoes_importacao where user_id=:u', {'u': users['ana']}) == 3
+
+
+def test_new_key_can_revise_an_existing_event(database):
+    conn, users = database
+    _, version_id, candidates = plan(conn, users['ana'])
+    first = confirm(conn, users['ana'], 'revision-first-001', version_id, [
+        {'candidato_id': candidates[0]},
+    ])
+    revised = confirm(conn, users['ana'], 'revision-new-001', version_id, [
+        {'candidato_id': candidates[0], 'titulo': 'Prova 1 revisada',
+         'inicio': '2027-04-12T12:00:00-03:00', 'tipo': 'avaliação escrita'},
+    ])
+
+    event = row(conn, """select id, titulo, data_hora, origem_avaliacao_id, origem_pagina, origem_trecho
+        from public.eventos_pessoais where user_id=:u and origem_avaliacao_id=:c""",
+        {'u': users['ana'], 'c': candidates[0]})
+    assert revised['itens'][0]['resultado'] == 'ja_importado'
+    assert revised['itens'][0]['evento_id'] == first['itens'][0]['evento_id'] == str(event['id'])
+    assert event['titulo'] == 'Prova 1 revisada'
+    assert str(event['data_hora']).startswith('2027-04-12 15:00:00')
+    assert str(event['origem_avaliacao_id']) == candidates[0]
+    assert event['origem_pagina'] == 2 and event['origem_trecho'] == 'trecho do plano'
+    assert scalar(conn, "select tipo from public.avaliacoes where id=:c", {'c': candidates[0]}) == 'avaliação escrita'
 
 
 def test_invalid_selection_writes_nothing(database):
