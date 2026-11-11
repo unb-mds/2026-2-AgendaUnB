@@ -71,7 +71,7 @@ Eventos publicados por professor/admin e sugestões da comunidade sujeitas à mo
 Agenda estritamente privada, gerenciada e visualizada unicamente por cada estudante.
 *   **Colunas:**
     *   `id` (UUID, Primary Key): Identificador único.
-    *   `user_id` (UUID, Not Null): Chave estrangeira para `auth.users(id)` (`DEFAULT auth.uid()`, `ON DELETE CASCADE` desde `20261110160000`; antes, uma conta com compromissos não podia ser excluída).
+    *   `user_id` (UUID, Not Null): Chave estrangeira para `auth.users(id)` (`DEFAULT auth.uid()`, `ON DELETE CASCADE` desde `20261111160000`; antes, uma conta com compromissos não podia ser excluída).
     *   `titulo` (TEXT, Not Null): Título do compromisso. Validação: Mínimo de 3 caracteres.
     *   `descricao` (TEXT): Notas extras.
     *   `data_hora` (TIMESTAMPTZ, Not Null): Início do compromisso.
