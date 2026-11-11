@@ -33,6 +33,16 @@ O campo **verificado** é o mais importante. Sem ele, a entrada declara o uso ma
 
 ## Entradas
 
+### 11/11/2026 — Revisão final e documentação da jornada (#73)
+
+- **Quem:** Gabriel Escramin (solicitante).
+- **Ferramenta:** Codex (OpenAI), Impeccable polish/harden e Playwright.
+- **O que foi pedido:** Revisar o acabamento e consolidar evidências locais e pendências de homologação.
+- **O que entrou no repositório:** Explicação dos campos obrigatórios e do bloqueio da confirmação, teste da orientação e guia atualizado da jornada particular.
+- **O que foi corrigido:** O guia ainda descrevia revisão indisponível, variantes removidas e retenção de PDF no Storage como comportamento atual. Essas descrições foram substituídas pelo contrato vigente.
+- **Verificação:** Inspeção visual do editor e estados de erro/sucesso em celular e desktop, conferência de links locais e cálculo de contraste dos pares de tokens de texto revisados. A execução final das suítes e seus limites está consolidada no guia de planos.
+- **Limites:** Sem homologação, medição RNF06, auditoria WCAG completa ou aprovação humana. O build MkDocs não pôde ser executado porque o módulo não está instalado no ambiente.
+
 ### 11/11/2026 — Recuperação da jornada particular (#73)
 
 - **Quem:** Gabriel Escramin 

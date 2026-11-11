@@ -92,6 +92,7 @@ test('jornada recebida da main confirma pela revisão integrada e atualiza o cal
   const { first, confirm } = await openCheckedReview(page, `/plano-de-ensino?oferta=${plan.offeringId}&plano=${plan.id}&etapa=3`);
   const acknowledgement = page.getByRole('checkbox', { name: 'Conferi as avaliações e a turma de destino.' });
   await expect(confirm).toBeDisabled();
+  await expect(page.getByText('Confirme a conferência das avaliações e da turma acima para importar.')).toBeVisible();
   await acknowledgement.check();
   await expect(confirm).toBeEnabled();
   await first.getByLabel('Título').fill('Trabalho corrigido novamente');

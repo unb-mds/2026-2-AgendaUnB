@@ -38,6 +38,7 @@ export default function SyllabusReviewEditor({ value, onChange, onConfirm, confi
         <button type="button" className="manage-button" disabled={disabled || !selected.length} onClick={() => selectAll(false)}>Limpar seleção</button>
       </div>
       <p className="management-muted">A seleção em lote preserva itens retirados da seleção. Limite de 100 avaliações por confirmação.</p>
+      <p className="management-muted">Os campos com * são obrigatórios para as avaliações selecionadas.</p>
       {value.map((item, index) => {
         const base = `${prefix}-${index}`;
         const errors = checked ? validateReviewItem(item, true) : {};
@@ -87,6 +88,7 @@ export default function SyllabusReviewEditor({ value, onChange, onConfirm, confi
       </p>}
       {onConfirm && <div className="syllabus-review-actions">
         <button type="button" className="manage-button primary" onClick={confirm} disabled={disabled || !confirmationAllowed || !checked || invalid || !selected.length}>Confirmar e importar</button>
+        {!confirmationAllowed && <p className="management-muted">Confirme a conferência das avaliações e da turma acima para importar.</p>}
         {busy && <p role="status">Aguarde a resposta do servidor…</p>}
       </div>}
     </>}
