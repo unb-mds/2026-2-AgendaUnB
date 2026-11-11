@@ -8,8 +8,8 @@ Documento criado em **24/10/2026**, com referência no commit `e0ecf46`. **Este 
 
 | Componente | Proposta | Configuração prevista |
 | --- | --- | --- |
-| Frontend | Vercel, projeto por ambiente | Raiz `frontend`, instalação `npm ci --include=dev`, build `npm run build`, saída `dist`; fallback SPA |
-| Backend | Render Web Service com runtime Python | Raiz `backend`, Python 3.11, build `pip install -r requirements.txt`, início `uvicorn src.main:app --host 0.0.0.0 --port $PORT` |
+| Frontend | Vercel (multi-service ou projeto por ambiente) | Raiz `frontend`, framework `vite`, build `npm run build`, saída `dist`; fallback SPA via `rewrites` |
+| Backend | Vercel Services (FastAPI Serverless) ou Render Web Service | Raiz `backend`, framework `fastapi` (`src/main.py`), rotas em `/api/(.*)` e `/health`; ou Render Python 3.11 com `uvicorn src.main:app` |
 | Dados, Auth e Storage | Supabase gerenciado | Um projeto de homologação e outro de produção, com migrações SQL versionadas |
 | Documentação | GitHub Pages | Manter o workflow MkDocs existente, independente da aplicação |
 
@@ -68,17 +68,44 @@ O Vite lê o ambiente na raiz do repositório (`envDir: '..'`) e incorpora `VITE
 
 Configurar a conexão PostgreSQL usando a opção oferecida pelo projeto Supabase que seja alcançável pelo Render, preferindo pooler em modo de sessão quando necessário por conectividade. Confirmar TLS, driver psycopg e limites de conexões antes da homologação. Não afirmar que RLS protege conexões administrativas: o backend também deve aplicar suas verificações de usuário/papel.
 
-### SPA, CORS e autenticação
+### SPA, CORS e arquitetura multi-serviços (Vercel)
 
-Na futura configuração Vercel, adicionar o fallback recomendado para SPA no `vercel.json` da raiz selecionada do projeto (neste plano, `frontend`):
+A raiz do repositório contém a configuração [`vercel.json`](../vercel.json) operando em modo de múltiplos serviços (Vercel Services):
 
 ```json
 {
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "backend": {
+      "root": "backend",
+      "framework": "fastapi"
+    },
+    "frontend": {
+      "root": "frontend",
+      "framework": "vite",
+      "rewrites": [
+        { "source": "/(.*)", "destination": "/index.html" }
+      ]
+    }
+  },
+  "rewrites": [
+    { "source": "/health", "destination": { "service": "backend" } },
+    { "source": "/api/(.*)", "destination": { "service": "backend" } },
+    { "source": "/(.*)", "destination": { "service": "frontend" } }
+  ]
 }
 ```
 
-Esse trecho é uma configuração proposta, ainda não adicionada à aplicação. Verificar acesso direto e recarga de `/eventos`, `/evento/<id>`, `/sugestoes`, `/admin` e `/plano-de-ensino`, além da entrega correta de assets.
+O fallback SPA está configurado tanto nas regras do serviço `frontend` quanto em [`frontend/vercel.json`](../frontend/vercel.json) para garantir acesso direto e recarga em `/eventos`, `/evento/<id>`, `/sugestoes`, `/admin` e `/plano-de-ensino`.
+
+A SPA consome a API através de URLs relativas (`/api/v1/...`), aproveitando o roteamento unificado da Vercel no mesmo domínio sem requisições cross-origin (CORS). Se necessário apontar para um backend externo, a variável `VITE_API_URL` pode ser preenchida no ambiente.
+
+> [!WARNING]
+> **Atenção ao limite de upload (4,5 MB nas Vercel Functions):**
+> O fluxo atual de upload de planos de ensino em `/api/v1/syllabus/upload` suporta arquivos de até 10 MB no FastAPI. Contudo, o limite de payload de requisições nas Vercel Serverless Functions é de 4,5 MB. Arquivos maiores que esse limite serão rejeitados com HTTP 413 pela camada de borda da Vercel antes de alcançar o FastAPI.
+> Caso uploads entre 4,5 MB e 10 MB devam ser suportados sem falhas:
+> 1. Adotar upload direto do frontend para o Supabase Storage via client SDK com RLS ou pre-signed URLs (enviando ao FastAPI apenas metadados/referência); ou
+> 2. Manter a execução do backend como Web Service dedicado (ex: Render/container) para as rotas com transferências volumosas.
 
 Configurar no Supabase a Site URL da SPA e as URLs de retorno necessárias para login OAuth/confirmação de e-mail de cada ambiente. No Google, registrar o callback fornecido pelo projeto Supabase correspondente. Manter as origens de homologação e produção separadas; não abrir CORS de produção para previews arbitrários.
 
@@ -125,12 +152,10 @@ Aceitar a implantação apenas com evidências registradas de migrações, build
 
 | Pendência futura | Papel responsável |
 | --- | --- |
-| Aprovar provedores, limites, orçamento, domínios e responsáveis nominais | Time e responsável pela release |
-| Provisionar projetos Vercel e fallback SPA; configurar variáveis de build | Frontend |
-| Provisionar Render, conexão segura e configuração de runtime | Backend |
+| Aprovar arquitetura final (Vercel multi-service vs Render para backend) considerando o limite de 4,5 MB de upload | Time e responsável pela release |
+| Validar comportamento de upload de planos de ensino em ambiente hospedado Vercel | Backend e Frontend |
 | Provisionar projetos Supabase, Auth, migrações, dados de homologação e recuperação | Banco de dados, com Backend |
 | Criar workflows, secrets por ambiente, gates e publicação pelo SHA | Time, com Backend |
-| Adicionar `VITE_API_URL` ao exemplo de ambiente e fixar dependências/ferramentas | Frontend e Backend |
 | Atualizar este documento com evidências e URLs efetivas | Responsável pela release |
 
 Nenhum desses papéis representa atribuição nominal já aprovada. Mudanças de hospedagem, variáveis, migrações ou pipeline devem atualizar este documento no mesmo PR. Ver [Arquitetura](arquitetura/visao-geral.md), [Contratos](api-specs.md) e [Contribuição](processo/contribuindo.md).

@@ -4,7 +4,7 @@ import '../styles/syllabus-review.css';
 
 // Controlled local draft: the owner preserves edits and resets on plan/account changes.
 // No persistence, network request or agenda confirmation is performed here.
-export default function SyllabusReviewEditor({ value, onChange, onConfirm, busy = false, disabled = false, renderCandidate, emptyMessage = 'Nenhuma avaliação disponível para revisão.' }) {
+export default function SyllabusReviewEditor({ value, onChange, onConfirm, confirmationAllowed = true, busy = false, disabled = false, renderCandidate, emptyMessage = 'Nenhuma avaliação disponível para revisão.' }) {
   const prefix = useId();
   const root = useRef(null);
   const [checked, setChecked] = useState(false);
@@ -24,7 +24,7 @@ export default function SyllabusReviewEditor({ value, onChange, onConfirm, busy 
     requestAnimationFrame(() => root.current?.querySelector('[aria-invalid="true"]')?.focus());
   }
   function confirm() {
-    if (disabled || !checked || invalid || !selected.length) return;
+    if (disabled || !confirmationAllowed || !checked || invalid || !selected.length) return;
     setChecked(false);
     onConfirm();
   }
@@ -86,7 +86,7 @@ export default function SyllabusReviewEditor({ value, onChange, onConfirm, busy 
         {selected.length > 100 ? 'Selecione no máximo 100 avaliações por vez.' : invalid ? 'Corrija os campos indicados para continuar.' : 'Campos conferidos. Nenhum evento foi salvo na agenda.'}
       </p>}
       {onConfirm && <div className="syllabus-review-actions">
-        <button type="button" className="manage-button primary" onClick={confirm} disabled={disabled || !checked || invalid || !selected.length}>Confirmar e importar</button>
+        <button type="button" className="manage-button primary" onClick={confirm} disabled={disabled || !confirmationAllowed || !checked || invalid || !selected.length}>Confirmar e importar</button>
         {busy && <p role="status">Aguarde a resposta do servidor…</p>}
       </div>}
     </>}
