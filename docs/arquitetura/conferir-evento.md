@@ -5,7 +5,7 @@ description: "Como a API registra os redirecionamentos de Conferir evento (S8-B0
 
 # Dados de Conferir evento: redirecionamento por clique
 
-Guia de integração da migração `20261110151000_eventos_conferir_evento.sql`, parte de dados da [S8-B02 (#79)](https://github.com/unb-mds/2026-2-AgendaUnB/issues/79). Falta na aplicação: o endpoint `outbound-clicks`, o histórico e o botão no front-end.
+Guia de integração da migração `20261111151000_eventos_conferir_evento.sql`, parte de dados da [S8-B02 (#79)](https://github.com/unb-mds/2026-2-AgendaUnB/issues/79). Falta na aplicação: o endpoint `outbound-clicks`, o histórico e o botão no front-end.
 
 **Regra geral:** o que precisa valer em qualquer caminho de escrita está em chaves únicas, triggers e funções. A aplicação chama as funções; não reimplementa as regras. Nada daqui é gravável pelo navegador.
 
