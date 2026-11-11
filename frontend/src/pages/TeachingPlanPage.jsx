@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useSyllabusResource } from '../hooks/useSyllabusResource';
 import { syllabusApi } from '../lib/syllabusApi';
 import SyllabusReviewPanel from '../components/SyllabusReviewPanel';
+import SyllabusTextReview, { SyllabusTextInput } from '../components/SyllabusTextReview';
 import TeachingPlanJourney from '../components/TeachingPlanJourney';
 import { formatFileSize, formatPlanDate, isProcessing, PLAN_STATES, syllabusError, SYLLABUS_PAGE_SIZE, validatePdf } from '../lib/syllabus';
 import '../styles/teaching-plan.css';
@@ -22,7 +23,7 @@ function PlanHelp() {
     <h2 id="plan-help-title">Do PDF ao seu planejamento</h2>
     <ol className="plan-steps">
       <li><span aria-hidden="true">1</span><div><h3>Envie o plano</h3><p>Informe a disciplina e o período do documento.</p></div></li>
-      <li><span aria-hidden="true">2</span><div><h3>Acompanhe a análise</h3><p>Consulte o andamento aqui ou retome pelo histórico.</p></div></li>
+      <li><span aria-hidden="true">2</span><div><h3>Revise e autorize o texto</h3><p>Remova informações pessoais antes de decidir pelo envio ao Gemini.</p></div></li>
       <li><Icon>event_available</Icon><div><h3>Você decide o que entra na agenda</h3><p>O envio não cria compromissos. As avaliações precisam de revisão e confirmação.</p></div></li>
     </ol>
     <details className="plan-file-help"><summary>Como saber se meu PDF tem texto?</summary><p>Abra o arquivo e tente selecionar e copiar uma frase. Se não conseguir, peça uma versão com texto selecionável. Fotos e digitalizações sem texto não podem ser analisadas.</p></details>
@@ -98,8 +99,8 @@ function PlanUpload({ onUploaded }) {
         {file && <button type="button" className="management-text-button" onClick={() => { setFile(null); inputRef.current?.focus(); }}>Remover arquivo</button>}
       </fieldset>
       {error && <div ref={errorRef} tabIndex={-1}><Feedback error={error} /><Link className="management-text-button" to={manualPath}>Cadastrar prazos manualmente</Link></div>}
-      <div className="plan-submit"><span><Icon>lock</Icon>Plano particular da sua conta</span><button className="manage-button primary" disabled={busy} type="submit"><Icon>{busy ? 'hourglass_top' : 'upload'}</Icon>{busy ? 'Enviando PDF…' : 'Enviar para análise'}</button></div>
-      <p className="plan-submit-note" role="status">{busy ? 'Aguarde a confirmação do envio antes de sair da página.' : 'O arquivo será validado no envio. Nenhum evento é criado automaticamente.'}</p>
+      <div className="plan-submit"><span><Icon>lock</Icon>Plano particular da sua conta</span><button className="manage-button primary" disabled={busy} type="submit"><Icon>{busy ? 'hourglass_top' : 'upload'}</Icon>{busy ? 'Enviando PDF…' : 'Preparar PDF para revisão'}</button></div>
+      <p className="plan-submit-note" role="status">{busy ? 'Aguarde a confirmação do envio antes de sair da página.' : 'O texto será extraído localmente e o PDF descartado. O envio ao Gemini exige sua autorização posterior.'}</p>
     </form>
   </section>;
 }
@@ -121,8 +122,8 @@ function PlanTracking({ id, onClose }) {
       <p className="plan-tracking-file">{plan.fileName} · {formatPlanDate(plan.createdAt)}</p>
       <div className="plan-result" role="status" aria-live="polite" aria-atomic="true">
         <PlanBadge status={plan.status} />
-        <h3>{empty ? 'Nenhuma avaliação encontrada' : state?.title || 'Estado de processamento indisponível'}</h3>
-        <p>{empty ? 'A análise terminou, mas não identificou avaliações neste PDF. Isso não é uma falha de processamento. Você pode cadastrar seus prazos manualmente.' : state?.description || 'Tente consultar novamente para verificar o andamento.'}</p>
+        <h3>{plan.authorizationRequired ? 'Aguardando sua revisão do texto' : empty ? 'Nenhuma avaliação encontrada' : state?.title || 'Estado de processamento indisponível'}</h3>
+        <p>{plan.authorizationRequired ? 'Nenhum texto foi enviado ao Gemini. Revise o trecho abaixo e decida se deseja autorizar.' : empty ? 'A análise terminou, mas não identificou avaliações neste PDF. Isso não é uma falha de processamento. Você pode cadastrar seus prazos manualmente.' : state?.description || 'Tente consultar novamente para verificar o andamento.'}</p>
         {plan.status === 'concluido' && plan.extractedEventsCount > 0 && <p><strong>{plan.extractedEventsCount} {plan.extractedEventsCount === 1 ? 'avaliação encontrada' : 'avaliações encontradas'}.</strong> Consulte a disponibilidade na área de revisão abaixo.</p>}
         {plan.status === 'falha' && plan.errorMessage && <p className="plan-error-detail">{plan.errorMessage}</p>}
       </div>
@@ -130,7 +131,8 @@ function PlanTracking({ id, onClose }) {
       {!state && <button className="manage-button" onClick={retry} disabled={loading}>Consultar novamente</button>}
       {(empty || plan.status === 'falha') && <div className="plan-recovery"><a className="manage-button" href="#plan-subject">Enviar outro PDF</a><Link className="management-text-button" to={manualPath}>Cadastrar prazos manualmente</Link></div>}
     </>}
-    <SyllabusReviewPanel selected plan={plan} loading={loading} error={error} />
+    {plan?.preparedTextAvailable && <SyllabusTextReview plan={plan} onAuthorized={retry} />}
+    {!plan?.authorizationRequired && <SyllabusReviewPanel selected plan={plan} loading={loading} error={error} />}
   </section>;
 }
 
@@ -156,7 +158,7 @@ function PlanWorkspace({ userId }) {
     history.retry();
   };
   return <>
-    <div className="plan-layout"><PlanUpload onUploaded={onUploaded} /><div className="plan-sidebar">{selectedId ? <PlanTracking key={selectedId} id={selectedId} onClose={() => { setSelection(null); document.getElementById('plan-subject')?.focus(); }} /> : <PlanHelp />}</div></div>
+    <div className="plan-layout"><div><PlanUpload onUploaded={onUploaded} /><SyllabusTextInput onPrepared={onUploaded} /></div><div className="plan-sidebar">{selectedId ? <PlanTracking key={selectedId} id={selectedId} onClose={() => { setSelection(null); document.getElementById('plan-subject')?.focus(); }} /> : <PlanHelp />}</div></div>
     {!selectedId && <SyllabusReviewPanel />}
     <section className="plan-history" aria-labelledby="plan-history-title" aria-busy={history.loading}>
       <header className="plan-section-heading"><div><h2 id="plan-history-title">Seus planos enviados</h2><p>Retome um acompanhamento a qualquer momento.</p></div><button className="manage-button" onClick={history.retry} disabled={history.loading}><Icon>refresh</Icon>Atualizar</button></header>

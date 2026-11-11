@@ -197,3 +197,17 @@ def test_personal_event_origin_candidate_is_unique(api):
         with pytest.raises(IntegrityError):
             session.commit()
 
+
+
+def test_retry_does_not_recreate_deleted_confirmed_event(api):
+    client, sessions, auth, _ = api
+    sid, cid, _ = _create_syllabus(sessions, auth["value"].id)
+    payload = {"candidates": [{"candidateId": str(cid), "startsAt": "2026-11-10T09:00:00Z"}]}
+    result = client.post(f"/api/v1/syllabus/{sid}/confirm", json=payload)
+    assert result.status_code == 200 and len(result.json()["events"]) == 1
+    with sessions() as db:
+        event = db.scalar(select(PersonalEvent).where(PersonalEvent.origin_candidate_id == cid))
+        db.delete(event)
+        db.commit()
+    retry = client.post(f"/api/v1/syllabus/{sid}/confirm", json=payload)
+    assert retry.status_code == 200 and retry.json()["events"] == []

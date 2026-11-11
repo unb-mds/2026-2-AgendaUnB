@@ -2,7 +2,9 @@
 
 ## Referência e limites
 
-A API possui **19 operações HTTP de aplicação**, incluindo `/health`. `/docs`, `/redoc` e `/openapi.json` são recursos de documentação gerados pelo FastAPI, não operações de negócio. Consulte também [Arquitetura](Architecture.md), [Padrões](padroes.md) e [Implantação](implantacao.md).
+Este inventário descreve o backend atual. Para os contratos planejados, consulte [Release 2](atualizacoes.md#contratos-da-release-2).
+
+A API possui operações HTTP de aplicação (inventário abaixo), incluindo `/health`. `/docs`, `/redoc` e `/openapi.json` são recursos de documentação gerados pelo FastAPI, não operações de negócio. Consulte também [Arquitetura](arquitetura/visao-geral.md), [Padrões](produto/padroes.md) e [Implantação](implantacao.md).
 
 Fontes: `backend/src/main.py`, `modules/events/router.py`, `modules/events/schemas.py`, `middlewares/auth.py` e `database/models.py` (os quatro últimos relativos a `backend/src/`). O OpenAPI ajuda a conferir campos e rotas, mas não descreve integralmente os handlers de erro personalizados.
 
@@ -176,7 +178,7 @@ Exemplo de validação de título curto:
 }
 ```
 
-O conteúdo auxiliar de `errors` depende da versão do Pydantic, que não está fixada nas dependências. Erros inesperados não têm envelope de aplicação garantido. **Dívida conhecida:** o handler passa `exc.errors()` diretamente a `JSONResponse`; erros de validadores com objetos não serializáveis em `ctx` podem resultar em 500, apesar da intenção de retornar 422. A especificação não promete 422 para esse caso sem correção e teste específicos. Não há contrato implementado de processamento assíncrono com 202.
+O conteúdo auxiliar de `errors` depende da versão do Pydantic, que não está fixada nas dependências. Erros inesperados não têm envelope de aplicação garantido. **Dívida conhecida:** o handler passa `exc.errors()` diretamente a `JSONResponse`; erros de validadores com objetos não serializáveis em `ctx` podem resultar em 500, apesar da intenção de retornar 422. A especificação não promete 422 para esse caso sem correção e teste específicos. O upload já responde 202 para o registro do plano. A execução do worker externo e sua integração são parte da Release 2.
 
 ## Exemplos cURL
 
@@ -243,6 +245,85 @@ Cada item tem `id`, `usuario_id`, `evento_id`, `tipo` (`submissao/aprovacao/recu
 
 ## Verificação e manutenção
 
-Conferir inventário com `app.openapi()` e revisar manualmente handlers, permissões e SQL. Os testes de eventos, sugestões e salvos usam SQLite e substituem dependências de autenticação: não comprovam integração real com Auth nem RLS. Os testes de moderação de banco exigem Supabase local descartável. Ver [Contribuição](processo/contribuindo.md) e o registro de validação em [Arquitetura](Architecture.md#9-verificacao).
+Conferir inventário com `app.openapi()` e revisar manualmente handlers, permissões e SQL. Os testes de eventos, sugestões e salvos usam SQLite e substituem dependências de autenticação: não comprovam integração real com Auth nem RLS. Os testes de moderação de banco exigem Supabase local descartável. Ver [Contribuição](processo/contribuindo.md) e o registro de validação em [Arquitetura](arquitetura/visao-geral.md#9-verificacao).
 
-Qualquer alteração de rota, schema, autorização, erro ou RPC deve atualizar este documento no mesmo PR. Upload/parser, inscrições, categorias REST e atualização pública não são contratos disponíveis.
+Qualquer alteração de rota, schema, autorização, erro ou RPC deve atualizar este documento no mesmo PR. Inscrições, categorias REST e atualização pública não são contratos disponíveis.
+
+## Planos particulares — atualização S6-B01 (09/11/2026)
+
+### POST `/api/v1/syllabus/upload`
+
+Autenticação obrigatória. Recebe `multipart/form-data` com `file` PDF e campos
+opcionais `disciplina` e `turma`. Valida extensão, MIME, assinatura, integridade,
+senha, tamanho (10 MB), quantidade (dez páginas) e presença de texto selecionável.
+Lê no máximo limite + 1 byte antes de rejeitar excesso. O parser roda em processo
+separado com prazo de 8s (`SYLLABUS_UPLOAD_VALIDATION_TIMEOUT_SECONDS`); a espera
+e o acesso síncrono ao Storage/banco não bloqueiam o event loop da API.
+Salva o arquivo no bucket privado e a linha do dono como `pendente`; retorna
+**202**, sem esperar por IA. Se o banco falhar, compensa o arquivo no Storage.
+
+Resposta: `id`, `userId`, `fileName`, `filePath`, `fileSize`, `fileType`, `status`,
+`createdAt` e `message`. `filePath` é referência privada, não URL pública assinada.
+401 sem sessão; 400 arquivo inválido/protegido/sem texto/excesso de páginas; 413
+excesso de bytes; 422 prazo de pré-validação excedido; 502/503 indisponibilidade
+de Storage, banco ou processo de validação. Timeout/falha da pré-validação não
+persistem arquivo ou tarefa. A pré-validação é aguardada antes do 202; o prazo
+inclui criação do processo e admite até 2,2s adicionais para encerrá-lo.
+
+### GET `/api/v1/syllabus/{syllabus_id}`
+
+Autenticado e restrito ao proprietário: UUID válido de outro dono ou inexistente
+retorna **404**. Retorna metadados do upload e `status`, `extractedEventsCount`,
+`errorMessage`, `errorCode`, `pageCount`, `attempts`, `processingStartedAt`,
+`processedAt`, `processingDurationMs`, `totalDurationMs`, `disciplina` e `turma`. Campos ainda não
+disponíveis são nulos; `attempts` começa em zero. Estados: `pendente`,
+`processando`, `concluido` e `falha`. Erros são mensagens fixas e códigos da S6-D01.
+Concluído com contagem zero significa documento sem cronograma identificado.
+`processingDurationMs` mede a última tentativa; `totalDurationMs` mede da criação
+do registro ao término, incluindo fila/retentativas, e é nulo antes de finalizar.
+
+O [worker independente](processamento-planos.md) consome a fila. Ele fica
+desativado até a configuração explícita e a validação das políticas S6-D02.
+Upload e worker não criam compromissos. As rotas de listagem, detalhe e confirmação
+S6-B02 já existentes, descritas acima, operam sobre `avaliacoes` legadas; os
+candidatos privados do worker em `candidatos_avaliacao` ainda exigem conciliação
+com esse contrato antes da integração no ambiente da equipe.
+O contrato transacional de banco S6-D02 já está disponível em
+[`revisar_candidatos_plano`](privacidade-planos.md#contrato-transacional-para-s6-b02).
+
+
+## Atualização S7-B01 — preparação e autorização do texto (10/11/2026)
+
+Este contrato substitui o fluxo de upload/extração S6 descrito acima.
+
+| Operação | Entrada | Resultado |
+| --- | --- | --- |
+| `POST /api/v1/syllabus/upload` | Multipart PDF validado, até 10 MiB/dez páginas; metadados existentes | 202, texto preparado privado, `filePath: null`, `authorizationRequired: true`, `preparedTextAvailable: true`. O PDF é descartado e não vai ao Storage. |
+| `POST /api/v1/syllabus/text` | JSON `text`, `disciplina`/`turma` opcionais; até 40.000 bytes UTF-8 | 202, preparação privada, `fileType: text`; página de origem nula. |
+| `GET /api/v1/syllabus/{id}/text` | Sessão do dono | 200 com `pages: [{pagina, texto}]`, `textHash`, `authorizationRequired`, `provider`, `providerAvailable`, `maxTextBytes`, `warning`, `preparationDurationMs`, `textRevision`. Resposta `no-store`. |
+| `POST /api/v1/syllabus/{id}/extractions` | JSON `pages`, `textHash`, `authorize: true`, `contentEligible: true`, `reprocess` opcional | 202, autorização registrada e elegibilidade para a fila persistente. Repetir o mesmo hash sem reprocessar não cria execução adicional. |
+
+O hash usa SHA-256 do JSON UTF-8 compacto, com `pagina`/`texto` nessa ordem em
+cada página; não é assinatura de autorização. O servidor valida JWT/dono, limites,
+referências, integridade e declarações, recusa identificadores comuns ainda
+presentes e não altera o texto aprovado antes de enviá-lo ao provedor.
+
+Erros: 400 PDF inválido/protegido/sem texto; 401 sem sessão; 404 para plano alheio/inexistente; 413 excesso de bytes;
+422 conteúdo, referências, declarações ou hash malformados; 409 hash divergente,
+execução em andamento, preparação antiga sem texto ou limite acumulado atingido;
+503 indisponibilidade/bloqueio operacional do provedor. O corpo continua
+`{"detail": "mensagem sanitizada"}`. Não há persistência do PDF após falha.
+
+Detalhe/listagem preservam estados anteriores. `authorizationRequired` distingue
+a revisão inicial da fila pronta; `preparedTextAvailable` identifica o protocolo
+S7. Detalhe inclui `preparationDurationMs`, `reviewDurationMs` e
+`totalDurationMs` desde a autorização, separando a espera do estudante. Planos
+históricos sem preparação mantêm a revisão legada e não recebem autorização
+retroativa. A consulta e a confirmação particular usam agora `avaliacoes`, a mesma tabela
+do worker, filtrando a versão autorizada. Cada candidato inclui `suggestedDate`,
+`suggestedTime`, `ambiguousFields` e `versionId`; `startsAt` continua nulo quando
+não existe instante/fuso confirmado. O contrato legado não exige ainda
+`Idempotency-Key`; sua evolução e a confirmação compartilhada seguem S7-B04/S7-F03.
+O produtor não escreve eventos automaticamente e retry não recria evento apagado.
+
+[Fluxo, flags e evidências](processamento-planos-s7.md).

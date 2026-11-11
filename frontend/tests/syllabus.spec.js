@@ -55,7 +55,7 @@ test('envio multipart autenticado, clique duplicado, recarga e estado final sem 
   await page.route(`**/api/v1/syllabus/${plan.id}`, route => { details++; return route.fulfill({ json: { ...plan, status: 'concluido', extractedEventsCount: 3 } }); });
   await page.goto('/plano-de-ensino?modo=envios');
   await fillUpload(page);
-  await page.getByRole('button', { name: 'Enviar para análise' }).evaluate(button => { button.click(); button.click(); });
+  await page.getByRole('button', { name: 'Preparar PDF para revisão' }).evaluate(button => { button.click(); button.click(); });
   await expect(page.getByRole('heading', { name: 'Análise concluída' })).toBeVisible();
   expect(uploads).toBe(1);
   expect(uploadedBody).toContain('name="disciplina"');
@@ -95,7 +95,7 @@ test('validação de arquivo, erro de envio preserva campos e recuperação do h
   await page.getByLabel('Selecionar PDF', { exact: true }).setInputFiles({ name: 'imagem.png', mimeType: 'image/png', buffer: Buffer.from('image') });
   await expect(page.getByText('Escolha um arquivo no formato PDF (.pdf).')).toBeVisible();
   await fillUpload(page);
-  await page.getByRole('button', { name: 'Enviar para análise' }).click();
+  await page.getByRole('button', { name: 'Preparar PDF para revisão' }).click();
   await expect(page.getByText('O PDF deve possuir no máximo 10 páginas.')).toBeVisible();
   await expect(page.getByLabel('Disciplina', { exact: true })).toHaveValue(plan.disciplina);
   await expect(page.getByText('plano-mds.pdf', { exact: true })).toBeVisible();

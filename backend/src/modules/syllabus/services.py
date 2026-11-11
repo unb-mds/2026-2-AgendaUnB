@@ -1,17 +1,16 @@
-import io
 import logging
+import math
 import os
-import re
 from datetime import datetime, timedelta, timezone
 from uuid import UUID, uuid4
 
-import pypdf
 from fastapi import HTTPException, UploadFile
 from sqlalchemy import func, select, text as sql_text
 from sqlalchemy.orm import Session
+from starlette.concurrency import run_in_threadpool
 
 from src.database.models import Syllabus
-from src.services.storage import SupabaseStorageService
+from src.modules.syllabus.upload_validation import PdfValidationError, validate_pdf_structure
 
 logger = logging.getLogger("agenda_unb.syllabus")
 
@@ -20,15 +19,23 @@ MAX_FILE_SIZE_BYTES = int(
     os.getenv("MAX_UPLOAD_SIZE_BYTES", str(10 * 1024 * 1024))
 )
 MAX_PDF_PAGES = int(os.getenv("MAX_PDF_PAGES", "10"))
+UPLOAD_VALIDATION_TIMEOUT_SECONDS = float(os.getenv("SYLLABUS_UPLOAD_VALIDATION_TIMEOUT_SECONDS", "8"))
+if not math.isfinite(UPLOAD_VALIDATION_TIMEOUT_SECONDS) or not 0 < UPLOAD_VALIDATION_TIMEOUT_SECONDS <= 30:
+    raise ValueError("SYLLABUS_UPLOAD_VALIDATION_TIMEOUT_SECONDS deve estar entre 0 e 30 segundos")
+
+PDF_VALIDATION_MESSAGES = {
+    "malformed": "Arquivo PDF corrompido ou malformado. Verifique o arquivo ou realize o cadastro manual.",
+    "encrypted": "O arquivo PDF está protegido por senha. Envie uma versão sem proteção ou realize o cadastro manual.",
+    "empty": "O arquivo PDF não possui páginas válidas.",
+    "pages": f"O arquivo PDF está ultrapassando o limite máximo de {MAX_PDF_PAGES} páginas. Reduza o documento ou adicione os eventos manualmente.",
+    "no_text": "O arquivo PDF não possui texto selecionável legível (documento escaneado ou imagem). Envie um documento com texto selecionável ou cadastre os eventos manualmente.",
+    "timeout": "O tempo limite de validação do PDF foi excedido. Reduza o documento ou realize o cadastro manual.",
+    "unavailable": "A validação do PDF está indisponível no momento. Tente novamente mais tarde.",
+}
 
 
-def sanitize_filename(filename: str) -> str:
-    """Higieniza o nome original do arquivo para uso seguro no caminho de armazenamento."""
-    clean = re.sub(r"[^a-zA-Z0-9_.-]", "_", filename)
-    return clean or "syllabus.pdf"
 
-
-def validate_pdf_file(file: UploadFile) -> bytes:
+async def validate_pdf_file(file: UploadFile) -> bytes:
     """
     Executa validação rigorosa de extensão, MIME Type, tamanho de payload,
     assinatura binária e integridade estrutural do arquivo PDF.
@@ -49,9 +56,9 @@ def validate_pdf_file(file: UploadFile) -> bytes:
             detail="MIME Type inválido. O arquivo enviado deve ser do tipo application/pdf.",
         )
 
-    # 3. Leitura do conteúdo em memória e validação de tamanho de payload
+    # 3. Leitura limitada antes da validação de tamanho de payload
     try:
-        content = file.file.read(MAX_FILE_SIZE_BYTES + 1)
+        content = await file.read(MAX_FILE_SIZE_BYTES + 1)
     except Exception as exc:
         raise HTTPException(
             status_code=400,
@@ -78,53 +85,14 @@ def validate_pdf_file(file: UploadFile) -> bytes:
             detail="Assinatura de arquivo inválida. O arquivo enviado não é um PDF legítimo.",
         )
 
-    # 5. Validação estrutural via leitor de PDF (pypdf)
+    # Parser e extração em processo com prazo; a espera não bloqueia o event loop.
     try:
-        reader = pypdf.PdfReader(io.BytesIO(content))
-    except Exception as exc:
-        logger.warning("Falha ao analisar a estrutura do PDF: %s", exc)
-        raise HTTPException(
-            status_code=400,
-            detail="Arquivo PDF corrompido ou malformado. Verifique o arquivo ou realize o cadastro manual.",
-        ) from exc
-
-    # 6. Verificação de proteção por senha / criptografia
-    if reader.is_encrypted:
-        raise HTTPException(
-            status_code=400,
-            detail="O arquivo PDF está protegido por senha. Envie uma versão sem proteção ou realize o cadastro manual.",
+        await run_in_threadpool(
+            validate_pdf_structure, content, MAX_PDF_PAGES, UPLOAD_VALIDATION_TIMEOUT_SECONDS
         )
-
-    # 7. Verificação de quantidade de páginas
-    num_pages = len(reader.pages)
-    if num_pages == 0:
-        raise HTTPException(
-            status_code=400,
-            detail="O arquivo PDF não possui páginas válidas.",
-        )
-
-    if num_pages > MAX_PDF_PAGES:
-        raise HTTPException(
-            status_code=400,
-            detail=f"O arquivo PDF possui {num_pages} páginas, ultrapassando o limite máximo de {MAX_PDF_PAGES} páginas. Reduza o documento ou adicione os eventos manualmente.",
-        )
-
-    # 8. Verificação de texto selecionável
-    has_text = False
-    try:
-        for page in reader.pages:
-            text = page.extract_text()
-            if text and text.strip():
-                has_text = True
-                break
-    except Exception as exc:
-        logger.warning("Erro ao tentar extrair texto das páginas do PDF: %s", exc)
-
-    if not has_text:
-        raise HTTPException(
-            status_code=400,
-            detail="O arquivo PDF não possui texto selecionável legível (documento escaneado ou imagem). Envie um documento com texto selecionável ou cadastre os eventos manualmente.",
-        )
+    except PdfValidationError as exc:
+        status_code = 422 if exc.code == "timeout" else 503 if exc.code == "unavailable" else 400
+        raise HTTPException(status_code=status_code, detail=PDF_VALIDATION_MESSAGES[exc.code]) from None
 
     return content
 
@@ -132,21 +100,22 @@ def validate_pdf_file(file: UploadFile) -> bytes:
 def process_syllabus_upload(
     user_id: UUID,
     filename: str,
-    content: bytes,
+    file_size: int,
     db: Session,
-    storage: SupabaseStorageService,
+    pages: list[dict],
+    preparation_duration_ms: int = 0,
+    file_type: str = "pdf",
     disciplina: str | None = None,
     turma: str | None = None,
     ano: int | None = None,
     semestre: int | None = None,
 ) -> Syllabus:
     """
-    Coordena o upload físico para o Storage do Supabase e o registro
-    transacional de rastreamento com status inicial 'pendente'.
-    Compensa a gravação no Storage caso a persistência no banco falhe.
+    Registra somente texto minimizado privado, aguardando autorização.
+    O PDF original nunca é enviado ao Storage ou ao provedor.
     """
     # Serialize uploads for this user across API workers before counting the
-    # rolling window. The lock lasts until the plan and its file are committed.
+    # rolling window. The lock lasts until the prepared text is committed.
     if db.bind.dialect.name == "postgresql":
         db.execute(sql_text("SELECT pg_advisory_xact_lock(hashtextextended(:user_id, 0))"),
                    {"user_id": str(user_id)})
@@ -160,26 +129,16 @@ def process_syllabus_upload(
         raise HTTPException(status_code=429, detail="Limite de 10 planos enviados em 5 dias. Tente novamente mais tarde.")
 
     syllabus_id = uuid4()
-    safe_name = sanitize_filename(filename)
-
-    # Convenção de caminho no bucket privado: syllabus_files/<user_id>/<syllabus_id>_<nome>.pdf
-    storage_relative_path = f"{user_id}/{syllabus_id}_{safe_name}"
-
-    # Upload físico para o Supabase Storage
-    full_storage_path = storage.upload_file(
-        path=storage_relative_path,
-        content=content,
-        content_type="application/pdf",
-    )
-
     syllabus_record = Syllabus(
         id=syllabus_id,
         user_id=user_id,
         file_name=filename,
-        file_path=full_storage_path,
-        arquivo_url=full_storage_path,
-        file_size=len(content),
-        file_type="pdf",
+        file_path=None,
+        arquivo_url=None,
+        file_size=file_size,
+        file_type=file_type,
+        prepared_pages=pages,
+        preparation_duration_ms=preparation_duration_ms,
         status="pendente",
         extracted_events_count=0,
         error_message=None,
@@ -195,13 +154,11 @@ def process_syllabus_upload(
         db.refresh(syllabus_record)
     except Exception as exc:
         db.rollback()
-        logger.error("Falha ao registrar envio no banco de dados. Compensando arquivo no Storage: %s", exc)
-        # Compensação: remove o arquivo físico já enviado
-        storage.delete_file(storage_relative_path)
+        logger.error("Falha ao registrar preparação privada do plano")
         raise HTTPException(
             status_code=503,
             detail="Falha ao registrar o envio do plano de ensino no banco de dados. Operação cancelada.",
-        ) from exc
+        ) from None
 
     return syllabus_record
 

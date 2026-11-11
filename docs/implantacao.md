@@ -2,6 +2,8 @@
 
 ## Estado e proposta
 
+O [ADR-002](arquitetura/adrs/adr-002-separar-hospedagem-e-ambientes.md) registra a proposta de separação da hospedagem e dos ambientes. Este plano detalha a configuração, a publicação e a recuperação.
+
 Documento criado em **24/10/2026**, com referência no commit `e0ecf46`. **Este é um plano, não um registro de infraestrutura implantada.** O repositório comprova somente o workflow `Deploy Docs`, que publica MkDocs no GitHub Pages quando há mudanças pertinentes em `main` ou acionamento manual. Não existe pipeline da aplicação; `backend/Dockerfile` está vazio. A existência de `main` não comprova produção ativa.
 
 | Componente | Proposta | Configuração prevista |
@@ -11,11 +13,32 @@ Documento criado em **24/10/2026**, com referência no commit `e0ecf46`. **Este 
 | Dados, Auth e Storage | Supabase gerenciado | Um projeto de homologação e outro de produção, com migrações SQL versionadas |
 | Documentação | GitHub Pages | Manter o workflow MkDocs existente, independente da aplicação |
 
+A versão 3.11 acima é uma proposta de implantação, não a versão observada no backend local: em 08/11/2026, `backend/venv/Scripts/python.exe --version` retornou 3.14.4. Validar a compatibilidade antes de fixar o runtime hospedado.
+
 A proposta utiliza serviços gerenciados para reduzir manutenção operacional. O runtime Python dispensa o Dockerfile vazio; não executar servidor Vite de desenvolvimento nem Uvicorn com `--reload` em hospedagem. Não houve contratação, criação de contas ou deploy nesta entrega.
 
 Fontes oficiais consultadas para a proposta: [Vite na Vercel](https://vercel.com/docs/frameworks/frontend/vite), [FastAPI no Render](https://render.com/docs/deploy-fastapi), [ambientes Supabase](https://supabase.com/docs/guides/deployment/managing-environments) e [limitações gratuitas do Render](https://render.com/docs/free). O Render gratuito suspende serviço após 15 minutos de inatividade e o retorno pode levar cerca de um minuto. Não pressupor disponibilidade contínua gratuita; confirmar limites e orçamento antes da implantação.
 
 ## Ambientes e configuração
+
+### Processo de extração de planos (S6-B01)
+
+Além da API, provisionar processo independente com comando, na pasta `backend`,
+`python -m src.modules.syllabus.worker`. Deve usar o mesmo banco e Storage privado
+da API e reiniciar após interrupções. O ciclo de requisição HTTP não executa IA.
+Configurar `GEMINI_API_KEY` como segredo do servidor, nunca no frontend; demais
+limites, preços e comandos estão em [Processamento de planos](processamento-planos.md).
+
+Aplicar #40, S6-D01, `20261109110000_fila_processamento_planos.sql` e
+`20261109113000_privacidade_e_revisao_planos.sql` (S6-D02).
+Manter `SYLLABUS_WORKER_ENABLED=false` e `SYLLABUS_PRIVACY_READY=false` até
+implantar/verificar as políticas de S6-D02 no PostgreSQL com os papéis reais.
+Somente então habilitar os dois parâmetros no ambiente correspondente. A avaliação
+sintética com Gemini não homologa privacidade, Storage remoto ou fila em produção.
+Esta entrega não provisiona serviço nem aplica migrações remotas.
+O worker também verifica pré-requisitos nos catálogos do banco e recusa configuração
+incompleta, mesmo com as flags ativas. Consultar o [guia S6-D02](privacidade-planos.md)
+para conferir o banco local antes de ativar o processo.
 
 | Ambiente | Aplicação e dados | Uso e publicação |
 | --- | --- | --- |
@@ -135,4 +158,26 @@ Aceitar a implantação apenas com evidências registradas de migrações, build
 | Criar workflows, secrets por ambiente, gates e publicação pelo SHA | Time, com Backend |
 | Atualizar este documento com evidências e URLs efetivas | Responsável pela release |
 
-Nenhum desses papéis representa atribuição nominal já aprovada. Mudanças de hospedagem, variáveis, migrações ou pipeline devem atualizar este documento no mesmo PR. Ver [Arquitetura](Architecture.md), [Contratos](api-specs.md) e [Contribuição](processo/contribuindo.md).
+Nenhum desses papéis representa atribuição nominal já aprovada. Mudanças de hospedagem, variáveis, migrações ou pipeline devem atualizar este documento no mesmo PR. Ver [Arquitetura](arquitetura/visao-geral.md), [Contratos](api-specs.md) e [Contribuição](processo/contribuindo.md).
+
+## Transição do desenvolvimento local para o projeto Supabase da equipe
+
+O time informou que Felipe Couto Duque está preparando o projeto Supabase na
+nuvem. O desenvolvimento de `feat/geminiapi` e os testes continuam locais enquanto
+essa configuração é concluída. Nenhum outro projeto hospedado foi criado e nenhum
+projeto remoto foi vinculado ou migrado por esta implementação.
+
+Quando o ambiente estiver disponível, alinhar com Felipe o projeto/ambiente de
+destino e o histórico de migrações já aplicado. Revisar e aplicar os SQLs pendentes
+em ordem, preservando dados; não copiar/resetar o banco local inteiro na nuvem.
+Para planos, o destino precisa incluir #40, S6-D01, a fila `20261109110000` e a
+privacidade/revisão `20261109113000`.
+
+Configurar URLs/chaves públicas no frontend e segredos somente no backend/worker
+(`DATABASE_URL`, serviço Supabase e Gemini), separados dos de teste. Validar HTTPS,
+CORS, Auth/retornos de login, bucket privado e revisão explícita com contas de
+homologação antes de habilitar as flags. A aprovação local não equivale à aprovação
+do ambiente hospedado. A suíte local foi feita para rejeitar hosts remotos; a
+homologação na nuvem deve ter procedimento próprio, com dados sintéticos e o
+projeto de destino identificado. Ver o [fluxo HTTP local](privacidade-planos.md#integracao-http-local-de-auth-storage-e-processamento)
+e as [variáveis do worker](processamento-planos.md).

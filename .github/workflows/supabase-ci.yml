@@ -1,0 +1,34 @@
+name: CI Supabase (Database)
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/**'
+  push:
+    branches:
+      - main
+    paths:
+      - 'supabase/**'
+
+jobs:
+  test-database:
+    name: Validar Migrations e Schema
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Iniciar Supabase Local
+        run: supabase start
+
+      - name: Verificar erros de lint no banco
+        run: supabase db lint
+
+      - name: Executar testes de banco de dados (se existirem)
+        run: supabase test db
