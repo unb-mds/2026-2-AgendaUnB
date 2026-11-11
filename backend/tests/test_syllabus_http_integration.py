@@ -1,5 +1,6 @@
 """Auth/Storage/PostgREST reais; FastAPI via ASGI e PostgreSQL local, sem dados reais."""
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 import json
 import os
 from pathlib import Path
@@ -16,7 +17,7 @@ from sqlalchemy.engine import make_url
 from sqlalchemy.orm import sessionmaker
 
 from src.database.connection import get_db
-from src.database.models import AssessmentCandidate, PersonalEvent, Syllabus
+from src.database.models import AssessmentCandidate, PersonalEvent, Syllabus, CatalogSync, ClassOffering, Subject
 from src.main import app
 from src.middlewares.auth import get_current_user
 from src.modules.syllabus.gemini import GeminiProvider
@@ -37,6 +38,7 @@ class LocalHTTP:
     tokens: dict = field(default_factory=dict)
     paths: list = field(default_factory=list)
     result: dict | None = None
+    offering_id: str | None = None
 
     def headers(self, role=None, *, service=False):
         return {"apikey":self.service_key if service else self.anon_key,
@@ -59,6 +61,7 @@ def local_http(monkeypatch):
     storage = SupabaseStorageService(supabase_url=ctx.url,supabase_key=service)
     overrides = app.dependency_overrides.copy()
     created = []
+    seeded_subject = seeded_run = None
     try:
         with engine.connect() as connection:
             assert all(privacy_checks(connection).values()), "Privacidade local ainda não validada"
@@ -85,6 +88,15 @@ def local_http(monkeypatch):
             if not isinstance(token,str) or not token:
                 pytest.fail("Auth local não retornou sessão")
             ctx.tokens[role] = token
+        with sessions() as session:
+            run = session.scalar(select(CatalogSync).where(CatalogSync.status == "concluida").order_by(CatalogSync.completed_at.desc()).limit(1))
+            if run is None:
+                run = CatalogSync(status="concluida", completed_at=datetime.now(timezone.utc))
+                session.add(run); session.flush(); seeded_run = run.id
+            subject = Subject(code="HTTP" + uuid4().hex[:12].upper(), name="Oferta sintética HTTP", unit="673")
+            session.add(subject); session.flush(); seeded_subject = subject.id
+            offer = ClassOffering(subject_id=subject.id, class_number="01", year=2026, semester=2, publication_id=run.id)
+            session.add(offer); session.commit(); ctx.offering_id = str(offer.id)
         monkeypatch.setenv("SYLLABUS_PROVIDER_TERMS_READY","true")
         monkeypatch.setenv("SUPABASE_URL",ctx.url)
         monkeypatch.setenv("SUPABASE_ANON_KEY",anon)
@@ -110,6 +122,13 @@ def local_http(monkeypatch):
                 connection.execute(text("delete from public.eventos_pessoais where user_id=:id"),{"id":uid})
             result = httpx.delete(ctx.url+"/auth/v1/admin/users/"+uid,headers=ctx.headers(service=True),timeout=15)
             assert result.status_code == 200, "Falha na limpeza da conta sintética"
+        with engine.begin() as connection:
+            if ctx.offering_id:
+                connection.execute(text("delete from public.ofertas_turma where id=:id"), {"id": ctx.offering_id})
+            if seeded_subject:
+                connection.execute(text("delete from public.disciplinas where id=:id"), {"id": seeded_subject})
+            if seeded_run:
+                connection.execute(text("delete from public.sincronizacoes_catalogo where id=:id"), {"id": seeded_run})
         engine.dispose()
         report_path = os.getenv("TEST_SYLLABUS_HTTP_REPORT")
         if ctx.result is not None and report_path:
@@ -142,7 +161,7 @@ def test_authenticated_upload_private_download_processing_and_review(local_http,
     pdf = make_pdf(["Plano inteiramente sintetico\nCronograma\nProva de integracao - 10/11/2026 - 14:00.\nTrabalho de integracao - 24/11/2026."])
     started = time.monotonic()
     response = client.post("/api/v1/syllabus/upload",headers=ctx.headers("owner"),
-                           files={"file":("integracao.pdf",pdf,"application/pdf")})
+                           files={"file":("integracao.pdf",pdf,"application/pdf")}, data={"offering_id": ctx.offering_id})
     upload_ms = round((time.monotonic()-started)*1000)
     assert response.status_code == 202
     body = response.json()

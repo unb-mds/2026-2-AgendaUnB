@@ -6,6 +6,8 @@ import time
 
 import httpx
 import pytest
+
+pytestmark = pytest.mark.usefixtures("published_offering")
 from sqlalchemy import select
 
 from src.database.models import Profile, Syllabus
@@ -49,7 +51,7 @@ def test_validation_failure_does_not_store_pdf_or_job(api, monkeypatch, code, st
 
     monkeypatch.setattr(services, "validate_pdf_structure", reject)
     monkeypatch.setattr("src.modules.syllabus.router.process_syllabus_upload", unexpected_upload)
-    response = client.post("/api/v1/syllabus/upload", files={
+    response = client.post("/api/v1/syllabus/upload", data={"offering_id": "70000000-0000-4000-8000-000000000071"}, files={
         "file": ("sintetico.pdf", make_pdf(["Cronograma sintetico"]), "application/pdf")
     })
     assert response.status_code == status
@@ -86,7 +88,7 @@ def test_health_responds_during_slow_upload(api, monkeypatch, stage):
     async def scenario():
         async with httpx.AsyncClient(transport=httpx.ASGITransport(app), base_url="http://test") as client:
             started = time.monotonic()
-            upload = asyncio.create_task(client.post("/api/v1/syllabus/upload", files={
+            upload = asyncio.create_task(client.post("/api/v1/syllabus/upload", data={"offering_id": "70000000-0000-4000-8000-000000000071"}, files={
                 "file": ("sintetico.pdf", make_pdf(["Cronograma sintetico"]), "application/pdf")
             }))
             try:

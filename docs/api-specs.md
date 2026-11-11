@@ -140,7 +140,7 @@ As operações exigem autenticação. Planos privados ficam restritos ao autor; 
 
 | Operação | Entrada | Resposta |
 | --- | --- | --- |
-| `POST /api/v1/syllabus/upload` | `multipart/form-data` com `file` (PDF), `disciplina`, `turma`, `ano` (2000 a 2100) e `semestre` (1 ou 2). Somente `file` é obrigatório. | 202, plano registrado como `pendente`. Ano e semestre são persistidos quando informados. |
+| `POST /api/v1/syllabus/upload` | `multipart/form-data` com `file` (PDF), `disciplina`, `turma`, `ano` (2000 a 2100) e `semestre` (1 ou 2). `file` e `offering_id` são obrigatórios; disciplina, turma e período são derivados da oferta disponível. | 202, plano registrado como `pendente`. Ano e semestre são persistidos quando informados. |
 | `GET /api/v1/syllabus` | `limit` de 1 a 100 (padrão 20), `offset` a partir de 0 (padrão 0). | 200, `{ "items": [], "total": 0, "limit": 20, "offset": 0 }` para histórico vazio. Ordena por criação e ID decrescentes. |
 | `GET /api/v1/syllabus/{syllabus_id}` | UUID do plano. | 200, dados e candidatos da versão aprovada. Para compartilhamento, aplica a permissão por autor/seguidor; 404 para versões indisponíveis. |
 | `POST /api/v1/syllabus/{syllabus_id}/confirm` | Cabeçalho `Idempotency-Key` (8 a 200 caracteres) e `candidates` selecionados, com `candidateId`, `title`, `description`, `type`, `startsAt` e `category` opcionais. Datas com instante incluem fuso ISO 8601. | 200, `{ operationId, repeated, items, events }`. A resposta indica candidatos criados/importados, evento removido e procedência. Reutilize a mesma chave somente ao repetir a mesma ação; use chave nova para uma nova confirmação após excluir o evento. |
@@ -255,7 +255,7 @@ Qualquer alteração de rota, schema, autorização, erro ou RPC deve atualizar 
 ### POST `/api/v1/syllabus/upload`
 
 Autenticação obrigatória. Recebe `multipart/form-data` com `file` PDF e campos
-opcionais `disciplina` e `turma`. Valida extensão, MIME, assinatura, integridade,
+`offering_id` obrigatório, com disciplina e turma derivadas do catálogo. Valida extensão, MIME, assinatura, integridade,
 senha, tamanho (10 MB), quantidade (dez páginas) e presença de texto selecionável.
 Lê no máximo limite + 1 byte antes de rejeitar excesso. O parser roda em processo
 separado com prazo de 8s (`SYLLABUS_UPLOAD_VALIDATION_TIMEOUT_SECONDS`); a espera
@@ -300,7 +300,7 @@ Este contrato substitui o fluxo de upload/extração S6 descrito acima.
 | Operação | Entrada | Resultado |
 | --- | --- | --- |
 | `POST /api/v1/syllabus/upload` | Multipart PDF validado, até 10 MiB/dez páginas; metadados existentes | 202, texto preparado privado, `filePath: null`, `authorizationRequired: true`, `preparedTextAvailable: true`. O PDF é descartado e não vai ao Storage. |
-| `POST /api/v1/syllabus/text` | JSON `text`, `disciplina`/`turma` opcionais; até 40.000 bytes UTF-8 | 202, preparação privada, `fileType: text`; página de origem nula. |
+| `POST /api/v1/syllabus/text` | JSON `text` e `offering_id` obrigatórios; até 40.000 bytes UTF-8 | 202, preparação privada, `fileType: text`; página de origem nula. |
 | `GET /api/v1/syllabus/{id}/text` | Sessão do dono | 200 com `pages: [{pagina, texto}]`, `textHash`, `authorizationRequired`, `provider`, `providerAvailable`, `maxTextBytes`, `warning`, `preparationDurationMs`, `textRevision`. Resposta `no-store`. |
 | `POST /api/v1/syllabus/{id}/extractions` | JSON `pages`, `textHash`, `authorize: true`, `contentEligible: true`, `reprocess` opcional | 202, autorização registrada e elegibilidade para a fila persistente. Repetir o mesmo hash sem reprocessar não cria execução adicional. |
 
@@ -331,3 +331,13 @@ A revisão do tipo fica no item de importação da conta e não altera o candida
 compartilhado.
 
 [Fluxo, flags e evidências](processamento-planos-s7.md).
+
+### Catálogo e seleção real de ofertas (#70/#71)
+
+A integração autenticada, rotas de catálogo/filtros/vínculos e operação estão em
+[Catálogo de turmas](arquitetura/catalogo-de-turmas.md). PDF multipart e texto JSON
+passam a exigir `offering_id` (UUID da oferta disponível). O servidor deriva
+nome da disciplina, turma e período, ignorando metadados livres para associação.
+Histórico particular aceita `offering_id` opcional; dados privados continuam
+restritos ao proprietário. `GET /class-offerings/{id}/shared-plans` expõe apenas
+versões compartilhadas a seguidores da oferta, sem o texto privado do autor.

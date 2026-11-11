@@ -1,4 +1,5 @@
 """Preparação local, minimização e autorização de snapshots privados de texto."""
+from uuid import UUID
 import hashlib
 import json
 import logging
@@ -27,6 +28,7 @@ class ReviewPage(BaseModel):
 
 
 class TextInput(BaseModel):
+    offering_id: UUID
     model_config = ConfigDict(extra="forbid")
     text: str = Field(min_length=1, max_length=MAX_TEXT_BYTES)
     disciplina: str | None = Field(default=None, max_length=200)

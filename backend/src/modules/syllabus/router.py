@@ -20,6 +20,7 @@ from src.database.models import (
 )
 from src.middlewares.auth import CurrentUser, get_current_user
 from src.modules.events.router import _category_id, _personal_read
+from src.modules.classes.services import available_offering
 from src.modules.syllabus.schemas import (
     ConfirmSyllabusRequest,
     ConfirmSyllabusResponse,
@@ -252,12 +253,15 @@ def _candidate_read(
 
 @router.get("", response_model=SyllabusListResponse, summary="Lista planos do usuário")
 def list_syllabi(
+    offering_id: UUID | None = Query(None),
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
     current_user: CurrentUser = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> SyllabusListResponse:
-    owned = Syllabus.user_id == current_user.id
+    owned = (Syllabus.user_id == current_user.id)
+    if offering_id is not None:
+        owned = owned & (Syllabus.offering_id == offering_id)
     total = db.scalar(select(func.count()).select_from(Syllabus).where(owned)) or 0
     records = db.scalars(
         select(Syllabus)
@@ -281,6 +285,7 @@ def list_syllabi(
     summary="Upload e rastreamento de plano de ensino em PDF",
 )
 async def upload_syllabus(
+    offering_id: UUID = Form(...),
     file: UploadFile = File(..., description="Arquivo PDF do plano de ensino"),
     disciplina: str | None = Form(None, description="Nome da disciplina (opcional)"),
     turma: str | None = Form(None, description="Turma da disciplina (opcional)"),
@@ -297,6 +302,7 @@ async def upload_syllabus(
     Retorna 202 com texto privado preparado. A fila só fica elegível após
     autorização explícita do dono em /{id}/extractions.
     """
+    offer = available_offering(db, offering_id)
     started = time.monotonic()
     try:
         content = await validate_pdf_file(file)
@@ -309,7 +315,7 @@ async def upload_syllabus(
         process_syllabus_upload, user_id=current_user.id,
         filename=file.filename or "syllabus.pdf", file_size=file_size, pages=pages,
         preparation_duration_ms=round((time.monotonic()-started)*1000),
-        db=db, disciplina=disciplina, turma=turma, ano=ano, semestre=semestre,
+        db=db, offering_id=offer.id, disciplina=offer.subject.name, turma=offer.class_number, ano=offer.year, semestre=offer.semester,
     )
 
     return SyllabusUploadResponse.model_validate(syllabus)
@@ -318,13 +324,14 @@ async def upload_syllabus(
 @router.post("/text", response_model=SyllabusUploadResponse, status_code=202)
 def prepare_syllabus_text(payload: TextInput, current_user: CurrentUser = Depends(get_current_user),
                           db: Session = Depends(get_db)):
+    offer = available_offering(db, payload.offering_id)
     started = time.monotonic()
     pages = checked_pages([{"pagina": None, "texto": payload.text}])
     pages = checked_pages([{"pagina": None, "texto": minimize(pages[0]["texto"])}])
     plan = process_syllabus_upload(user_id=current_user.id, filename="texto-revisado.txt",
         file_size=len(payload.text.encode("utf-8")), pages=pages, file_type="text", db=db,
         preparation_duration_ms=round((time.monotonic()-started)*1000),
-        disciplina=payload.disciplina, turma=payload.turma)
+        offering_id=offer.id, disciplina=offer.subject.name, turma=offer.class_number, ano=offer.year, semestre=offer.semester)
     return SyllabusUploadResponse.model_validate(plan)
 
 
@@ -403,6 +410,7 @@ def get_syllabus_status(
 
     return SyllabusDetailResponse(
         id=syllabus.id,
+        offeringId=syllabus.offering_id,
         userId=syllabus.user_id,
         fileName=syllabus.file_name if is_owner else None,
         filePath=syllabus.file_path if is_owner else None,
