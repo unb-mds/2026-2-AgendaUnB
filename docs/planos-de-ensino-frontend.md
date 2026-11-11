@@ -6,7 +6,21 @@ A rota `/plano-de-ensino` oferece envio autenticado, acompanhamento por ID e his
 
 ## Demonstração e envios reais
 
-A página abre uma demonstração interativa com catálogo ilustrativo. A primeira etapa permite selecionar manualmente as turmas e declarar o vínculo, sem comprovante de matrícula ou verificação institucional. Somente as turmas escolhidas aparecem nas etapas de planos e agenda. O fluxo permanece local e reinicia ao recarregar; não consulta o Followw. O modo **Envios reais de PDF** é separado, exige autenticação e usa a API descrita abaixo.
+A página abre uma demonstração interativa com catálogo ilustrativo. Em **Catálogo de turmas**, escolha o período atual ou o seguinte e busque por matéria, código, professor ou número de turma. A demonstração usa semestres civis de Brasília até haver uma fonte de períodos letivos. **Minhas turmas** lista os vínculos autodeclarados e abre o plano de exemplo ou o envio simulado da oferta escolhida. O envio simulado exige que a oferta seja seguida e esteja disponível, inclusive quando vier do último catálogo válido. Deixar de seguir mantém as avaliações já incluídas na prévia da agenda.
+
+Na demonstração, visitantes mantêm os vínculos apenas durante a visita. Com login, só os IDs dos vínculos de exemplo são salvos no navegador, separados por conta; planos e prévia não são persistidos. A demonstração não envia arquivos e não consulta o Followw. **Envios e histórico reais** continua usando o contrato particular existente, separado do catálogo. A validação real do vínculo no envio, a persistência no servidor e o catálogo de matérias e professores dependem da integração da [#70](https://github.com/unb-mds/2026-2-AgendaUnB/issues/70) com a [#69](https://github.com/unb-mds/2026-2-AgendaUnB/issues/69).
+
+### Evidências locais da #71
+
+| Cenário | Resultado no frontend |
+| --- | --- |
+| Buscar e distinguir ofertas | Passou: busca sem acentos por matéria, professor, código e número da turma, com homônimas e períodos distintos. |
+| Seguir, recarregar e abrir o plano | Passou na demonstração: o vínculo permanece na mesma conta; a oferta do período correto abre o plano ou o envio simulado. |
+| Deixar de seguir | Passou na demonstração: o vínculo é removido, e as avaliações já incluídas continuam na prévia. |
+| Vazio, falha e cache desatualizado | Passou com fixtures: nova tentativa, data do cache, caminho manual e bloqueio do envio para oferta indisponível. |
+| Teclado e layout (RNF07–RNF09) | Passou no Chrome a 360, 768 e 1365 px, nos temas claro e escuro. Foco, campos e cores principais do catálogo verificados; sem auditoria WCAG completa. |
+
+Revisão local: Codex, com as skills `project-standards`, `impeccable` e `code-review`. O catálogo demonstrativo não usa credenciais nem chama endpoints do Followw. Os contratos, permissões e dados do fluxo particular existente não mudaram. PR, implantação, revisão humana e homologação de ponta a ponta continuam pendentes.
 
 ## Escopo e dependências reais
 
