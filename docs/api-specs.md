@@ -6,13 +6,14 @@ Este inventário descreve o backend atual. Para os contratos planejados, consult
 
 A API possui operações HTTP de aplicação (inventário abaixo), incluindo `/health`. `/docs`, `/redoc` e `/openapi.json` são recursos de documentação gerados pelo FastAPI, não operações de negócio. Consulte também [Arquitetura](arquitetura/visao-geral.md), [Padrões](produto/padroes.md) e [Implantação](implantacao.md).
 
-Fontes: `backend/src/main.py`, `modules/events/router.py`, `modules/events/schemas.py`, `middlewares/auth.py` e `database/models.py` (os quatro últimos relativos a `backend/src/`). O OpenAPI ajuda a conferir campos e rotas, mas não descreve integralmente os handlers de erro personalizados.
+Fontes: `backend/src/main.py`, `modules/events/router.py`, `modules/events/schemas.py`, `modules/google_calendar/router.py`, `middlewares/auth.py` e `database/models.py` (relativos a `backend/src/`). O OpenAPI ajuda a conferir campos e rotas, mas não descreve integralmente os handlers de erro personalizados.
 
 ## Convenções comuns
 
 - Base local: `http://127.0.0.1:8000/api/v1`.
 - Corpos JSON usam `Content-Type: application/json`. Rotas autenticadas exigem `Authorization: Bearer <token>` do Supabase Auth.
 - Papéis persistidos: `student`, `professor`, `admin`. O servidor obtém o ID da sessão e consulta o papel em `profiles`; o cliente não escolhe a identidade.
+- Toda rota autenticada exige e-mail confirmado no Supabase Auth. Metadata nunca concede `admin`; `professor` só é aceito como solicitação após confirmação do endereço real `@unb.br` da conta Auth. Uma pessoa pode mudar o próprio papel de estudante para professor com esse e-mail confirmado; papel de terceiros só muda pela RPC de admin.
 - `{event_id}` é UUID. UUID malformado gera falha de validação; UUID válido ausente recebe o comportamento indicado em cada operação.
 - GET e DELETE não têm corpo definido; PUT de evento salvo também não. Listas de eventos retornam arrays, e listas vazias retornam `[]`. O histórico de planos usa um envelope de paginação.
 - Os schemas ignoram campos extras; enviar `status` ou `author_id` não altera os valores definidos pelo servidor. Isso não equivale a rejeitar esses campos com 422.
@@ -151,17 +152,32 @@ O histórico e o detalhe retornam `ano` e `semestre`. Planos antigos podem ter e
 
 `GET /health`: público, sem parâmetros ou corpo, retorna 200 com `{ "status": "ok" }`. Não consulta banco nem Auth; não é uma verificação de prontidão de todas as dependências.
 
+### Conexão adicional Google Calendar — S7-F04
+
+| Operação | Entrada | Resposta |
+| --- | --- | --- |
+| `POST /api/v1/me/google-calendar/authorization` | Bearer Supabase de conta com e-mail confirmado; sem corpo. | 200 `{ "authorization_url": "https://accounts.google.com/...", "expires_in_seconds": 600 }`. O endpoint gera `state` de uso único e PKCE S256. |
+| `POST /api/v1/me/google-calendar/callback` | Formulário `application/x-www-form-urlencoded` enviado pelo Google com `state` e `code` ou `error`. Sem Bearer; `state` associa a resposta à conta autenticada que iniciou o fluxo. | 303 para a URL fixa `GOOGLE_CALENDAR_FRONTEND_REDIRECT_URI`, com estado sanitizado `google_calendar=connected`, `denied`, `email_mismatch`, `invalid_state` ou `failed`. O callback consome o desafio uma única vez. |
+| `GET /api/v1/me/google-calendar/connection` | Bearer Supabase confirmado. | 200 com estado, e-mail Google, `calendar_id` e escopos; nunca retorna tokens. |
+| `DELETE /api/v1/me/google-calendar/connection` | Bearer Supabase confirmado. | 200 `{ "disconnected": true, "revocation": "confirmed" }`; se a revogação externa não puder ser confirmada, remove os tokens locais e informa `not_confirmed_remove_access_in_google`. Repetir é seguro. |
+
+A conexão adicional usa somente o escopo `calendar.app.created`. O retorno OAuth usa `response_mode=form_post` para não expor o código de autorização em query strings e logs de acesso. O servidor verifica o e-mail atual e confirmado do Agenda UnB e `email_verified` do Google; os endereços devem coincidir sem diferenciar maiúsculas/minúsculas. O vínculo usa o `sub` estável do Google. Tokens de acesso/renovação e o verifier PKCE ficam criptografados com Fernet no banco; a chave de criptografia permanece apenas no backend. `get_access_token` renova tokens expirados para uso pela futura integração de exportação S8-F03 (#82). Criação de calendário, exportação e sincronização de eventos não fazem parte destas rotas.
+
+Configuração exclusivamente server-side: `GOOGLE_CALENDAR_CLIENT_ID`, `GOOGLE_CALENDAR_CLIENT_SECRET`, `GOOGLE_CALENDAR_REDIRECT_URI`, `GOOGLE_CALENDAR_FRONTEND_REDIRECT_URI` e `GOOGLE_TOKEN_ENCRYPTION_KEY`. O callback cadastrado na Console Google precisa corresponder exatamente a `GOOGLE_CALENDAR_REDIRECT_URI`.
+
 ## Erros FastAPI
 
 | HTTP | Situação | Formato |
 | --- | --- | --- |
 | 401 | Bearer ausente, sessão expirada/inválida ou identidade inválida retornada pelo Auth | `{"detail":"mensagem"}` |
-| 403 | Perfil não encontrado ou papel sem permissão | `{"detail":"mensagem"}` |
+| 403 | Perfil não encontrado, e-mail ainda não confirmado ou papel sem permissão | `{"detail":"mensagem"}` |
 | 404 | Recurso não disponível conforme as regras da operação | `{"detail":"mensagem"}` |
 | 409 | `IntegrityError` não recuperado pela operação | `{"detail":"A operação conflita com os dados existentes."}` |
 | 422 | Validação automática de payload/path/query | `detail` textual e array `errors` de erros Pydantic |
 | 422 | Regra explícita: campus/categoria desconhecido ou intervalo inválido | Somente `detail` textual |
 | 503 | Falha SQLAlchemy ou comunicação/configuração do Auth | `{"detail":"mensagem"}` |
+
+Falhas de configuração OAuth também retornam 503. Falha temporária com Google pode retornar 502/503; autorização expirada/revogada pede reconexão (409). O callback sempre redireciona com estado genérico e não repassa `error_description`, código ou tokens.
 
 Exemplo de validação de título curto:
 
