@@ -7,9 +7,9 @@ description: "Como a API usa as funções de planos da Release 2."
 
 Guia de integração das migrações `20261110141000_planos_confirmacao_idempotente.sql`, que completam o modelo da [S7-D01 (#69)](https://github.com/unb-mds/2026-2-AgendaUnB/issues/69).
 
-| Issue | O que o banco já faz | O que falta na aplicação |
+| Issue | O que o banco e a aplicação fazem |
 | --- | --- | --- |
-| [S7-B04 (#72)](https://github.com/unb-mds/2026-2-AgendaUnB/issues/72) | Confirmação em transação, por usuário, com `Idempotency-Key`, validação de acesso, versão e datas | Ler o cabeçalho, chamar a função e traduzir o retorno |
+| [S7-B04 (#72)](https://github.com/unb-mds/2026-2-AgendaUnB/issues/72) | Confirmação em transação, por usuário, com `Idempotency-Key`, validação de acesso, versão e datas. A rota envia o ator validado, lê a versão aprovada, traduz erros SQLSTATE e devolve eventos e resultados por item. |
 
 ## 1. Por que as funções recebem o ator
 
@@ -113,7 +113,7 @@ A operação e os itens são gravados na mesma transação dos eventos, e as con
 | Retry após excluir o evento | Não recria | Não recria, e informa `removido` |
 | `Idempotency-Key` | Não | Sim |
 
-Para a S7-B04 ([#72](https://github.com/unb-mds/2026-2-AgendaUnB/issues/72)), o fluxo particular pode continuar em `revisar_candidatos_plano`. A importação de versões compartilhadas (S8-B01) precisa de `confirmar_importacao`. A equipe deve decidir se o fluxo particular também migra para ela, para haver um único contrato de confirmação; até lá, os dois coexistem sem duplicar eventos.
+Para a S7-B04 ([#72](https://github.com/unb-mds/2026-2-AgendaUnB/issues/72)), a API usa `confirmar_importacao` tanto para planos privados quanto para versões compartilhadas. A chave é gerada por ação no cliente e reutilizada em retry da mesma carga; depois de excluir um evento, uma ação nova usa uma chave nova para reimportá-lo. O tipo revisado fica em `itens_importacao.tipo_revisado`, separado por conta.
 
 ## 4. Extração (#51)
 
@@ -124,7 +124,7 @@ Para a S7-B04 ([#72](https://github.com/unb-mds/2026-2-AgendaUnB/issues/72)), o 
 
 ## 5. Testes
 
-`backend/tests/test_plan_import_database.py` cobre os cenários de aceite que dependem do banco: dois seguidores importando para agendas independentes, conta sem vínculo e visitante recusados, retries com a mesma chave após excluir o evento, seleção inválida sem gravação parcial, histórico privado e confirmações concorrentes em conexões reais.
+`backend/tests/test_plan_import_database.py` cobre os cenários de aceite que dependem do banco: dois seguidores importando para agendas independentes, conta sem vínculo e visitante recusados, retries com a mesma chave após excluir o evento, seleção inválida sem gravação parcial, histórico privado e confirmações concorrentes em conexões reais. `backend/tests/test_syllabus_review_api.py` cobre o contrato HTTP, a chave obrigatória, o descarte e a preservação da origem.
 
 ```bash
 cd backend
