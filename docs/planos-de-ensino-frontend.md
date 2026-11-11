@@ -6,30 +6,40 @@ A rota `/plano-de-ensino` oferece envio autenticado, acompanhamento por ID e his
 
 ## Demonstração e envios reais
 
-A página abre uma demonstração interativa com catálogo ilustrativo. A primeira etapa permite selecionar manualmente as turmas e declarar o vínculo, sem comprovante de matrícula ou verificação institucional. Somente as turmas escolhidas aparecem nas etapas de planos e agenda. O fluxo permanece local e reinicia ao recarregar; não consulta o Followw. O modo **Envios reais de PDF** é separado, exige autenticação e usa a API descrita abaixo.
+A página abre uma demonstração interativa com catálogo ilustrativo. Em **Catálogo de turmas**, escolha o período atual ou o seguinte e busque por matéria, código, professor ou número de turma. A demonstração usa semestres civis de Brasília até haver uma fonte de períodos letivos. **Minhas turmas** lista os vínculos autodeclarados e abre o plano de exemplo ou o envio simulado da oferta escolhida. O envio simulado exige que a oferta seja seguida e esteja disponível, inclusive quando vier do último catálogo válido. Deixar de seguir mantém as avaliações já incluídas na prévia da agenda.
+
+Na demonstração, visitantes mantêm os vínculos apenas durante a visita. Com login, só os IDs dos vínculos de exemplo são salvos no navegador, separados por conta; planos e prévia não são persistidos. A demonstração não envia arquivos e não consulta o Followw. **Catálogo e planos reais** usa a API autenticada do Agenda UnB, com vínculos persistidos no servidor, catálogo sincronizado e oferta obrigatória nos envios. Consulte o [guia de integração #70/#71](arquitetura/catalogo-de-turmas.md).
+
+### Evidências locais da #71
+
+| Cenário | Resultado no frontend |
+| --- | --- |
+| Buscar e distinguir ofertas | Passou: busca sem acentos por matéria, professor, código e número da turma, com homônimas e períodos distintos. |
+| Seguir, recarregar e abrir o plano | Passou na demonstração: o vínculo permanece na mesma conta; a oferta do período correto abre o plano ou o envio simulado. |
+| Deixar de seguir | Passou na demonstração: o vínculo é removido, e as avaliações já incluídas continuam na prévia. |
+| Vazio, falha e cache desatualizado | Passou com fixtures: nova tentativa, data do cache, caminho manual e bloqueio do envio para oferta indisponível. |
+| Teclado e layout (RNF07–RNF09) | Passou no Chrome a 360, 768 e 1365 px, nos temas claro e escuro. Foco, campos e cores principais do catálogo verificados; sem auditoria WCAG completa. |
+
+Revisão local: Codex, com as skills `project-standards`, `impeccable` e `code-review`. O catálogo demonstrativo não usa credenciais nem chama endpoints do Followw. Na integração atual, o contrato de envio exige oferta disponível; a revisão particular mantém suas permissões. PR, implantação, revisão humana e homologação de ponta a ponta continuam pendentes.
 
 ## Escopo e dependências reais
 
-O protótipo fornecido orientou a composição (envio, orientações laterais, lista por disciplina), não seus dados ou funcionalidades futuras. O limite adotado é **10 MB / 10 páginas**, não os 20 MB ilustrativos do protótipo. Matrícula, catálogo, planos oficiais, revisão/edição/seleção de candidatos e confirmação na agenda estão fora desta entrega. Nenhuma chamada a `/confirm` é feita. O painel administrativo não foi alterado.
+O protótipo fornecido orientou a composição (envio, orientações laterais, lista por disciplina), não seus dados ou funcionalidades futuras. O limite adotado é **10 MB / 10 páginas**, não os 20 MB ilustrativos do protótipo. A integração atual inclui catálogo e confirmação de candidatos particulares; matrícula oficial continua fora do escopo. O painel administrativo não foi alterado.
 
-No backend deste checkout, `POST /syllabus/upload`, `GET /syllabus` e `GET /syllabus/{id}` estão implementados. O upload aceita `file`, `disciplina` e `turma`, **mas ainda não persiste `semestre` e `ano`**. A migração S6-D01 já prevê esses campos em `planos_ensino`; o roteador de upload ainda usa o rastreamento `Syllabus`. Portanto, a integração real completa depende do alinhamento de #40/S6-B02 com S6-D01. Não confundir os testes com respostas simuladas com validação de processamento real por IA.
-
-A interface envia semestre/ano como campos multipart, porém só exibe esses metadados no histórico quando devolvidos pelo servidor. Não usa armazenamento local para simular persistência ou inventar um histórico. Uma listagem indisponível apresenta erro recuperável sem bloquear o upload nem o acompanhamento por ID.
+No backend deste checkout, PDF e texto exigem `offering_id`. Disciplina, turma, ano e semestre são derivados da oferta disponível. O texto é preparado localmente, revisado e autorizado antes da IA; planos particulares podem ser revisados e confirmados na agenda pelo fluxo existente.
 
 ## Contratos consumidos
 
 Base: `VITE_API_URL` (padrão `http://127.0.0.1:8000/api/v1`). Todas as operações usam `Authorization: Bearer <access_token>`.
 
-### Upload existente + extensão necessária
+### Upload vinculado à oferta
 
 `POST /syllabus/upload`, `multipart/form-data`:
 
 | Campo | Tipo | Uso |
 | --- | --- | --- |
 | `file` | PDF | Obrigatório, até 10 × 1024 × 1024 bytes |
-| `disciplina` | string | Obrigatório na interface, até 200 caracteres |
-| `semestre` | inteiro 1 ou 2 | Extensão pendente do backend |
-| `ano` | inteiro 2000–2100 | Extensão pendente do backend |
+| `offering_id` | UUID | Obrigatório; oferta disponível no catálogo |
 
 Resposta esperada: 202 com `id`, `status`, `fileName`, `createdAt` e os metadados já presentes no schema de upload. O navegador define o boundary multipart; não definir `Content-Type: application/json` para esse corpo.
 
@@ -97,3 +107,13 @@ O backend valida o token em `/auth/v1/user`, aplica o limite de corpo e a cota d
 A migração `20261026120000_upload_planos_ensino.sql` prepara o rastreamento. A migração `20261026130000_storage_compensacao_planos.sql` acrescentou DELETE para o dono no bucket; `20261104000000_upload_apenas_backend.sql` remove a política de INSERT direto, fechando o contorno da cota. O backend compensa o arquivo se o banco rejeitar o registro.
 
 As migrações S6-D02 de 29/10 foram alinhadas ao esquema de candidatos e planos. A política de Storage para o bucket `planos` é distinta da política de `syllabus_files` usada neste upload.
+
+## Integração real de turmas — #70/#71
+
+Use `/plano-de-ensino?modo=catalogo` após login para buscar por período, unidade,
+nome, código, professor ou turma. Seguir/deixar de seguir persiste no servidor;
+“Ver planos” abre a oferta pelo UUID, mantendo disciplinas homônimas e períodos
+separados. A oferta deve continuar disponível para novos envios de PDF/texto.
+Planos antigos continuam acessíveis pelo histórico e compromissos importados
+permanecem na agenda ao deixar de seguir. O modo demonstrativo continua separado.
+Os detalhes de operação e limites estão em [Catálogo de turmas](arquitetura/catalogo-de-turmas.md).
