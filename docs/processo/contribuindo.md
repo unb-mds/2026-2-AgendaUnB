@@ -246,6 +246,8 @@ npm run build
 node --test src/lib/calendar.test.js
 ```
 
+Tabelas e funções novas nascem fechadas para a API do Supabase: siga as [regras para novas migrações](seguranca.md#regras-para-novas-migracoes), ou os testes estruturais de segurança falham.
+
 Os testes de API usam SQLite. Para exercitar RLS, RPCs e triggers reais, configure `TEST_SUPABASE_DB_URL` com a conexão PostgreSQL do Supabase local e execute pytest. Os testes de banco só aceitam `localhost`/`127.0.0.1`, desfazem os dados ao terminar e são ignorados quando a variável não está configurada. Não use uma conexão de produção.
 
 Para conferir a documentação com as dependências do MkDocs instaladas:

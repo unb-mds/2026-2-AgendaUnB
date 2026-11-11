@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session, joinedload
 from src.database.connection import get_db
 from src.database.models import Campus, Category, PersonalEvent, PublicEvent, SavedPublicEvent
 from src.middlewares.auth import CurrentUser, get_current_user, require_event_manager
+from src.middlewares.security import escape_like
 from src.modules.events.schemas import (
     EventCreate,
     EventRead,
@@ -22,6 +23,10 @@ from src.modules.events.schemas import (
 )
 
 router = APIRouter(tags=["events"])
+
+# Cada sugestão ocupa a fila de moderação e gera notificação. O teto impede
+# que uma única conta inunde a fila; decididas as pendentes, a conta volta a sugerir.
+MAX_PENDING_SUGGESTIONS = 10
 
 
 def _category_id(db: Session, name: str | None) -> UUID | None:
@@ -130,7 +135,9 @@ def list_public_events(
     if end_date:
         statement = statement.where(PublicEvent.starts_at <= end_date)
     if search:
-        statement = statement.where(PublicEvent.title.ilike(f"%{search.strip()}%"))
+        statement = statement.where(
+            PublicEvent.title.ilike(f"%{escape_like(search.strip())}%", escape="\\")
+        )
 
     events = db.scalars(
         statement.order_by(PublicEvent.starts_at.asc()).limit(limit).offset(offset)
@@ -204,6 +211,16 @@ def suggest_event(
 ) -> EventRead:
     if current_user.role != "student":
         raise HTTPException(status_code=403, detail="Apenas estudantes enviam sugestões")
+    pending = db.scalar(
+        select(func.count()).select_from(PublicEvent).where(
+            PublicEvent.author_id == current_user.id, PublicEvent.status == "pendente"
+        )
+    ) or 0
+    if pending >= MAX_PENDING_SUGGESTIONS:
+        raise HTTPException(
+            status_code=429,
+            detail="Você já tem muitas sugestões aguardando análise. Aguarde a moderação para enviar novas.",
+        )
     event = PublicEvent(
         author_id=current_user.id,
         title=payload.title,

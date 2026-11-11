@@ -60,6 +60,24 @@ def denied(conn, sql, params=None):
                 conn.execute(text(sql), params or {})
 
 
+def blocked(conn, sql, params=None):
+    """Escrita sem efeito: recusada pelo banco ou sem nenhuma linha afetada."""
+    try:
+        with conn.begin_nested():
+            assert conn.execute(text(sql), params or {}).rowcount == 0
+    except DBAPIError:
+        pass
+
+
+def hidden(conn, sql, params=None):
+    """Leitura sem resultado: recusada pelo banco ou sem nenhuma linha."""
+    try:
+        with conn.begin_nested():
+            assert conn.execute(text(sql), params or {}).scalar() in (0, None)
+    except DBAPIError:
+        pass
+
+
 def scalar(conn, sql, params=None):
     return conn.execute(text(sql), params or {}).scalar()
 
@@ -111,14 +129,13 @@ def test_personal_agenda_is_private(database):
 
     assume(conn, users['bruno'])
     assert scalar(conn, 'select count(*) from public.eventos_pessoais where id=:id', {'id': event_id}) == 0
-    assert conn.execute(text("update public.eventos_pessoais set titulo='Alterado por outro' where id=:id"),
-                        {'id': event_id}).rowcount == 0
-    assert conn.execute(text('delete from public.eventos_pessoais where id=:id'), {'id': event_id}).rowcount == 0
+    blocked(conn, "update public.eventos_pessoais set titulo='Alterado por outro' where id=:id", {'id': event_id})
+    blocked(conn, 'delete from public.eventos_pessoais where id=:id', {'id': event_id})
     denied(conn, "insert into public.eventos_pessoais(user_id, titulo, data_hora) values (:u, 'Plantado na agenda alheia', now())",
            {'u': users['ana']})
 
     assume(conn)
-    assert scalar(conn, 'select count(*) from public.eventos_pessoais') == 0
+    hidden(conn, 'select count(*) from public.eventos_pessoais')
     denied(conn, "insert into public.eventos_pessoais(user_id, titulo, data_hora) values (:u, 'Visitante', now())",
            {'u': users['ana']})
 
@@ -163,10 +180,10 @@ def test_saved_events_are_private_and_only_for_approved_events(database):
 
     assume(conn, users['bruno'])
     assert scalar(conn, 'select count(*) from public.eventos_salvos') == 0
-    assert conn.execute(text('delete from public.eventos_salvos where user_id=:u'), {'u': users['ana']}).rowcount == 0
+    blocked(conn, 'delete from public.eventos_salvos where user_id=:u', {'u': users['ana']})
 
     assume(conn)
-    assert scalar(conn, 'select count(*) from public.eventos_salvos') == 0
+    hidden(conn, 'select count(*) from public.eventos_salvos')
 
 
 def test_public_events_hide_pending_and_block_impersonation(database):
@@ -183,43 +200,35 @@ def test_public_events_hide_pending_and_block_impersonation(database):
     # Estudante não pode publicar em nome de professor para escapar da moderação.
     denied(conn, """insert into public.eventos(autor_id, titulo, descricao, data_evento, status)
         values (:a, 'Forjado', 'x', now() + interval '1 day', 'aprovado')""", {'a': users['professor']})
-    assert conn.execute(text("update public.eventos set titulo='Alterado' where id=:id"), {'id': approved}).rowcount == 0
-    assert conn.execute(text('delete from public.eventos where id=:id'), {'id': approved}).rowcount == 0
+    blocked(conn, "update public.eventos set titulo='Alterado' where id=:id", {'id': approved})
+    blocked(conn, 'delete from public.eventos where id=:id', {'id': approved})
 
 
 def test_notifications_cannot_be_read_or_marked_by_others(database):
     conn, users = database
-    assume(conn, users['ana'])
     event_id = public_event(conn, users['ana'], 'pendente')
-    as_backend(conn)
     notification = scalar(conn, 'select id from public.notificacoes where evento_id=:e limit 1', {'e': event_id})
     assert notification is not None
 
     assume(conn, users['bruno'])
     assert scalar(conn, 'select count(*) from public.notificacoes where id=:n', {'n': notification}) == 0
-    assert conn.execute(text('update public.notificacoes set lida_em=now() where id=:n'), {'n': notification}).rowcount == 0
+    blocked(conn, 'update public.notificacoes set lida_em=now() where id=:n', {'n': notification})
 
     assume(conn)
-    # O visitante não tem sequer permissão na tabela: recusa total também é seguro.
-    try:
-        with conn.begin_nested():
-            assert scalar(conn, 'select count(*) from public.notificacoes') == 0
-    except DBAPIError:
-        pass
+    hidden(conn, 'select count(*) from public.notificacoes')
 
 
 def test_profiles_cannot_be_read_or_changed_by_others(database):
     conn, users = database
     assume(conn, users['bruno'])
     assert scalar(conn, 'select count(*) from public.profiles where id=:id', {'id': users['ana']}) == 0
-    assert conn.execute(text("update public.profiles set nome_completo='Hackeado' where id=:id"),
-                        {'id': users['ana']}).rowcount == 0
+    blocked(conn, "update public.profiles set nome_completo='Hackeado' where id=:id", {'id': users['ana']})
     # O próprio e-mail é imutável e o papel não sobe pelo navegador.
     denied(conn, "update public.profiles set email='outro@unb.br' where id=:id", {'id': users['bruno']})
     denied(conn, "update public.profiles set papel='admin' where id=:id", {'id': users['bruno']})
 
     assume(conn)
-    assert scalar(conn, 'select count(*) from public.profiles') == 0
+    hidden(conn, 'select count(*) from public.profiles')
 
 
 def test_admin_functions_refuse_students_and_visitors(database):
@@ -258,3 +267,183 @@ def test_plan_candidates_are_private_and_read_only(database):
 
     assume(conn)
     denied(conn, 'select count(*) from public.avaliacoes')
+
+
+# ---------------------------------------------------------------------------
+# Endurecimento (20261111130000): menor privilégio e validação no banco
+# ---------------------------------------------------------------------------
+
+def signup(conn, email, role=None, confirmed=False):
+    uid = str(uuid4())
+    meta = {'nome_completo': 'Cadastro de teste', **({'papel': role} if role else {})}
+    conn.execute(text("""insert into auth.users(id, email, raw_user_meta_data, email_confirmed_at)
+        values (:id, :email, :meta, case when :confirmed then now() end)"""),
+        {'id': uid, 'email': email, 'meta': json.dumps(meta), 'confirmed': confirmed})
+    return uid
+
+
+def role_of(conn, uid):
+    return scalar(conn, 'select papel from public.profiles where id=:id', {'id': uid})
+
+
+def test_visitors_have_no_write_privilege_and_nobody_can_truncate(database):
+    conn, _ = database
+    rows = conn.execute(text("""select grantee, table_name, privilege_type
+        from information_schema.role_table_grants
+        where table_schema = 'public'
+          and ((grantee = 'anon' and privilege_type <> 'SELECT')
+            or (grantee in ('anon', 'authenticated') and privilege_type in ('TRUNCATE', 'TRIGGER', 'REFERENCES')))
+        order by 1, 2, 3""")).all()
+    assert rows == [], f'Privilégios excessivos: {rows}'
+
+
+def test_every_write_grant_of_logged_users_is_backed_by_a_policy(database):
+    """GRANT de escrita sem política é um descuido esperando uma política permissiva."""
+    conn, _ = database
+    rows = conn.execute(text("""select g.table_name, g.privilege_type
+        from information_schema.role_table_grants g
+        where g.table_schema = 'public' and g.grantee = 'authenticated'
+          and g.privilege_type in ('INSERT', 'UPDATE', 'DELETE')
+          and not exists (select 1 from pg_policies p
+            where p.schemaname = 'public' and p.tablename = g.table_name
+              and p.cmd in (g.privilege_type, 'ALL'))
+        order by 1, 2""")).all()
+    assert rows == [], f'Escrita concedida sem política: {rows}'
+
+
+def test_no_function_is_callable_by_visitors_and_rpcs_are_hardened(database):
+    conn, _ = database
+    for_visitors = conn.execute(text("""select p.oid::regprocedure::text from pg_proc p
+        join pg_namespace n on n.oid = p.pronamespace
+        where n.nspname = 'public' and has_function_privilege('anon', p.oid, 'execute')
+        order by 1""")).scalars().all()
+    assert for_visitors == [], f'Funções chamáveis sem login: {for_visitors}'
+
+    # O que a conta logada chama via /rpc precisa de search_path fixo.
+    loose = conn.execute(text("""select p.oid::regprocedure::text from pg_proc p
+        join pg_namespace n on n.oid = p.pronamespace
+        where n.nspname = 'public' and has_function_privilege('authenticated', p.oid, 'execute')
+          and not exists (select 1 from unnest(coalesce(p.proconfig, '{}')) c where c like 'search_path=%')
+        order by 1""")).scalars().all()
+    assert loose == [], f'RPCs sem search_path fixo: {loose}'
+
+
+def test_queue_status_is_visible_to_the_plan_owner_only(database):
+    conn, users = database
+    plan_id = str(uuid4())
+    conn.execute(text("""insert into public.planos_ensino(id, user_id, nome_arquivo, caminho_arquivo, tipo_arquivo, status)
+        values (:id, :u, 'plano.pdf', :path, 'pdf', 'pendente')"""),
+        {'id': plan_id, 'u': users['ana'], 'path': f"syllabus_files/{users['ana']}/{plan_id}_plano.pdf"})
+    conn.execute(text('insert into public.fila_processamento_ia(plano_id) values (:p)'), {'p': plan_id})
+    denied(conn, "update public.fila_processamento_ia set erro_tecnico=repeat('x', 61) where plano_id=:p", {'p': plan_id})
+
+    assume(conn, users['ana'])
+    assert scalar(conn, 'select count(*) from public.fila_processamento_ia where plano_id=:p', {'p': plan_id}) == 1
+    denied(conn, "update public.fila_processamento_ia set status='concluido' where plano_id=:p", {'p': plan_id})
+    denied(conn, 'insert into public.fila_processamento_ia(plano_id) values (:p)', {'p': plan_id})
+    assume(conn, users['bruno'])
+    assert scalar(conn, 'select count(*) from public.fila_processamento_ia') == 0
+    assume(conn)
+    hidden(conn, 'select count(*) from public.fila_processamento_ia')
+
+
+def test_legacy_interest_counter_is_closed_to_the_browser(database):
+    conn, users = database
+    event_id = public_event(conn, users['professor'], 'aprovado')
+    for uid in (None, users['ana']):
+        assume(conn, uid)
+        denied(conn, 'select public.registrar_interesse(:e)', {'e': event_id})
+    as_backend(conn)
+    assert scalar(conn, 'select interessados_count from public.eventos where id=:e', {'e': event_id}) == 0
+
+
+@pytest.mark.parametrize('link', ['javascript:alert(document.cookie)', 'data:text/html,<script>1</script>',
+                                  'JaVaScRiPt:alert(1)', 'ftp://example.org/a', 'https://example.org/a b',
+                                  'https://example.org/"><script>', 'example.org'])
+def test_event_link_must_be_http_on_every_write_path(database, link):
+    """O link é aberto pela tela do evento; javascript: executaria código na sessão de quem clica."""
+    conn, users = database
+    insert = """insert into public.eventos(autor_id, titulo, descricao, data_evento, link_externo)
+        values (:a, 'Evento com link', 'Descrição', now() + interval '1 day', :l)"""
+    denied(conn, insert, {'a': users['professor'], 'l': link})  # nem o back-end grava
+    event_id = public_event(conn, users['professor'], 'aprovado')
+    denied(conn, 'update public.eventos set link_externo=:l where id=:e', {'l': link, 'e': event_id})
+
+
+def test_event_and_profile_text_limits_hold_in_the_database(database):
+    conn, users = database
+    event_id = public_event(conn, users['professor'], 'aprovado')
+    conn.execute(text("update public.eventos set link_externo='https://unb.br/evento?id=1&x=y' where id=:e"), {'e': event_id})
+    denied(conn, "update public.eventos set titulo=repeat('a', 201) where id=:e", {'e': event_id})
+    denied(conn, "update public.eventos set descricao=repeat('a', 10001) where id=:e", {'e': event_id})
+    denied(conn, "update public.eventos set localizacao=repeat('a', 251) where id=:e", {'e': event_id})
+    denied(conn, "insert into public.eventos_pessoais(user_id, titulo, data_hora) values (:u, repeat('a', 201), now())",
+           {'u': users['ana']})
+
+    assume(conn, users['ana'])
+    conn.execute(text("update public.profiles set nome_completo='Ana Atualizada' where id=:u"), {'u': users['ana']})
+    denied(conn, "update public.profiles set avatar_url='javascript:alert(1)' where id=:u", {'u': users['ana']})
+    denied(conn, "update public.profiles set avatar_url='http://sem-tls.example/a.png' where id=:u", {'u': users['ana']})
+    denied(conn, "update public.profiles set nome_completo=repeat('a', 201) where id=:u", {'u': users['ana']})
+    # Só nome, avatar e papel são editáveis; papel segue protegido pelo trigger.
+    denied(conn, "update public.profiles set criado_em=now() - interval '5 years' where id=:u", {'u': users['ana']})
+    denied(conn, 'delete from public.profiles where id=:u', {'u': users['ana']})
+
+
+def test_public_events_cannot_be_written_directly_even_by_professors(database):
+    conn, users = database
+    assume(conn, users['professor'])
+    denied(conn, """insert into public.eventos(autor_id, titulo, descricao, data_evento, status)
+        values (:a, 'Publicado sem API', 'Descrição', now() + interval '1 day', 'aprovado')""", {'a': users['professor']})
+
+
+def test_professor_role_requires_confirmed_institutional_email(database):
+    conn, _ = database
+    # Cadastro pendente de confirmação: ainda não há prova de posse do endereço.
+    pending = signup(conn, f'docente-{uuid4()}@unb.br', role='professor')
+    assert role_of(conn, pending) == 'student'
+    assume(conn, pending)
+    denied(conn, "update public.profiles set papel='professor' where id=:u", {'u': pending})
+    assert scalar(conn, 'select public.is_event_moderator()') is False
+
+    # Ao confirmar, o papel pedido no cadastro é concedido automaticamente.
+    as_backend(conn)
+    conn.execute(text('update auth.users set email_confirmed_at=now() where id=:u'), {'u': pending})
+    assert role_of(conn, pending) == 'professor'
+
+    # Já confirmado no cadastro (Google ou ambiente sem confirmação): professor na hora.
+    assert role_of(conn, signup(conn, f'docente-{uuid4()}@unb.br', role='professor', confirmed=True)) == 'professor'
+
+    # Estudante com e-mail institucional confirmado ainda pode se promover pelo navegador.
+    student = signup(conn, f'servidor-{uuid4()}@unb.br', confirmed=True)
+    assume(conn, student)
+    conn.execute(text("update public.profiles set papel='professor' where id=:u"), {'u': student})
+    as_backend(conn)
+    assert role_of(conn, student) == 'professor'
+
+    # Confirmar o e-mail não promove quem não pediu, nem quem está fora do domínio.
+    plain = signup(conn, f'aluno-{uuid4()}@unb.br')
+    outsider = signup(conn, f'pessoa-{uuid4()}@example.com')
+    conn.execute(text("""update auth.users set email_confirmed_at=now(),
+        raw_user_meta_data = raw_user_meta_data || '{"papel":"professor"}' where id=:u"""), {'u': outsider})
+    conn.execute(text('update auth.users set email_confirmed_at=now() where id=:u'), {'u': plain})
+    assert (role_of(conn, plain), role_of(conn, outsider)) == ('student', 'student')
+    # admin nunca nasce do cadastro.
+    assert role_of(conn, signup(conn, f'x-{uuid4()}@unb.br', role='admin', confirmed=True)) == 'student'
+
+
+def test_role_changes_are_audited_and_only_admins_read_the_trail(database):
+    conn, users = database
+    assume(conn, users['admin'])
+    conn.execute(text("select public.admin_definir_papel(:u, 'professor', 'student')"), {'u': users['ana']})
+    trail = conn.execute(text("""select ator_id::text, papel_anterior, papel_novo
+        from public.auditoria_papeis where usuario_id=:u"""), {'u': users['ana']}).all()
+    assert trail == [(users['admin'], 'student', 'professor')]
+    denied(conn, 'delete from public.auditoria_papeis')
+    denied(conn, "update public.auditoria_papeis set papel_novo='student'")
+
+    for uid in (users['ana'], users['bruno']):
+        assume(conn, uid)
+        assert scalar(conn, 'select count(*) from public.auditoria_papeis') == 0
+    assume(conn)
+    hidden(conn, 'select count(*) from public.auditoria_papeis')

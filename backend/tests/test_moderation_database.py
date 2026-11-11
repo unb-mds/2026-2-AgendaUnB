@@ -42,7 +42,18 @@ def assume(conn, uid):
     conn.execute(text('set local role authenticated'))
 
 
+def blocked(conn, sql, params=None):
+    """Escrita sem efeito: recusada pelo banco ou sem nenhuma linha afetada."""
+    try:
+        with conn.begin_nested():
+            assert conn.execute(text(sql), params or {}).rowcount == 0
+    except DBAPIError:
+        pass
+
+
 def suggestion(conn, author):
+    # Sugestões chegam pela API: o INSERT direto do navegador foi fechado (S8-D02).
+    conn.execute(text('reset role'))
     return str(conn.execute(text("""insert into public.eventos(autor_id,titulo,descricao,data_evento,status)
         values (:author, 'Sugestão de teste', 'Descrição', now() + interval '1 day', 'aprovado') returning id"""),
         {'author': author}).scalar_one())
@@ -58,8 +69,10 @@ def denied(conn, sql, params=None):
 
 def test_student_rls_submission_and_notifications(database):
     conn, users = database
-    assume(conn, users['student'])
     event_id = suggestion(conn, users['student'])
+    assume(conn, users['student'])
+    denied(conn, """insert into public.eventos(autor_id,titulo,descricao,data_evento)
+        values (:author, 'Direto pelo navegador', 'Descrição', now() + interval '1 day')""", {'author': users['student']})
     event = conn.execute(text('select status, justificativa_recusa, interessados_count from public.eventos where id=:id'), {'id': event_id}).one()
     assert tuple(event) == ('pendente', None, 0)
     assert conn.execute(text("select count(*) from public.notificacoes where evento_id=:id and tipo='submissao'"), {'id': event_id}).scalar() == 1
@@ -67,8 +80,8 @@ def test_student_rls_submission_and_notifications(database):
     denied(conn, 'select public.listar_sugestoes()')
     denied(conn, 'select public.admin_buscar_usuarios()')
     denied(conn, "select public.moderar_sugestao(:id,'aprovado')", {'id': event_id})
-    # Direct UPDATE has no policy and cannot change any pending event.
-    assert conn.execute(text("update public.eventos set status='aprovado' where id=:id"), {'id': event_id}).rowcount == 0
+    # Direct UPDATE is not granted and cannot change any pending event.
+    blocked(conn, "update public.eventos set status='aprovado' where id=:id", {'id': event_id})
     denied(conn, "update public.notificacoes set titulo_evento='forjado'")
     assume(conn, users['other'])
     assert conn.execute(text('select count(*) from public.eventos where id=:id'), {'id': event_id}).scalar() == 0
@@ -79,7 +92,6 @@ def test_student_rls_submission_and_notifications(database):
 @pytest.mark.parametrize('status', ['aprovado', 'rejeitado'])
 def test_moderation_and_atomic_notification(database, moderator, status):
     conn, users = database
-    assume(conn, users['student'])
     event_id = suggestion(conn, users['student'])
     assume(conn, users[moderator])
     listing = conn.execute(text('select public.listar_sugestoes()')).scalar()

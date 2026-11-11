@@ -49,6 +49,24 @@ def as_backend(conn):
     conn.execute(text('reset role'))
 
 
+def blocked(conn, sql, params=None):
+    """Escrita sem efeito: recusada pelo banco ou sem nenhuma linha afetada."""
+    try:
+        with conn.begin_nested():
+            assert conn.execute(text(sql), params or {}).rowcount == 0
+    except DBAPIError:
+        pass
+
+
+def hidden(conn, sql, params=None):
+    """Leitura sem resultado: recusada pelo banco ou sem nenhuma linha."""
+    try:
+        with conn.begin_nested():
+            assert conn.execute(text(sql), params or {}).scalar() in (0, None)
+    except DBAPIError:
+        pass
+
+
 def denied(conn, sql, params=None):
     with conn.begin_nested():
         with pytest.raises(DBAPIError):
@@ -172,7 +190,7 @@ def test_private_plan_is_isolated_by_database_and_storage(database):
     for table in ('public.planos_ensino', 'public.avaliacoes'):
         denied(conn, f'select count(*) from {table}')
     for table in ('public.versoes_plano', 'public.vinculos_turma'):
-        assert count(conn, f'select count(*) from {table}') == 0
+        hidden(conn, f'select count(*) from {table}')
     assert count(conn, 'select count(*) from public.ofertas_turma') >= 1  # catalog is public
 
 
@@ -233,8 +251,8 @@ def test_browser_cannot_write_catalog_follows_or_versions(database):
     denied(conn, 'insert into public.versoes_plano(plano_id, numero, autor_id) values (:p, 2, :u)',
            {'p': plan_id, 'u': users['ana']})
     # Without an UPDATE policy, sharing from the browser changes nothing.
-    assert conn.execute(text("""update public.versoes_plano set visibilidade='compartilhada', compartilhada_em=now()
-        where plano_id=:p"""), {'p': plan_id}).rowcount == 0
+    blocked(conn, """update public.versoes_plano set visibilidade='compartilhada', compartilhada_em=now()
+        where plano_id=:p""", {'p': plan_id})
 
 
 def test_parallel_candidate_model_was_removed(database):

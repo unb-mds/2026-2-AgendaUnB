@@ -38,9 +38,17 @@ Armazena as categorias para classificação e coloração dos eventos na interfa
 Armazena os metadados dos usuários, sincronizada com a tabela nativa de autenticação (`auth.users`) do Supabase.
 *   **Colunas:**
     *   `id` (UUID, Primary Key): Referência em cascata para `auth.users(id)`.
-    *   *(Nota: Metadados adicionais como nome, email e papel são gerenciados via triggers de sincronização no banco).*
+    *   `nome_completo` (até 200 caracteres), `email` (imutável), `papel` (`student`, `professor`, `admin`), `avatar_url` (somente `https`), `criado_em`, `atualizado_em`.
+*   **Criação:** o trigger `on_auth_user_created` cria o perfil no cadastro. O papel `professor` exige e-mail `@unb.br` **confirmado**: cadastro ainda não confirmado nasce `student` e é promovido pelo trigger `on_auth_user_email_confirmed` quando o endereço é confirmado. `admin` nunca vem do cadastro.
 *   **Políticas RLS:**
-    *   **Leitura (SELECT):** Permitida para todos os visitantes e usuários (`USING true`). Política: *"perfis visiveis para todos"*.
+    *   **Leitura (SELECT):** o próprio usuário lê o seu perfil; admins leem todos. Visitantes não têm acesso.
+    *   **Atualização (UPDATE):** o próprio usuário, apenas em `nome_completo`, `avatar_url` e `papel`. A mudança de papel pelo navegador só aceita `student → professor` com e-mail institucional confirmado; as demais passam pelas RPCs administrativas.
+
+### 2.2. Tabela `auditoria_papeis`
+Registra toda mudança de papel, por qualquer caminho (RPC do painel, autopromoção, confirmação de e-mail, back-end ou SQL): `usuario_id`, `ator_id` (nulo quando não havia sessão de usuário), `papel_anterior`, `papel_novo` e `criado_em`. Somente admins leem; ninguém altera pela API.
+
+### 2.3. Privilégios e funções
+Desde `20261111130000`, o `GRANT` acompanha as políticas: visitantes só leem o catálogo público (`eventos` aprovados, `campus`, `categories`, `disciplinas`, `ofertas_turma`), `TRUNCATE` não é concedido à API e funções novas não são executáveis via `/rpc` sem `GRANT EXECUTE` explícito. As regras para novas migrações estão em [Verificação de segurança](../processo/seguranca.md#regras-para-novas-migracoes).
 
 ---
 
@@ -153,6 +161,8 @@ Catálogo de turmas (ADR-009) e turmas que o usuário segue. A disciplina abstra
 *   **Índice:** `(user_id, origem_versao_id)`.
 
 ## 5. Eventos salvos e notificações
+
+Eventos públicos são gravados somente pela API e pelas RPCs de moderação: o `INSERT` direto pelo navegador foi removido em `20261111130000`. O banco valida, em qualquer caminho, que `link_externo` usa `http(s)` e que título, descrição e local respeitam os limites da API.
 
 `eventos_salvos` vincula um perfil a um evento público com chave composta `(user_id, event_id)`. `notificacoes` referencia o perfil destinatário e pode referenciar o evento que originou o aviso. Consulte as políticas, a implantação e os cenários de verificação nos guias de [eventos salvos](../eventos-salvos.md) e [painel administrativo](../painel-administrativo.md).
 
