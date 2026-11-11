@@ -87,3 +87,8 @@ body.light .class-search select, body.light .class-search input { color-scheme: 
   .class-followed { border-inline-start: 0; padding-inline-start: 0; }
   .class-followed-shortcut { display: inline-flex; align-items: center; gap: 8px; margin-top: 8px; }
 }
+
+.class-subject-group { border-block-end: 1px solid var(--manage-border); }
+.class-subject-group > summary { padding: 16px 4px; cursor: pointer; font-weight: 600; overflow-wrap: anywhere; }
+.class-subject-group > summary:focus-visible { outline: 2px solid var(--manage-link); outline-offset: 2px; }
+.class-subject-group > .class-offers { padding-inline-start: 16px; }

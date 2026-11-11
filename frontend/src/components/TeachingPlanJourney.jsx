@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useId, useReducer, useRef, useState } from 'react';
 import { Icon, Modal } from './ManagementUI';
+import ConnectedTeachingPlanJourney from './ConnectedTeachingPlanJourney';
 import ClassCatalog from './ClassCatalog';
 import { useSyllabusResource } from '../hooks/useSyllabusResource';
 import { catalogPeriods, demoOffering, loadDemoCatalog, loadDemoFollows, offeringLabel, saveDemoFollows } from '../lib/classCatalogDemo';
@@ -114,7 +115,11 @@ function DemoAgenda({ state, dispatch }) {
   </div>;
 }
 
-export default function TeachingPlanJourney({ userId }) {
+export default function TeachingPlanJourney({ userId, renderWorkspace }) {
+  return userId ? <ConnectedTeachingPlanJourney key={userId} userId={userId} renderWorkspace={renderWorkspace} /> : <DemoTeachingPlanJourney />;
+}
+
+function DemoTeachingPlanJourney({ userId }) {
   const [saved] = useState(() => loadDemoFollows(userId));
   const [state, dispatch] = useReducer(demoReducer, saved.ids, ids => initialDemoState({ periods: catalogPeriods(), ids }));
   const [files, setFiles] = useState({});

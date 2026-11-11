@@ -94,30 +94,6 @@ test('período obrigatório, busca por teclado, homônimas e reset cancelável p
   await expect(mine(page).getByText('Você ainda não segue turmas')).toBeVisible();
 });
 
-test('persistência local após login separa contas e abre o plano do período escolhido', async ({ page }) => {
-  let id = 'student-a';
-  await open(page, { account: () => id });
-  await expect(page.getByText(/ficam salvas neste navegador para a sua conta/)).toBeVisible();
-  for (const period of ['2026.2', '2027.1']) {
-    await search(page, 'MAT0025', period);
-    await catalog(page).getByRole('button', { name: /Seguir turma: Cálculo 1, MAT0025/ }).click();
-  }
-  await page.reload();
-  await expect(mine(page).getByRole('button', { name: /Ver plano:.*2026.2/ })).toBeVisible();
-  await mine(page).getByRole('button', { name: /Enviar plano:.*2027.1/ }).click();
-  await expect(page.getByRole('region', { name: 'Plano de Cálculo 1' })).toContainText('MAT0025 · Turma 03 · Darcy Ribeiro · 2027.1');
-  await expect(page.getByRole('button', { name: 'Simular extração' })).toBeDisabled();
-  await page.getByRole('button', { name: '1 Selecionar turmas' }).click();
-  await mine(page).getByRole('button', { name: /Deixar de seguir:.*2027.1/ }).click();
-  id = 'student-b';
-  await page.reload();
-  await expect(mine(page).getByText('Você ainda não segue turmas')).toBeVisible();
-  id = 'student-a';
-  await page.reload();
-  await expect(mine(page).getByRole('button', { name: /Ver plano:.*2026.2/ })).toBeVisible();
-  await expect(mine(page).getByRole('button', { name: /Enviar plano:.*2027.1/ })).toHaveCount(0);
-});
-
 test('falha do catálogo permite tentar novamente; cache válido permite seguir apenas ofertas disponíveis', async ({ page }) => {
   await page.route(url => url.pathname === '/src/lib/classCatalogDemo.js' && !url.searchParams.has('fixture'),
     route => route.fulfill({ contentType: 'application/javascript', body: `
