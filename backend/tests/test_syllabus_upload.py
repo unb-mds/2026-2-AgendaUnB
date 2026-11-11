@@ -6,6 +6,8 @@ from uuid import UUID, uuid4
 
 import pypdf
 import pytest
+
+pytestmark = pytest.mark.usefixtures("published_offering")
 from fastapi import HTTPException, UploadFile
 from starlette.datastructures import Headers
 from sqlalchemy import select
@@ -100,7 +102,7 @@ def test_upload_syllabus_success(api, storage_mock):
         "semestre": "2",
     }
 
-    response = client.post("/api/v1/syllabus/upload", files=files, data=data)
+    response = client.post("/api/v1/syllabus/upload", files=files, data={**(data), "offering_id": "70000000-0000-4000-8000-000000000071"})
 
     assert response.status_code == 202
     body = response.json()
@@ -137,7 +139,7 @@ def test_upload_syllabus_rejects_invalid_period(api, storage_mock, period):
     response = client.post(
         "/api/v1/syllabus/upload",
         files={"file": ("plano.pdf", io.BytesIO(make_valid_pdf_bytes()), "application/pdf")},
-        data=period,
+        data={**(period), "offering_id": "70000000-0000-4000-8000-000000000071"},
     )
     assert response.status_code == 422
     storage_mock.upload_file.assert_not_called()
@@ -147,7 +149,7 @@ def test_upload_syllabus_limits_body_before_storage(api, storage_mock):
     client, _, _, _ = api
     oversized = make_valid_pdf_bytes() + b"x" * (10 * 1024 * 1024 + 65 * 1024)
     response = client.post(
-        "/api/v1/syllabus/upload",
+        "/api/v1/syllabus/upload", data={"offering_id": "70000000-0000-4000-8000-000000000071"},
         files={"file": ("plano.pdf", io.BytesIO(oversized), "application/pdf")},
         headers={"content-length": "1"},
     )
@@ -167,11 +169,11 @@ def test_upload_syllabus_quota_is_ten_in_five_days(api, storage_mock):
         db.commit()
 
     for _ in range(10):
-        response = client.post("/api/v1/syllabus/upload", files={
+        response = client.post("/api/v1/syllabus/upload", data={"offering_id": "70000000-0000-4000-8000-000000000071"}, files={
             "file": ("plano.pdf", io.BytesIO(make_valid_pdf_bytes()), "application/pdf")
         })
         assert response.status_code == 202
-    response = client.post("/api/v1/syllabus/upload", files={
+    response = client.post("/api/v1/syllabus/upload", data={"offering_id": "70000000-0000-4000-8000-000000000071"}, files={
         "file": ("plano.pdf", io.BytesIO(make_valid_pdf_bytes()), "application/pdf")
     })
     assert response.status_code == 429
@@ -188,7 +190,7 @@ def test_upload_syllabus_unauthenticated(api):
     pdf_bytes = make_valid_pdf_bytes()
     files = {"file": ("plano.pdf", io.BytesIO(pdf_bytes), "application/pdf")}
 
-    response = client.post("/api/v1/syllabus/upload", files=files)
+    response = client.post("/api/v1/syllabus/upload", data={"offering_id": "70000000-0000-4000-8000-000000000071"}, files=files)
     assert response.status_code == 401
 
 
@@ -196,7 +198,7 @@ def test_upload_syllabus_invalid_extension(api):
     client, _, _, _ = api
 
     files = {"file": ("plano.docx", io.BytesIO(b"conteudo"), "application/pdf")}
-    response = client.post("/api/v1/syllabus/upload", files=files)
+    response = client.post("/api/v1/syllabus/upload", data={"offering_id": "70000000-0000-4000-8000-000000000071"}, files=files)
 
     assert response.status_code == 400
     assert "Extensão de arquivo inválida" in response.json()["detail"]
@@ -206,7 +208,7 @@ def test_upload_syllabus_invalid_mime_type(api):
     client, _, _, _ = api
 
     files = {"file": ("plano.pdf", io.BytesIO(b"conteudo"), "text/plain")}
-    response = client.post("/api/v1/syllabus/upload", files=files)
+    response = client.post("/api/v1/syllabus/upload", data={"offering_id": "70000000-0000-4000-8000-000000000071"}, files=files)
 
     assert response.status_code == 400
     assert "MIME Type inválido" in response.json()["detail"]
@@ -216,7 +218,7 @@ def test_upload_syllabus_empty_file(api):
     client, _, _, _ = api
 
     files = {"file": ("plano.pdf", io.BytesIO(b""), "application/pdf")}
-    response = client.post("/api/v1/syllabus/upload", files=files)
+    response = client.post("/api/v1/syllabus/upload", data={"offering_id": "70000000-0000-4000-8000-000000000071"}, files=files)
 
     assert response.status_code == 400
     assert "vazio" in response.json()["detail"]
@@ -226,7 +228,7 @@ def test_upload_syllabus_invalid_magic_bytes(api):
     client, _, _, _ = api
 
     files = {"file": ("plano.pdf", io.BytesIO(b"NOT_A_PDF_STREAM_12345"), "application/pdf")}
-    response = client.post("/api/v1/syllabus/upload", files=files)
+    response = client.post("/api/v1/syllabus/upload", data={"offering_id": "70000000-0000-4000-8000-000000000071"}, files=files)
 
     assert response.status_code == 400
     assert "Assinatura de arquivo inválida" in response.json()["detail"]
@@ -236,7 +238,7 @@ def test_upload_syllabus_corrupted_pdf(api):
     client, _, _, _ = api
 
     files = {"file": ("plano.pdf", io.BytesIO(b"%PDF-corrupted-broken-content-XYZ"), "application/pdf")}
-    response = client.post("/api/v1/syllabus/upload", files=files)
+    response = client.post("/api/v1/syllabus/upload", data={"offering_id": "70000000-0000-4000-8000-000000000071"}, files=files)
 
     assert response.status_code == 400
     assert "corrompido ou malformado" in response.json()["detail"]
@@ -247,7 +249,7 @@ def test_upload_syllabus_encrypted_pdf(api):
 
     pdf_bytes = make_encrypted_pdf_bytes()
     files = {"file": ("plano.pdf", io.BytesIO(pdf_bytes), "application/pdf")}
-    response = client.post("/api/v1/syllabus/upload", files=files)
+    response = client.post("/api/v1/syllabus/upload", data={"offering_id": "70000000-0000-4000-8000-000000000071"}, files=files)
 
     assert response.status_code == 400
     assert "protegido por senha" in response.json()["detail"]
@@ -258,7 +260,7 @@ def test_upload_syllabus_without_selectable_text(api):
 
     pdf_bytes = make_blank_pdf_bytes()
     files = {"file": ("plano.pdf", io.BytesIO(pdf_bytes), "application/pdf")}
-    response = client.post("/api/v1/syllabus/upload", files=files)
+    response = client.post("/api/v1/syllabus/upload", data={"offering_id": "70000000-0000-4000-8000-000000000071"}, files=files)
 
     assert response.status_code == 400
     assert "texto selecionável legível" in response.json()["detail"]
@@ -269,7 +271,7 @@ def test_upload_syllabus_exceeds_max_pages(api):
 
     pdf_bytes = make_valid_pdf_bytes(pages=11)
     files = {"file": ("plano.pdf", io.BytesIO(pdf_bytes), "application/pdf")}
-    response = client.post("/api/v1/syllabus/upload", files=files)
+    response = client.post("/api/v1/syllabus/upload", data={"offering_id": "70000000-0000-4000-8000-000000000071"}, files=files)
 
     assert response.status_code == 400
     assert "ultrapassando o limite máximo" in response.json()["detail"]
@@ -281,7 +283,7 @@ def test_upload_syllabus_payload_too_large(api, monkeypatch):
 
     pdf_bytes = make_valid_pdf_bytes()
     files = {"file": ("plano.pdf", io.BytesIO(pdf_bytes), "application/pdf")}
-    response = client.post("/api/v1/syllabus/upload", files=files)
+    response = client.post("/api/v1/syllabus/upload", data={"offering_id": "70000000-0000-4000-8000-000000000071"}, files=files)
 
     assert response.status_code == 413
     assert "excede o limite máximo permitido" in response.json()["detail"]
@@ -325,7 +327,7 @@ def test_upload_syllabus_does_not_depend_on_storage(api):
     pdf_bytes = make_valid_pdf_bytes()
     files = {"file": ("plano.pdf", io.BytesIO(pdf_bytes), "application/pdf")}
 
-    response = client.post("/api/v1/syllabus/upload", files=files)
+    response = client.post("/api/v1/syllabus/upload", data={"offering_id": "70000000-0000-4000-8000-000000000071"}, files=files)
     assert response.status_code == 202
     assert response.json()["filePath"] is None
 
@@ -357,7 +359,7 @@ def test_preparation_db_failure_does_not_touch_storage(api, monkeypatch):
     # Patch session commit
     monkeypatch.setattr("sqlalchemy.orm.Session.commit", failing_commit)
 
-    response = client.post("/api/v1/syllabus/upload", files=files)
+    response = client.post("/api/v1/syllabus/upload", data={"offering_id": "70000000-0000-4000-8000-000000000071"}, files=files)
     assert response.status_code == 503
     assert "Falha ao registrar o envio do plano de ensino" in response.json()["detail"]
 

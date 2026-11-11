@@ -11,6 +11,7 @@ from fastapi.requests import Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from src.modules.classes.router import router as classes_router
 from src.modules.events.router import router as events_router
 from src.modules.syllabus.router import router as syllabus_router
 from src.middlewares.upload_limits import UploadLimitsMiddleware
@@ -76,6 +77,12 @@ allowed_origins = [
     for origin in os.getenv("CORS_ORIGINS", default_origins).split(",")
     if origin.strip()
 ]
+vercel_url = os.getenv("VERCEL_URL")
+if vercel_url:
+    allowed_origins.append(f"https://{vercel_url}")
+vercel_prod_url = os.getenv("VERCEL_PROJECT_PRODUCTION_URL")
+if vercel_prod_url:
+    allowed_origins.append(f"https://{vercel_prod_url}")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
@@ -85,10 +92,12 @@ app.add_middleware(
 )
 app.add_middleware(UploadLimitsMiddleware)
 
+app.include_router(classes_router, prefix="/api/v1")
 app.include_router(events_router, prefix="/api/v1")
 app.include_router(syllabus_router, prefix="/api/v1")
 
 
 @app.get("/health", tags=["health"])
+@app.get("/api/health", tags=["health"])
 def health_check() -> dict[str, str]:
     return {"status": "ok"}
