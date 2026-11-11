@@ -160,6 +160,7 @@ def test_two_followers_import_into_independent_agendas(database):
         assert reviewed_type == f'tipo de {name}'
 
     # quem não segue a turma, e visitante, são recusados
+    items = [{'candidato_id': candidates[0]}]
     refused(conn, '42501', CONFIRM, {'a': users['professor'], 'k': 'chave-prof-0001', 'v': version_id, 'i': json.dumps(items)})
     for uid in (None, users['bruno']):
         assume(conn, uid)
