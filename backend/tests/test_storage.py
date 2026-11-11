@@ -74,9 +74,31 @@ def test_auth_retains_validated_token(monkeypatch):
     user_id = uuid4()
     monkeypatch.setenv("SUPABASE_URL", "https://auth.example.test")
     monkeypatch.setenv("SUPABASE_ANON_KEY", "public-key")
-    monkeypatch.setattr(httpx, "get", lambda *args, **kwargs: httpx.Response(200, json={"id": str(user_id)}))
+    monkeypatch.setattr(httpx, "get", lambda *args, **kwargs: httpx.Response(200, json={
+        "id": str(user_id), "email": "aluna@example.edu", "email_confirmed_at": "2026-11-01T00:00:00Z",
+    }))
     database = Mock()
     database.scalar.return_value = "student"
     user = get_current_user(HTTPAuthorizationCredentials(scheme="Bearer", credentials="user-token"), database)
     assert user.access_token == "user-token"
     assert user.id == user_id
+    assert user.email == "aluna@example.edu"
+    assert user.email_confirmed is True
+
+
+def test_auth_rejects_unconfirmed_email_before_loading_role(monkeypatch):
+    from unittest.mock import Mock
+
+    from fastapi import HTTPException
+
+    user_id = uuid4()
+    monkeypatch.setenv("SUPABASE_URL", "https://auth.example.test")
+    monkeypatch.setenv("SUPABASE_ANON_KEY", "public-key")
+    monkeypatch.setattr(httpx, "get", lambda *args, **kwargs: httpx.Response(200, json={
+        "id": str(user_id), "email": "aluna@example.edu", "email_confirmed_at": None,
+    }))
+    database = Mock()
+    with pytest.raises(HTTPException) as error:
+        get_current_user(HTTPAuthorizationCredentials(scheme="Bearer", credentials="user-token"), database)
+    assert error.value.status_code == 403
+    database.scalar.assert_not_called()
