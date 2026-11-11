@@ -109,6 +109,7 @@ def process_syllabus_upload(
     turma: str | None = None,
     ano: int | None = None,
     semestre: int | None = None,
+    offering_id: UUID | None = None,
 ) -> Syllabus:
     """
     Registra somente texto minimizado privado, aguardando autorização.
@@ -131,6 +132,7 @@ def process_syllabus_upload(
     syllabus_id = uuid4()
     syllabus_record = Syllabus(
         id=syllabus_id,
+        offering_id=offering_id,
         user_id=user_id,
         file_name=filename,
         file_path=None,
