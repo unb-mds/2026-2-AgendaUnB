@@ -63,6 +63,7 @@
         "pages": [
           "docs/arquitetura/visao-geral",
           "docs/arquitetura/modelo-de-dados",
+          "docs/arquitetura/dados-de-planos",
           "docs/arquitetura/banco-de-dados",
           "docs/arquitetura/dados-de-eventos",
           "docs/arquitetura/catalogo-de-turmas",

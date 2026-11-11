@@ -136,14 +136,15 @@ PUT e DELETE são idempotentes. O PUT recupera colisão de inserção concorrent
 
 ### Planos de ensino
 
-As operações exigem autenticação e só consultam ou confirmam planos do usuário autenticado.
+As operações exigem autenticação. Planos privados ficam restritos ao autor; versões compartilhadas podem ser consultadas e importadas por contas que seguem a oferta da turma.
 
 | Operação | Entrada | Resposta |
 | --- | --- | --- |
 | `POST /api/v1/syllabus/upload` | `multipart/form-data` com `file` (PDF), `disciplina`, `turma`, `ano` (2000 a 2100) e `semestre` (1 ou 2). `file` e `offering_id` são obrigatórios; disciplina, turma e período são derivados da oferta disponível. | 202, plano registrado como `pendente`. Ano e semestre são persistidos quando informados. |
 | `GET /api/v1/syllabus` | `limit` de 1 a 100 (padrão 20), `offset` a partir de 0 (padrão 0). | 200, `{ "items": [], "total": 0, "limit": 20, "offset": 0 }` para histórico vazio. Ordena por criação e ID decrescentes. |
-| `GET /api/v1/syllabus/{syllabus_id}` | UUID do plano. | 200, dados do plano e `candidates`. 404 para plano ausente ou de outra conta. |
-| `POST /api/v1/syllabus/{syllabus_id}/confirm` | UUID de um plano concluído e lista `candidates` com os IDs e os ajustes das avaliações selecionadas. | 200, eventos confirmados na agenda pessoal. |
+| `GET /api/v1/syllabus/{syllabus_id}` | UUID do plano. | 200, dados e candidatos da versão aprovada. Para compartilhamento, aplica a permissão por autor/seguidor; 404 para versões indisponíveis. |
+| `POST /api/v1/syllabus/{syllabus_id}/confirm` | Cabeçalho `Idempotency-Key` (8 a 200 caracteres) e `candidates` selecionados, com `candidateId`, `title`, `description`, `type`, `startsAt` e `category` opcionais. Datas com instante incluem fuso ISO 8601. | 200, `{ operationId, repeated, items, events }`. A resposta indica candidatos criados/importados, evento removido e procedência. Reutilize a mesma chave somente ao repetir a mesma ação; use chave nova para uma nova confirmação após excluir o evento. |
+| `DELETE /api/v1/syllabus/{syllabus_id}/candidates/{candidate_id}` | UUIDs do plano privado concluído e do candidato. | 204, marca o candidato como descartado sem remover sua evidência. Não descarta decisões de versões compartilhadas. |
 
 O histórico e o detalhe retornam `ano` e `semestre`. Planos antigos podem ter esses campos, `fileName` e `filePath` nulos. O upload aplica a cota de 10 envios em cinco dias (429 ao exceder) e valida o PDF antes de gravar. O cliente autenticado consulta os próprios planos e PDFs, enquanto o backend grava o arquivo e o registro de acompanhamento.
 
@@ -319,12 +320,15 @@ a revisão inicial da fila pronta; `preparedTextAvailable` identifica o protocol
 S7. Detalhe inclui `preparationDurationMs`, `reviewDurationMs` e
 `totalDurationMs` desde a autorização, separando a espera do estudante. Planos
 históricos sem preparação mantêm a revisão legada e não recebem autorização
-retroativa. A consulta e a confirmação particular usam agora `avaliacoes`, a mesma tabela
-do worker, filtrando a versão autorizada. Cada candidato inclui `suggestedDate`,
+retroativa. A consulta e a confirmação usam `avaliacoes`, a mesma tabela do worker,
+filtrando a versão aprovada e aplicando a permissão da versão. Cada candidato inclui `suggestedDate`,
 `suggestedTime`, `ambiguousFields` e `versionId`; `startsAt` continua nulo quando
-não existe instante/fuso confirmado. O contrato legado não exige ainda
-`Idempotency-Key`; sua evolução e a confirmação compartilhada seguem S7-B04/S7-F03.
-O produtor não escreve eventos automaticamente e retry não recria evento apagado.
+não existe instante/fuso confirmado. A rota envia as confirmações à função
+transacional `confirmar_importacao`; `Idempotency-Key` é obrigatório, uma chave
+repetida com conteúdo diferente é recusada, retries não recriam eventos apagados
+e cada conta tem uma operação independente sobre a mesma versão compartilhada.
+A revisão do tipo fica no item de importação da conta e não altera o candidato
+compartilhado.
 
 [Fluxo, flags e evidências](processamento-planos-s7.md).
 

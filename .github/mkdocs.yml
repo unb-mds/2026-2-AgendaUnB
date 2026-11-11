@@ -33,6 +33,7 @@ nav:
   - Matriz de aceite da Release 2: matriz-release-2.md
   - Plano de Implantação: implantacao.md
   - Modelo de Dados: arquitetura/modelo-de-dados.md
+  - Dados de planos: arquitetura/dados-de-planos.md
   - Especificação do Banco: arquitetura/banco-de-dados.md
   - Dados de eventos: arquitetura/dados-de-eventos.md
   - Catálogo de turmas: arquitetura/catalogo-de-turmas.md
