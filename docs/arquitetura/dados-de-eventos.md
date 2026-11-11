@@ -9,7 +9,7 @@ Guia de integração das migrações `20261111140000_eventos_datas_e_coleta.sql`
 
 | Issue | O que o banco já faz | O que falta na aplicação |
 | --- | --- | --- |
-| [S7-B05 (#75)](https://github.com/unb-mds/2026-2-AgendaUnB/issues/75) | Upsert por origem, decisão publicar/revisar, conciliação por URL, proteção de edições locais e de decisões de moderação, registro das execuções | Ler e normalizar a fonte, agendar a execução, tela de revisão |
+| [S7-B05 (#75)](https://github.com/unb-mds/2026-2-AgendaUnB/issues/75) | Upsert por origem, decisão publicar/revisar, conciliação por URL, proteção de edições locais e de decisões de moderação, registro das execuções | Configurar e homologar a execução recorrente no ambiente hospedado; registrar as evidências operacionais da issue |
 
 **Regra geral:** o que precisa valer em qualquer caminho de escrita está em chaves únicas, triggers e funções. A aplicação chama as funções; não reimplementa as regras. Nada daqui é gravável pelo navegador.
 
@@ -145,4 +145,28 @@ TEST_SUPABASE_DB_URL="postgresql+psycopg://postgres:postgres@127.0.0.1:14322/pos
   python -m pytest tests/test_event_collection_database.py -q
 ```
 
-Continuam fora desta entrega e precisam de evidência no ambiente publicado: execução agendada real do coletor, duas execuções concorrentes contra a fonte, o comportamento com a fonte fora do ar e a cobertura multicampus.
+## 5. Coletor da Agenda UnB Notícias
+
+O adaptador está em `backend/src/modules/events/collector.py`. A origem é fixa em `https://noticias.unb.br`; o cliente consulta `robots.txt` e só acessa a listagem `/component/agenda/agendas` e detalhes `/component/agenda/agenda/{id}` quando permitidos. A política consultada em 11/11/2026 bloqueava `/components/` (plural), não as rotas `/component/` (singular) da agenda. O cliente não segue redirecionamentos, não usa cookies nem proxy do ambiente, tem timeout de 20 segundos e espera pelo menos um segundo entre requisições. Falhas transitórias recebem uma tentativa adicional respeitando `Retry-After` até 60 segundos.
+
+O coletor percorre os offsets publicados pela paginação, deduplica os IDs antes de buscar os detalhes, limita a leitura a 100 páginas/900 eventos e carrega toda a fonte antes de gravar. Assim, uma interrupção ao ler uma página mantém os registros já existentes sem aplicar uma coleta parcial. As gravações e o resultado da execução são confirmados juntos; um advisory lock impede duas execuções simultâneas. O coletor nunca apaga eventos que deixaram de aparecer na fonte.
+
+Os dados vêm da página de detalhes: título, descrição, datas, horário, local, categoria e links externos. Só os tipos `Eventos`, `Cursos` e `Defesas` são classificados como eventos; outras categorias seguem como informes para moderação. O campus só é preenchido quando o local identifica um campus de forma explícita. Um horário `00:00` é tratado como preenchimento incerto e o item vai para revisão; o coletor não deduz que seja um evento de dia inteiro, conforme a ADR-011. Sem ano explícito ou com data/hora incompleta, também não publica automaticamente.
+
+Com `DATABASE_URL` configurada para o banco do ambiente, na pasta `backend`:
+
+```sh
+python -m src.modules.events.collector
+python -m src.modules.events.collector --interval-hours 6
+```
+
+O primeiro comando executa uma coleta. O segundo repete a execução depois do intervalo informado, que precisa ser de pelo menos uma hora. O processo recorrente deve ser iniciado por um serviço de background do ambiente; não há rota HTTP que dispare a coleta nem credencial de banco no navegador. Até homologar a duração de uma leitura completa, configurar cobertura e validar as falhas no ambiente, manter a recorrência desligada.
+
+Testes sem acesso à fonte ou ao banco real:
+
+```sh
+cd backend
+python -m pytest tests/test_event_collector.py -q
+```
+
+Continuam pendentes e precisam de evidência no ambiente hospedado: configurar e demonstrar a recorrência, duas execuções sucessivas e concorrentes, uma indisponibilidade da fonte com preservação dos registros, e cobertura multicampus. Os testes de banco automatizam os contratos de persistência, mas não substituem a homologação do serviço e da fonte reais.
