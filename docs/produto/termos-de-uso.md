@@ -5,7 +5,7 @@ description: "Regras de uso do Agenda UnB."
 
 # Termos de Uso
 
-**Versão 2026-11-10 — proposta para revisão da equipe.** Não substitui orientação jurídica.
+**Versão 2026-11-11.**
 
 ## 1. O que é o Agenda UnB
 
@@ -15,7 +15,7 @@ Uma plataforma acadêmica, desenvolvida por estudantes na disciplina Métodos de
 
 - Informe dados verdadeiros e mantenha a senha em sigilo. Você responde pelo uso da sua conta.
 - O papel de professor exige e-mail institucional `@unb.br` confirmado.
-- Você pode excluir a conta a qualquer momento, em Configurações.
+- Você pode solicitar a exclusão da conta a qualquer momento pelo canal de contato. A opção em Configurações está prevista para a Release 2.
 
 ## 3. As informações não são oficiais
 
@@ -50,8 +50,8 @@ O tratamento de dados está descrito na [Política de Privacidade](politica-de-p
 
 ## 8. Mudanças
 
-Cada versão é identificada pela data de vigência. Mudanças relevantes serão apresentadas na entrada, para nova leitura.
+Cada versão é identificada pela data de vigência. Mudanças relevantes serão comunicadas na plataforma. O registro de leitura na entrada está previsto para a Release 2.
 
 ## 9. Contato
 
-**[DEFINIR]** canal de atendimento da equipe.
+[unbagenda@gmail.com](mailto:unbagenda@gmail.com). Pessoas de contato: Felipe Couto Duque e Thomas Augusto Amorim de Araujo.

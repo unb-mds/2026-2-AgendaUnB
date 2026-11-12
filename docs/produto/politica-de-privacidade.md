@@ -5,14 +5,14 @@ description: "Quais dados o Agenda UnB trata, para quê, com quem compartilha e 
 
 # Política de Privacidade
 
-**Versão 2026-11-10 — proposta para revisão da equipe.** Este texto descreve o tratamento de dados como ele está implementado e planejado para a Release 2. Ele ainda precisa da revisão do responsável definido pela equipe e não substitui orientação jurídica. Os pontos marcados com **[DEFINIR]** dependem de decisão do grupo ([#83](https://github.com/unb-mds/2026-2-AgendaUnB/issues/83)).
+**Versão 2026-11-11.** Esta política descreve o tratamento de dados do Agenda UnB. Os recursos indicados como previstos para a Release 2 só se aplicam quando disponibilizados na plataforma.
 
 O Agenda UnB é um projeto acadêmico da disciplina Métodos de Desenvolvimento de Software (UnB, 2026/2), sem fins comerciais. Ele não é um serviço oficial da Universidade de Brasília. Adotamos a Lei Geral de Proteção de Dados (Lei 13.709/2018, LGPD) como referência para todo o tratamento descrito aqui.
 
 ## 1. Quem responde pelos seus dados
 
-- **Responsável:** equipe G8 do Agenda UnB. **[DEFINIR]** pessoa de contato.
-- **Canal para pedidos e dúvidas:** **[DEFINIR]** e-mail de atendimento. Enquanto ele não existir, use as [issues do repositório](https://github.com/unb-mds/2026-2-AgendaUnB/issues) **sem incluir dados pessoais**.
+- **Responsável:** equipe G8 do Agenda UnB. Pessoas de contato: Felipe Couto Duque e Thomas Augusto Amorim de Araujo.
+- **Canal para pedidos e dúvidas:** [unbagenda@gmail.com](mailto:unbagenda@gmail.com). Não publique dados pessoais nas issues do repositório.
 
 ## 2. Quais dados tratamos e para quê
 
@@ -27,7 +27,7 @@ O Agenda UnB é um projeto acadêmico da disciplina Métodos de Desenvolvimento 
 | Turmas que você segue | Mostrar planos compartilhados da turma. É uma declaração sua, não prova de matrícula | Você |
 | Planos de ensino que você envia e as datas extraídas | Sugerir provas e trabalhos para a sua agenda | Você |
 | Votos em datas de planos compartilhados | Mostrar se a turma confirma ou contesta uma data. Só a contagem é exibida | Você |
-| Aceite destes documentos e consentimentos | Comprovar o que você leu e autorizou | Você |
+| Aceite destes documentos (previsto para a Release 2) e consentimentos | Comprovar o que você leu e autorizou | Você |
 | Registros técnicos (data, rota acessada, endereço IP) | Segurança, diagnóstico de falhas e prevenção de abuso | Gerados automaticamente |
 
 Não pedimos matrícula, CPF, notas, nem senha do SIGAA ou de outros sistemas. Não usamos seus dados para publicidade e não os vendemos.
@@ -62,7 +62,7 @@ O catálogo de turmas (Followw) e a agenda de notícias da UnB são **apenas con
 
 Podemos fornecer dados a autoridades quando houver obrigação legal.
 
-## 5. Google Agenda
+## 5. Google Agenda (previsto para a Release 2)
 
 A exportação é opcional e depende de uma autorização separada do login. Enviamos só os eventos que você selecionar. Ao desconectar, apagamos as credenciais guardadas e pedimos ao Google a revogação do acesso. **Os eventos já exportados continuam na sua agenda Google**: para removê-los, apague a agenda secundária "Agenda UnB" ou os eventos diretamente no Google.
 
@@ -73,18 +73,18 @@ A exportação é opcional e depende de uma autorização separada do login. Env
 | Conta, agenda, turmas, planos, votos, aceites e consentimentos | Enquanto a conta existir |
 | PDF original de um plano | Não é guardado (planos enviados antes de 10/11/2026 têm o arquivo removido) |
 | Texto extraído de um plano | Enquanto a conta existir |
-| Registros técnicos | **[DEFINIR]** conforme a retenção de cada fornecedor |
+| Registros técnicos | Supabase Free: logs de API e banco consultáveis por até 1 dia; Render Hobby: 7 dias; Vercel Hobby: logs de execução consultáveis por 1 hora. Esses prazos são de consulta operacional dos provedores, não uma garantia de eliminação de todos os registros internos. Não mantemos exportações externas de logs. |
 | Registro de que uma exclusão de conta ocorreu | Guardado sem identificar a pessoa (só quantidades) |
-| Cópias de segurança | **[DEFINIR]** conforme o plano contratado do banco |
+| Cópias de segurança | Não mantemos cópias manuais ou externas. O plano Free do Supabase não oferece backups automáticos acessíveis à equipe; isso não significa ausência de cópias internas de segurança do fornecedor, cuja eliminação segue seus termos. |
 
 ## 7. Seus direitos
 
-Você pode, a qualquer momento:
+Você pode, a qualquer momento, solicitar pelo canal da seção 1 os direitos abaixo. As opções de autoatendimento em Configurações estão previstas para a Release 2 e dependem da disponibilidade da interface:
 
 - **acessar e baixar** os seus dados em Configurações → Meus dados;
 - **corrigir** nome e foto no perfil;
 - **retirar** o compartilhamento de um plano e **revogar** consentimentos;
-- **excluir a conta**, o que apaga os dados descritos na seção 2;
+- **solicitar a exclusão da conta**, conforme o procedimento descrito abaixo;
 - pedir informações ou apresentar reclamação pelo canal da seção 1. Você também pode recorrer à Autoridade Nacional de Proteção de Dados (ANPD).
 
 **O que a exclusão da conta apaga:** perfil, agenda pessoal, eventos salvos, avisos, turmas seguidas, votos, aceites, consentimentos, os planos que você enviou (com todas as versões) e os eventos públicos que você sugeriu ou publicou. **O que permanece:** as cópias que outras pessoas já importaram para as próprias agendas e os eventos que você exportou para o Google Agenda.
@@ -101,4 +101,4 @@ A plataforma é voltada à comunidade universitária. Não é direcionada a meno
 
 ## 10. Mudanças nesta política
 
-Cada versão é identificada pela data de vigência. Quando o texto mudar de forma relevante, pediremos que você leia a nova versão ao entrar.
+Cada versão é identificada pela data de vigência. Mudanças relevantes serão comunicadas na plataforma. O registro de leitura de versões na entrada está previsto para a Release 2.
