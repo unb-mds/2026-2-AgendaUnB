@@ -4,16 +4,25 @@ on:
   pull_request:
     paths:
       - 'supabase/**'
+      - 'backend/**'
+      - '.github/workflows/supabase-ci.yml'
   push:
     branches:
       - main
     paths:
       - 'supabase/**'
+      - 'backend/**'
+      - '.github/workflows/supabase-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   test-database:
     name: Validar Migrations e Schema
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - name: Checkout do código
@@ -22,13 +31,35 @@ jobs:
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 3.1.0
 
       - name: Iniciar Supabase Local
-        run: supabase start
+        run: supabase start --exclude realtime,studio,edge-runtime,postgres-meta,logflare,vector,supavisor >/dev/null
 
       - name: Verificar erros de lint no banco
-        run: supabase db lint
+        run: supabase db lint --level error --fail-on error
 
-      - name: Executar testes de banco de dados (se existirem)
-        run: supabase test db
+      - name: Executar pgTAP quando houver testes SQL
+        run: |
+          if git ls-files 'supabase/tests/*.sql' | grep -q .; then
+            supabase test db
+          fi
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: backend/requirements-dev.txt
+      - run: python -m pip install -r backend/requirements-dev.txt
+      - name: Validar integração com Auth, Storage e PostgreSQL locais
+        run: |
+          local_status="$(supabase status --output json)"
+          export DATABASE_URL="sqlite+pysqlite:///:memory:"
+          TEST_SUPABASE_DB_URL="$(jq -er '.DB_URL | sub("^postgresql:"; "postgresql+psycopg:") | select(length > 0)' <<< "$local_status")"
+          TEST_LOCAL_SUPABASE_URL="$(jq -er '.API_URL | select(length > 0)' <<< "$local_status")"
+          TEST_LOCAL_SUPABASE_ANON_KEY="$(jq -er '.ANON_KEY | select(length > 0)' <<< "$local_status")"
+          TEST_LOCAL_SUPABASE_SERVICE_ROLE_KEY="$(jq -er '.SERVICE_ROLE_KEY | select(length > 0)' <<< "$local_status")"
+          export TEST_SUPABASE_DB_URL TEST_LOCAL_SUPABASE_URL
+          export TEST_LOCAL_SUPABASE_ANON_KEY TEST_LOCAL_SUPABASE_SERVICE_ROLE_KEY
+          cd backend
+          python -m pytest tests/*_database.py tests/test_syllabus_http_integration.py -q -ra

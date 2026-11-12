@@ -1,0 +1,49 @@
+name: CI Application
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: app-ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  frontend:
+    name: Frontend tests and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      VITE_SUPABASE_URL: https://fixture.supabase.co
+      VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_fixture
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test tests/deployment.spec.js tests/auth.spec.js
+  backend:
+    name: Backend tests (Python 3.11)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DATABASE_URL: sqlite+pysqlite:///:memory:
+      APP_ENV: local
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r backend/requirements-dev.txt
+      - working-directory: backend
+        run: python -m pytest tests -q -ra
