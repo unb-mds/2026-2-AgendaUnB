@@ -177,3 +177,24 @@ TEST_SUPABASE_DB_URL="postgresql+psycopg://postgres:postgres@127.0.0.1:14322/pos
 | Conteúdo acadêmico e tokens fora dos logs | `test_database_errors_are_logged_without_row_content`, `test_supabase_admin_calls_never_log_identifiers` | Verificado na API. **Falta** revisar logs dos provedores e do worker |
 | Google Calendar: desconexão, revogação e tokens | — | **Depende** da [#82](https://github.com/unb-mds/2026-2-AgendaUnB/issues/82) |
 | Política e termos publicados no cadastro e em Configurações | Textos e endpoints prontos | **Falta** D1 e a interface |
+
+
+## Decisões de publicação em 11/11/2026
+
+- D1: pessoas de contato Felipe Couto Duque e Thomas Augusto Amorim de Araujo;
+  canal unbagenda@gmail.com, conforme confirmação do responsável nesta implantação.
+- D4: confirmados planos gratuitos e ausência de cópias externas. Logs operacionais:
+  Supabase Free até 1 dia, Render Hobby 7 dias, Vercel Hobby 1 hora. São janelas de
+  consulta, não promessas de eliminação de todos os registros internos do fornecedor.
+- Sem backups manuais/externos. O Supabase Free não oferece backups automáticos
+  acessíveis à equipe. Não se afirma ausência de cópias internas do fornecedor.
+- Documentos públicos: versão 2026-11-11 em /privacidade.html e /termos.html.
+  Funções de autoatendimento e Google Agenda ainda previstas foram identificadas
+  como Release 2. Nesta integração, CURRENT_LEGAL_VERSIONS foi alinhado à versão publicada
+  2026-11-11 para termos e política. A homologação do backend hospedado continua pendente.
+- Fontes verificadas: https://render.com/docs/logging,
+  https://vercel.com/docs/logs/runtime, https://supabase.com/pricing,
+  https://supabase.com/docs/guides/platform/backups.
+- Revisão: páginas geradas do Markdown controlado no repositório, sem entrada
+  de usuário; contatos e links conferidos, sem placeholders ou dependência de login.
+  Gerador: python scripts/render_legal.py --publish (Markdown==3.11.3).

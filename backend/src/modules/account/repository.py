@@ -12,8 +12,8 @@ from sqlalchemy.orm import Session
 # nova versão em docs/produto/, atualize aqui: as contas voltam a ser
 # convidadas a ler o documento.
 CURRENT_LEGAL_VERSIONS = {
-    "termos_de_uso": "2026-11-10",
-    "politica_de_privacidade": "2026-11-10",
+    "termos_de_uso": "2026-11-11",
+    "politica_de_privacidade": "2026-11-11",
 }
 
 
