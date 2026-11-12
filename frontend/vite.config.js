@@ -1,9 +1,12 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { getSupabaseConfig } from './src/lib/supabaseConfig.js'
+import { validateDeploymentConfig } from './src/lib/deploymentConfig.js'
 
 export default defineConfig(({ mode }) => {
-  getSupabaseConfig(loadEnv(mode, '..', 'VITE_'));
+  const env = loadEnv(mode, '..', 'VITE_');
+  getSupabaseConfig(env);
+  validateDeploymentConfig(env, process.env);
   return {
     envDir: '..',
     plugins: [react()],
