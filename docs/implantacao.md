@@ -268,3 +268,23 @@ autenticada, com Notificações e Sair da conta disponíveis. Isso valida o call
 a chave secreta configurada e a criação da sessão pelo Supabase.
 O branding e a publicação geral no Google permanecem pendentes por decisão
 do responsável; o ambiente Google continua em modo de teste.
+
+
+### Publicação legal e verificação da marca (11/11/2026)
+
+Deploy de produção dpl_FvAa8JYvqr2Vaj2PjHkKY83K9npT, commit
+1a54cc701ced396c3a6c73013df4ba0039ed747b da branch codex/oauth-privacy-publication.
+Política e termos acessíveis sem login em https://agendaunb.vercel.app/privacidade.html
+e https://agendaunb.vercel.app/termos.html, com links no rodapé e metatag de propriedade.
+Os textos vieram da branch feat/s8-d01-privacidade (961f6d1), com responsáveis,
+canal e retenção definidos pelo responsável e identificação do autoatendimento
+ainda previsto para a Release 2.
+
+Search Console confirmou Propriedade verificada via Tag HTML para
+unbagenda@gmail.com. Não remover a metatag google-site-verification.
+O Google OAuth foi publicado em produção e a verificação da marca foi iniciada.
+A checagem automática ainda não reconheceu a propriedade recém-confirmada e
+solicitou expressamente aguardar 24 horas antes de tentar novamente.
+Não foi apresentada contestação: a atualização entre os sistemas é pendente real.
+Retomar Branding > Informações e resumo > Ver problemas > Corrigi os problemas
+após esse intervalo e concluir a nova solicitação. A marca ainda não está aprovada.
