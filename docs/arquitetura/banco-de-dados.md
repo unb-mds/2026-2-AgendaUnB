@@ -50,10 +50,13 @@ Armazena os metadados dos usuários, sincronizada com a tabela nativa de autenti
 Eventos publicados por professor/admin e sugestões da comunidade sujeitas à moderação. As regras posteriores à R1 estão no [guia de moderação](../painel-administrativo.md).
 *   **Colunas:**
     *   `id` (UUID, Primary Key): Identificador único.
-    *   `autor_id` (UUID, Not Null): Chave estrangeira para `profiles(id)` (`ON DELETE CASCADE`).
+    *   `autor_id` (UUID): Chave estrangeira para `profiles(id)` (`ON DELETE CASCADE`). Nulo apenas em evento coletado, que é identificado pela fonte (`CHECK (autor_id is not null or fonte is not null)`).
     *   `titulo` (TEXT, Not Null): Título do evento. Validação: Mínimo de 3 caracteres (`CHECK (char_length(trim(titulo)) >= 3)`).
     *   `descricao` (TEXT, Not Null): Detalhamento do evento.
-    *   `data_evento` (TIMESTAMPTZ, Not Null): Data e hora consolidadas do evento.
+    *   `data_evento` (TIMESTAMPTZ): Início do evento. Obrigatório para publicar (`CHECK (status <> 'aprovado' or data_evento is not null)`); só um item coletado em revisão pode ficar sem data.
+    *   `data_fim`, `dia_inteiro`, `data_inicio_civil`, `data_fim_civil`: intervalo e dia inteiro, descritos em [3.3](#33-datas-e-intervalos-adr-011).
+    *   `fonte`, `fonte_id`, `fonte_url`, `fonte_tipo`, `fonte_hash`, `coletado_em`, `campos_editados`, `motivo_revisao`, `possivel_duplicata_de`: procedência da coleta, descrita em [3.4](#34-coleta-de-eventos-s7-b05).
+    *   `moderado_por`, `moderado_em`: quem decidiu sobre o evento e quando.
     *   `localizacao` (TEXT): Local físico específico (ex: Sala S1, Auditório).
     *   `link_externo` (TEXT): Link auxiliar ou de inscrição.
     *   `campus_id` (UUID): Chave estrangeira para a tabela `campus(id)`.
@@ -68,10 +71,11 @@ Eventos publicados por professor/admin e sugestões da comunidade sujeitas à mo
 Agenda estritamente privada, gerenciada e visualizada unicamente por cada estudante.
 *   **Colunas:**
     *   `id` (UUID, Primary Key): Identificador único.
-    *   `user_id` (UUID, Not Null): Chave estrangeira para `auth.users(id)` (`DEFAULT auth.uid()`).
+    *   `user_id` (UUID, Not Null): Chave estrangeira para `auth.users(id)` (`DEFAULT auth.uid()`, `ON DELETE CASCADE` desde `20261111160000`; antes, uma conta com compromissos não podia ser excluída).
     *   `titulo` (TEXT, Not Null): Título do compromisso. Validação: Mínimo de 3 caracteres.
     *   `descricao` (TEXT): Notas extras.
-    *   `data_hora` (TIMESTAMPTZ, Not Null): Data e hora do compromisso.
+    *   `data_hora` (TIMESTAMPTZ, Not Null): Início do compromisso.
+    *   `data_fim`, `dia_inteiro`, `data_inicio_civil`, `data_fim_civil`: intervalo e dia inteiro, descritos em [3.3](#33-datas-e-intervalos-adr-011).
     *   `campus_id` (UUID): Chave estrangeira para a tabela `campus(id)`.
     *   `category_id` (UUID): Chave estrangeira para a tabela `categories(id)`.
     *   `criado_em` (TIMESTAMPTZ, Not Null): Timestamp de criação.
@@ -80,6 +84,31 @@ Agenda estritamente privada, gerenciada e visualizada unicamente por cada estuda
     *   **Criação (INSERT):** Política *"utilizadores podem criar eventos"* (`WITH CHECK (auth.uid() = user_id)`).
     *   **Edição (UPDATE):** Política *"utilizadores podem atualizar os seus proprios eventos"* (`USING (auth.uid() = user_id)` e `WITH CHECK`).
     *   **Exclusão (DELETE):** Política *"utilizadores podem deletar os seus proprios eventos"* (`USING (auth.uid() = user_id)`).
+
+### 3.3. Datas e intervalos (ADR-011)
+Instantes ficam em `data_evento`/`data_hora` e `data_fim` (`TIMESTAMPTZ`). Dia inteiro usa datas civis em `data_inicio_civil` e `data_fim_civil` (`DATE`), com `dia_inteiro = true`. O fim é sempre **exclusivo**: 18 a 20/11 inclusive é início 18 e fim 21.
+*   **Triggers** `eventos_normaliza_datas` e `eventos_pessoais_normaliza_datas`: em dia inteiro, preenchem o início e o fim como a meia-noite de `America/Sao_Paulo` dos dias civis, para que ordenação, filtros e lembretes tratem os dois tipos da mesma forma.
+*   **Validações:** dia inteiro exige as duas datas civis e fim posterior ao início; evento com horário não tem data civil; `data_fim`, quando existe, é posterior ao início.
+*   **Índices:** `idx_eventos_aprovados_data` (parcial, `status = 'aprovado'`) e `idx_eventos_pessoais_usuario_data (user_id, data_hora)`.
+*   Registros anteriores não foram reclassificados: `00:00` em um evento legado não prova dia inteiro.
+
+### 3.4. Coleta de eventos (S7-B05)
+Eventos coletados da Agenda UnB Notícias ficam na própria tabela `eventos`, identificados pela procedência.
+*   **Chave da origem:** índice único parcial `uq_eventos_fonte (fonte, fonte_id)`. Coletas sucessivas ou concorrentes atualizam o mesmo registro.
+*   **Função** `registrar_evento_coletado(jsonb)`: uma chamada por item, atômica. Publica itens completos e inequívocos; envia à revisão (`motivo_revisao` em `incompleto`, `ambiguo`, `possivel_duplicata`, `informe`); concilia URL idêntica à de um evento cadastrado na plataforma; nunca desfaz edição local nem decisão de moderação.
+*   **Edições locais:** o trigger `eventos_registra_edicao_local` anota em `campos_editados` o que foi alterado fora da coleta. O trigger `eventos_protege_procedencia` impede que o navegador grave procedência ou registro de moderação.
+*   **Tabela `coletas_eventos`:** uma linha por execução do coletor (`status`, horários, contadores e `erro_codigo` curto). Sem conteúdo da fonte.
+*   **Revisão:** `listar_revisoes_coleta(status, offset)` para professor e admin; a decisão usa `moderar_sugestao`, que registra `moderado_por` e `moderado_em` e recusa publicar item sem data.
+
+### 3.5. Tabela `lembretes` (S8-B03, ADR-013)
+Avisos na plataforma 24 horas antes do início de cada evento da agenda da conta.
+*   **Colunas:** `user_id` (FK `profiles`, `ON DELETE CASCADE`), `tipo_evento` (`pessoal` ou `publico_salvo`), `evento_pessoal_id` ou `evento_id` (FK com `ON DELETE CASCADE`), `inicio_referencia`, `agendado_para`, `status` (`pendente` ou `disparado`), `disparado_em`, `lido_em`.
+*   **Idempotência:** índices únicos parciais `(user_id, evento_pessoal_id, inicio_referencia)` e `(user_id, evento_id, inicio_referencia)`.
+*   **Triggers:** em `eventos_pessoais`, `eventos_salvos` e `eventos`, agendam ao entrar na agenda, trocam o aviso quando o início muda e cancelam na exclusão, na remoção do vínculo ou quando o evento sai do catálogo. Entrada na agenda com 24 horas ou menos não gera aviso.
+*   **Função** `disparar_lembretes(limite)`: torna visíveis os avisos vencidos, uma única vez cada (`FOR UPDATE SKIP LOCKED`), conferindo de novo a elegibilidade.
+*   **Políticas RLS:** a conta lê apenas os próprios avisos já disparados e só altera `lido_em`; o primeiro `lido_em` é mantido. Sem acesso para visitantes.
+
+O uso dessas estruturas pela API, pelo coletor e pelo agendador está em [Dados de eventos](dados-de-eventos.md).
 
 ---
 
@@ -124,7 +153,8 @@ Tabela física única dos candidatos extraídos dos planos, decidida na S7-D01 c
     *   `versao_id` (UUID, Not Null): versão do plano a que o candidato pertence. A FK composta `(plano_id, versao_id)` → `versoes_plano(plano_id, id)` impede apontar para a versão de outro plano. Quando omitido no INSERT, um trigger usa a versão mais recente do plano.
     *   `ordem` (SMALLINT ≥ 0, opcional): posição do candidato na versão. `(versao_id, ordem)` é único, para reprocessar sem duplicar.
     *   `titulo` (TEXT, Not Null), `data_avaliacao` (TIMESTAMPTZ, opcional), `tipo`, `ambiguo`, `pagina_origem`, `trecho_origem`, `status`, `versao_processamento` e `provedor` (acrescentados em `20261029160000`).
-*   **Políticas RLS:** leitura pelo dono do plano e, quando a versão estiver compartilhada, por quem segue a oferta do plano (*"leitura de candidatos de versoes compartilhadas"*). Sem política de escrita.
+*   **Políticas RLS:** leitura por quem pode ler a versão (*"leitura de candidatos de versoes compartilhadas"*): o autor dela e, quando compartilhada, quem segue a oferta do plano. Sem política de escrita.
+*   **Conteúdo compartilhado:** candidatos de versão compartilhada não são alterados, excluídos nem acrescentados (triggers `avaliacoes_compartilhada_imutavel` e `avaliacoes_zz_nao_entra_em_compartilhada`). A correção é feita em uma revisão. `status` continua editável.
 
 ### 4.3. Tabela `versoes_plano`
 Versões de um plano (ADR-010). Toda versão nasce **privada**; uma nova revisão cria nova versão e não sobrescreve calendários pessoais.
@@ -134,8 +164,11 @@ Versões de um plano (ADR-010). Toda versão nasce **privada**; uma nova revisã
     *   `versao_origem_id` (UUID, opcional): versão revisada que originou esta (`ON DELETE SET NULL`); nunca a própria versão.
     *   `procedencia_institucional` (BOOLEAN, padrão falso): herdada da versão de origem. O papel professor/admin não a cria sozinho.
     *   `visibilidade` (padrão `privada`): `privada` ou `compartilhada`. `compartilhada_em` é preenchido se, e somente se, a versão estiver compartilhada.
+    *   `fonte_institucional_url`, `procedencia_validada_por`, `procedencia_validada_em`: evidência pública oficial da origem institucional, validada por admin. `procedencia_institucional` exige a evidência.
+    *   `retirada_em`, `retirada_por`: última retirada do compartilhamento.
 *   **Criação:** todo plano recebe a versão 1 automaticamente (trigger após INSERT em `planos_ensino`), com o papel atual do dono. Os planos existentes ganharam a versão 1 na migração.
-*   **Políticas RLS:** leitura pelo dono do plano ou, se compartilhada, por usuários que seguem a oferta do plano (função `pode_ler_versao`). Sem política de escrita: compartilhar, revisar e retirar passam pelo back-end (S8-B01).
+*   **Políticas RLS:** leitura pelo autor da versão ou, se compartilhada, por usuários que seguem a oferta do plano (função `pode_ler_versao`). O rascunho privado de uma revisão pertence a quem a escreveu. Sem política de escrita.
+*   **Funções (S8-B01):** `compartilhar_versao` (só o autor), `retirar_compartilhamento` (autor ou admin), `criar_revisao` (autor; professor e admin sobre versão compartilhada) e `validar_procedencia_institucional` (admin). Todas recebem o ator e conferem a permissão no banco.
 *   **Arquivo:** compartilhar uma versão não expõe o registro do plano nem o arquivo. A retenção do PDF segue a ADR-003.
 
 ### 4.4. Tabelas `disciplinas`, `ofertas_turma` e `vinculos_turma`
@@ -151,10 +184,27 @@ Catálogo de turmas (ADR-009) e turmas que o usuário segue. A disciplina abstra
 `eventos_pessoais` registra a procedência em `origem_plano_id`, `origem_avaliacao_id` e `origem_versao_id` (FK para `versoes_plano`, `ON DELETE SET NULL`).
 *   **Unicidade por usuário:** `(user_id, origem_avaliacao_id)` é único (índice parcial). Como cada candidato pertence a uma única versão, isso equivale à unicidade `(user_id, version_id, candidate_id)` da ADR-010. Até a S7-D01, a unicidade era global, e um usuário podia bloquear a confirmação de outro.
 *   **Índice:** `(user_id, origem_versao_id)`.
+*   **Confirmação idempotente (S7-B04):** `confirmar_importacao(ator, chave, versao, itens)` grava a operação (`operacoes_importacao`, única por `(user_id, chave)`), os itens (`itens_importacao`) e os eventos na mesma transação. Repetir a chave devolve o resultado anterior e não recria evento apagado; a mesma chave com outro conteúdo é recusada. O item mantém o registro quando o evento é excluído (`evento_pessoal_id` fica nulo).
+
+### 4.6. Tabela `votos_avaliacao` (S8-B01)
+Um voto por conta e candidato: chave primária `(user_id, avaliacao_id)`, `valor` em `confirma` ou `contesta`. Gravado por `votar_avaliacao`, que exige versão compartilhada e vínculo com a turma; `resumo_votos_versao` devolve as contagens. Cada conta lê apenas os próprios votos. Votos não alteram datas.
+
+O uso dessas funções pela API está em [Dados de planos](dados-de-planos.md).
 
 ## 5. Eventos salvos e notificações
 
 `eventos_salvos` vincula um perfil a um evento público com chave composta `(user_id, event_id)`. `notificacoes` referencia o perfil destinatário e pode referenciar o evento que originou o aviso. Consulte as políticas, a implantação e os cenários de verificação nos guias de [eventos salvos](../eventos-salvos.md) e [painel administrativo](../painel-administrativo.md).
+
+## 6. Privacidade e ciclo de vida (S8-D01)
+
+*   **`aceites_termos`:** chave `(user_id, documento, versao)`; `documento` em `termos_de_uso` ou `politica_de_privacidade`; `versao` é a data de vigência. O primeiro aceite de cada versão é mantido.
+*   **`consentimentos`:** `finalidade` (`google_agenda`; a autorização de envio à IA é o snapshot `texto_aprovado` do plano), `referencia_id`, `conteudo_hash`, `concedido_em`, `revogado_em`. Um consentimento ativo por conta, finalidade, objeto e conteúdo. Funções `registrar_consentimento`, `revogar_consentimento` e `tem_consentimento`.
+*   **`exclusoes_conta`:** evidência de exclusão com `solicitada_em`, `concluida_em` e `contagens`. Sem identificador da conta.
+*   **`planos_ensino.arquivo_descartado_em`:** quando o PDF original de um plano antigo saiu do Storage. `planos_particular_exige_fonte` passa a aceitar PDF, texto preparado **ou** descarte registrado.
+*   **Funções:** `exportar_dados_da_conta`, `preparar_exclusao_conta`, `concluir_exclusao_conta`, `arquivos_a_descartar` e `registrar_descarte_arquivo`, todas restritas ao servidor.
+*   **Políticas RLS:** cada conta lê os próprios aceites e consentimentos; nada é gravável pelo navegador.
+
+Inventário, direitos do titular e procedimentos em [Privacidade e ciclo de vida dos dados](../processo/privacidade.md).
 
 ## Evolução de candidatos na R2
 

@@ -13,6 +13,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from src.modules.classes.router import router as classes_router
 from src.modules.events.router import router as events_router
+from src.modules.account.router import router as account_router
 from src.modules.syllabus.router import router as syllabus_router
 from src.middlewares.upload_limits import UploadLimitsMiddleware
 
@@ -35,7 +36,13 @@ async def handle_integrity_error(request: Request, exc: IntegrityError) -> JSONR
 
 @app.exception_handler(SQLAlchemyError)
 async def handle_database_error(request: Request, exc: SQLAlchemyError) -> JSONResponse:
-    logger.error("Database failure on %s %s", request.method, request.url.path)
+    # Sem traceback: a mensagem do PostgreSQL pode trazer a linha recusada
+    # (títulos, descrições, texto de planos). Tipo e SQLSTATE bastam ao diagnóstico.
+    logger.error(
+        "Database failure on %s %s (%s, sqlstate=%s)",
+        request.method, request.url.path, type(exc).__name__,
+        getattr(getattr(exc, "orig", None), "sqlstate", None),
+    )
     return JSONResponse(
         status_code=503,
         content={"detail": "O serviço de dados está indisponível no momento."},
@@ -95,6 +102,7 @@ app.add_middleware(UploadLimitsMiddleware)
 app.include_router(classes_router, prefix="/api/v1")
 app.include_router(events_router, prefix="/api/v1")
 app.include_router(syllabus_router, prefix="/api/v1")
+app.include_router(account_router, prefix="/api/v1")
 
 
 @app.get("/health", tags=["health"])
