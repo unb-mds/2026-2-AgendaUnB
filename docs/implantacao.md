@@ -111,7 +111,18 @@ Configurar no Supabase a Site URL da SPA e as URLs de retorno necessárias para 
 
 ## Fluxo de CI/CD proposto
 
-Nenhuma etapa abaixo existe como workflow da aplicação nesta referência. O workflow de documentação continua independente.
+O workflow `.github/workflows/supabase-ci.yml` valida o banco em PRs e pushes
+na `main` que alteram `supabase/**`, `backend/**` ou o próprio workflow, além de
+permitir execução manual. Ele inicia o Supabase local com migrations e seed,
+reprova erros de lint e executa `backend/tests/test_*database.py` com Python 3.11.
+Os testes usam uma cópia do banco recém-inicializado (schema e seed) em `agenda_catalog_ci`, banco local
+descartável necessário para o teste de publicação que faz commits. A porta vem
+de `supabase/config.toml`; nenhuma credencial de produção é necessária. Testes
+pgTAP só executam quando há arquivos SQL em `supabase/tests`. O stack é encerrado
+mesmo em caso de falha. A execução no GitHub Actions ainda precisa ser confirmada.
+
+O restante do fluxo abaixo continua proposto; este workflow não publica a aplicação.
+O workflow de documentação continua independente.
 
 1. **PR:** instalar dependências; executar pytest com SQLite, testes de calendário, build frontend e MkDocs. Subir Supabase local descartável, aplicar migrações/seed e executar os testes PostgreSQL com `TEST_SUPABASE_DB_URL` local. Falha bloqueia promoção; teste ignorado não equivale a aprovação de RLS.
 2. **Merge em `main`:** repetir as verificações do commit final e publicar homologação, com exclusão mútua por ambiente para impedir migrações/deploys simultâneos. Somente jobs com sucesso liberam a sequência de publicação.
