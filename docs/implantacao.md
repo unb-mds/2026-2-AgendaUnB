@@ -121,7 +121,8 @@ logs dos provedores também omitem tokens, credenciais e conteúdo acadêmico.
 | Calendar | O endpoint de conexão da versão publicada retorna 404. Conexão e renovação dependem da publicação da #110 e de configuração em cada ambiente. |
 | Upload de 10 MiB | A API Render recebeu 10.486.132 bytes de multipart e respondeu 401 sem sessão. Com Auth e banco Supabase locais, o PDF sintético de 10 MiB foi aceito, a autorização gerou candidatos com provedor simulado e a revisão importou um evento. O PDF original não ficou no Storage. Falta repetir com sessão no Render. |
 | Build, testes e migrations | Build Vite, 25 testes de frontend, 9 testes Playwright e 228 testes de backend passaram em ambiente local. Duas provas do backend ficaram ignoradas. A imagem Python 3.11 respondeu em `/health`; 28 migrations foram aplicadas do zero no Supabase descartável e o lint passou. |
-| Aceite integrado | Faltam SMTP com destinatário externo, jornadas com sessão no domínio publicado, execução dos jobs hospedados, revisão de logs dos provedores, ensaio de rollback e revisão humana. |
+| Rollback | No mesmo schema local, API candidata → `2a92144` → candidata respondeu 200 em `/health` e na consulta de eventos nas três etapas. Falta ensaiar rollback do frontend e da API na hospedagem. |
+| Aceite integrado | Faltam SMTP com destinatário externo, jornadas com sessão no domínio publicado, execução dos jobs hospedados, revisão de logs dos provedores e revisão humana. |
 
 ## Plano original e histórico
 
