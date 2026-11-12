@@ -53,6 +53,9 @@
         "pages": [
           "docs/produto/visao",
           "docs/produto/personas",
+          "docs/produto/politica-de-privacidade",
+          "docs/produto/termos-de-uso",
+          "docs/processo/privacidade",
           "docs/produto/requisitos",
           "docs/produto/padroes",
           "docs/matriz-release-2"
@@ -63,7 +66,9 @@
         "pages": [
           "docs/arquitetura/visao-geral",
           "docs/arquitetura/modelo-de-dados",
+          "docs/arquitetura/dados-de-planos",
           "docs/arquitetura/banco-de-dados",
+          "docs/arquitetura/dados-de-eventos",
           "docs/arquitetura/catalogo-de-turmas",
           "docs/arquitetura/frontend",
           "docs/api-specs",

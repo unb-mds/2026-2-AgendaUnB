@@ -190,8 +190,8 @@ TEST_SUPABASE_DB_URL="postgresql+psycopg://postgres:postgres@127.0.0.1:14322/pos
   acessíveis à equipe. Não se afirma ausência de cópias internas do fornecedor.
 - Documentos públicos: versão 2026-11-11 em /privacidade.html e /termos.html.
   Funções de autoatendimento e Google Agenda ainda previstas foram identificadas
-  como Release 2. Ao integrar os endpoints legais, atualizar CURRENT_LEGAL_VERSIONS
-  para a versão efetivamente publicada; esta implantação não altera o backend.
+  como Release 2. Nesta integração, CURRENT_LEGAL_VERSIONS foi alinhado à versão publicada
+  2026-11-11 para termos e política. A homologação do backend hospedado continua pendente.
 - Fontes verificadas: https://render.com/docs/logging,
   https://vercel.com/docs/logs/runtime, https://supabase.com/pricing,
   https://supabase.com/docs/guides/platform/backups.

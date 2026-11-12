@@ -33,7 +33,28 @@ erDiagram
         UUID campus_id FK
         UUID category_id FK
         TIMESTAMPTZ data_evento
+        TIMESTAMPTZ data_fim "fim exclusivo"
+        BOOLEAN dia_inteiro
         TEXT status
+        TEXT fonte "nulo se criado na plataforma"
+        TEXT fonte_id "UK com fonte"
+    }
+
+    COLETAS_EVENTOS {
+        UUID id PK
+        TEXT fonte
+        TEXT status
+        TIMESTAMPTZ iniciada_em
+    }
+
+    LEMBRETES {
+        UUID id PK
+        UUID user_id FK
+        UUID evento_pessoal_id FK
+        UUID evento_id FK
+        TIMESTAMPTZ agendado_para
+        TEXT status
+        TIMESTAMPTZ lido_em
     }
 
     EVENTOS_PESSOAIS {
@@ -87,7 +108,28 @@ erDiagram
         TEXT autor_papel
         UUID versao_origem_id FK
         BOOLEAN procedencia_institucional
+        TEXT fonte_institucional_url
         TEXT visibilidade
+    }
+
+    VOTOS_AVALIACAO {
+        UUID user_id PK,FK
+        UUID avaliacao_id PK,FK
+        TEXT valor
+    }
+
+    OPERACOES_IMPORTACAO {
+        UUID id PK
+        UUID user_id FK
+        TEXT chave "UK com user_id"
+        UUID versao_id FK
+    }
+
+    ITENS_IMPORTACAO {
+        UUID operacao_id PK,FK
+        UUID avaliacao_id PK
+        UUID evento_pessoal_id FK "nulo se o evento foi apagado"
+        TEXT resultado
     }
 
     DISCIPLINAS {
@@ -122,6 +164,9 @@ erDiagram
     CATEGORIES o|--o{ EVENTOS : "classifica"
     CATEGORIES o|--o{ EVENTOS_PESSOAIS : "classifica"
     EVENTOS ||--o{ EVENTOS_SALVOS : "tem vinculos"
+    EVENTOS o|--o{ LEMBRETES : "avisa quem salvou"
+    EVENTOS_PESSOAIS o|--o{ LEMBRETES : "avisa o dono"
+    PROFILES ||--o{ LEMBRETES : "recebe"
     EVENTOS o|--o{ NOTIFICACOES : "origina"
     PLANOS_ENSINO ||--o{ AVALIACOES : "tem"
     PLANOS_ENSINO ||--|{ VERSOES_PLANO : "versiona"
@@ -134,6 +179,11 @@ erDiagram
     OFERTAS_TURMA ||--o{ VINCULOS_TURMA : "seguida por"
     PLANOS_ENSINO o|--o{ PLANOS_ENSINO : "referencia plano oficial"
     VERSOES_PLANO o|--o{ EVENTOS_PESSOAIS : "origem da importacao"
+    AVALIACOES ||--o{ VOTOS_AVALIACAO : "recebe"
+    PROFILES ||--o{ VOTOS_AVALIACAO : "vota"
+    PROFILES ||--o{ OPERACOES_IMPORTACAO : "confirma"
+    OPERACOES_IMPORTACAO ||--|{ ITENS_IMPORTACAO : "contem"
+    EVENTOS_PESSOAIS o|--o{ ITENS_IMPORTACAO : "criado por"
 ```
 
 O dono de `eventos_pessoais` referencia `auth.users.id`. O fluxo de confirmação da API registra a procedência em `eventos_pessoais.origem_avaliacao_id` (sem FK) e `origem_versao_id` (FK para `versoes_plano`). A unicidade é por usuário, `(user_id, origem_avaliacao_id)`. `avaliacoes` é a tabela única de candidatos desde a S7-D01; detalhes na [especificação física](banco-de-dados.md).
