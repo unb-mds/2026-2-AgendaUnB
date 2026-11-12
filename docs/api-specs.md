@@ -337,3 +337,16 @@ nome da disciplina, turma e período, ignorando metadados livres para associaç�
 Histórico particular aceita `offering_id` opcional; dados privados continuam
 restritos ao proprietário. `GET /class-offerings/{id}/shared-plans` expõe apenas
 versões compartilhadas a seguidores da oferta, sem o texto privado do autor.
+
+### Envio vinculado à conta — S7-F03 (#73)
+
+PDF e texto exigem também que a conta autenticada siga a oferta. Ausência de
+vínculo, inclusive após deixar de seguir, retorna 403 com `detail` orientando
+seguir a turma. A verificação ocorre antes da extração e novamente antes da
+persistência. Em PostgreSQL, a segunda consulta bloqueia o vínculo até o commit,
+serializando a gravação com a remoção concorrente do vínculo. Oferta retirada
+continua retornando 409; catálogo sem publicação retorna 503.
+
+A interface consulta a oferta e `GET /me/class-offerings` antes de habilitar
+PDF/texto. Falhas ou respostas inválidas bloqueiam o envio e oferecem nova consulta.
+Histórico e planos particulares continuam acessíveis ao dono após deixar de seguir.
