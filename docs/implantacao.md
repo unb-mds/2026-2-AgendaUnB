@@ -21,6 +21,47 @@ Fontes oficiais consultadas para a proposta: [Vite na Vercel](https://vercel.com
 
 ## Ambientes e configuração
 
+### Login na Vercel e Supabase Auth
+
+O frontend usa `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY`
+(`sb_publishable_...`). `VITE_SUPABASE_ANON_KEY` continua aceito como alternativa
+legada, somente com JWT de papel `anon`. O build rejeita chaves `sb_secret_...`
+ou JWT `service_role` em qualquer variável `VITE_`, inclusive uma variável
+legada que não seja mais utilizada. Nunca incluir credenciais privadas nesse prefixo.
+
+Se aparecer `Forbidden use of secret API key in browser`, substituir a chave
+na Vercel nos ambientes afetados e gerar um novo deploy: Vite incorpora os valores
+durante o build. Revogar/rotacionar a chave secreta que foi publicada, atualizando
+primeiro os serviços privados que dependem dela. A chave pública fica em
+Supabase > Settings > API Keys.
+
+No Supabase hospedado, configurar Auth > URL Configuration com a URL real do
+site e permitir o retorno exato `https://<dominio>/?auth=login`. Configurar
+separadamente os domínios de homologação e produção. `supabase/config.toml`
+configura o ambiente local; alterá-lo não habilita provedores no projeto remoto.
+
+Em Auth > Sign In / Providers, manter Email habilitado e habilitar Google com
+o Client ID e Client Secret do cliente OAuth Web do Google Cloud. No Google,
+cadastrar a origem HTTPS do site e o callback fornecido pelo Supabase:
+`https://<project-ref>.supabase.co/auth/v1/callback`. Se o aplicativo Google
+estiver em teste, cadastrar os usuários de teste autorizados.
+
+Estudantes e professores entram pelo mesmo formulário de e-mail e senha.
+O cadastro docente exige `@unb.br` no frontend e no trigger do banco;
+`@aluno.unb.br` não concede papel docente. Google cria novos perfis como
+`student` e preserva o papel de contas existentes. Atribuições administrativas
+continuam no painel protegido. Com confirmação de e-mail habilitada, o cadastro
+sem sessão mostra a orientação para confirmar antes de entrar, sem anunciar
+que o usuário já está autenticado.
+
+Verificação de 11/11/2026: o projeto `agenda-unb-homolog` permitia Email e
+cadastro, exigia confirmação e tinha Google desativado. Os testes de interface
+substituem o provedor externo; não comprovam entrega de e-mail nem consentimento
+real do Google. Esses dois fluxos devem ser homologados após a configuração remota.
+
+Referências: [chaves Supabase](https://supabase.com/docs/guides/api/api-keys) e
+[Google OAuth](https://supabase.com/docs/guides/auth/social-login/auth-google).
+
 ### Processo de extração de planos (S6-B01)
 
 Além da API, provisionar processo independente com comando, na pasta `backend`,
@@ -192,3 +233,69 @@ do ambiente hospedado. A suíte local foi feita para rejeitar hosts remotos; a
 homologação na nuvem deve ter procedimento próprio, com dados sintéticos e o
 projeto de destino identificado. Ver o [fluxo HTTP local](privacidade-planos.md#integracao-http-local-de-auth-storage-e-processamento)
 e as [variáveis do worker](processamento-planos.md).
+
+
+### Correção de configuração em produção (11/11/2026)
+
+A variável VITE_SUPABASE_ANON_KEY na Vercel foi substituída por uma chave
+publishable do projeto de homologação, nos ambientes production e preview.
+O deploy de produção dpl_FMkQ3apCDBWxDG2RJAkSwZP7Je4U republicou o commit
+5f2f18ae88b7baafd46b5a21ab385310967e75de de main com a configuração corrigida.
+O bundle servido por https://agendaunb.vercel.app contém a chave pública e
+não contém valores sb_secret_. Uma requisição com credenciais deliberadamente
+inválidas retornou invalid_credentials (HTTP 400), sem o bloqueio de chave secreta.
+
+O Site URL remoto passou de localhost:3000 para https://agendaunb.vercel.app.
+Foram autorizados /eventos e /?auth=login nesse domínio e no domínio
+2026-2-agendaunb.vercel.app. O provedor Email e a confirmação permanecem ativos.
+Google ainda aguarda preenchimento das credenciais no painel e homologação real.
+As melhorias de tratamento de erros e confirmação no código local ainda precisam
+ser integradas e publicadas; o redeploy acima altera apenas a configuração.
+
+
+### Novo cliente Google (11/11/2026)
+
+Configurado o projeto Google Cloud agendaunb (722562228185), com cliente
+Web Agenda UnB e origem https://agendaunb.vercel.app. O callback autorizado
+é https://pzniltzdhyuzzdqbppjw.supabase.co/auth/v1/callback.
+Uma nova chave foi gerada com autorização do responsável e cadastrada
+exclusivamente no provedor Google do Supabase, sem persistência no código.
+O painel confirmou Google Enabled e Successfully updated settings.
+O provedor exige e-mail e mantém a verificação de nonce ativa.
+
+O teste no site publicado chegou ao seletor de contas do Google com o novo
+client_id e os parâmetros de callback corretos. O consentimento e a troca
+do código por sessão ainda precisam de validação com uma conta real.
+O app Google permanece Externo / Testando: a publicação está bloqueada pela
+configuração de branding. Não há URLs públicas de política de privacidade
+e termos no cadastro. Não foram inventados links para esses documentos.
+
+
+### Validação real do Google OAuth (11/11/2026)
+
+O fluxo foi concluído no site publicado com a conta do projeto: seleção da conta
+Google, consentimento limitado a nome/foto/e-mail e retorno à página de eventos
+autenticada, com Notificações e Sair da conta disponíveis. Isso valida o callback,
+a chave secreta configurada e a criação da sessão pelo Supabase.
+O branding e a publicação geral no Google permanecem pendentes por decisão
+do responsável; o ambiente Google continua em modo de teste.
+
+
+### Publicação legal e verificação da marca (11/11/2026)
+
+Deploy de produção dpl_FvAa8JYvqr2Vaj2PjHkKY83K9npT, commit
+1a54cc701ced396c3a6c73013df4ba0039ed747b da branch codex/oauth-privacy-publication.
+Política e termos acessíveis sem login em https://agendaunb.vercel.app/privacidade.html
+e https://agendaunb.vercel.app/termos.html, com links no rodapé e metatag de propriedade.
+Os textos vieram da branch feat/s8-d01-privacidade (961f6d1), com responsáveis,
+canal e retenção definidos pelo responsável e identificação do autoatendimento
+ainda previsto para a Release 2.
+
+Search Console confirmou Propriedade verificada via Tag HTML para
+unbagenda@gmail.com. Não remover a metatag google-site-verification.
+O Google OAuth foi publicado em produção e a verificação da marca foi iniciada.
+A checagem automática ainda não reconheceu a propriedade recém-confirmada e
+solicitou expressamente aguardar 24 horas antes de tentar novamente.
+Não foi apresentada contestação: a atualização entre os sistemas é pendente real.
+Retomar Branding > Informações e resumo > Ver problemas > Corrigi os problemas
+após esse intervalo e concluir a nova solicitação. A marca ainda não está aprovada.
