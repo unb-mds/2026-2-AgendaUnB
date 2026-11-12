@@ -86,6 +86,7 @@ export default function App() {
 
   // Mensagem de erro e trava contra clique duplo
   const [erroForm, setErroForm] = useState('');
+  const [avisoForm, setAvisoForm] = useState('');
   const [enviando, setEnviando] = useState(false);
 
   const [theme, setTheme] = useState('dark')
@@ -159,7 +160,7 @@ export default function App() {
 
     // O seletor da tela usa 'estudante'/'professor';
     // o banco espera 'student'/'professor'.
-    const { erro } = await signUpWithEmail({
+    const { erro, needsEmailConfirmation } = await signUpWithEmail({
       email: cadEmail,
       password: cadSenha,
       nomeCompleto: cadNome,
@@ -173,6 +174,15 @@ export default function App() {
       return;
     }
 
+    if (needsEmailConfirmation) {
+      setAvisoForm('Confira seu e-mail e abra o link de confirmação. Depois, entre com seu e-mail e senha.');
+      setLoginEmail(cadEmail.trim());
+      setCadSenha('');
+      setCadConfirmaSenha('');
+      setIsMenuOpen(false);
+      setIsLoginOpen(true);
+      return;
+    }
     setIsMenuOpen(false);
     navigate('/eventos');
   };
@@ -196,6 +206,28 @@ export default function App() {
     setIsLoginOpen(false);
     navigate('/eventos');
   };
+
+  const handleGoogle = async () => {
+    setErroForm('');
+    setAvisoForm('');
+    setEnviando(true);
+    const { erro } = await signInWithGoogle();
+    setEnviando(false);
+    if (erro) setErroForm(erro);
+  };
+
+  useEffect(() => {
+    if (user && authIntent === 'login') navigate('/eventos', { replace: true });
+  }, [user, authIntent, navigate]);
+
+  useEffect(() => {
+    const hash = new URLSearchParams(window.location.hash.slice(1));
+    if (searchParams.has('error') || hash.has('error')) {
+      setErroForm('Não foi possível concluir a autenticação. Tente novamente ou entre com e-mail e senha.');
+      setIsLoginOpen(true);
+      window.history.replaceState(null, '', '/?auth=login');
+    }
+  }, [searchParams]);
 
   // ............................
   // RENDER
@@ -314,6 +346,7 @@ export default function App() {
                 />
               </div>
 
+              {avisoForm && <p role="status">{avisoForm}</p>}
               {erroForm && (
                 <p style={{
                   color: '#ff6b6b',
@@ -339,7 +372,8 @@ export default function App() {
 
                   <button 
                     className="modal-btn-google"
-                    onClick={signInWithGoogle}
+                    onClick={handleGoogle}
+                disabled={enviando}
                   >
                     <svg width="18" height="18" viewBox="0 0 48 48">
                       <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.7 17.74 9.5 24 9.5z"/>
@@ -412,6 +446,7 @@ export default function App() {
                 />
               </div>
 
+              {avisoForm && <p role="status">{avisoForm}</p>}
               {erroForm && (
                 <p style={{
                   color: '#ff6b6b',
@@ -435,7 +470,8 @@ export default function App() {
 
               <button 
                 className="modal-btn-google"
-                onClick={signInWithGoogle}
+                onClick={handleGoogle}
+                disabled={enviando}
               >
                 <svg width="18" height="18" viewBox="0 0 48 48">
                   <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.7 17.74 9.5 24 9.5z"/>
@@ -640,6 +676,7 @@ export default function App() {
           <footer className="footer">
             <img src="/Marca-UnB.png" alt="Logo UnB" style={{ width:'70px', marginBottom:'1rem', opacity:0.5, filter: theme === 'light' ? 'invert(1)' : 'none' }}/>
             <p>Agenda UnB - Universidade de Brasília © 2026</p>
+            <nav aria-label="Informações legais"><a href="/privacidade.html">Política de Privacidade</a> · <a href="/termos.html">Termos de Uso</a></nav>
           </footer>
 
         </div>

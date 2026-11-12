@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { attemptAuth, authErrorMessage } from '../lib/authErrors.js';
 
 const AuthContext = createContext({});
 
@@ -63,7 +64,9 @@ export const AuthProvider = ({ children }) => {
   // Retorna { erro } — null em caso de sucesso, string legível
   // caso contrário, para a tela exibir.
   // -----------------------------------------------------------
-  const signUpWithEmail = async ({ email, password, nomeCompleto, papel = 'student' }) => {
+  const signUpWithEmail = ({ email, password, nomeCompleto, papel = 'student' }) => attemptAuth(async () => {
+    if (!['student', 'professor'].includes(papel)) return { erro: 'Selecione um perfil válido.' };
+    if (password.length < 8) return { erro: 'A senha precisa ter ao menos 8 caracteres.' };
     const emailLimpo = email.trim().toLowerCase();
     const nomeLimpo = nomeCompleto?.trim() ?? '';
 
@@ -84,6 +87,7 @@ export const AuthProvider = ({ children }) => {
       email: emailLimpo,
       password,
       options: {
+        emailRedirectTo: `${window.location.origin}/?auth=login`,
         data: {
           nome_completo: nomeLimpo,
           papel,
@@ -102,16 +106,16 @@ export const AuthProvider = ({ children }) => {
       if (/already registered|already exists/i.test(error.message)) {
         return { erro: 'Já existe uma conta com este e-mail.' };
       }
-      return { erro: error.message };
+      return { erro: authErrorMessage(error) };
     }
 
-    return { erro: null, user: data.user };
-  };
+    return { erro: null, user: data.user, needsEmailConfirmation: !data.session };
+  });
 
   // -----------------------------------------------------------
   // Login com e-mail e senha (RF01)
   // -----------------------------------------------------------
-  const signInWithEmail = async ({ email, password }) => {
+  const signInWithEmail = ({ email, password }) => attemptAuth(async () => {
     const { error } = await supabase.auth.signInWithPassword({
       email: email.trim().toLowerCase(),
       password,
@@ -121,24 +125,18 @@ export const AuthProvider = ({ children }) => {
       if (/invalid login credentials/i.test(error.message)) {
         return { erro: 'E-mail ou senha incorretos.' };
       }
-      return { erro: error.message };
+      return { erro: authErrorMessage(error) };
     }
     return { erro: null };
-  };
+  });
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = () => attemptAuth(async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/eventos`,
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'consent',
-        },
-      },
+      options: { redirectTo: `${window.location.origin}/?auth=login` },
     });
-    if (error) console.error('Erro no login com google:', error.message);
-  };
+    return { erro: error ? authErrorMessage(error) : null };
+  });
 
   // -----------------------------------------------------------
   // Virar professor depois do cadastro (RF04)
@@ -170,7 +168,7 @@ export const AuthProvider = ({ children }) => {
       if (error.code === '23514') {
         return { erro: 'Apenas contas com e-mail @unb.br podem ser de professor.' };
       }
-      return { erro: error.message };
+      return { erro: authErrorMessage(error) };
     }
 
     setProfile(data);
