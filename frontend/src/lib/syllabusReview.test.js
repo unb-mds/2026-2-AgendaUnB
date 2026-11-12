@@ -1,6 +1,41 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createReviewDraft, validReviewDate, validUtcOffset, validateReviewItem } from './syllabusReview.js';
+import { createCandidateReviewDraft, selectReviewItems, createReviewDraft, validReviewDate, validUtcOffset, validateReviewItem } from './syllabusReview.js';
+
+test('candidatos usam sugestões civis e só preservam fuso explícito da origem', () => {
+  const candidates = [
+    { id: 'a', status: 'pendente', suggestedDate: '2026-12-01', suggestedTime: '14:30:45' },
+    { id: 'b', status: 'confirmado', startsAt: '2026-12-01T14:30:00-03:00' },
+    { id: 'c', status: 'desconhecido', startsAt: '2026-12-01T14:30:00' },
+  ];
+  const [a, b, c] = createCandidateReviewDraft(candidates);
+  assert.equal(a.date, '2026-12-01'); assert.equal(a.time, '14:30:45'); assert.equal(a.utcOffset, '');
+  assert.equal(b.utcOffset, '-03:00'); assert.equal(b.editable, false);
+  assert.equal(c.date, ''); assert.equal(c.utcOffset, ''); assert.equal(c.editable, false);
+  assert.ok([a, b, c].every(item => item.decision === 'pending'));
+});
+
+test('lote preserva exclusões locais, correções e estados persistidos', () => {
+  const items = [
+    { id: 'a', decision: 'pending', editable: true, title: 'Corrigido' },
+    { id: 'b', decision: 'discarded', editable: true },
+    { id: 'c', decision: 'pending', editable: false },
+  ];
+  const selected = selectReviewItems(items, true);
+  assert.deepEqual(selected.map(item => item.decision), ['selected', 'discarded', 'pending']);
+  assert.equal(selected[0].title, 'Corrigido');
+  assert.equal(items[0].decision, 'pending');
+  assert.deepEqual(selectReviewItems(selected, false).map(item => item.decision), ['pending', 'discarded', 'pending']);
+});
+
+test('validação da revisão real respeita limites de título e tipos de avaliação', () => {
+  const item = { decision: 'selected', title: 'Prova', type: 'prova', date: '2026-12-01', time: '14:30:45', utcOffset: '-03:00' };
+  assert.deepEqual(validateReviewItem(item, true), {});
+  for (const title of ['ab', ' '.repeat(3), 'a'.repeat(201)]) assert.ok(validateReviewItem({ ...item, title }, true).title);
+  assert.deepEqual(validateReviewItem({ ...item, title: 'a'.repeat(200) }, true), {});
+  assert.ok(validateReviewItem({ ...item, type: 'aula' }, true).type);
+  assert.ok(validateReviewItem({ ...item, time: '14:30:60' }, true).time);
+});
 
 test('rascunho não seleciona itens nem infere horário ou fuso', () => {
   const source = [{ id: 'a', title: 'Prova', date: '2026-11-10' }];
