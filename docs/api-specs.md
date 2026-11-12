@@ -148,6 +148,17 @@ As operações exigem autenticação. Planos privados ficam restritos ao autor; 
 
 O histórico e o detalhe retornam `ano` e `semestre`. Planos antigos podem ter esses campos, `fileName` e `filePath` nulos. O upload aplica a cota de 10 envios em cinco dias (429 ao exceder) e valida o PDF antes de gravar. O cliente autenticado consulta os próprios planos e PDFs, enquanto o backend grava o arquivo e o registro de acompanhamento.
 
+### Conta e privacidade — S8-D01
+
+| Método | Rota | Acesso | Resposta |
+| --- | --- | --- | --- |
+| `GET` | `/api/v1/me/legal-documents` | Autenticado | 200 com a versão vigente e a aceita de cada documento |
+| `PUT` | `/api/v1/me/legal-acceptances/{terms\|privacy}` | Autenticado | 204; 409 se a versão enviada não é a vigente |
+| `GET` | `/api/v1/me/data-export` | Autenticado | 200 com o JSON dos dados da conta, para download |
+| `DELETE` | `/api/v1/me` | Autenticado | 204; 422 sem a frase de confirmação; 409 para o último administrador |
+
+Detalhes em [Privacidade e ciclo de vida dos dados](processo/privacidade.md#direitos-do-titular-na-api).
+
 ### Saúde — R1
 
 `GET /health`: público, sem parâmetros ou corpo, retorna 200 com `{ "status": "ok" }`. Não consulta banco nem Auth; não é uma verificação de prontidão de todas as dependências.

@@ -53,6 +53,9 @@
         "pages": [
           "docs/produto/visao",
           "docs/produto/personas",
+          "docs/produto/politica-de-privacidade",
+          "docs/produto/termos-de-uso",
+          "docs/processo/privacidade",
           "docs/produto/requisitos",
           "docs/produto/padroes",
           "docs/matriz-release-2"
