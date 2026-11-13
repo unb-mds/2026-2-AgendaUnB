@@ -1,9 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "redirects": [
-    { "source": "/:page(eventos|calendario-academico|horarios-de-aula).html", "destination": "/:page", "permanent": true },
+    { "source": "/eventos.html", "destination": "/eventos", "permanent": true },
     { "source": "/index.html", "destination": "/", "permanent": true },
-    { "source": "/:page(eventos|calendario-academico|horarios-de-aula)/", "destination": "/:page", "permanent": true }
+    { "source": "/eventos/", "destination": "/eventos", "permanent": true }
   ],
   "headers": [
     {
@@ -23,7 +23,7 @@
   "rewrites": [
     { "source": "/sitemap.xml", "destination": "/api/search?kind=sitemap" },
     { "source": "/evento/:id", "destination": "/api/search?kind=event&id=:id" },
-    { "source": "/:page(eventos|calendario-academico|horarios-de-aula)", "destination": "/:page.html" },
+    { "source": "/eventos", "destination": "/eventos.html" },
     { "source": "/:page(admin|sugestoes|segunda-pagina|plano-de-ensino)/:path*", "destination": "/app.html" }
   ]
 }

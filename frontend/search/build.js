@@ -1,5 +1,5 @@
 import { readFile, writeFile } from 'node:fs/promises';
-import { guidePaths, searchPages } from '../src/lib/searchPages.js';
+import { searchPages } from '../src/lib/searchPages.js';
 import { renderAppDocument, renderSearchPage } from './render.js';
 
 const dist = new URL('../dist/', import.meta.url);
@@ -12,17 +12,11 @@ await writeFile(new URL('app.html', dist), app);
 await writeFile(new URL('404.html', dist), renderAppDocument(appTemplate, {
   title: 'Página não encontrada | Agenda UnB',
   body: '<main class="public-search-page"><h1>Página não encontrada</h1><p><a href="/">Voltar ao Agenda UnB</a></p></main>',
-}));
+}).replace(/<script type="module"[^>]*><\/script>/, ''));
 
 for (const path of Object.keys(searchPages)) {
-  const page = renderSearchPage(path);
-  const document = renderAppDocument(path === '/' ? template : appTemplate, page);
-  if (guidePaths.includes(path)) {
-    // Editorial pages only need the built stylesheet.
-    await writeFile(new URL(`.${path}.html`, dist), document.replace(/<script type="module"[^>]*><\/script>/, ''));
-  } else {
-    await writeFile(path === '/' ? index : new URL(`.${path}.html`, dist), document);
-  }
+  const document = renderAppDocument(path === '/' ? template : appTemplate, renderSearchPage(path));
+  await writeFile(path === '/' ? index : new URL(`.${path}.html`, dist), document);
 }
 
 const entry = /<script type="module"[^>]*src="([^"]+)"/.exec(template)?.[1];

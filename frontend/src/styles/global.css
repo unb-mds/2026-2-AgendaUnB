@@ -1266,8 +1266,9 @@ body.light .tp-review-footer .tp-error { color:#a3221b; }
 }
 .tp-steps { scroll-margin-top: 100px; }
 
-.search-guide-links, .search-guide-links a { color: #fff; }
-body.light .search-guide-links, body.light .search-guide-links a { color: #000; }
+/* Legal links remain readable in both themes, including visited links. */
+.legal-links, .legal-links a { color: #fff; }
+body.light .legal-links, body.light .legal-links a { color: #000; }
 
 .public-search-page {
   max-width: 50rem;
@@ -1275,19 +1276,7 @@ body.light .search-guide-links, body.light .search-guide-links a { color: #000; 
   padding: clamp(1.5rem, 5vw, 4rem) 1.25rem;
   line-height: 1.65;
 }
-.public-search-page nav { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; margin-bottom: 2rem; }
 .public-search-page h1 { font-size: clamp(1.8rem, 5vw, 3rem); line-height: 1.2; margin: 0 0 1rem; }
-.public-search-page h2 { font-size: 1.3rem; line-height: 1.35; margin: 1.75rem 0 .5rem; }
 .public-search-page p { margin: .75rem 0; }
-.public-search-page li { margin: .35rem 0; }
-.public-search-page ul, .public-search-page ol { padding-left: 1.3rem; }
 .public-search-page a { color: #88caff; text-decoration: underline; text-underline-offset: .2em; }
-.public-search-page table { width: 100%; border-collapse: collapse; text-align: left; }
-.public-search-page th, .public-search-page td { padding: .5rem .75rem; border-bottom: 1px solid #383b46; }
 .public-event-description { white-space: pre-line; overflow-wrap: anywhere; }
-.events-intro { margin-bottom: 2rem; }
-.events-intro p { margin: .5rem 0; }
-.events-intro a { color: inherit; text-decoration: underline; }
-.event-card-link { color: inherit; text-decoration: none; }
-.event-card-link::after { content: ''; position: absolute; inset: 0; }
-.event-card:focus-within { outline: 2px solid var(--accent-color); outline-offset: 2px; }

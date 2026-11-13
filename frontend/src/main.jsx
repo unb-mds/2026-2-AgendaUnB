@@ -1,5 +1,5 @@
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter, Routes, Route, Navigate, useLocation, Link } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { lazy, Suspense } from 'react'
 import App from './App.jsx'
 import SecondPage from './pages/SecondPage.jsx'
@@ -29,9 +29,6 @@ createRoot(document.getElementById('root')).render(
         <Route path="/evento/:id" element={<PaginaDeEvento />} />
         <Route path="/sugestoes" element={<><SearchMetadata /><ProtectedRoute roles={['professor', 'admin']}><SuggestionsPage /></ProtectedRoute></>} />
         <Route path="/admin" element={<><SearchMetadata /><ProtectedRoute roles={['admin']}><AdminPage /></ProtectedRoute></>} />
-        <Route path="*" element={<main className="public-search-page">
-          <SearchMetadata /><h1>Página não encontrada</h1><Link to="/">Voltar ao Agenda UnB</Link>
-        </main>} />
       </Routes></Suspense>
     </AuthProvider>
   </BrowserRouter>
