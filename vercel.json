@@ -7,13 +7,7 @@
     },
     "frontend": {
       "root": "frontend",
-      "framework": "vite",
-      "rewrites": [
-        {
-          "source": "/(.*)",
-          "destination": "/index.html"
-        }
-      ]
+      "framework": "vite"
     }
   },
   "rewrites": [
@@ -21,6 +15,12 @@
       "source": "/health",
       "destination": {
         "service": "backend"
+      }
+    },
+    {
+      "source": "/api/search",
+      "destination": {
+        "service": "frontend"
       }
     },
     {
