@@ -40,6 +40,22 @@ O worker também verifica pré-requisitos nos catálogos do banco e recusa confi
 incompleta, mesmo com as flags ativas. Consultar o [guia S6-D02](privacidade-planos.md)
 para conferir o banco local antes de ativar o processo.
 
+### Coleta da Agenda UnB Notícias (S7-B05)
+
+O coletor é um processo separado da API, com `DATABASE_URL` do ambiente:
+
+```sh
+cd backend
+python -m src.modules.events.collector --interval-hours 6
+```
+
+O intervalo de seis horas é apenas um exemplo operacional, não uma frequência
+homologada. A opção recorrente exige pelo menos uma hora e usa advisory lock no
+PostgreSQL para impedir execuções concorrentes. Antes de habilitar o serviço em
+homologação, medir uma varredura completa e confirmar cobertura, duração e
+tratamento de falha da fonte. Nenhum serviço hospedado está configurado por este
+documento; o comando também pode ser invocado por um cron gerenciado pelo ambiente.
+
 | Ambiente | Aplicação e dados | Uso e publicação |
 | --- | --- | --- |
 | Local | Vite/FastAPI + Supabase CLI/Docker | Desenvolvimento e testes; dados descartáveis |
