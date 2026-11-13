@@ -1,5 +1,7 @@
 .plan-layout { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(300px, 1fr); gap: 36px; align-items: start; }
 .plan-layout > *, .plan-history-info { min-width: 0; }
+.plan-legacy-note { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 20px; color: var(--manage-muted); line-height: 1.6; }
+.plan-legacy-note .material-symbols-outlined { color: var(--manage-link); }
 .plan-review-panel { margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--manage-border); min-width: 0; }
 .plan-review-panel .plan-file-help { margin-top: 20px; border-bottom: 0; padding-bottom: 0; }
 .plan-upload { border: 1px solid var(--manage-border); border-radius: 14px; background: var(--manage-surface); padding: 28px; }
@@ -77,7 +79,7 @@ body.light .plan-badge-falha { color: #a3221b; }
 .plan-history-loading { padding: 24px 0; color: var(--manage-muted); }
 .plan-pagination { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-top: 24px; }
 .plan-pagination > span { color: var(--manage-muted); font-size: .9rem; font-variant-numeric: tabular-nums; }
-.plan-pagination > div { display: flex; gap: 12px; }
+.plan-pagination > div { display: flex; flex-wrap: wrap; gap: 12px; }
 .plan-guest { display: grid; justify-items: start; gap: 20px; padding: 36px 0; border-block: 1px solid var(--manage-border); }
 .plan-guest > .material-symbols-outlined { font-size: 36px; color: var(--manage-link); }
 .plan-guest p { max-width: 65ch; color: var(--manage-muted); line-height: 1.7; }

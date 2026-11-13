@@ -7,8 +7,10 @@ a conclusão do banco foi confirmada depois em uma nova conexão.
 ## Resultado
 
 Foram aplicadas as cinco migrações pendentes da `dev`, preservando os arquivos SQL
-versionados. O histórico remoto passou de **21 para 26 versões**, sem versões
-locais pendentes nem versões remotas desconhecidas nessa revisão.
+versionados. O histórico remoto passou de **21 para 26 versões** e coincidiu
+com o inventário usado na operação. A contagem registra o estado de 10/11/2026.
+A `main` recebeu depois as migrações do catálogo `20261110142000` e
+`20261111120000`. O histórico remoto delas precisa ser conferido antes do deploy.
 
 | Versão | Alteração |
 | --- | --- |
@@ -109,11 +111,14 @@ Render contém a conexão PostgreSQL funcional com TLS e a chave Gemini obtida d
 ambiente do Windows. Campos que dependem dos painéis dos provedores permanecem
 vazios e identificados no guia; não importar os arquivos incompletos sem preenchê-los.
 
-As variáveis de servidor pertencem ao Render. A Vercel recebe somente
-`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` e `VITE_API_URL`.
-O exemplo principal `.env.example` passou a explicitar `VITE_API_URL`.
+Na opção com API externa, as variáveis de servidor pertencem ao Render. O build
+do frontend usa `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` e `VITE_API_URL`.
+A função de busca da Vercel também usa as duas variáveis públicas do Supabase.
+Na configuração com múltiplos serviços, `VITE_API_URL` pode ficar vazia para
+usar a API no mesmo domínio. O [plano de implantação](implantacao.md) detalha
+essa configuração.
 
-Pendências para publicação integrada:
+Pendências identificadas durante a operação de 10/11/2026:
 
 1. Obter a chave pública do projeto e configurar Render/Vercel. As chaves públicas
    locais testadas foram recusadas com HTTP 401 pelo endpoint Auth remoto.
@@ -126,8 +131,9 @@ Pendências para publicação integrada:
    elegibilidade. As três flags de ativação permanecem em `false`.
 
 Não havia token do Render ou da Vercel, nem sessão disponível do painel Supabase
-para configurar esses serviços nesta operação. A publicação da aplicação e o
-aceite da jornada hospedada continuam pendentes. Instâncias Render Background
+para configurar esses serviços naquela operação. A implantação integrada é
+acompanhada no [PR #113](https://github.com/unb-mds/2026-2-AgendaUnB/pull/113).
+Instâncias Render Background
 Worker não têm plano Free, conforme a
 [documentação oficial](https://render.com/docs/free). Nenhum serviço pago foi
 criado e nenhuma chamada Gemini foi feita nesta atividade.

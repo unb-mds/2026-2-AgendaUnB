@@ -769,7 +769,7 @@ export default function SegundaPagina() {
             {eventosFiltrados.map((evento) => (
               <div 
                 key={`${evento.visibilidade}-${evento.id}`}
-                className="event-card" 
+                className="event-card"
                 onClick={() => navigate(`/evento/${evento.id}`, { state: { evento } })}
                 style={{ cursor: 'pointer' }}
               >

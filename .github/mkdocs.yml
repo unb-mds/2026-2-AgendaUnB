@@ -35,6 +35,7 @@ nav:
   - Supabase Cloud — migrações de 10/11: supabase-nuvem-2026-11-10.md
   - Modelo de Dados: arquitetura/modelo-de-dados.md
   - Especificação do Banco: arquitetura/banco-de-dados.md
+  - Catálogo de turmas: arquitetura/catalogo-de-turmas.md
   - Requisitos: produto/requisitos.md
   - Padrões de Projeto: produto/padroes.md
   - Interface e Design: arquitetura/frontend.md

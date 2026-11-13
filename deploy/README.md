@@ -4,13 +4,19 @@ O banco `pzniltzdhyuzzdqbppjw` recebeu as cinco migrações pendentes em
 10/11/2026. O [registro da operação](../docs/supabase-nuvem-2026-11-10.md)
 descreve backup, testes, preservação dos dados e limitações.
 
+A configuração na raiz do repositório integra a SPA e a API na Vercel. Nesse
+modo, deixe `VITE_API_URL` vazia para usar `/api/v1` no mesmo domínio. Use os
+modelos deste diretório para a opção com API externa no Render. O
+[PR #113](https://github.com/unb-mds/2026-2-AgendaUnB/pull/113) acompanha a
+implantação integrada.
+
 ## Render
 
 | Configuração | API | Worker de extração |
 | --- | --- | --- |
 | Tipo de serviço | Web Service / Python | Background Worker / Python |
 | Repositório | `unb-mds/2026-2-AgendaUnB` | Mesmo repositório |
-| Branch com a implementação atual | `dev` | `dev` |
+| Branch de origem | `main` | `main` |
 | Root Directory | `backend` | `backend` |
 | Build Command | `pip install -r requirements.txt` | Mesmo comando |
 | Start Command | `uvicorn src.main:app --host 0.0.0.0 --port $PORT` | `python -m src.modules.syllabus.worker` |
@@ -30,22 +36,24 @@ A senha na URL precisa estar codificada como componente de URL. O arquivo privad
 preparado durante esta operação já contém a conexão funcional e a chave Gemini
 encontrada no ambiente, sem divulgar valores no repositório.
 
-## Vercel
+## Frontend Vercel com API externa
 
 | Configuração | Valor |
 | --- | --- |
 | Framework Preset | Vite |
 | Root Directory | `frontend` |
-| Branch com a implementação atual | `dev` |
+| Branch de origem | `main` |
 | Install Command | `npm ci --include=dev` |
 | Build Command | `npm run build` |
 | Output Directory | `dist` |
 | Variáveis | As três de `vercel.env.example`, preenchidas |
 
-O `frontend/vercel.json` já contém o fallback SPA. O `envDir: '..'` atende o
+O `frontend/vercel.json` contém as regras de roteamento da SPA e das páginas de
+eventos. O `envDir: '..'` atende o
 desenvolvimento local; variáveis definidas no painel Vercel são fornecidas ao
 processo de build. Configurar `VITE_API_URL` com a URL HTTPS da API Render,
-**incluindo `/api/v1`**, e fazer novo build após alterar `VITE_*`.
+**incluindo `/api/v1`**, e fazer novo build após alterar `VITE_*`. A função de
+busca também usa a URL e a chave pública do Supabase no runtime da Vercel.
 Senha do banco, service_role e Gemini pertencem exclusivamente ao Render.
 Previews devem usar ambiente e credenciais de homologação próprios; não copiar
 automaticamente as credenciais do banco compartilhado para todos os previews.
