@@ -33,14 +33,60 @@ O campo **verificado** é o mais importante. Sem ele, a entrada declara o uso ma
 
 ## Entradas
 
+### 11/11/2026 — Revisão final e documentação da jornada (#73)
+
+- **Quem:** Gabriel Escramin (solicitante).
+- **Ferramenta:** Codex (OpenAI), Impeccable polish/harden e Playwright.
+- **O que foi pedido:** Revisar o acabamento e consolidar evidências locais e pendências de homologação.
+- **O que entrou no repositório:** Explicação dos campos obrigatórios e do bloqueio da confirmação, teste da orientação e guia atualizado da jornada particular.
+- **O que foi corrigido:** O guia ainda descrevia revisão indisponível, variantes removidas e retenção de PDF no Storage como comportamento atual. Essas descrições foram substituídas pelo contrato vigente.
+- **Verificação:** Inspeção visual do editor e estados de erro/sucesso em celular e desktop, conferência de links locais e cálculo de contraste dos pares de tokens de texto revisados. A execução final das suítes e seus limites está consolidada no guia de planos.
+- **Limites:** Sem homologação, medição RNF06, auditoria WCAG completa ou aprovação humana. O build MkDocs não pôde ser executado porque o módulo não está instalado no ambiente.
+
+### 11/11/2026 — Recuperação da jornada particular (#73)
+
+- **Quem:** Gabriel Escramin 
+- **Ferramenta:** Codex (OpenAI), project-standards e Impeccable (harden/polish).
+- **O que foi pedido:** Completar validações, histórico e recuperação de falhas da jornada de planos.
+- **O que entrou no repositório:** Contagem UTF-8, validação da prévia, consulta obrigatória após autorização incerta, proteção de respostas assíncronas, atualização do histórico e navegação de recuperação por PDF/texto.
+- **O que foi corrigido:** Limite por caracteres divergente do servidor, prévia malformada causando falha de renderização, possibilidade de repetir autorização sem conferir estado salvo e histórico desatualizado após autorizar.
+- **Limites da verificação:** Testes locais do frontend e navegador com respostas controladas. A jornada real e o tempo RNF06 precisam de homologação com backend, banco e provedor disponíveis.
+
+### 11/11/2026 — Oferta seguida obrigatória no envio de planos (#73)
+
+- **Quem:** Gabriel Escramin 
+- **Ferramenta:** Codex (OpenAI), skills project-standards, code-review e Impeccable (harden/polish).
+- **O que foi pedido:** Revisar as dependências e exigir vínculo da própria conta para PDF/texto, com autorização explícita para o ajuste de backend.
+- **O que entrou no repositório:** Verificação de oferta disponível e vínculo antes da extração e antes da persistência, bloqueio de envio na interface até consultar as turmas seguidas, testes de regressão, ajuste da paginação em celular e contrato HTTP atualizado.
+- **O que foi corrigido:** O identificador de uma oferta disponível podia ser inserido diretamente na URL ou enviado à API sem seguir a turma. O histórico particular permanece acessível ao dono após remover o vínculo.
+- **Limites:** Testes locais utilizam SQLite e fixtures de autenticação; testes de navegador controlam as respostas da API. PostgreSQL concorrente e a jornada completa em homologação exigem validação própria. O merge da main preparado anteriormente permanece separado das alterações desta etapa no índice do Git.
+
+### 10/11/2026 — Resolução dos conflitos do PR #108 (dev → main)
+
+- **Quem:** Codex, a pedido de Thomas.
+- **Ferramenta:** OpenAI Codex.
+- **O que foi pedido:** Resolver os três conflitos e mesclar dev em main pelo PR #108.
+- **O que entrou no repositório:** Atualizações da main preservadas nos documentos em `docs/processo/`, referência do template de PR atualizada e schema do Vercel mantido junto ao fallback SPA.
+- **O que foi verificado:** Diff sem erros e sem arquivos não mesclados; JSON do Vercel válido; 17 testes do frontend e build aprovados; backend com 143 testes aprovados e 52 ignorados. MkDocs não executado por ausência do módulo no ambiente.
+- **O que foi rejeitado ou corrigido:** Evitada a restauração dos documentos antigos, preservando seus redirecionamentos e o conteúdo novo nos caminhos canônicos.
+
+### 10/11/2026 — Template de PR e fluxo por issue
+
+- **Quem:** Codex, a pedido de Thomas.
+- **Ferramenta:** OpenAI Codex.
+- **O que foi pedido:** Reaplicar o template de PR na cópia atual do repositório, com uma branch e um PR por issue e status baseado nos checks da issue.
+- **O que entrou no repositório:** `.github/PULL_REQUEST_TEMPLATE.md` e orientações em `docs/CONTRIBUTING.md` e `docs/processo/contribuindo.md`.
+- **O que foi verificado:** Estado inicial limpo na main, ausência do template anterior e `git diff --check`. O build estrito da documentação foi tentado, mas o executável Python disponível não pôde ser iniciado neste ambiente.
+- **O que foi rejeitado ou corrigido:** Evitada a duplicação do checklist da issue no PR. O template orienta atualização manual, sem sincronização automática ou bloqueio de merge.
+
 ### 10/11/2026 — Migração do Supabase Cloud e preparação Render/Vercel
 
 - **Quem:** Heitor Gomes Monteiro, com assistência do Codex.
 - **Ferramenta:** Codex (OpenAI).
 - **O que foi pedido:** revisar e aplicar as cinco migrações pendentes no projeto Supabase da equipe, preservando os dados, e preparar a configuração para Render e Vercel.
-- **O que entrou no repositório:** modelos de variáveis por provedor em `deploy/`, guia de configuração, `VITE_API_URL` no exemplo principal e registro operacional com o estado do banco. Backup, scripts operacionais e arquivos com credenciais ficaram somente na pasta ignorada `.supabase/`.
-- **O que foi verificado:** backup lógico consistente de 48 tabelas, restauração isolada, ensaio das cinco migrações e 49 testes PostgreSQL aprovados. Ensaio remoto com rollback e aplicação das cinco migrações em uma única transação, incluindo histórico. Conteúdo preexistente preservado por comparação de hashes; 26 migrações e dez pré-requisitos de privacidade confirmados após o commit. Cinco campi e sete categorias preservados; tabela legada removida somente após confirmar que estava vazia.
-- **O que foi rejeitado ou corrigido:** não reaproveitar chaves públicas locais recusadas pelo projeto remoto, não executar wrappers de transação com commit intermediário e não versionar credenciais. A restauração de ensaio precisou preservar os proprietários e privilégios originais. A fila paralela não foi tratada como consumidor do worker atual. Publicação Render/Vercel, chaves de API corretas, domínios e aprovação S7-B02 continuam pendentes; flags mantidas em `false`, sem chamadas Gemini nem contratação de worker pago.
+- **O que entrou no repositório:** modelos de variáveis por provedor em `deploy/`, guia de configuração e registro operacional com o estado do banco. Backup, scripts operacionais e arquivos com credenciais ficaram somente na pasta ignorada `.supabase/`.
+- **O que foi verificado:** backup lógico consistente de 48 tabelas, restauração isolada, ensaio das cinco migrações e 49 testes PostgreSQL aprovados. Ensaio remoto com rollback e aplicação das cinco migrações em uma única transação, incluindo histórico. A comparação de hashes confirmou a preservação dos dados existentes. Após a transação, foram confirmadas 26 migrações e dez verificações de privacidade. Cinco campi e sete categorias foram preservados. A tabela legada estava vazia quando foi removida.
+- **O que foi rejeitado ou corrigido:** não reaproveitar chaves públicas locais recusadas pelo projeto remoto, não executar wrappers de transação com commit intermediário e não versionar credenciais. A restauração de ensaio precisou preservar os proprietários e privilégios originais. A fila paralela não foi tratada como consumidor do worker atual. Naquela operação, as flags ficaram em `false`. O deploy integrado e a homologação ficaram para as issues #68 e #76.
 
 ### 09/11/2026 — S7-D01: turmas, vínculos, versões e isolamento dos planos (#69)
 
@@ -227,3 +273,18 @@ Este arquivo foi redigido com auxílio da I.A. A estrutura e o texto das entrada
 - **O que entrou:** Merge da base `3922797`, documentação nos diretórios oficiais, migrações inéditas sem números duplicados e extrator na tabela oficial `avaliacoes`, com versão privada fixada, datas civis separadas, proveniência e preservação de versões compartilhadas. Retry particular não recria evento apagado.
 - **Verificado:** 191 testes de backend aprovados e um ignorado no ambiente local, 17 testes de lógica, 38 de navegador, build frontend/documentação e lint SQL sem achados. Corpus de referência: sete acertos e nenhuma data inventada. Nenhuma chamada Gemini nova ou alteração no Supabase hospedado nesta revisão.
 - **Corrigido/rejeitado:** Manter duas tabelas de candidatos contrariaria S7-D01. Políticas de compartilhamento não foram apagadas para impor privacidade indiscriminada; o texto aprovado permanece privado. A fila S7-B02 não foi ativada como segundo executor. Produção, revisão humana e integrações dependentes continuam pendentes.
+
+### 10/11/2026 — Integração de catálogo e seleção de ofertas (#70/#71)
+
+- **Solicitante:** Thomas. **Ferramenta:** Codex.
+- **Pedido:** testar implementações da API do Followw.
+- **Verificações:** testes automatizados HTTP, adaptador, PostgreSQL isolado e Playwright; build frontend; migrações na atualização e em base sem tabelas da aplicação. Sondagem pública pequena retornou 211 unidades e duas ofertas de FGA0108/2026.2, ambas com ID inequívoco. Detalhes e limitações em `docs/arquitetura/catalogo-de-turmas.md`.
+- **Limites:** sem deploy, escrita no Supabase hospedado, varredura integral, mensagens em issues ou fechamento de issues. Revisor humano e homologação ainda pendentes.
+
+### 13/11/2026 — SEO do Agenda UnB
+
+- **Solicitante:** Thomas. **Ferramenta:** Codex.
+- **Pedido:** melhorar a descoberta do site pelo Google e abrir um PR para a `dev`.
+- **O que entrou:** HTML e metadados para páginas públicas, guias com fontes oficiais da UnB, sitemap de eventos aprovados e regras de indexação.
+- **Verificações:** build e 25 testes do frontend, HTTP local dos guias e testes da função com respostas simuladas do Supabase. A validação do roteamento e do cache na Vercel fica para a homologação.
+- **Decisão:** a marcação estruturada de eventos depende de endereços completos no catálogo. As páginas públicas usam o campo de local disponível e não inferem um endereço.

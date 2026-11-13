@@ -1,99 +1,176 @@
-# Planos de ensino — S6-F01
+# Planos de ensino — jornada particular S7-F03 (#73)
 
-Este guia registra a integração da Sprint 6. Para a evolução planejada, consulte os [contratos da Release 2](atualizacoes.md#contratos-da-release-2) e a decisão sobre tratamento de PDFs no [ADR-003](arquitetura/adrs/adr-003-minimizar-dados-de-planos.md).
+A rota `/plano-de-ensino` reúne seleção de turma, preparação de PDF/texto,
+revisão e autorização do texto, revisão de avaliações e acesso à agenda.
+Usuários autenticados consomem a API do projeto. Visitantes veem uma demonstração
+com exemplos locais, identificada como tal, sem consultar dados particulares.
 
-A rota `/plano-de-ensino` oferece envio autenticado, acompanhamento por ID e histórico paginado de planos particulares. Usa a sessão Supabase pelo cliente compartilhado da API, sem chave de serviço nem URLs de arquivos. Visitantes recebem uma chamada para login e não fazem consultas privadas.
+## Oferta e vínculo obrigatórios
 
-## Demonstração e envios reais
+O catálogo permite buscar por período, unidade, disciplina, professor ou turma.
+Seguir uma oferta registra um vínculo autodeclarado no servidor. **Ver planos**
+abre a oferta pelo UUID, preservando a distinção entre turmas e períodos.
 
-A página abre uma demonstração interativa com catálogo ilustrativo. A primeira etapa permite selecionar manualmente as turmas e declarar o vínculo, sem comprovante de matrícula ou verificação institucional. Somente as turmas escolhidas aparecem nas etapas de planos e agenda. O fluxo permanece local e reinicia ao recarregar; não consulta o Followw. O modo **Envios reais de PDF** é separado, exige autenticação e usa a API descrita abaixo.
+Novos envios exigem uma oferta disponível que a conta segue. A interface consulta
+`GET /class-offerings/{id}` e `GET /me/class-offerings` antes de habilitar os
+formulários. Erros ou respostas inválidas bloqueiam o envio e oferecem nova consulta.
+O backend verifica novamente disponibilidade e vínculo antes da extração e antes
+da persistência. Sem vínculo retorna 403; oferta retirada retorna 409; sem
+publicação do catálogo retorna 503. O último catálogo válido permanece utilizável
+em falha da origem. [Operação do catálogo](arquitetura/catalogo-de-turmas.md).
 
-## Escopo e dependências reais
+Deixar de seguir preserva o histórico particular e os compromissos importados.
+Consultar planos antigos não exige voltar a seguir a oferta.
 
-O protótipo fornecido orientou a composição (envio, orientações laterais, lista por disciplina), não seus dados ou funcionalidades futuras. O limite adotado é **10 MB / 10 páginas**, não os 20 MB ilustrativos do protótipo. Matrícula, catálogo, planos oficiais, revisão/edição/seleção de candidatos e confirmação na agenda estão fora desta entrega. Nenhuma chamada a `/confirm` é feita. O painel administrativo não foi alterado.
+## Preparação e autorização do texto
 
-No backend deste checkout, `POST /syllabus/upload`, `GET /syllabus` e `GET /syllabus/{id}` estão implementados. O upload aceita `file`, `disciplina` e `turma`, **mas ainda não persiste `semestre` e `ano`**. A migração S6-D01 já prevê esses campos em `planos_ensino`; o roteador de upload ainda usa o rastreamento `Syllabus`. Portanto, a integração real completa depende do alinhamento de #40/S6-B02 com S6-D01. Não confundir os testes com respostas simuladas com validação de processamento real por IA.
+A base padrão da API é `/api/v1`, com proxy no desenvolvimento. `VITE_API_URL`
+pode sobrescrevê-la. As chamadas particulares usam a sessão Supabase existente,
+com `Authorization: Bearer <access_token>`.
 
-A interface envia semestre/ano como campos multipart, porém só exibe esses metadados no histórico quando devolvidos pelo servidor. Não usa armazenamento local para simular persistência ou inventar um histórico. Uma listagem indisponível apresenta erro recuperável sem bloquear o upload nem o acompanhamento por ID.
+| Operação | Entrada e comportamento |
+| --- | --- |
+| `POST /syllabus/upload` | Multipart com `file` e `offering_id`. PDF digital até 10 MiB e dez páginas. Metadados da disciplina/turma/período são derivados da oferta. |
+| `POST /syllabus/text` | JSON com `text` e `offering_id`. Até 40.000 bytes UTF-8, com contador e bloqueio de excesso na interface. |
+| `GET /syllabus/{id}/text` | Texto minimizado, referências de página quando disponíveis, destino e disponibilidade do provedor. |
+| `POST /syllabus/{id}/extractions` | Páginas revisadas, hash do texto exato, autorização e declaração de elegibilidade; reprocessamento exige ação explícita adicional. |
 
-## Contratos consumidos
+O PDF é temporário, extraído localmente e descartado. Novos envios não guardam o
+original no Storage. Texto bruto tem página de origem nula. A preparação não
+chama o provedor. O usuário revisa o texto minimizado, remove informações
+inadequadas e marca separadamente as declarações de revisão e autorização.
+Editar o texto desmarca ambas. O provedor só pode processar o snapshot autorizado.
+[Contrato de preparação, privacidade e operação](processamento-planos-s7.md).
 
-Base: `VITE_API_URL` (padrão `http://127.0.0.1:8000/api/v1`). Todas as operações usam `Authorization: Bearer <access_token>`.
+A prévia é validada antes de renderizar os campos. Resposta malformada apresenta
+erro com **Tentar carregar novamente**. Falhas de autorização com resultado incerto
+bloqueiam outro envio até **Consultar autorização**, que reconsulta o estado salvo.
+Uma nova ação exige novas declarações. O histórico é atualizado após autorizar.
 
-### Upload existente + extensão necessária
+## Histórico e progresso
 
-`POST /syllabus/upload`, `multipart/form-data`:
+`GET /syllabus?limit=10&offset=0` consulta o histórico paginado do próprio usuário;
+`offering_id` filtra a oferta selecionada. O detalhe usa `GET /syllabus/{id}`.
+O plano selecionado fica no parâmetro `plano` da URL, a oferta em `oferta` e a
+página do histórico em `pagina`. Recarregar consulta os dados persistidos.
 
-| Campo | Tipo | Uso |
-| --- | --- | --- |
-| `file` | PDF | Obrigatório, até 10 × 1024 × 1024 bytes |
-| `disciplina` | string | Obrigatório na interface, até 200 caracteres |
-| `semestre` | inteiro 1 ou 2 | Extensão pendente do backend |
-| `ano` | inteiro 2000–2100 | Extensão pendente do backend |
+Os estados são `pendente`, `processando`, `concluido` e `falha`.
+`authorizationRequired` distingue espera pela revisão humana da fila autorizada.
+Contagem ausente não equivale a zero avaliações. Estados desconhecidos oferecem
+nova consulta, sem presumir sucesso.
 
-Resposta esperada: 202 com `id`, `status`, `fileName`, `createdAt` e os metadados já presentes no schema de upload. O navegador define o boundary multipart; não definir `Content-Type: application/json` para esse corpo.
+O detalhe consulta a partir de cinco segundos e o histórico a partir de quinze,
+com espaçamento crescente até trinta segundos. As consultas não se sobrepõem.
+Estado final interrompe o polling; falhas pausam até nova tentativa e abas ocultas
+suspendem consultas ativas. Troca de plano/conta e saída da rota cancelam as
+requisições. Controles de autorização ficam suspensos em falha de consulta.
 
-O frontend valida extensão, MIME (aceita MIME vazio quando o navegador não informa), tamanho e arquivo vazio. Assinatura, integridade, senha, texto selecionável e contagem de páginas são validados no servidor. Erros de validação preservam os campos e o arquivo selecionado. O envio tem limite de espera de 90 segundos e trava síncrona contra cliques duplicados; não há repetição automática de POST. Em falha de rede/timeout, orienta consultar o histórico antes de reenviar, pois o servidor pode ter recebido o arquivo.
+## Revisão e confirmação das avaliações
 
-### Listagem implementada
+O painel mostra os candidatos reais com estado persistido, página/trecho de
+origem, sugestões e campos ambíguos. O usuário seleciona individualmente ou em
+lote e corrige título, tipo, data, horário e fuso. A seleção em lote preserva
+itens retirados da seleção. Confirmados, descartados e estados desconhecidos
+ficam bloqueados para edição. Rascunhos e seleções são locais até a confirmação.
 
-`GET /syllabus?limit=10&offset=0`:
+**Conferir selecionados** valida campos e direciona o foco ao primeiro erro.
+Editar revoga essa conferência. A jornada por oferta exige também conferir a
+identidade da turma. **Confirmar e importar** envia somente selecionados válidos
+a `POST /syllabus/{id}/confirm`, com limite de 100 itens. O editor exige título
+entre três e 200 caracteres, tipo Prova/Trabalho e data/hora com fuso explícito.
 
-```json
-{
-  "items": [{
-    "id": "d79eeb53-aed8-4369-936b-156e01cc455c",
-    "disciplina": "Métodos de Desenvolvimento de Software",
-    "semestre": 2,
-    "ano": 2026,
-    "fileName": "plano-mds.pdf",
-    "fileSize": 12345,
-    "createdAt": "2026-10-30T15:00:00Z",
-    "status": "concluido",
-    "extractedEventsCount": 3,
-    "errorMessage": null
-  }],
-  "total": 11
-}
-```
+O contrato atual recebe `candidateId`, `title`, `startsAt`, `category` e
+`description`. O evento usa a categoria existente `Acadêmico`; o tipo revisado
+fica na descrição, junto do trecho, respeitando 10.000 caracteres. A procedência
+é preservada pelo servidor. Esse contrato não altera o tipo do candidato original.
 
-O backend filtra pelo usuário autenticado, aplica ordenação estável do mais recente ao mais antigo (`createdAt DESC`, `id DESC`) e retorna a contagem total dos próprios planos. `limit` aceita 1–100 (padrão 10); `offset` aceita valores não negativos (padrão 0). A página não envia um ID de usuário como autorização. `total` deve ser inteiro; respostas incompatíveis geram erro recuperável, não estado vazio.
+Cliques duplicados são bloqueados. Conflito ou resposta incerta exige
+**Atualizar avaliações** antes de outro envio, reconciliando o estado persistido.
+O backend protege a unicidade da confirmação e não restaura por retry um evento
+já excluído. `Idempotency-Key` ainda não integra o contrato implementado.
 
-### Detalhe existente
+Após confirmar, a jornada abre o calendário com nova consulta dos eventos
+particulares. **Abrir Meus Eventos** navega para `/eventos?aba=meus`, que também
+consulta os eventos persistidos. A conferência isolada não cria compromissos.
 
-`GET /syllabus/{id}` usa os campos camelCase do `SyllabusDetailResponse` atual. A inclusão de `semestre` e `ano` é opcional na leitura. Contagem ausente é diferente de zero: apenas `concluido` com `extractedEventsCount: 0` apresenta “Nenhuma avaliação encontrada”. `falha` mostra orientação e `errorMessage` sanitizada pelo backend, renderizada como texto React, nunca HTML. Estados desconhecidos não são tratados como sucesso.
+## Recuperação e alternativas
 
-## Retomada e ciclo de consultas
+Falhas de envio preservam arquivo/texto e orientam consultar o histórico antes
+de repetir. PDF inválido, protegido, corrompido ou escaneado sem texto recebe a
+mensagem sanitizada do backend. Há alternativa por texto e cadastro manual em
+Meus Eventos. Na falha do processamento, **Enviar outro PDF ou texto** retorna
+à oferta correta e **Cadastrar prazos manualmente** abre a agenda pessoal.
+Edições de texto ainda não autorizadas não são persistidas pelo navegador.
 
-- O ID é persistido na URL: `/plano-de-ensino?plano=<id>`. Paginação: `&pagina=2` (primeira página = 1).
-- Recarregar consulta novamente esse ID com a sessão atual. A autorização de propriedade continua sendo responsabilidade da API.
-- O detalhe consulta após 5 segundos, com espaçamento crescente até 30 segundos. O histórico consulta apenas quando há plano pendente/processando na página, começando em 15 segundos, também limitado a 30 segundos.
-- Cada recurso agenda a próxima consulta somente após a anterior terminar. GET tem timeout de 30 segundos.
-- Estado final ou desconhecido encerra polling. Erros pausam até “Tentar novamente”. Aba oculta suspende; ao voltar, consultas ativas retomam.
-- Troca de página/ID, saída da rota e troca de conta cancelam requisições/timers. Dados da conta anterior são desmontados.
-- A URL e o histórico deixam o plano identificável para integração futura da S6-F02. A tela informa que a revisão ainda não está disponível; não cria um botão de revisão sem destino funcional.
-- A alternativa manual aponta para `/eventos?aba=meus`, onde o usuário pode usar “Criar Evento”, fluxo existente.
+## Verificação local e limites
 
-## Validação reproduzível
+Os testes de navegador usam fixtures de Auth/API exclusivamente nos testes.
+A aplicação autenticada usa serviços reais; o modo visitante usa exemplos locais.
+Os testes da API usam SQLite em memória e fixtures de autenticação. Esses
+resultados não comprovam implantação, permissões em PostgreSQL ou provedor real.
 
-```bash
-cd frontend
-npm ci
-npx playwright install chromium
+Com dependências instaladas, na pasta `frontend`:
+
+```powershell
 npm test
-npm run test:e2e
+$env:E2E_PORT = '5188'
+$env:E2E_BROWSER_CHANNEL = 'msedge'
+npx playwright test --workers=2
 npm run build
 ```
 
-Os testes de navegador interceptam o módulo Supabase **apenas no teste** e respondem à API com fixtures. Os mocks de autenticação são exclusivos dos testes. A demonstração interativa do produto usa exemplos locais explicitamente identificados e não contorna a autenticação dos envios reais. Cobrem multipart/autorização, duplo clique, erros, preservação dos campos, paginação, recarga, distinção vazio/falha, polling, aba oculta, logout, visitante, teclado e ausência de overflow em 360/768/1365 px nos dois temas. Screenshots são gravadas em `frontend/test-results/` (ignorado pelo Git).
+A suíte versionada permite outro navegador instalado por `E2E_BROWSER_CHANNEL`.
+Capturas ficam em `frontend/test-results/`, ignorado pelo Git. Na pasta `backend`:
 
-Os testes de frontend simulam a API. Separadamente, upload, listagem, detalhe e privacidade foram verificados com duas contas temporárias no Supabase local: upload 202, listagem/detalhe 200, detalhe de outro usuário 404, exclusão cruzada sem efeito e exclusão pelo dono bem-sucedida. Contas e PDFs de teste foram removidos. Extração por IA e gravação de semestre/ano continuam fora dessa validação.
+```powershell
+$env:PYTEST_DISABLE_PLUGIN_AUTOLOAD = '1'
+$env:DATABASE_URL = 'sqlite+pysqlite:///:memory:'
+.\venv\Scripts\python.exe -m pytest -q tests
+```
 
+Testes PostgreSQL e HTTP/provedor são opt-in. Use bases isoladas e os executores
+documentados em [Processamento S7](processamento-planos-s7.md).
 
-## Autenticação no Storage e migrações locais
+### Pendências para homologação da #73
 
-O backend valida o token em `/auth/v1/user`, aplica o limite de corpo e a cota de 10 uploads por usuário em uma janela móvel de 5 dias. A gravação no Storage usa `SUPABASE_SERVICE_ROLE_KEY` somente no servidor; o navegador não pode enviar diretamente ao bucket. Sem essa configuração, o upload retorna erro de serviço. Respostas internas do Storage não são expostas ao cliente.
+- Demonstrar sem mocks a jornada seguir turma → enviar → revisar texto → autorizar
+  → acompanhar → corrigir → importar → abrir na agenda, na versão implantada.
+- Validar privacidade/permissões e concorrência no PostgreSQL de homologação.
+- Medir RNF06 com transferência, preparação, fila e provedor, descontando somente
+  a espera humana. Os testes locais não comprovam a meta de menos de vinte segundos.
+- Registrar resultado por critério de aceite, PR, versão implantada e revisor humano
+  na issue. Compartilhamento e votação permanecem nas entregas próprias da R2.
 
-A migração `20261026120000_upload_planos_ensino.sql` prepara o rastreamento. A migração `20261026130000_storage_compensacao_planos.sql` acrescentou DELETE para o dono no bucket; `20261104000000_upload_apenas_backend.sql` remove a política de INSERT direto, fechando o contorno da cota. O backend compensa o arquivo se o banco rejeitar o registro.
+### Evidências consolidadas — 11/11/2026
 
-As migrações S6-D02 de 29/10 foram alinhadas ao esquema de candidatos e planos. A política de Storage para o bucket `planos` é distinta da política de `syllabus_files` usada neste upload.
+| Verificação executada | Resultado |
+| --- | --- |
+| `npm test` | 25 testes aprovados. |
+| Playwright completo, Edge, porta 5188, dois workers | 68 testes aprovados. Fixtures de Auth/API utilizadas apenas nos testes. |
+| Backend completo com SQLite em memória | 165 testes aprovados, 55 ignorados; PostgreSQL e HTTP/provedor opt-in não executados. Um aviso de depreciação do TestClient/httpx. |
+| `npm run build` | Aprovado. Aviso existente de bundle principal acima de 500 kB. |
+| `git diff --check` | Sem erros. |
+| Impeccable `polish` e `harden` | Inspecionados formulários, erros, seleção, autorização, confirmação, recuperação e navegação. Detector sem apontamentos no editor alterado. |
+| Revisão visual | Editor em 360 px claro e 1365 px escuro; erro de prévia e sucesso de confirmação em celular. Testes também cobrem 768 px e ambos os temas. |
+| Contraste dos tokens de texto revisados | Texto/secundário no card escuro: 14,77:1 e 8,47:1. No card claro: 17,06:1 e 6,22:1. Erro: 9,34:1 escuro e 7,49:1 claro. Cálculo dos pares de tokens; não substitui auditoria WCAG completa. |
+| Links locais deste guia | Destinos conferidos e existentes. |
+| Build da documentação | Não executado: MkDocs ausente no ambiente. |
+
+Os cenários locais cobrem oferta válida/seguida, bloqueio sem oferta ou vínculo,
+revisão e consentimento separados, recarga, histórico, candidatos reais no contrato,
+correção/seleção parcial, confirmação, leitura da agenda e erros recuperáveis.
+A jornada publicada sem fixtures, concorrência real em PostgreSQL e a meta RNF06
+permanecem pendentes. A issue #73 deve continuar incompleta até suas evidências
+de homologação e revisão humana serem registradas.
+
+### Mensagens de commit sugeridas durante a implementação
+
+```text
+feat: exibir candidatos reais dos planos de ensino
+feat: integrar selecao e correcao de avaliacoes
+feat: confirmar avaliacoes pela api real
+feat: conectar importacao de avaliacoes a agenda
+feat: exigir oferta seguida no envio de planos
+fix: fortalecer recuperacao da jornada de planos
+fix: finalizar acessibilidade e documentacao de planos
+```
