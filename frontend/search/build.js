@@ -25,5 +25,8 @@ for (const path of Object.keys(searchPages)) {
   }
 }
 
-// The Node function uses the same compiled asset tags as the static pages.
-await writeFile(new URL('./app-template.html', import.meta.url), appTemplate);
+const entry = /<script type="module"[^>]*src="([^"]+)"/.exec(template)?.[1];
+const stylesheet = /<link rel="stylesheet"[^>]*href="(\/assets\/[^"]+\.css)"/.exec(template)?.[1];
+if (!entry || !stylesheet) throw new Error('Assets do Vite ausentes no HTML compilado.');
+await writeFile(new URL('event-app.js', dist), `import ${JSON.stringify(entry)};\n`);
+await writeFile(new URL('event-app.css', dist), `@import url(${JSON.stringify(stylesheet)});\n`);
