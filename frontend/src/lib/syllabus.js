@@ -6,7 +6,7 @@ export const PLAN_STATES = {
   pendente: { label: 'Pendente', icon: 'schedule', title: 'Seu plano está na fila', description: 'O arquivo foi recebido e aguarda processamento. Você pode sair desta página e acompanhar depois pelo histórico.' },
   processando: { label: 'Processando', icon: 'autorenew', title: 'Analisando seu plano', description: 'Estamos procurando avaliações no documento. Esta página será atualizada automaticamente.' },
   concluido: { label: 'Concluído', icon: 'check_circle', title: 'Análise concluída', description: 'O processamento terminou. Nenhum compromisso foi adicionado à sua agenda automaticamente.' },
-  falha: { label: 'Falha', icon: 'error', title: 'Não foi possível analisar o plano', description: 'Confira se o PDF permite selecionar o texto, não tem senha e possui até 10 páginas. Você pode enviar outro arquivo ou cadastrar seus prazos manualmente.' },
+  falha: { label: 'Falha', icon: 'error', title: 'Não foi possível analisar o plano', description: 'Consulte a orientação abaixo. Você pode tentar novamente com PDF digital ou texto, ou cadastrar seus prazos manualmente.' },
 };
 
 export function validatePdf(file) {
@@ -22,7 +22,7 @@ export function normalizePlan(plan) {
   return {
     id: plan.id,
     offeringId: plan.offeringId ?? null,
-    candidates: Array.isArray(plan.candidates) ? plan.candidates : [],
+    candidates: normalizeCandidates(plan.candidates),
     status: plan.status,
     authorizationRequired: plan.authorizationRequired === true,
     preparedTextAvailable: plan.preparedTextAvailable === true,
@@ -36,6 +36,30 @@ export function normalizePlan(plan) {
     extractedEventsCount: Number.isInteger(plan.extractedEventsCount) && plan.extractedEventsCount >= 0 ? plan.extractedEventsCount : null,
     errorMessage: typeof plan.errorMessage === 'string' ? plan.errorMessage : null,
   };
+}
+
+function normalizeCandidates(items) {
+  // History and older responses may omit details; omission is not an empty result.
+  if (items === undefined) return null;
+  const ids = new Set();
+  if (!Array.isArray(items)) throw new Error('Resposta das avaliações inválida. Tente consultar novamente.');
+  return items.map(item => {
+    if (!item || typeof item.id !== 'string' || !item.id.trim() || ids.has(item.id)
+      || typeof item.title !== 'string' || !item.title.trim()
+      || typeof item.status !== 'string' || typeof item.ambiguous !== 'boolean'
+      || (item.sourcePage != null && (!Number.isInteger(item.sourcePage) || item.sourcePage < 1))
+      || ['type', 'startsAt', 'sourceExcerpt', 'suggestedDate', 'suggestedTime', 'versionId'].some(key => item[key] != null && typeof item[key] !== 'string')
+      || (item.ambiguousFields !== undefined && (!Array.isArray(item.ambiguousFields) || item.ambiguousFields.some(field => typeof field !== 'string')))) {
+      throw new Error('Resposta das avaliações inválida. Tente consultar novamente.');
+    }
+    ids.add(item.id);
+    return { id: item.id, title: item.title, type: item.type ?? null,
+      status: item.status, ambiguous: item.ambiguous,
+      sourcePage: item.sourcePage ?? null, sourceExcerpt: item.sourceExcerpt ?? null,
+      suggestedDate: item.suggestedDate ?? null, suggestedTime: item.suggestedTime ?? null,
+      startsAt: item.startsAt ?? null, versionId: item.versionId ?? null,
+      ambiguousFields: [...(item.ambiguousFields ?? [])] };
+  });
 }
 
 export function normalizePlanList(result) {
