@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { eventsApi, toApiEvent, toUiEvent } from '../lib/api';
 import NavBar from '../components/NavBar';
@@ -374,7 +374,6 @@ const CustomTimePicker = ({ value, onChange, placeholder, dropUp = false, classN
 };
 
 export default function SegundaPagina() {
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user, profile, signOut, isProfessor, isAdmin } = useAuth();
   // --- GERENCIAMENTO DE TEMA LOCAL ---
@@ -647,6 +646,11 @@ export default function SegundaPagina() {
       <NavBar pageType="second" isDark={isDark} toggleTheme={toggleTheme} />
 
       <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '8rem 1.5rem 2rem' }}>
+        <header className="events-intro">
+          <h1>Eventos da UnB</h1>
+          <p>Consulte eventos e comunicados dos campi da Universidade de Brasília.</p>
+          <a href="/calendario-academico">Consultar o calendário acadêmico</a>
+        </header>
         
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2.5rem' }}>
           <div className="btn-toggle-group">
@@ -769,9 +773,7 @@ export default function SegundaPagina() {
             {eventosFiltrados.map((evento) => (
               <div 
                 key={`${evento.visibilidade}-${evento.id}`}
-                className="event-card" 
-                onClick={() => navigate(`/evento/${evento.id}`, { state: { evento } })}
-                style={{ cursor: 'pointer' }}
+                className="event-card"
               >
                 <div className="event-card-icon">
                   <span className="material-symbols-outlined" style={{ color: textColor }} >
@@ -781,7 +783,9 @@ export default function SegundaPagina() {
 
                 <div className="event-card-body">
                   <h3 className="event-card-title">
-                    {evento.titulo}
+                    <Link className="event-card-link" to={`/evento/${evento.id}`} state={{ evento }}>
+                      {evento.titulo}
+                    </Link>
                   </h3>
                   <div className="event-card-date">
                     {formatarData(evento.data)} - {evento.horario}
@@ -804,8 +808,7 @@ export default function SegundaPagina() {
 
                 {(visaoEventos === 'MEUS' ? (evento.criadoPorMim || evento.salvoNaAgenda) : (isProfessor || isAdmin)) && (
                   <div
-                    onClick={(event) => event.stopPropagation()}
-                    style={{ position: 'absolute', top: '12px', right: '12px', display: 'flex', gap: '6px' }}
+                    style={{ position: 'absolute', top: '12px', right: '12px', zIndex: 1, display: 'flex', gap: '6px' }}
                   >
                     {visaoEventos === 'MEUS' && evento.criadoPorMim && (
                       <button

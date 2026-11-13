@@ -84,6 +84,9 @@ def test_syllabus_detail_includes_candidates_and_provenance(api):
 def test_confirmation_creates_only_selected_events_and_is_idempotent(api):
     client, TestSession, authenticated_user, _ = api
     syllabus_id, candidate_id, unselected_id = _create_syllabus(TestSession, authenticated_user["value"].id)
+    before = client.get("/api/v1/me/events")
+    assert before.status_code == 200
+    assert before.json() == []
     payload = {
         "candidates": [
             {
@@ -101,6 +104,7 @@ def test_confirmation_creates_only_selected_events_and_is_idempotent(api):
     assert first.status_code == 200
     assert second.status_code == 200
     assert agenda.status_code == 200
+    assert len(agenda.json()) == 1
     assert agenda.json()[0]["origin"]["candidateId"] == str(candidate_id)
     assert first.json()["events"][0]["id"] == second.json()["events"][0]["id"]
     event = first.json()["events"][0]

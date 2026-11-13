@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext'
 import NavBar from './components/NavBar'
 import './styles/global.css'
@@ -481,9 +481,9 @@ export default function App() {
             </h1>
           </div>
 
-          {/* Botão Login */}
-          <button
-            onClick={() => navigate('/eventos')}
+          <p style={{ marginBottom: '1.25rem' }}>Eventos e calendário acadêmico da Universidade de Brasília.</p>
+          <Link
+            to="/eventos"
             style={{
               cursor:'pointer', display:'flex', alignItems:'center', gap:'12px',
               padding:'13px 30px', borderRadius:'999px',
@@ -493,7 +493,7 @@ export default function App() {
               WebkitBackdropFilter:'blur(14px)',
               color: theme === 'dark' ? '#fff' : '#1a1a2e',
               fontFamily:"'Inter',sans-serif", fontWeight:500,
-              fontSize:'1rem', transition:'all .3s ease',
+              fontSize:'1rem', transition:'all .3s ease', textDecoration:'none',
               boxShadow: theme === 'dark' ? '0 4px 24px rgba(0,139,255,0.15)' : '0 4px 24px rgba(0,0,0,0.08)',
             }}
             onMouseOver={e => {
@@ -512,7 +512,7 @@ export default function App() {
               <circle cx="12" cy="7" r="4" />
             </svg>
             {user ? `Entrar como ${profile?.nome_completo?.split(' ')[0] || user.user_metadata?.nome_completo?.split(' ')[0] || user.user_metadata?.full_name?.split(' ')[0] || user.user_metadata?.name?.split(' ')[0] || 'você'}` : 'Entrar como convidado'}
-          </button>
+          </Link>
 
           <div className="scroll-hint">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
@@ -640,6 +640,9 @@ export default function App() {
           <footer className="footer">
             <img src="/Marca-UnB.png" alt="Logo UnB" style={{ width:'70px', marginBottom:'1rem', opacity:0.5, filter: theme === 'light' ? 'invert(1)' : 'none' }}/>
             <p>Agenda UnB - Universidade de Brasília © 2026</p>
+            <nav className="search-guide-links" aria-label="Guia da UnB">
+              <Link to="/eventos">Eventos da UnB</Link> · <a href="/calendario-academico">Calendário acadêmico</a> · <a href="/horarios-de-aula">Horários de aulas</a>
+            </nav>
           </footer>
 
         </div>
