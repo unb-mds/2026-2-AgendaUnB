@@ -103,6 +103,9 @@ identificada, além das etapas operacionais de publicação descritas abaixo.
 
 ## Configuração Render e Vercel
 
+O [roteiro de homologação da S7-B02](s7-b02-homologacao.md) reúne as evidências
+posteriores e os passos para testar Google Calendar, SMTP e retomada dos jobs.
+
 Os modelos sem segredos estão em `deploy/render.env.example` e
 `deploy/vercel.env.example`; comandos e procedimentos em `deploy/README.md`.
 Foram preparados também arquivos privados em

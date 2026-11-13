@@ -33,6 +33,14 @@ O campo **verificado** é o mais importante. Sem ele, a entrada declara o uso ma
 
 ## Entradas
 
+### 13/11/2026 — Roteiro de homologação S7-B02 (#68)
+
+- **Quem:** Heitor Gomes Monteiro, com assistência do Codex.
+- **Ferramenta:** Codex (OpenAI).
+- **O que foi pedido:** registrar as evidências da #68 e preparar os testes de Calendar, SMTP e retomada dos jobs para alinhamento dos acessos com Thomas.
+- **O que entrou no repositório:** roteiro de homologação com pré-requisitos, passos, resultados esperados e links das provas anteriores.
+- **O que foi verificado:** rotas e configurações conferidas no código candidato e nos PRs #110 e #113. O roteiro registra como evidências anteriores a sondagem do Followw, o benchmark sintético Gemini, o CI e os 92 testes locais de 13/11. As provas hospedadas do roteiro permanecem pendentes.
+
 ### 11/11/2026 — Revisão final e documentação da jornada (#73)
 
 - **Quem:** Gabriel Escramin (solicitante).
