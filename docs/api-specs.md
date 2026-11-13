@@ -152,18 +152,17 @@ O histórico e o detalhe retornam `ano` e `semestre`. Planos antigos podem ter e
 
 `GET /health`: público, sem parâmetros ou corpo, retorna 200 com `{ "status": "ok" }`. Não consulta banco nem Auth; não é uma verificação de prontidão de todas as dependências.
 
-### Conexão adicional Google Calendar — S7-F04
+### Exportação para o Google Calendar
+
+As rotas exigem uma sessão Supabase aberta via Google e e-mail confirmado. Uma sessão por senha recebe 403, mesmo quando o perfil também tem uma identidade Google.
 
 | Operação | Entrada | Resposta |
 | --- | --- | --- |
-| `POST /api/v1/me/google-calendar/authorization` | Bearer Supabase de conta com e-mail confirmado; sem corpo. | 200 `{ "authorization_url": "https://accounts.google.com/...", "expires_in_seconds": 600 }`. O endpoint gera `state` de uso único e PKCE S256. |
-| `POST /api/v1/me/google-calendar/callback` | Formulário `application/x-www-form-urlencoded` enviado pelo Google com `state` e `code` ou `error`. Sem Bearer; `state` associa a resposta à conta autenticada que iniciou o fluxo. | 303 para a URL fixa `GOOGLE_CALENDAR_FRONTEND_REDIRECT_URI`, com estado sanitizado `google_calendar=connected`, `denied`, `email_mismatch`, `invalid_state` ou `failed`. O callback consome o desafio uma única vez. |
-| `GET /api/v1/me/google-calendar/connection` | Bearer Supabase confirmado. | 200 com estado, e-mail Google, `calendar_id` e escopos; nunca retorna tokens. |
-| `DELETE /api/v1/me/google-calendar/connection` | Bearer Supabase confirmado. | 200 `{ "disconnected": true, "revocation": "confirmed" }`; se a revogação externa não puder ser confirmada, remove os tokens locais e informa `not_confirmed_remove_access_in_google`. Repetir é seguro. |
+| `POST /api/v1/me/google-calendar/connection` | Credencial de renovação retornada pelo Supabase no callback de login. | 204 após validar no Google o escopo `calendar.app.created`, o `sub` e o e-mail verificado da mesma conta. |
+| `GET /api/v1/me/google-calendar/connection` | Bearer Supabase. | 200 com `connected`. |
+| `POST /api/v1/me/google-calendar/exports` | `events` com 1 a 20 referências `{ id, kind }`. `kind` é `personal` ou `saved`. | 200 com `id`, `kind` e `status` por item. Estados `exported`, `already_exported` ou `failed`. |
 
-A conexão adicional usa somente o escopo `calendar.app.created`. O retorno OAuth usa `response_mode=form_post` para não expor o código de autorização em query strings e logs de acesso. O servidor verifica o e-mail atual e confirmado do Agenda UnB e `email_verified` do Google; os endereços devem coincidir sem diferenciar maiúsculas/minúsculas. O vínculo usa o `sub` estável do Google. Tokens de acesso/renovação e o verifier PKCE ficam criptografados com Fernet no banco; a chave de criptografia permanece apenas no backend. `get_access_token` renova tokens expirados para uso pela futura integração de exportação S8-F03 (#82). Criação de calendário, exportação e sincronização de eventos não fazem parte destas rotas.
-
-Configuração exclusivamente server-side: `GOOGLE_CALENDAR_CLIENT_ID`, `GOOGLE_CALENDAR_CLIENT_SECRET`, `GOOGLE_CALENDAR_REDIRECT_URI`, `GOOGLE_CALENDAR_FRONTEND_REDIRECT_URI` e `GOOGLE_TOKEN_ENCRYPTION_KEY`. O callback cadastrado na Console Google precisa corresponder exatamente a `GOOGLE_CALENDAR_REDIRECT_URI`.
+O servidor consulta apenas eventos pessoais do dono e eventos públicos aprovados que ele salvou. A exportação cria ou reutiliza a agenda secundária **Agenda UnB**, envia título e horário em `America/Sao_Paulo` e usa uma hora de duração para o modelo atual, que guarda somente o início. Repetir um item usa o mesmo ID remoto e preserva a cópia existente. As credenciais do Google ficam criptografadas no servidor. Após revogação, entre novamente com Google e conceda acesso para retomar o fluxo. Consulte o [guia de configuração](implantacao.md#autenticação-e-google-agenda-s7-f04).
 
 ## Erros FastAPI
 

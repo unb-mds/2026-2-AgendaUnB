@@ -1,4 +1,7 @@
+import json
 import os
+from base64 import urlsafe_b64decode
+from binascii import Error as Base64Error
 from dataclasses import dataclass, field
 from uuid import UUID
 
@@ -21,6 +24,26 @@ class CurrentUser:
     access_token: str | None = field(default=None, repr=False, compare=False)
     email: str | None = field(default=None, repr=False, compare=False)
     email_confirmed: bool = False
+    google_sub: str | None = field(default=None, repr=False)
+
+
+def _google_session_identity(token: str, auth_user: dict) -> str | None:
+    # The exact bearer has already been validated by the project's Supabase Auth.
+    try:
+        payload = token.split(".")[1]
+        claims = json.loads(urlsafe_b64decode(payload + "=" * (-len(payload) % 4)))
+        methods = claims.get("amr") or []
+        if not any(isinstance(method, dict) and method.get("method") == "oauth" for method in methods):
+            return None
+    except (ValueError, TypeError, IndexError, AttributeError, Base64Error):
+        return None
+    # Google is the only social provider configured for the Agenda UnB project.
+    return next((
+        identity["identity_data"]["sub"] for identity in auth_user.get("identities") or []
+        if identity.get("provider") == "google"
+        and isinstance((identity.get("identity_data") or {}).get("sub"), str)
+        and identity["identity_data"]["sub"]
+    ), None)
 
 
 def get_current_user(
@@ -62,7 +85,7 @@ def get_current_user(
         auth_user = response.json()
         user_id = UUID(auth_user["id"])
         email = auth_user.get("email")
-        email_confirmed = bool(auth_user.get("email_confirmed_at") or auth_user.get("confirmed_at"))
+        email_confirmed = bool(auth_user.get("email_confirmed_at"))
     except (KeyError, TypeError, ValueError) as exc:
         raise HTTPException(status_code=401, detail="Resposta de autenticação inválida") from exc
 
@@ -79,6 +102,7 @@ def get_current_user(
         access_token=credentials.credentials,
         email=email,
         email_confirmed=email_confirmed,
+        google_sub=_google_session_identity(credentials.credentials, auth_user),
     )
 
 

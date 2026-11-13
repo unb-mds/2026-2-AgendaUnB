@@ -96,6 +96,7 @@ def test_auth_rejects_unconfirmed_email_before_loading_role(monkeypatch):
     monkeypatch.setenv("SUPABASE_ANON_KEY", "public-key")
     monkeypatch.setattr(httpx, "get", lambda *args, **kwargs: httpx.Response(200, json={
         "id": str(user_id), "email": "aluna@example.edu", "email_confirmed_at": None,
+        "confirmed_at": "2026-11-01T00:00:00Z",
     }))
     database = Mock()
     with pytest.raises(HTTPException) as error:

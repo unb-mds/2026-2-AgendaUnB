@@ -36,23 +36,6 @@ class Profile(Base):
     avatar_url: Mapped[str | None] = mapped_column(String, nullable=True)
 
 
-class GoogleCalendarOAuthState(Base):
-    """Desafio OAuth de uso único; PKCE e state nunca são expostos ao cliente."""
-
-    __tablename__ = "google_calendar_oauth_states"
-
-    state_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
-    user_id: Mapped[UUID] = mapped_column(
-        Uuid(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False, index=True
-    )
-    agenda_email: Mapped[str] = mapped_column(String, nullable=False)
-    encrypted_code_verifier: Mapped[str] = mapped_column(Text, nullable=False)
-    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
-    created_at: Mapped[datetime] = mapped_column(
-        "criado_em", DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-
-
 class GoogleCalendarConnection(Base):
     """Credenciais Google criptografadas; nunca devolvidas pela API."""
 
