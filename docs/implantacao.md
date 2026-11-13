@@ -1,5 +1,14 @@
 # Plano de hospedagem e CI/CD
 
+## Atualização de 10/11/2026
+
+O projeto Supabase Cloud da equipe recebeu as cinco migrações pendentes, passando
+de 21 para 26 versões, com backup restaurado e ensaio antes da aplicação.
+O [registro da operação](supabase-nuvem-2026-11-10.md) descreve o estado verificado
+naquela data. A configuração Vercel com múltiplos serviços está descrita abaixo.
+Os modelos em `deploy/` documentam a opção com API externa no Render. A implantação
+integrada é acompanhada no [PR #113](https://github.com/unb-mds/2026-2-AgendaUnB/pull/113).
+
 ## Estado e proposta
 
 O [ADR-002](arquitetura/adrs/adr-002-separar-hospedagem-e-ambientes.md) registra a proposta de separação da hospedagem e dos ambientes. Este plano detalha a configuração, a publicação e a recuperação.
@@ -52,7 +61,7 @@ URLs, IDs dos projetos, região e responsáveis nominais serão preenchidos quan
 
 | Variável/configuração | Destino | Tratamento |
 | --- | --- | --- |
-| `VITE_API_URL` | Build Vercel | Pública; URL HTTPS da API **incluindo `/api/v1`**; ausente de `.env.example` atualmente |
+| `VITE_API_URL` | Build Vercel | Vazia no `.env.example` para usar `/api/v1` no mesmo domínio. Para uma API externa, informar a URL HTTPS incluindo `/api/v1`. |
 | `VITE_SUPABASE_URL` | Build e função de busca Vercel | Pública; URL do projeto do ambiente |
 | `VITE_SUPABASE_ANON_KEY` | Build e função de busca Vercel | Chave pública anon do ambiente; segurança depende de Auth/RLS |
 | `DATABASE_URL` | Runtime Render | Segredo; conexão SQLAlchemy `postgresql+psycopg://...`, credenciais próprias do ambiente e TLS |
@@ -70,7 +79,7 @@ Configurar a conexão PostgreSQL usando a opção oferecida pelo projeto Supabas
 
 ### SPA, CORS e arquitetura multi-serviços (Vercel)
 
-A raiz do repositório contém a configuração [`vercel.json`](../vercel.json) operando em modo de múltiplos serviços (Vercel Services):
+A raiz do repositório contém a configuração [`vercel.json`](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/vercel.json) operando em modo de múltiplos serviços (Vercel Services):
 
 ```json
 {
@@ -94,9 +103,9 @@ A raiz do repositório contém a configuração [`vercel.json`](../vercel.json) 
 }
 ```
 
-O [roteamento do frontend](../frontend/vercel.json) gera títulos, descrições e URLs canônicas no HTML da home e da lista de eventos durante o build. As rotas da SPA, como `/admin` e `/plano-de-ensino`, continuam aceitando acesso direto e recarga.
+O [roteamento do frontend](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/frontend/vercel.json) gera títulos, descrições e URLs canônicas no HTML da home e da lista de eventos durante o build. As rotas da SPA, como `/admin` e `/plano-de-ensino`, continuam aceitando acesso direto e recarga.
 
-A função [de busca](../frontend/api/search.js) responde a `/sitemap.xml` e `/evento/<id>`. Configure a URL e a chave pública do Supabase do mesmo ambiente no build e na função. As leituras passam pela RLS anônima e selecionam apenas eventos aprovados. A CDN pode guardar respostas públicas por cinco minutos. Teste o sitemap, um evento aprovado e um ID inexistente no preview antes da promoção. Após o deploy, envie o sitemap e solicite indexação no Search Console.
+A função [de busca](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/frontend/api/search.js) responde a `/sitemap.xml` e `/evento/<id>`. Configure a URL e a chave pública do Supabase do mesmo ambiente no build e na função. As leituras passam pela RLS anônima e selecionam apenas eventos aprovados. A CDN pode guardar respostas públicas por cinco minutos. Teste o sitemap, um evento aprovado e um ID inexistente no preview antes da promoção. Após o deploy, envie o sitemap e solicite indexação no Search Console.
 
 A SPA consome a API através de URLs relativas (`/api/v1/...`), aproveitando o roteamento unificado da Vercel no mesmo domínio sem requisições cross-origin (CORS). Se necessário apontar para um backend externo, a variável `VITE_API_URL` pode ser preenchida no ambiente.
 
@@ -172,6 +181,9 @@ Aceitar a implantação apenas com evidências registradas de migrações, build
 Nenhum desses papéis representa atribuição nominal já aprovada. Mudanças de hospedagem, variáveis, migrações ou pipeline devem atualizar este documento no mesmo PR. Ver [Arquitetura](arquitetura/visao-geral.md), [Contratos](api-specs.md) e [Contribuição](processo/contribuindo.md).
 
 ## Transição do desenvolvimento local para o projeto Supabase da equipe
+
+Esta seção registra o plano anterior. A execução de 10/11/2026 e as configurações
+do ambiente hospedado estão no [registro atualizado](supabase-nuvem-2026-11-10.md).
 
 O time informou que Felipe Couto Duque está preparando o projeto Supabase na
 nuvem. O desenvolvimento de `feat/geminiapi` e os testes continuam locais enquanto
