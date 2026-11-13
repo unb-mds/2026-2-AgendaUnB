@@ -53,8 +53,8 @@ URLs, IDs dos projetos, região e responsáveis nominais serão preenchidos quan
 | Variável/configuração | Destino | Tratamento |
 | --- | --- | --- |
 | `VITE_API_URL` | Build Vercel | Pública; URL HTTPS da API **incluindo `/api/v1`**; ausente de `.env.example` atualmente |
-| `VITE_SUPABASE_URL` | Build Vercel | Pública; URL do projeto do ambiente |
-| `VITE_SUPABASE_ANON_KEY` | Build Vercel | Chave pública anon do ambiente; segurança depende de Auth/RLS |
+| `VITE_SUPABASE_URL` | Build e função de busca Vercel | Pública; URL do projeto do ambiente |
+| `VITE_SUPABASE_ANON_KEY` | Build e função de busca Vercel | Chave pública anon do ambiente; segurança depende de Auth/RLS |
 | `DATABASE_URL` | Runtime Render | Segredo; conexão SQLAlchemy `postgresql+psycopg://...`, credenciais próprias do ambiente e TLS |
 | `SUPABASE_URL` | Runtime Render | URL do mesmo projeto usado pelo frontend |
 | `SUPABASE_ANON_KEY` | Runtime Render | Chave anon usada na validação do token pelo Auth |
@@ -82,21 +82,21 @@ A raiz do repositório contém a configuração [`vercel.json`](../vercel.json) 
     },
     "frontend": {
       "root": "frontend",
-      "framework": "vite",
-      "rewrites": [
-        { "source": "/(.*)", "destination": "/index.html" }
-      ]
+      "framework": "vite"
     }
   },
   "rewrites": [
     { "source": "/health", "destination": { "service": "backend" } },
+    { "source": "/api/search", "destination": { "service": "frontend" } },
     { "source": "/api/(.*)", "destination": { "service": "backend" } },
     { "source": "/(.*)", "destination": { "service": "frontend" } }
   ]
 }
 ```
 
-O fallback SPA está configurado tanto nas regras do serviço `frontend` quanto em [`frontend/vercel.json`](../frontend/vercel.json) para garantir acesso direto e recarga em `/eventos`, `/evento/<id>`, `/sugestoes`, `/admin` e `/plano-de-ensino`.
+O [roteamento do frontend](../frontend/vercel.json) serve a home, a lista de eventos e os guias acadêmicos com HTML gerado no build. As rotas da SPA, como `/admin` e `/plano-de-ensino`, continuam aceitando acesso direto e recarga.
+
+A função [de busca](../frontend/api/search.js) responde a `/sitemap.xml` e `/evento/<id>`. Configure a URL e a chave pública do Supabase do mesmo ambiente no build e na função. As leituras passam pela RLS anônima e selecionam apenas eventos aprovados. A CDN pode guardar respostas públicas por cinco minutos. Teste o sitemap, um evento aprovado e um ID inexistente no preview antes da promoção. Após o deploy, envie o sitemap e solicite indexação no Search Console.
 
 A SPA consome a API através de URLs relativas (`/api/v1/...`), aproveitando o roteamento unificado da Vercel no mesmo domínio sem requisições cross-origin (CORS). Se necessário apontar para um backend externo, a variável `VITE_API_URL` pode ser preenchida no ambiente.
 
@@ -111,7 +111,18 @@ Configurar no Supabase a Site URL da SPA e as URLs de retorno necessárias para 
 
 ## Fluxo de CI/CD proposto
 
-Nenhuma etapa abaixo existe como workflow da aplicação nesta referência. O workflow de documentação continua independente.
+O workflow `.github/workflows/supabase-ci.yml` valida o banco em PRs e pushes
+na `main` que alteram `supabase/**`, `backend/**` ou o próprio workflow, além de
+permitir execução manual. Ele inicia o Supabase local com migrations e seed,
+reprova erros de lint e executa `backend/tests/test_*database.py` com Python 3.11.
+Os testes usam uma cópia do banco recém-inicializado (schema e seed) em `agenda_catalog_ci`, banco local
+descartável necessário para o teste de publicação que faz commits. A porta vem
+de `supabase/config.toml`; nenhuma credencial de produção é necessária. Testes
+pgTAP só executam quando há arquivos SQL em `supabase/tests`. O stack é encerrado
+mesmo em caso de falha. A execução no GitHub Actions ainda precisa ser confirmada.
+
+O restante do fluxo abaixo continua proposto; este workflow não publica a aplicação.
+O workflow de documentação continua independente.
 
 1. **PR:** instalar dependências; executar pytest com SQLite, testes de calendário, build frontend e MkDocs. Subir Supabase local descartável, aplicar migrações/seed e executar os testes PostgreSQL com `TEST_SUPABASE_DB_URL` local. Falha bloqueia promoção; teste ignorado não equivale a aprovação de RLS.
 2. **Merge em `main`:** repetir as verificações do commit final e publicar homologação, com exclusão mútua por ambiente para impedir migrações/deploys simultâneos. Somente jobs com sucesso liberam a sequência de publicação.
