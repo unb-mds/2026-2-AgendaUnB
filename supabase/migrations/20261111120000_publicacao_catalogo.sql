@@ -134,4 +134,3 @@ begin
   return jsonb_build_object('id', v_oferta.id, 'acao', 'atualizada');
 end;
 $$;
-

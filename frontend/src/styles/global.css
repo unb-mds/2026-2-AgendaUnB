@@ -1265,3 +1265,18 @@ body.light .tp-review-footer .tp-error { color:#a3221b; }
  .tp-calendar { padding:20px; }
 }
 .tp-steps { scroll-margin-top: 100px; }
+
+/* Legal links remain readable in both themes, including visited links. */
+.legal-links, .legal-links a { color: #fff; }
+body.light .legal-links, body.light .legal-links a { color: #000; }
+
+.public-search-page {
+  max-width: 50rem;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 5vw, 4rem) 1.25rem;
+  line-height: 1.65;
+}
+.public-search-page h1 { font-size: clamp(1.8rem, 5vw, 3rem); line-height: 1.2; margin: 0 0 1rem; }
+.public-search-page p { margin: .75rem 0; }
+.public-search-page a { color: #88caff; text-decoration: underline; text-underline-offset: .2em; }
+.public-event-description { white-space: pre-line; overflow-wrap: anywhere; }

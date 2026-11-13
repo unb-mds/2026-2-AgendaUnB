@@ -11,6 +11,7 @@ const AdminPage = lazy(() => import('./pages/AdminPage.jsx'))
 const SuggestionsPage = lazy(() => import('./pages/SuggestionsPage.jsx'))
 const TeachingPlanPage = lazy(() => import('./pages/TeachingPlanPage.jsx'))
 import { ProtectedRoute } from './components/ManagementUI.jsx'
+import SearchMetadata from './components/SearchMetadata.jsx'
 
 function LegacyEventsRedirect() {
   const { search, hash } = useLocation();
@@ -21,13 +22,13 @@ createRoot(document.getElementById('root')).render(
   <BrowserRouter>
     <AuthProvider>
       <Suspense fallback={<div className="management-state" role="status">Carregando página…</div>}><Routes>
-        <Route path="/" element={<App />} />
-        <Route path="/eventos" element={<SecondPage />} />
+        <Route path="/" element={<><SearchMetadata /><App /></>} />
+        <Route path="/eventos" element={<><SearchMetadata /><SecondPage /></>} />
         <Route path="/segunda-pagina" element={<LegacyEventsRedirect />} />
-        <Route path="/plano-de-ensino" element={<TeachingPlanPage />} />
+        <Route path="/plano-de-ensino" element={<><SearchMetadata /><TeachingPlanPage /></>} />
         <Route path="/evento/:id" element={<PaginaDeEvento />} />
-        <Route path="/sugestoes" element={<ProtectedRoute roles={['professor', 'admin']}><SuggestionsPage /></ProtectedRoute>} />
-        <Route path="/admin" element={<ProtectedRoute roles={['admin']}><AdminPage /></ProtectedRoute>} />
+        <Route path="/sugestoes" element={<><SearchMetadata /><ProtectedRoute roles={['professor', 'admin']}><SuggestionsPage /></ProtectedRoute></>} />
+        <Route path="/admin" element={<><SearchMetadata /><ProtectedRoute roles={['admin']}><AdminPage /></ProtectedRoute></>} />
       </Routes></Suspense>
     </AuthProvider>
   </BrowserRouter>
