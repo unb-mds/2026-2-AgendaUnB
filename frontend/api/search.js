@@ -1,11 +1,8 @@
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { eventDescription, eventTitle, searchPages, siteUrl } from '../src/lib/searchPages.js';
-import { escapeHtml, renderAppDocument, renderEventContent } from '../search/render.js';
+import { escapeHtml, renderEventDocument, renderEventContent } from '../search/render.js';
 
 const uuid = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 const cache = 'public, s-maxage=300';
-const template = () => readFileSync(resolve('search/app-template.html'), 'utf8');
 
 async function approvedEvents(filters, signal) {
   const url = process.env.VITE_SUPABASE_URL?.trim();
@@ -97,10 +94,10 @@ export default async function handler(request, response) {
       // The app can still load the event via authenticated personal routes.
       response.setHeader('X-Robots-Tag', 'noindex');
       const body = '<main class="public-search-page"><h1>Evento indisponível na agenda pública</h1><p><a href="/eventos">Consultar eventos da UnB</a></p></main>';
-      return response.status(404).send(renderAppDocument(template(), { title: 'Evento | Agenda UnB', body }));
+      return response.status(404).send(renderEventDocument({ title: 'Evento | Agenda UnB', body }));
     }
 
-    const html = renderAppDocument(template(), eventMetadata(event, path));
+    const html = renderEventDocument(eventMetadata(event, path));
     response.setHeader('Cache-Control', cache);
     return response.status(200).send(html);
   } catch (error) {

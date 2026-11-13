@@ -29,6 +29,24 @@ export function renderAppDocument(template, { title, description, path, body = '
     .replace('<div id="root"></div>', () => `<div id="root">${body}</div>`);
 }
 
+// Stable entry URLs load the hashed Vite assets for the deployed build.
+export function renderEventDocument(page) {
+  return renderAppDocument(`<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agenda UnB</title>
+    <link rel="icon" href="/Logo-AgendaUnB1.png">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@200;500&family=Orbitron:wght@400;700&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0">
+    <link rel="stylesheet" href="/event-app.css">
+    <script type="module" src="/event-app.js"></script>
+  </head>
+  <body><div id="root"></div></body>
+</html>`, page);
+}
+
 function siteNav() {
   return `<nav aria-label="Navegação principal">
     <a href="/">Agenda UnB</a>

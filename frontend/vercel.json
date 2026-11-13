@@ -1,8 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "functions": {
-    "api/search.js": { "includeFiles": "search/app-template.html" }
-  },
   "redirects": [
     { "source": "/:page(eventos|calendario-academico|horarios-de-aula).html", "destination": "/:page", "permanent": true },
     { "source": "/index.html", "destination": "/", "permanent": true },
