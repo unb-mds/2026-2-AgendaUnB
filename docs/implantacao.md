@@ -53,8 +53,8 @@ URLs, IDs dos projetos, região e responsáveis nominais serão preenchidos quan
 | Variável/configuração | Destino | Tratamento |
 | --- | --- | --- |
 | `VITE_API_URL` | Build Vercel | Pública; URL HTTPS da API **incluindo `/api/v1`**; ausente de `.env.example` atualmente |
-| `VITE_SUPABASE_URL` | Build Vercel | Pública; URL do projeto do ambiente |
-| `VITE_SUPABASE_ANON_KEY` | Build Vercel | Chave pública anon do ambiente; segurança depende de Auth/RLS |
+| `VITE_SUPABASE_URL` | Build e função de busca Vercel | Pública; URL do projeto do ambiente |
+| `VITE_SUPABASE_ANON_KEY` | Build e função de busca Vercel | Chave pública anon do ambiente; segurança depende de Auth/RLS |
 | `DATABASE_URL` | Runtime Render | Segredo; conexão SQLAlchemy `postgresql+psycopg://...`, credenciais próprias do ambiente e TLS |
 | `SUPABASE_URL` | Runtime Render | URL do mesmo projeto usado pelo frontend |
 | `SUPABASE_ANON_KEY` | Runtime Render | Chave anon usada na validação do token pelo Auth |
@@ -82,21 +82,21 @@ A raiz do repositório contém a configuração [`vercel.json`](../vercel.json) 
     },
     "frontend": {
       "root": "frontend",
-      "framework": "vite",
-      "rewrites": [
-        { "source": "/(.*)", "destination": "/index.html" }
-      ]
+      "framework": "vite"
     }
   },
   "rewrites": [
     { "source": "/health", "destination": { "service": "backend" } },
+    { "source": "/api/search", "destination": { "service": "frontend" } },
     { "source": "/api/(.*)", "destination": { "service": "backend" } },
     { "source": "/(.*)", "destination": { "service": "frontend" } }
   ]
 }
 ```
 
-O fallback SPA está configurado tanto nas regras do serviço `frontend` quanto em [`frontend/vercel.json`](../frontend/vercel.json) para garantir acesso direto e recarga em `/eventos`, `/evento/<id>`, `/sugestoes`, `/admin` e `/plano-de-ensino`.
+O [roteamento do frontend](../frontend/vercel.json) serve a home, a lista de eventos e os guias acadêmicos com HTML gerado no build. As rotas da SPA, como `/admin` e `/plano-de-ensino`, continuam aceitando acesso direto e recarga.
+
+A função [de busca](../frontend/api/search.js) responde a `/sitemap.xml` e `/evento/<id>`. Configure a URL e a chave pública do Supabase do mesmo ambiente no build e na função. As leituras passam pela RLS anônima e selecionam apenas eventos aprovados. A CDN pode guardar respostas públicas por cinco minutos. Teste o sitemap, um evento aprovado e um ID inexistente no preview antes da promoção. Após o deploy, envie o sitemap e solicite indexação no Search Console.
 
 A SPA consome a API através de URLs relativas (`/api/v1/...`), aproveitando o roteamento unificado da Vercel no mesmo domínio sem requisições cross-origin (CORS). Se necessário apontar para um backend externo, a variável `VITE_API_URL` pode ser preenchida no ambiente.
 

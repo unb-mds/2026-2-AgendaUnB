@@ -271,3 +271,11 @@ Este arquivo foi redigido com auxílio da I.A. A estrutura e o texto das entrada
 - **Pedido:** testar implementações da API do Followw.
 - **Verificações:** testes automatizados HTTP, adaptador, PostgreSQL isolado e Playwright; build frontend; migrações na atualização e em base sem tabelas da aplicação. Sondagem pública pequena retornou 211 unidades e duas ofertas de FGA0108/2026.2, ambas com ID inequívoco. Detalhes e limitações em `docs/arquitetura/catalogo-de-turmas.md`.
 - **Limites:** sem deploy, escrita no Supabase hospedado, varredura integral, mensagens em issues ou fechamento de issues. Revisor humano e homologação ainda pendentes.
+
+### 13/11/2026 — SEO do Agenda UnB
+
+- **Solicitante:** Thomas. **Ferramenta:** Codex.
+- **Pedido:** melhorar a descoberta do site pelo Google e abrir um PR para a `dev`.
+- **O que entrou:** HTML e metadados para páginas públicas, guias com fontes oficiais da UnB, sitemap de eventos aprovados e regras de indexação.
+- **Verificações:** build e 25 testes do frontend, HTTP local dos guias e testes da função com respostas simuladas do Supabase. A validação do roteamento e do cache na Vercel fica para a homologação.
+- **Decisão:** a marcação estruturada de eventos depende de endereços completos no catálogo. As páginas públicas usam o campo de local disponível e não inferem um endereço.
