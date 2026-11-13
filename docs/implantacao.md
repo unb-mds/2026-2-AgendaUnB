@@ -60,7 +60,8 @@ URLs, IDs dos projetos, região e responsáveis nominais serão preenchidos quan
 | `SUPABASE_ANON_KEY` | Runtime Render | Chave anon usada na validação do token pelo Auth |
 | `CORS_ORIGINS` | Runtime Render | Origens exatas da SPA, separadas por vírgula, sem caminho; evitar curingas |
 | `PORT` | Runtime Render | Fornecida pelo provedor; usada pelo comando de início |
-| `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID` / `SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET` | Supabase local/configuração do provedor OAuth hospedado | Client ID e segredo do Google; segredo nunca enviado ao bundle |
+| `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID` / `SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET` | Supabase local e runtime da API | Use no runtime o mesmo Client ID e segredo registrados no provedor Google do Supabase hospedado. Mantenha o segredo no servidor. |
+| `GOOGLE_TOKEN_ENCRYPTION_KEY` | Runtime da API | Chave Fernet exclusiva e persistente do ambiente para criptografar as credenciais do Calendar. |
 | `TEST_SUPABASE_DB_URL` | Job de teste | Somente conexão do Supabase local descartável; testes rejeitam host remoto |
 | Tokens Vercel/Render/Supabase e senha de migração | GitHub Environments/Secrets | Segredos exclusivos da automação; provisionar somente na implementação do pipeline |
 
@@ -107,7 +108,16 @@ A SPA consome a API através de URLs relativas (`/api/v1/...`), aproveitando o r
 > 1. Adotar upload direto do frontend para o Supabase Storage via client SDK com RLS ou pre-signed URLs (enviando ao FastAPI apenas metadados/referência); ou
 > 2. Manter a execução do backend como Web Service dedicado (ex: Render/container) para as rotas com transferências volumosas.
 
-Configurar no Supabase a Site URL da SPA e as URLs de retorno necessárias para login OAuth/confirmação de e-mail de cada ambiente. No Google, registrar o callback fornecido pelo projeto Supabase correspondente. Manter as origens de homologação e produção separadas; não abrir CORS de produção para previews arbitrários.
+### Autenticação e Google Agenda (S7-F04)
+
+1. No Supabase do ambiente, configure a Site URL da SPA e permita a URL exata `/auth/retorno` na origem correspondente. Habilite a confirmação de e-mail, mantenha pelo menos 8 caracteres para a senha e use intervalo mínimo de 60 segundos para novo envio.
+2. Configure o SMTP de homologação e copie para **Confirm signup** e **Reset password** os templates [confirmation.html](../supabase/templates/confirmation.html) e [recovery.html](../supabase/templates/recovery.html). Os links carregam o hash no fragmento e exigem uma ação na página para consumi-lo. Desative o rastreamento de cliques nos e-mails de autenticação.
+3. Para login com Google, habilite o provedor no Supabase e cadastre no Google Cloud a URL de callback fornecida pelo Supabase. O login retorna para `/auth/retorno` e troca o código via PKCE.
+4. No mesmo projeto Google Cloud do login, habilite a Calendar API e configure o consentimento para `https://www.googleapis.com/auth/calendar.app.created`. No serviço que recebe as chamadas da API, configure `SUPABASE_URL`, o mesmo Client ID e segredo que o Supabase usa para login (`SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID` e `SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET`) e uma `GOOGLE_TOKEN_ENCRYPTION_KEY` persistente. Se `VITE_API_URL` aponta para o Render, configure essas variáveis no serviço do Render. Mantenha os segredos no servidor.
+5. Antes do deploy público, configure o público como **Externo** e o status como **Em produção** em **Google Auth Platform → Público-alvo**. Em **Acesso a dados**, confira o escopo `calendar.app.created` e conclua a verificação exigida pelo Google para o projeto e o escopo. O deploy da aplicação não muda o status do cliente OAuth. Em **Teste**, apenas contas na lista de testadores podem autorizar o Calendar e concluir o fluxo completo. [Documentação do Google sobre público-alvo](https://support.google.com/cloud/answer/15549945?hl=pt-BR)
+6. Aplique as migrações pendentes antes do deploy. Valide **Continuar com Google** no domínio publicado com uma conta fora da equipe e da lista de testadores. Conceda a permissão no OAuth e, em **Meus Eventos**, selecione um evento e confirme a cópia na agenda secundária **Agenda UnB**. Repita com recusa de permissão e com sessão de e-mail e senha para verificar a disponibilidade da exportação. Confira também cadastro com endereço externo à equipe, reenvio, recuperação e troca de senha.
+
+A configuração local do Supabase inclui os templates e envia ao Mailpit. Mantenha separadas as origens de homologação e produção.
 
 ## Fluxo de CI/CD proposto
 

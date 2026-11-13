@@ -32,6 +32,87 @@ begin
 end;
 $$;
 
+-- Protect the direct Supabase paths as well as the FastAPI middleware.
+create or replace function public.current_account_has_confirmed_email()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1 from auth.users
+     where id = (select auth.uid())
+       and nullif(trim(email::text), '') is not null
+       and email_confirmed_at is not null
+  );
+$$;
+revoke all on function public.current_account_has_confirmed_email() from public, anon;
+grant execute on function public.current_account_has_confirmed_email() to authenticated;
+
+create or replace function public.is_admin()
+returns boolean language sql stable security definer set search_path = '' as $$
+  select public.current_account_has_confirmed_email() and exists (
+    select 1 from public.profiles where id = (select auth.uid()) and papel = 'admin'
+  );
+$$;
+
+create or replace function public.is_event_moderator()
+returns boolean language sql stable security definer set search_path = '' as $$
+  select public.current_account_has_confirmed_email() and exists (
+    select 1 from public.profiles where id = (select auth.uid()) and papel in ('professor', 'admin')
+  );
+$$;
+
+do $$
+declare
+  relation text;
+begin
+  foreach relation in array array[
+    'profiles', 'eventos_pessoais', 'eventos_salvos', 'notificacoes',
+    'planos_ensino', 'avaliacoes', 'versoes_plano', 'vinculos_turma'
+  ] loop
+    execute format(
+      'create policy confirmed_account on public.%I as restrictive for all to authenticated
+         using ((select public.current_account_has_confirmed_email()))
+         with check ((select public.current_account_has_confirmed_email()))',
+      relation
+    );
+  end loop;
+end;
+$$;
+
+create policy confirmed_account_event_reads on public.eventos as restrictive for select to authenticated
+  using (status = 'aprovado' or (select public.current_account_has_confirmed_email()));
+create policy confirmed_account_event_writes on public.eventos as restrictive for insert to authenticated
+  with check ((select public.current_account_has_confirmed_email()));
+
+create policy confirmed_account_syllabus_files on storage.objects as restrictive for all to authenticated
+  using (bucket_id <> 'syllabus_files' or (select public.current_account_has_confirmed_email()))
+  with check (bucket_id <> 'syllabus_files' or (select public.current_account_has_confirmed_email()));
+
+-- The compatibility RPC bypasses RLS, so enforce the same requirement on entry.
+create schema if not exists private;
+revoke all on schema private from public, anon, authenticated;
+alter function public.revisar_candidatos_plano(uuid, jsonb) set schema private;
+revoke all on function private.revisar_candidatos_plano(uuid, jsonb) from public, anon, authenticated, service_role;
+
+create function public.revisar_candidatos_plano(p_plano_id uuid, p_itens jsonb)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if not public.current_account_has_confirmed_email() then
+    raise exception 'Confirme seu e-mail antes de usar este recurso' using errcode = '42501';
+  end if;
+  return private.revisar_candidatos_plano(p_plano_id, p_itens);
+end;
+$$;
+revoke all on function public.revisar_candidatos_plano(uuid, jsonb) from public, anon, authenticated, service_role;
+grant execute on function public.revisar_candidatos_plano(uuid, jsonb) to authenticated;
+
 -- Authenticated users can self-promote to professor only if the actual
 -- Supabase account email is verified and institutional. The admin RPC runs
 -- as its trusted owner and can change roles of other confirmed accounts.
@@ -70,6 +151,8 @@ begin
   return new;
 end;
 $$;
+revoke all on function public.tg_promove_professor_confirmado() from public, anon, authenticated;
+
 create trigger on_auth_user_confirmed_professor_request
   after update of email_confirmed_at on auth.users
   for each row execute function public.tg_promove_professor_confirmado();

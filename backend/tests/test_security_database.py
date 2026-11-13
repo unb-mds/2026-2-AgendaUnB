@@ -214,14 +214,30 @@ def test_profiles_cannot_be_read_or_changed_by_others(database):
     assert scalar(conn, 'select count(*) from public.profiles where id=:id', {'id': users['ana']}) == 0
     assert conn.execute(text("update public.profiles set nome_completo='Hackeado' where id=:id"),
                         {'id': users['ana']}).rowcount == 0
-    # O próprio e-mail é imutável e o papel não sobe pelo navegador.
+    # O próprio e-mail é imutável e a conta não pode se tornar admin.
     denied(conn, "update public.profiles set email='outro@unb.br' where id=:id", {'id': users['bruno']})
     denied(conn, "update public.profiles set papel='admin' where id=:id", {'id': users['bruno']})
-    denied(conn, "update public.profiles set papel='professor' where id=:id", {'id': users['ana']})
-    denied(conn, "update public.profiles set papel='professor' where id=:id", {'id': users['bruno']})
+    assert conn.execute(text("update public.profiles set papel='professor' where id=:id"),
+                        {'id': users['ana']}).rowcount == 0
 
+    as_backend(conn)
+    assert scalar(conn, 'select papel from public.profiles where id=:id', {'id': users['ana']}) == 'student'
     assume(conn)
     assert scalar(conn, 'select count(*) from public.profiles') == 0
+
+
+def test_non_institutional_email_cannot_be_promoted_with_client_metadata(database):
+    conn, _ = database
+    user_id = str(uuid4())
+    conn.execute(text("""insert into auth.users(id,email,email_confirmed_at,raw_user_meta_data)
+        values (:id,:email,now(),:meta)"""), {
+        'id': user_id,
+        'email': f'test-{user_id}@aluno.unb.br',
+        'meta': json.dumps({'nome_completo': 'Teste', 'papel': 'professor', 'email': 'docente@unb.br'}),
+    })
+    assume(conn, user_id)
+    assert scalar(conn, 'select papel from public.profiles where id=:id', {'id': user_id}) == 'student'
+    denied(conn, "update public.profiles set papel='professor' where id=:id", {'id': user_id})
 
 
 def test_signup_metadata_cannot_assign_roles_and_unconfirmed_users_cannot_receive_them(database):
@@ -247,7 +263,10 @@ def test_signup_metadata_cannot_assign_roles_and_unconfirmed_users_cannot_receiv
     assert scalar(conn, 'select papel from public.profiles where id=:id', {'id': requested_professor}) == 'professor'
 
     assume(conn, unconfirmed)
-    denied(conn, "update public.profiles set papel='admin' where id=:id", {'id': unconfirmed})
+    assert scalar(conn, 'select count(*) from public.profiles where id=:id', {'id': unconfirmed}) == 0
+    denied(conn, "insert into public.eventos_pessoais(user_id, titulo, data_hora) values (:id, 'Privado', now())",
+           {'id': unconfirmed})
+    denied(conn, "select public.revisar_candidatos_plano(:id, '[]'::jsonb)", {'id': unconfirmed})
     assume(conn, users['admin'])
     denied(conn, "select public.admin_alterar_papel(:id,'professor')", {'id': unconfirmed})
 
@@ -257,7 +276,10 @@ def test_verified_institutional_user_can_promote_only_their_own_account(database
     assume(conn, users['ana'])
     conn.execute(text("update public.profiles set papel='professor' where id=:id"), {'id': users['ana']})
     assert scalar(conn, 'select papel from public.profiles where id=:id', {'id': users['ana']}) == 'professor'
-    denied(conn, "update public.profiles set papel='professor' where id=:id", {'id': users['bruno']})
+    assert conn.execute(text("update public.profiles set papel='professor' where id=:id"),
+                        {'id': users['bruno']}).rowcount == 0
+    as_backend(conn)
+    assert scalar(conn, 'select papel from public.profiles where id=:id', {'id': users['bruno']}) == 'student'
 
 
 def test_admin_functions_refuse_students_and_visitors(database):
