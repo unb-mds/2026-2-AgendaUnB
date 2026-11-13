@@ -4,6 +4,7 @@ node_modules/
 # Build e Editor
 dist/
 dist-ssr/
+frontend/search/app-template.html
 *.local
 .vscode/
 .DS_Store
