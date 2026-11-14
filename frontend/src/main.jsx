@@ -14,6 +14,7 @@ const SuggestionsPage = lazy(() => import('./pages/SuggestionsPage.jsx'))
 const TeachingPlanPage = lazy(() => import('./pages/TeachingPlanPage.jsx'))
 import { ProtectedRoute } from './components/ManagementUI.jsx'
 import SearchMetadata from './components/SearchMetadata.jsx'
+import { Analytics } from '@vercel/analytics/react'
 
 function LegacyEventsRedirect() {
   const { search, hash } = useLocation();
@@ -33,6 +34,7 @@ createRoot(document.getElementById('root')).render(
         <Route path="/sugestoes" element={<><SearchMetadata /><ProtectedRoute roles={['professor', 'admin']}><SuggestionsPage /></ProtectedRoute></>} />
         <Route path="/admin" element={<><SearchMetadata /><ProtectedRoute roles={['admin']}><AdminPage /></ProtectedRoute></>} />
       </Routes></Suspense>
+      <Analytics />
     </AuthProvider>
   </BrowserRouter>
 )
