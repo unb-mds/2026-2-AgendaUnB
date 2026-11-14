@@ -225,7 +225,7 @@ for (const outcome of ['denied', 'email_mismatch', 'connected']) {
       return route.fulfill({ json: { connected } });
     });
     await page.goto('/eventos?aba=meus');
-    const connect = page.getByRole('button', { name: 'Conectar Google Agenda', exact: true });
+    const connect = page.getByRole('button', { name: 'Conectar ao Google Agenda', exact: true });
     await connect.click();
     await expect(page).toHaveURL(new RegExp(`google_calendar=${outcome}`));
     if (connected) {

@@ -3,7 +3,7 @@ previews:
 
 services:
   - type: web
-    name: agendaunb-api
+    name: agenda-unb-api-homolog
     runtime: docker
     plan: free
     branch: main
@@ -16,7 +16,7 @@ services:
       - key: APP_ENV
         value: production
       - key: CORS_ORIGINS
-        value: https://agendaunb.com.br,https://agendaunb.vercel.app
+        value: https://agendaunb.com.br,https://2026-2-agendaunb-agenda-un-b.vercel.app
       - key: DATABASE_URL
         sync: false
       - key: SUPABASE_URL
