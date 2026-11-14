@@ -11,7 +11,7 @@ from src.database.connection import get_db
 from src.database.models import PersonalEvent, Syllabus, SyllabusCandidate
 from src.middlewares.auth import CurrentUser, get_current_user
 from src.modules.events.router import _category_id, _personal_read
-from src.modules.classes.services import available_offering
+from src.modules.classes.services import followed_available_offering
 from src.modules.syllabus.schemas import (
     ConfirmSyllabusRequest,
     ConfirmSyllabusResponse,
@@ -101,7 +101,7 @@ async def upload_syllabus(
     Retorna 202 com texto privado preparado. A fila só fica elegível após
     autorização explícita do dono em /{id}/extractions.
     """
-    offer = available_offering(db, offering_id)
+    offer = followed_available_offering(db, offering_id, current_user.id)
     started = time.monotonic()
     try:
         content = await validate_pdf_file(file)
@@ -123,7 +123,7 @@ async def upload_syllabus(
 @router.post("/text", response_model=SyllabusUploadResponse, status_code=202)
 def prepare_syllabus_text(payload: TextInput, current_user: CurrentUser = Depends(get_current_user),
                           db: Session = Depends(get_db)):
-    offer = available_offering(db, payload.offering_id)
+    offer = followed_available_offering(db, payload.offering_id, current_user.id)
     started = time.monotonic()
     pages = checked_pages([{"pagina": None, "texto": payload.text}])
     pages = checked_pages([{"pagina": None, "texto": minimize(pages[0]["texto"])}])

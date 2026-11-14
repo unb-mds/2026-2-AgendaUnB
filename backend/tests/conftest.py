@@ -57,7 +57,7 @@ def api():
 def published_offering(api):
     from datetime import datetime, timezone
     from uuid import UUID
-    from src.database.models import CatalogSync, Subject, ClassOffering
+    from src.database.models import CatalogSync, Subject, ClassOffering, ClassFollow
     with api[1]() as db:
         run = CatalogSync(status="concluida", completed_at=datetime.now(timezone.utc), periods=["2026.2"], units=[])
         db.add(run); db.flush()
@@ -65,5 +65,7 @@ def published_offering(api):
         db.add(subject); db.flush()
         offer = ClassOffering(id=UUID("70000000-0000-4000-8000-000000000071"), subject_id=subject.id,
             class_number="01", year=2026, semester=2, publication_id=run.id)
-        db.add(offer); db.commit()
+        db.add(offer); db.flush()
+        db.add(ClassFollow(user_id=api[2]["value"].id, offering_id=offer.id))
+        db.commit()
         return str(offer.id)

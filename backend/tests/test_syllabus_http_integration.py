@@ -7,7 +7,7 @@ from pathlib import Path
 import secrets
 import time
 from urllib.parse import urlsplit
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import httpx
 import pytest
@@ -96,7 +96,10 @@ def local_http(monkeypatch):
             subject = Subject(code="HTTP" + uuid4().hex[:12].upper(), name="Oferta sintética HTTP", unit="673")
             session.add(subject); session.flush(); seeded_subject = subject.id
             offer = ClassOffering(subject_id=subject.id, class_number="01", year=2026, semester=2, publication_id=run.id)
-            session.add(offer); session.commit(); ctx.offering_id = str(offer.id)
+            session.add(offer); session.flush()
+            from src.database.models import ClassFollow
+            session.add(ClassFollow(user_id=UUID(ctx.users["owner"]), offering_id=offer.id))
+            session.commit(); ctx.offering_id = str(offer.id)
         monkeypatch.setenv("SYLLABUS_PROVIDER_TERMS_READY","true")
         monkeypatch.setenv("SUPABASE_URL",ctx.url)
         monkeypatch.setenv("SUPABASE_ANON_KEY",anon)

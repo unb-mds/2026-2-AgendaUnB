@@ -193,7 +193,7 @@ def committed_plan():
     engine = create_engine(url, connect_args={"options":"-c statement_timeout=10000"})
     owner = str(uuid4())
     with engine.begin() as conn:
-        conn.execute(text("insert into auth.users(id,email,raw_user_meta_data) values (:id,:email,:meta)"),
+        conn.execute(text("insert into auth.users(id,email,email_confirmed_at,raw_user_meta_data) values (:id,:email,now(),:meta)"),
                      {'id':owner,'email':f's6d02-{owner}@example.com','meta':json.dumps({'nome_completo':'Teste concorrente sintetico'})})
         sid = plan(conn,owner)
         cid = candidate(conn,sid)

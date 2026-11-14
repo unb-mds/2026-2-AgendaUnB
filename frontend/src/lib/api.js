@@ -101,6 +101,7 @@ export function toUiEvent(event, isPersonal = false) {
   return {
     id: event.id,
     titulo: event.title,
+    startsAt: event.starts_at,
     data: `${startsAt.getFullYear()}-${pad(startsAt.getMonth() + 1)}-${pad(startsAt.getDate())}`,
     horario: `${pad(startsAt.getHours())}:${pad(startsAt.getMinutes())}`,
     campus: event.campus || '',
