@@ -32,7 +32,7 @@ export default function SyllabusReviewEditor({ value, onChange, onConfirm, confi
     <h2 id={`${prefix}-heading`}>Revisar avaliações</h2>
     {!value.length ? <p className="management-muted" role="status">{emptyMessage}</p> : <>
       <p className="management-muted">Corrija os dados e escolha os itens que deseja incluir. A conferência abaixo não salva eventos na agenda.</p>
-      <p className="management-muted">As edições e a seleção ficam nesta tela até a confirmação. Informe o fuso quando ele não estiver registrado na origem.</p>
+      <p className="management-muted">As edições e a seleção ficam nesta tela até a confirmação. Os horários usam o fuso de Brasília (UTC-3).</p>
       <div className="syllabus-review-actions">
         <button type="button" className="manage-button" disabled={disabled || !value.some(item => item.editable !== false && item.decision === 'pending')} onClick={() => selectAll(true)}>Selecionar pendentes</button>
         <button type="button" className="manage-button" disabled={disabled || !selected.length} onClick={() => selectAll(false)}>Limpar seleção</button>
@@ -44,7 +44,7 @@ export default function SyllabusReviewEditor({ value, onChange, onConfirm, confi
         const errors = checked ? validateReviewItem(item, true) : {};
         const fields = [
           ['title', 'Título', 'text'], ['type', 'Tipo', 'text'],
-          ['date', 'Data', 'date'], ['time', 'Horário', 'time'], ['utcOffset', 'Fuso UTC', 'text'],
+          ['date', 'Data', 'date'], ['time', 'Horário', 'time'],
         ];
         return <fieldset key={item.id} disabled={disabled || item.editable === false} className="syllabus-review-item">
           <legend>Avaliação {index + 1}</legend>
@@ -69,10 +69,8 @@ export default function SyllabusReviewEditor({ value, onChange, onConfirm, confi
                 disabled={item.decision === 'discarded'}
                 required={item.decision === 'selected' && name !== 'type'}
                 aria-invalid={errors[name] ? true : undefined}
-                aria-describedby={[errors[name] && `${base}-${name}-error`, name === 'utcOffset' && `${base}-zone-hint`].filter(Boolean).join(' ') || undefined}
-                placeholder={name === 'utcOffset' ? 'Ex.: -03:00' : undefined}
+                aria-describedby={errors[name] ? `${base}-${name}-error` : undefined}
                 onChange={e => update(item.id, { [name]: e.target.value })} />}
-              {name === 'utcOffset' && <small id={`${base}-zone-hint`}>Diferença para UTC na data escolhida. Ex.: -03:00.</small>}
               {errors[name] && <p className="syllabus-review-error" id={`${base}-${name}-error`}>{errors[name]}</p>}
             </div>)}
           </div>
