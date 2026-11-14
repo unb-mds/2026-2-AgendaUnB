@@ -272,6 +272,10 @@ def test_retry_does_not_recreate_deleted_confirmed_event(api):
     retry = _confirm(client, sid, payload, "delete-retry-001")
     assert retry.status_code == 200 and retry.json()["events"] == []
     assert retry.json()["items"][0]["removed"] is True
+    detail = client.get(f"/api/v1/syllabus/{sid}")
+    assert detail.status_code == 200
+    reopened = next(row for row in detail.json()["candidates"] if row["id"] == str(cid))
+    assert reopened["status"] == "pendente"
     explicit_reimport = _confirm(client, sid, payload, "delete-reimport-001")
     assert explicit_reimport.status_code == 200
     assert explicit_reimport.json()["items"][0]["removed"] is False
