@@ -115,6 +115,9 @@ def test_confirmation_hides_processing_state_of_another_users_private_plan(api):
 def test_confirmation_creates_only_selected_events_and_is_idempotent(api):
     client, TestSession, authenticated_user, _ = api
     syllabus_id, candidate_id, unselected_id = _create_syllabus(TestSession, authenticated_user["value"].id)
+    before = client.get("/api/v1/me/events")
+    assert before.status_code == 200
+    assert before.json() == []
     payload = {
         "candidates": [
             {
@@ -137,6 +140,7 @@ def test_confirmation_creates_only_selected_events_and_is_idempotent(api):
     assert first.json()["items"][0]["candidateId"] == str(candidate_id)
     assert first.json()["items"][0]["type"] == "prova escrita"
     assert agenda.status_code == 200
+    assert len(agenda.json()) == 1
     assert agenda.json()[0]["origin"]["candidateId"] == str(candidate_id)
     assert first.json()["events"][0]["id"] == second.json()["events"][0]["id"]
     event = first.json()["events"][0]
