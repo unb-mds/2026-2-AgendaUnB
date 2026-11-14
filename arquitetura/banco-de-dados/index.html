@@ -1,0 +1,2803 @@
+
+<!doctype html>
+<html lang="pt" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documento que descreve a estrutura física DDL e as políticas de segurança RLS do banco de dados da Agenda UnB no Supabase.">
+      
+      
+      
+      
+        <link rel="prev" href="../modelo-de-dados/">
+      
+      
+        <link rel="next" href="../catalogo-de-turmas/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+    
+    
+      
+        <title>Especificação do banco de dados - Agenda UnB Docs</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#1-tabelas-de-dominio-e-catalogos-globais" class="md-skip">
+          Pular para conteúdo
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Cabeçalho">
+    <a href="../.." title="Agenda UnB Docs" class="md-header__button md-logo" aria-label="Agenda UnB Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Agenda UnB Docs
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Especificação do banco de dados
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Modo automático"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Modo automático" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Mudar para modo escuro"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Mudar para modo escuro" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Mudar para modo claro"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Mudar para modo claro" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Buscar" placeholder="Buscar" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Pesquisar">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Limpar" aria-label="Limpar" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Inicializando busca
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/unb-mds/2026-2-AgendaUnB" title="Ir para repositório" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    unb-mds/G8-2026-2
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Abas" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Início
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../produto/visao/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Visão do Produto
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../visao-geral/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Arquitetura
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../adrs/" class="md-tabs__link">
+          
+  
+  
+  Decisões arquiteturais
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../api-specs/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Contratos do Backend
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../processamento-planos-s7/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Extração Autorizada S7
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../s7-b01-validacao/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Validação S7-B01
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../processamento-planos/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Histórico de Processamento S6
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../privacidade-planos/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Privacidade dos Planos
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../matriz-release-2/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Matriz de aceite da Release 2
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../implantacao/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Plano de Implantação
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../modelo-de-dados/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Modelo de Dados
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Especificação do Banco
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../catalogo-de-turmas/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Catálogo de turmas
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../produto/requisitos/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Requisitos
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../produto/padroes/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Padrões de Projeto
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../frontend/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Interface e Design
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../produto/personas/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Personas
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../sprints/sprint-1/" class="md-tabs__link">
+          
+  
+  
+  Sprints
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../processo/release-notes/v0-1-0/" class="md-tabs__link">
+          
+  
+  
+  Release Notes
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../processo/uso-de-ia/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Uso de IA
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../processo/contribuindo/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Como Contribuir
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navegação" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Agenda UnB Docs" class="md-nav__button md-logo" aria-label="Agenda UnB Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Agenda UnB Docs
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/unb-mds/2026-2-AgendaUnB" title="Ir para repositório" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    unb-mds/G8-2026-2
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Início
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../produto/visao/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visão do Produto
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../visao-geral/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arquitetura
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisões arquiteturais
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Decisões arquiteturais
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Índice e guia de leitura
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/adr-001-integracao-fastapi-supabase/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-001 — Integração FastAPI e Supabase
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/adr-002-separar-hospedagem-e-ambientes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-002 — Hospedagem e ambientes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/adr-003-minimizar-dados-de-planos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-003 — Minimização de dados de planos
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/adr-004-api-monolitica/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-004 — Manter a API em uma aplicação FastAPI única
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/adr-005-validacao-de-sessao/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-005 — Validar a sessão no Supabase Auth e consultar o papel no banco
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/adr-006-autorizacao-em-camadas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-006 — Aplicar autorização na API, nas RPCs e nas políticas RLS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/adr-007-migracoes-sql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-007 — Usar migrações SQL como referência do esquema completo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/adr-008-vinculos-de-eventos-publicos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-008 — Salvar vínculos aos eventos públicos na agenda pessoal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/adr-009-catalogo-publico-de-turmas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-009 — Integrar o catálogo público de turmas com identidade local e cache
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/adr-010-versoes-e-confirmacao-de-planos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-010 — Versionar planos e exigir confirmação individual para importar candidatos
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/adr-011-datas-civis-e-instantes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-011 — Distinguir datas civis de instantes e usar fim exclusivo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/adr-012-exportacao-google-idempotente/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-012 — Exportar por ação explícita para uma agenda Google secundária
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/adr-013-lembretes-persistentes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-013 — Persistir lembretes com agendamento idempotente e revalidação
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api-specs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contratos do Backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../processamento-planos-s7/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Extração Autorizada S7
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../s7-b01-validacao/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validação S7-B01
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../processamento-planos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Histórico de Processamento S6
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../privacidade-planos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Privacidade dos Planos
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../matriz-release-2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Matriz de aceite da Release 2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implantacao/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plano de Implantação
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../modelo-de-dados/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Modelo de Dados
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Especificação do Banco
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Especificação do Banco
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Índice">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Índice
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-tabelas-de-dominio-e-catalogos-globais" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Tabelas de Domínio e Catálogos Globais
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Tabelas de Domínio e Catálogos Globais">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-tabela-campus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1. Tabela campus
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-tabela-categories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2. Tabela categories
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-usuarios-e-perfis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Usuários e Perfis
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Usuários e Perfis">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-tabela-profiles-esquema-public" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1. Tabela profiles (Esquema public)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-tabelas-core-eventos-e-agenda" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Tabelas Core: Eventos e Agenda
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Tabelas Core: Eventos e Agenda">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-tabela-eventos-agenda-publica-institucional-rf14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1. Tabela eventos (Agenda Pública Institucional - RF14)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-tabela-eventos_pessoais-agenda-privada-rf09" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2. Tabela eventos_pessoais (Agenda Privada - RF09)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-organizador-academico" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Organizador Acadêmico
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Organizador Acadêmico">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-tabela-planos_ensino" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1. Tabela planos_ensino
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-tabela-avaliacoes-candidatos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2. Tabela avaliacoes (candidatos)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-tabela-versoes_plano" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3. Tabela versoes_plano
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#44-tabelas-disciplinas-ofertas_turma-e-vinculos_turma" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.4. Tabelas disciplinas, ofertas_turma e vinculos_turma
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#45-importacao-para-a-agenda" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.5. Importação para a agenda
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-eventos-salvos-e-notificacoes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Eventos salvos e notificações
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#evolucao-de-candidatos-na-r2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evolução de candidatos na R2
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#worker-e-autorizacao-do-texto" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worker e autorização do texto
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../catalogo-de-turmas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Catálogo de turmas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../produto/requisitos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Requisitos
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../produto/padroes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Padrões de Projeto
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../frontend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interface e Design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../produto/personas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Personas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_19" >
+        
+          
+          <label class="md-nav__link" for="__nav_19" id="__nav_19_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprints
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_19_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_19">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Sprints
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sprints/sprint-1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 1
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sprints/sprint-2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sprints/sprint-3/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sprints/sprint-4/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 4
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sprints/sprint-5/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 5
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sprints/sprint-6/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 6
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sprints/sprint-7/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 7
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sprints/sprint-8/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 8
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_20" >
+        
+          
+          <label class="md-nav__link" for="__nav_20" id="__nav_20_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release Notes
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_20_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_20">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Release Notes
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../processo/release-notes/v0-1-0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.1.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../processo/release-notes/v0-2-0-beta-1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.2.0-beta.1
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../atualizacoes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Atualizações e contratos da R2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../processo/uso-de-ia/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Uso de IA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../processo/contribuindo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Como Contribuir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Índice">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Índice
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-tabelas-de-dominio-e-catalogos-globais" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Tabelas de Domínio e Catálogos Globais
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Tabelas de Domínio e Catálogos Globais">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-tabela-campus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1. Tabela campus
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-tabela-categories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2. Tabela categories
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-usuarios-e-perfis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Usuários e Perfis
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Usuários e Perfis">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-tabela-profiles-esquema-public" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1. Tabela profiles (Esquema public)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-tabelas-core-eventos-e-agenda" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Tabelas Core: Eventos e Agenda
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Tabelas Core: Eventos e Agenda">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-tabela-eventos-agenda-publica-institucional-rf14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1. Tabela eventos (Agenda Pública Institucional - RF14)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-tabela-eventos_pessoais-agenda-privada-rf09" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2. Tabela eventos_pessoais (Agenda Privada - RF09)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-organizador-academico" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Organizador Acadêmico
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Organizador Acadêmico">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-tabela-planos_ensino" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1. Tabela planos_ensino
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-tabela-avaliacoes-candidatos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2. Tabela avaliacoes (candidatos)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-tabela-versoes_plano" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3. Tabela versoes_plano
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#44-tabelas-disciplinas-ofertas_turma-e-vinculos_turma" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.4. Tabelas disciplinas, ofertas_turma e vinculos_turma
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#45-importacao-para-a-agenda" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.5. Importação para a agenda
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-eventos-salvos-e-notificacoes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Eventos salvos e notificações
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#evolucao-de-candidatos-na-r2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evolução de candidatos na R2
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#worker-e-autorizacao-do-texto" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worker e autorização do texto
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+  
+
+
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+  <h1>Especificação do Banco</h1>
+
+<p>Este documento descreve a estrutura física (DDL) atualizada do banco de dados do projeto <strong>Agenda UnB</strong>, com as tabelas e as regras de acesso no Supabase. Consulte o <a href="../modelo-de-dados/">diagrama de relacionamentos</a> e as migrações em <code>supabase/migrations/</code>.</p>
+<hr />
+<h2 id="1-tabelas-de-dominio-e-catalogos-globais">1. Tabelas de Domínio e Catálogos Globais</h2>
+<p>Estas tabelas armazenam informações estruturais transversais, utilizadas tanto em eventos públicos quanto privados.</p>
+<h3 id="11-tabela-campus">1.1. Tabela <code>campus</code></h3>
+<p>Armazena as localizações físicas da Universidade de Brasília.
+*   <strong>Colunas:</strong>
+    *   <code>id</code> (UUID, Primary Key): Identificador único gerado automaticamente (<code>gen_random_uuid()</code>).
+    *   <code>nome</code> (TEXT, Not Null, Unique): Nome oficial do campus (ex: Darcy Ribeiro, FGA).
+    *   <code>created_at</code> (TIMESTAMPTZ): Data e hora de criação.
+*   <strong>Políticas RLS:</strong> Segurança em Nível de Linha habilitada.
+    *   <strong>Leitura (SELECT):</strong> Permitida para todos (<code>USING true</code>). Política: <em>"Permitir leitura pública de campus"</em>.</p>
+<h3 id="12-tabela-categories">1.2. Tabela <code>categories</code></h3>
+<p>Armazena as categorias para classificação e coloração dos eventos na interface.
+*   <strong>Colunas:</strong>
+    *   <code>id</code> (UUID, Primary Key): Identificador único.
+    *   <code>nome</code> (TEXT, Not Null, Unique): Nome da categoria (ex: Prova, Aula, Lazer).
+    *   <code>cor</code> (TEXT): Código hexadecimal da cor.
+    *   <code>created_at</code> (TIMESTAMPTZ): Data e hora de criação.
+*   <strong>Políticas RLS:</strong> Segurança em Nível de Linha habilitada.
+    *   <strong>Leitura (SELECT):</strong> Permitida para todos (<code>USING true</code>). Política: <em>"Permitir leitura pública de categorias"</em>.</p>
+<hr />
+<h2 id="2-usuarios-e-perfis">2. Usuários e Perfis</h2>
+<h3 id="21-tabela-profiles-esquema-public">2.1. Tabela <code>profiles</code> (Esquema <code>public</code>)</h3>
+<p>Armazena os metadados dos usuários, sincronizada com a tabela nativa de autenticação (<code>auth.users</code>) do Supabase.
+*   <strong>Colunas:</strong>
+    *   <code>id</code> (UUID, Primary Key): Referência em cascata para <code>auth.users(id)</code>.
+    *   <em>(Nota: Metadados adicionais como nome, email e papel são gerenciados via triggers de sincronização no banco).</em>
+*   <strong>Políticas RLS:</strong>
+    *   <strong>Leitura (SELECT):</strong> Permitida para todos os visitantes e usuários (<code>USING true</code>). Política: <em>"perfis visiveis para todos"</em>.</p>
+<hr />
+<h2 id="3-tabelas-core-eventos-e-agenda">3. Tabelas Core: Eventos e Agenda</h2>
+<h3 id="31-tabela-eventos-agenda-publica-institucional-rf14">3.1. Tabela <code>eventos</code> (Agenda Pública Institucional - RF14)</h3>
+<p>Eventos publicados por professor/admin e sugestões da comunidade sujeitas à moderação. As regras posteriores à R1 estão no <a href="../../painel-administrativo/">guia de moderação</a>.
+*   <strong>Colunas:</strong>
+    *   <code>id</code> (UUID, Primary Key): Identificador único.
+    *   <code>autor_id</code> (UUID, Not Null): Chave estrangeira para <code>profiles(id)</code> (<code>ON DELETE CASCADE</code>).
+    *   <code>titulo</code> (TEXT, Not Null): Título do evento. Validação: Mínimo de 3 caracteres (<code>CHECK (char_length(trim(titulo)) &gt;= 3)</code>).
+    *   <code>descricao</code> (TEXT, Not Null): Detalhamento do evento.
+    *   <code>data_evento</code> (TIMESTAMPTZ, Not Null): Data e hora consolidadas do evento.
+    *   <code>localizacao</code> (TEXT): Local físico específico (ex: Sala S1, Auditório).
+    *   <code>link_externo</code> (TEXT): Link auxiliar ou de inscrição.
+    *   <code>campus_id</code> (UUID): Chave estrangeira para a tabela <code>campus(id)</code>.
+    *   <code>category_id</code> (UUID): Chave estrangeira para a tabela <code>categories(id)</code>.
+    *   <code>status</code> (TEXT, Not Null): Controle de moderação (<code>DEFAULT 'pendente'</code>). Validação: <code>CHECK (status in ('pendente', 'aprovado', 'rejeitado'))</code>.
+    *   <code>criado_em</code> (TIMESTAMPTZ, Not Null): Timestamp de criação (<code>DEFAULT now()</code>).
+*   <strong>Políticas RLS:</strong> Segurança em Nível de Linha habilitada.
+    *   <strong>Leitura (SELECT):</strong> Apenas eventos moderados. Política: <em>"eventos aprovados sao publicos"</em> (<code>USING (status = 'aprovado')</code>).
+    *   <strong>Criação (INSERT):</strong> Apenas o próprio autor autenticado. Política: <em>"usuarios logados podem criar eventos"</em> (<code>WITH CHECK (autor_id = (select auth.uid()))</code>).</p>
+<h3 id="32-tabela-eventos_pessoais-agenda-privada-rf09">3.2. Tabela <code>eventos_pessoais</code> (Agenda Privada - RF09)</h3>
+<p>Agenda estritamente privada, gerenciada e visualizada unicamente por cada estudante.
+*   <strong>Colunas:</strong>
+    *   <code>id</code> (UUID, Primary Key): Identificador único.
+    *   <code>user_id</code> (UUID, Not Null): Chave estrangeira para <code>auth.users(id)</code> (<code>DEFAULT auth.uid()</code>).
+    *   <code>titulo</code> (TEXT, Not Null): Título do compromisso. Validação: Mínimo de 3 caracteres.
+    *   <code>descricao</code> (TEXT): Notas extras.
+    *   <code>data_hora</code> (TIMESTAMPTZ, Not Null): Data e hora do compromisso.
+    *   <code>campus_id</code> (UUID): Chave estrangeira para a tabela <code>campus(id)</code>.
+    *   <code>category_id</code> (UUID): Chave estrangeira para a tabela <code>categories(id)</code>.
+    *   <code>criado_em</code> (TIMESTAMPTZ, Not Null): Timestamp de criação.
+*   <strong>Políticas RLS:</strong> Segurança em Nível de Linha habilitada (Isolamento Total).
+    *   <strong>Leitura (SELECT):</strong> Política <em>"utilizadores podem ver os seus proprios eventos"</em> (<code>USING (auth.uid() = user_id)</code>).
+    *   <strong>Criação (INSERT):</strong> Política <em>"utilizadores podem criar eventos"</em> (<code>WITH CHECK (auth.uid() = user_id)</code>).
+    *   <strong>Edição (UPDATE):</strong> Política <em>"utilizadores podem atualizar os seus proprios eventos"</em> (<code>USING (auth.uid() = user_id)</code> e <code>WITH CHECK</code>).
+    *   <strong>Exclusão (DELETE):</strong> Política <em>"utilizadores podem deletar os seus proprios eventos"</em> (<code>USING (auth.uid() = user_id)</code>).</p>
+<hr />
+<h2 id="4-organizador-academico">4. Organizador Acadêmico</h2>
+<p>Migrações de referência: <code>20261026120000_upload_planos_ensino.sql</code> (#40), <code>20261027120000_planos_particulares_e_candidatos.sql</code> (S6-D01, #53), <code>20261029160000_syllabus_review_confirmation.sql</code> (S6-B02), <code>20261107000000_planos_escrita_via_backend.sql</code> e <code>20261109120000_turmas_vinculos_versoes.sql</code> (S7-D01, #69).</p>
+<p>Fluxo: o upload (#40) cria o plano como <code>pendente</code>; o processamento (S6-B01) passa para <code>processando</code>, grava candidatos e termina em <code>concluido</code> ou <code>falha</code>; a revisão (S6-B02) marca cada candidato como <code>confirmado</code> ou <code>descartado</code>. Nenhum evento pessoal é criado sem confirmação do estudante.</p>
+<h3 id="41-tabela-planos_ensino">4.1. Tabela <code>planos_ensino</code></h3>
+<p>Esquema atual de uploads de plano de ensino. O campo <code>tipo</code> admite os valores legados <code>particular</code> e <code>oficial</code>. As colunas de arquivo e rastreamento vêm da #40 (<code>20261026120000</code>). Tipo, estados, erro sanitizado, período e dados da IA vêm da S6-D01 (<code>20261027120000</code>). A Release 2 separa autoria, procedência e visibilidade e prevê descarte do PDF. <a href="../../atualizacoes/#contratos-da-release-2">Plano de migração</a>
+*   <strong>Dono e tipo:</strong>
+    *   <code>id</code> (UUID, Primary Key).
+    *   <code>user_id</code> (UUID, Not Null): dono, quem enviou. FK para <code>profiles(id)</code> (<code>ON DELETE CASCADE</code>).
+    *   <code>tipo</code> (TEXT, Not Null, padrão <code>particular</code>): <code>particular</code> ou <code>oficial</code>.
+    *   <code>professor_id</code> (UUID): somente em plano oficial, professor responsável pela turma. Em plano particular é sempre nulo.
+    *   <code>disciplina</code> (TEXT) e <code>turma</code> (TEXT): turma obrigatória somente em plano oficial.
+    *   <code>ano</code> (SMALLINT, 2000–2100) e <code>semestre</code> (SMALLINT, 1 ou 2): opcionais no upload atual.
+    *   <code>plano_oficial_id</code> (UUID): referência opcional ao plano oficial correspondente (<code>ON DELETE SET NULL</code>). Só em plano particular e nunca para si mesmo.
+*   <strong>Arquivo</strong> (bucket <code>syllabus_files</code>, #43):
+    *   <code>caminho_arquivo</code> (TEXT, Unique): <code>syllabus_files/&lt;user_id&gt;/&lt;arquivo&gt;.pdf</code>. A pasta precisa ser a do dono, a mesma exigida pelas políticas do bucket. Obrigatório em plano particular.
+    *   <code>nome_arquivo</code> (TEXT, até 255), <code>tamanho_bytes</code> (BIGINT, 1 B a 10 MB), <code>tipo_arquivo</code> (somente <code>pdf</code>), <code>paginas</code> (SMALLINT ≥ 1). O limite de 10 páginas da Sprint 06 é validado no back-end (#40).
+    *   <code>arquivo_url</code> (TEXT): legado. Use <code>caminho_arquivo</code>.
+*   <strong>Processamento:</strong>
+    *   <code>status</code> (TEXT, Not Null, padrão <code>pendente</code>): <code>pendente</code>, <code>processando</code>, <code>concluido</code> ou <code>falha</code>. Os valores em inglês aceitos pela #40 (<code>processing</code>, <code>failed</code>, <code>completed</code>) foram convertidos e não são mais aceitos.
+    *   <code>quantidade_eventos</code> (INT ≥ 0): quantidade de candidatos extraídos.
+    *   <code>execucao_atual</code> (SMALLINT, Not Null, padrão 0): número da execução mais recente. Cada novo processamento incrementa; os candidatos válidos são os desta execução.
+    *   <code>provedor_ia</code>, <code>modelo_ia</code>, <code>versao_processamento</code> (TEXT): da execução mais recente.
+    *   <code>erro_codigo</code> (TEXT): obrigatório se, e somente se, <code>status = 'falha'</code>. Valores: <code>pdf_invalido</code>, <code>pdf_protegido</code>, <code>pdf_sem_texto</code>, <code>limite_paginas</code>, <code>falha_ia</code>, <code>tempo_esgotado</code>, <code>erro_interno</code>.
+    *   <code>erro</code> (TEXT, até 500): mensagem curta e segura para o usuário, só em <code>falha</code>. Nunca guarda stack trace, texto do PDF ou resposta bruta da IA.
+    *   <code>processamento_iniciado_em</code> (obrigatório em <code>processando</code>), <code>processado_em</code> (obrigatório se, e somente se, <code>concluido</code> ou <code>falha</code>), <code>criado_em</code>, <code>atualizado_em</code> (mantido por trigger).
+    *   <strong>Resultado vazio</strong> é <code>concluido</code> sem candidatos, e não <code>falha</code>.
+*   <strong>Dados anteriores:</strong> linhas sem <code>caminho_arquivo</code> (anteriores à #40) viraram <code>oficial</code>, com o professor como dono e <code>status = 'concluido'</code>. Linhas criadas pela #40 continuam <code>particular</code>; <code>professor_id</code> foi limpo e <code>processing</code> virou <code>pendente</code>. Nada foi apagado.
+*   <strong>Índices:</strong> histórico do usuário <code>(user_id, criado_em desc, id)</code>; fila do worker <code>(status, processamento_iniciado_em)</code> parcial em <code>pendente</code>/<code>processando</code>, usada para retomar tarefas interrompidas; <code>plano_oficial_id</code> parcial; e os índices da #40 em <code>user_id</code> e <code>status</code>.
+*   <strong>Turma:</strong> <code>oferta_id</code> (UUID, opcional) liga o plano a uma oferta de <code>ofertas_turma</code> (<code>ON DELETE SET NULL</code>). Planos antigos e envios sem turma continuam válidos.
+*   <strong>Políticas RLS:</strong> A migração <code>20261107000000</code> restringe a leitura ao dono e reserva alterações de estado à API, ao worker e à RPC autorizada. O registro do plano e o caminho do arquivo continuam visíveis só ao dono, mesmo quando uma versão é compartilhada.</p>
+<h3 id="42-tabela-avaliacoes-candidatos">4.2. Tabela <code>avaliacoes</code> (candidatos)</h3>
+<p>Tabela física única dos candidatos extraídos dos planos, decidida na S7-D01 com a equipe: é a que a API já usa na consulta e na confirmação. A tabela <code>candidatos_avaliacao</code> (#53), que nenhum código usava, foi removida em <code>20261109120000</code>, junto com a função <code>confirmar_candidatos_transacional</code> (S6-D02), que só operava sobre ela. A confirmação é feita pela API.
+*   <strong>Colunas:</strong>
+    *   <code>id</code> (UUID, Primary Key) e <code>plano_id</code> (UUID, Not Null, FK para <code>planos_ensino</code>, <code>ON DELETE CASCADE</code>).
+    *   <code>versao_id</code> (UUID, Not Null): versão do plano a que o candidato pertence. A FK composta <code>(plano_id, versao_id)</code> → <code>versoes_plano(plano_id, id)</code> impede apontar para a versão de outro plano. Quando omitido no INSERT, um trigger usa a versão mais recente do plano.
+    *   <code>ordem</code> (SMALLINT ≥ 0, opcional): posição do candidato na versão. <code>(versao_id, ordem)</code> é único, para reprocessar sem duplicar.
+    *   <code>titulo</code> (TEXT, Not Null), <code>data_avaliacao</code> (TIMESTAMPTZ, opcional), <code>tipo</code>, <code>ambiguo</code>, <code>pagina_origem</code>, <code>trecho_origem</code>, <code>status</code>, <code>versao_processamento</code> e <code>provedor</code> (acrescentados em <code>20261029160000</code>).
+*   <strong>Políticas RLS:</strong> leitura pelo dono do plano e, quando a versão estiver compartilhada, por quem segue a oferta do plano (<em>"leitura de candidatos de versoes compartilhadas"</em>). Sem política de escrita.</p>
+<h3 id="43-tabela-versoes_plano">4.3. Tabela <code>versoes_plano</code></h3>
+<p>Versões de um plano (ADR-010). Toda versão nasce <strong>privada</strong>; uma nova revisão cria nova versão e não sobrescreve calendários pessoais.
+*   <strong>Colunas:</strong>
+    *   <code>id</code> (UUID, Primary Key) e <code>plano_id</code> (UUID, Not Null, FK, <code>ON DELETE CASCADE</code>). <code>numero</code> (SMALLINT ≥ 1) é único por plano.
+    *   <code>autor_id</code> (UUID, Not Null, FK para <code>profiles</code>) e <code>autor_papel</code> (<code>student</code>, <code>professor</code> ou <code>admin</code>): papel do autor no momento da criação. Não é evidência institucional.
+    *   <code>versao_origem_id</code> (UUID, opcional): versão revisada que originou esta (<code>ON DELETE SET NULL</code>); nunca a própria versão.
+    *   <code>procedencia_institucional</code> (BOOLEAN, padrão falso): herdada da versão de origem. O papel professor/admin não a cria sozinho.
+    *   <code>visibilidade</code> (padrão <code>privada</code>): <code>privada</code> ou <code>compartilhada</code>. <code>compartilhada_em</code> é preenchido se, e somente se, a versão estiver compartilhada.
+*   <strong>Criação:</strong> todo plano recebe a versão 1 automaticamente (trigger após INSERT em <code>planos_ensino</code>), com o papel atual do dono. Os planos existentes ganharam a versão 1 na migração.
+*   <strong>Políticas RLS:</strong> leitura pelo dono do plano ou, se compartilhada, por usuários que seguem a oferta do plano (função <code>pode_ler_versao</code>). Sem política de escrita: compartilhar, revisar e retirar passam pelo back-end (S8-B01).
+*   <strong>Arquivo:</strong> compartilhar uma versão não expõe o registro do plano nem o arquivo. A retenção do PDF segue a ADR-003.</p>
+<h3 id="44-tabelas-disciplinas-ofertas_turma-e-vinculos_turma">4.4. Tabelas <code>disciplinas</code>, <code>ofertas_turma</code> e <code>vinculos_turma</code></h3>
+<p>Catálogo de turmas (ADR-009) e turmas que o usuário segue. A disciplina abstrata (<code>disciplinas</code>) é separada da sua oferta em um semestre (<code>ofertas_turma</code>), e cada uma tem UUID local imutável.
+*   <strong><code>disciplinas</code>:</strong> <code>origem</code> (<code>followw</code> | <code>manual</code>), <code>origem_id</code> (opcional), <code>codigo</code>, <code>nome</code>, <code>unidade</code> e <code>nivel</code> (opcionais), <code>atualizado_na_origem_em</code>.
+    *   <strong>Identidade:</strong> com <code>origem_id</code>, <code>(origem, origem_id)</code> é único. Sem ele, <code>(origem, código sem diferenciar maiúsculas, unidade, nível)</code> é único.
+*   <strong><code>ofertas_turma</code>:</strong> <code>disciplina_id</code> (FK, <code>ON DELETE RESTRICT</code>), <code>origem</code>, <code>origem_id</code> (opcional), <code>turma</code> (texto, preservando zeros), <code>ano</code> (2000–2100), <code>semestre</code> (1 ou 2), <code>professor</code> e <code>horarios</code> (atributos atualizáveis, fora da identidade), <code>atualizado_na_origem_em</code> e <code>sincronizado_em</code> (última sincronização bem-sucedida, para responder com <code>stale</code>).
+    *   <strong>Identidade:</strong> <code>(disciplina_id, turma, ano, semestre)</code> é único; ofertas de semestres diferentes são registros distintos. Com <code>origem_id</code>, <code>(origem, origem_id)</code> também é único.
+*   <strong><code>vinculos_turma</code>:</strong> chave primária <code>(user_id, oferta_id)</code>, <code>origem</code> (<code>autodeclarado</code>), <code>criado_em</code>. Seguir a mesma oferta de novo não duplica. O vínculo é autodeclarado e não prova matrícula.
+*   <strong>Políticas RLS:</strong> catálogo com leitura pública; vínculos com leitura só do próprio usuário. Sem políticas de escrita: a sincronização (S7-B03) e seguir/deixar de seguir (S7-F02) passam pelo back-end.</p>
+<h3 id="45-importacao-para-a-agenda">4.5. Importação para a agenda</h3>
+<p><code>eventos_pessoais</code> registra a procedência em <code>origem_plano_id</code>, <code>origem_avaliacao_id</code> e <code>origem_versao_id</code> (FK para <code>versoes_plano</code>, <code>ON DELETE SET NULL</code>).
+*   <strong>Unicidade por usuário:</strong> <code>(user_id, origem_avaliacao_id)</code> é único (índice parcial). Como cada candidato pertence a uma única versão, isso equivale à unicidade <code>(user_id, version_id, candidate_id)</code> da ADR-010. Até a S7-D01, a unicidade era global, e um usuário podia bloquear a confirmação de outro.
+*   <strong>Índice:</strong> <code>(user_id, origem_versao_id)</code>.</p>
+<h2 id="5-eventos-salvos-e-notificacoes">5. Eventos salvos e notificações</h2>
+<p><code>eventos_salvos</code> vincula um perfil a um evento público com chave composta <code>(user_id, event_id)</code>. <code>notificacoes</code> referencia o perfil destinatário e pode referenciar o evento que originou o aviso. Consulte as políticas, a implantação e os cenários de verificação nos guias de <a href="../../eventos-salvos/">eventos salvos</a> e <a href="../../painel-administrativo/">painel administrativo</a>.</p>
+<h2 id="evolucao-de-candidatos-na-r2">Evolução de candidatos na R2</h2>
+<p>Toda data extraída começa como candidata. Somente a confirmação explícita do usuário a transforma em avaliação efetiva na sua agenda; em versões compartilhadas, essa decisão pertence a cada conta. A revisão deve ser breve: mostrar candidatos em uma lista, permitir selecionar vários e confirmar o lote em uma única ação, destacar apenas campos ambíguos que exigem correção e preservar as escolhas durante ajustes. Não exigir uma sequência de confirmações por item nem importar automaticamente. Avaliar a fluidez na homologação com o tempo e as dificuldades observadas, sem inventar um limite numérico ainda não acordado.</p>
+<p>O estado de domínio “candidata” não determina o nome de uma tabela. Desde a S7-D01 (<code>20261109120000</code>), a estrutura física unificada é <code>avaliacoes</code>, ligada à versão do plano; <code>candidatos_avaliacao</code> foi removida. O worker deve gravar candidatos em <code>avaliacoes</code>, informando <code>versao_id</code> e <code>ordem</code>.</p>
+<p>Na R2, exigir <code>Idempotency-Key</code> por ação de confirmação, vinculada à conta, à operação e ao conteúdo do lote. Repetições da mesma ação usam a mesma chave; payload diferente com a mesma chave retorna 409. Persistir a operação e seus itens na mesma transação da confirmação e serializar requisições concorrentes. A exclusão do evento preserva o registro da importação e da operação: repetir a chave antiga não recria o evento nem reativa o vínculo. Reimportar exige o comando explícito “Adicionar novamente”, uma nova chave e nova verificação de acesso, versão e datas. Manter no máximo um evento ativo por <code>(user_id, version_id, candidate_id)</code>, mesmo com chaves diferentes; novas ações após exclusão não apagam o histórico das anteriores. O resultado de retry informa quando o evento anteriormente criado já foi removido. A transição dos clientes legados deve ser documentada antes de tornar a chave obrigatória; não inventar uma chave nova a cada retry.</p>
+<h2 id="worker-e-autorizacao-do-texto">Worker e autorização do texto</h2>
+<p>Preparação local, autorização específica, fila recuperável e candidatos privados estão descritos no <a href="../../processamento-planos-s7/">protocolo S7</a> e no <a href="../../s7-b01-validacao/">registro de validação</a>. O worker foi alinhado à tabela oficial <code>avaliacoes</code> e às versões de S7-D01; nenhuma migração foi aplicada na nuvem.</p>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Voltar para o topo
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.path", "navigation.top", "search.suggest", "search.highlight", "content.code.copy"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copiado para \u00e1rea de transfer\u00eancia", "clipboard.copy": "Copiar para \u00e1rea de transfer\u00eancia", "search.result.more.one": "mais 1 nesta p\u00e1gina", "search.result.more.other": "# mais nesta p\u00e1gina", "search.result.none": "Nenhum documento encontrado", "search.result.one": "1 documento encontrado", "search.result.other": "# documentos encontrados", "search.result.placeholder": "Digite para iniciar a busca", "search.result.term.missing": "Ausente", "select.version": "Selecione a vers\u00e3o"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+    
+  </body>
+</html>

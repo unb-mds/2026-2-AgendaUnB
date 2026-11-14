@@ -1,0 +1,4149 @@
+
+<!doctype html>
+<html lang="pt" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentação oficial do projeto Agenda UnB — Métodos de Desenvolvimento de Software (MDS) 2026/2">
+      
+      
+      
+      
+        <link rel="prev" href="../sprint-6/">
+      
+      
+        <link rel="next" href="../sprint-8/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+    
+    
+      
+        <title>Sprint 07 - Release 2 - Agenda UnB Docs</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#sprint-7" class="md-skip">
+          Pular para conteúdo
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Cabeçalho">
+    <a href="../.." title="Agenda UnB Docs" class="md-header__button md-logo" aria-label="Agenda UnB Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Agenda UnB Docs
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Sprint 07 - Release 2
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Modo automático"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Modo automático" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Mudar para modo escuro"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Mudar para modo escuro" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Mudar para modo claro"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Mudar para modo claro" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Buscar" placeholder="Buscar" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Pesquisar">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Limpar" aria-label="Limpar" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Inicializando busca
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/unb-mds/2026-2-AgendaUnB" title="Ir para repositório" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    unb-mds/G8-2026-2
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Abas" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Início
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../produto/visao/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Visão do Produto
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../arquitetura/visao-geral/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Arquitetura
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../arquitetura/adrs/" class="md-tabs__link">
+          
+  
+  
+  Decisões arquiteturais
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../api-specs/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Contratos do Backend
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../processamento-planos-s7/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Extração Autorizada S7
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../s7-b01-validacao/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Validação S7-B01
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../processamento-planos/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Histórico de Processamento S6
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../privacidade-planos/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Privacidade dos Planos
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../matriz-release-2/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Matriz de aceite da Release 2
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../implantacao/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Plano de Implantação
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../arquitetura/modelo-de-dados/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Modelo de Dados
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../arquitetura/banco-de-dados/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Especificação do Banco
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../arquitetura/catalogo-de-turmas/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Catálogo de turmas
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../produto/requisitos/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Requisitos
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../produto/padroes/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Padrões de Projeto
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../arquitetura/frontend/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Interface e Design
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../produto/personas/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Personas
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../sprint-1/" class="md-tabs__link">
+          
+  
+  
+  Sprints
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../processo/release-notes/v0-1-0/" class="md-tabs__link">
+          
+  
+  
+  Release Notes
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../processo/uso-de-ia/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Uso de IA
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../processo/contribuindo/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Como Contribuir
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navegação" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Agenda UnB Docs" class="md-nav__button md-logo" aria-label="Agenda UnB Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Agenda UnB Docs
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/unb-mds/2026-2-AgendaUnB" title="Ir para repositório" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    unb-mds/G8-2026-2
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Início
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../produto/visao/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visão do Produto
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../arquitetura/visao-geral/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arquitetura
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisões arquiteturais
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Decisões arquiteturais
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../arquitetura/adrs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Índice e guia de leitura
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../arquitetura/adrs/adr-001-integracao-fastapi-supabase/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-001 — Integração FastAPI e Supabase
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../arquitetura/adrs/adr-002-separar-hospedagem-e-ambientes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-002 — Hospedagem e ambientes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../arquitetura/adrs/adr-003-minimizar-dados-de-planos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-003 — Minimização de dados de planos
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../arquitetura/adrs/adr-004-api-monolitica/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-004 — Manter a API em uma aplicação FastAPI única
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../arquitetura/adrs/adr-005-validacao-de-sessao/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-005 — Validar a sessão no Supabase Auth e consultar o papel no banco
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../arquitetura/adrs/adr-006-autorizacao-em-camadas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-006 — Aplicar autorização na API, nas RPCs e nas políticas RLS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../arquitetura/adrs/adr-007-migracoes-sql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-007 — Usar migrações SQL como referência do esquema completo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../arquitetura/adrs/adr-008-vinculos-de-eventos-publicos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-008 — Salvar vínculos aos eventos públicos na agenda pessoal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../arquitetura/adrs/adr-009-catalogo-publico-de-turmas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-009 — Integrar o catálogo público de turmas com identidade local e cache
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-010 — Versionar planos e exigir confirmação individual para importar candidatos
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../arquitetura/adrs/adr-011-datas-civis-e-instantes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-011 — Distinguir datas civis de instantes e usar fim exclusivo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../arquitetura/adrs/adr-012-exportacao-google-idempotente/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-012 — Exportar por ação explícita para uma agenda Google secundária
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../arquitetura/adrs/adr-013-lembretes-persistentes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-013 — Persistir lembretes com agendamento idempotente e revalidação
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api-specs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contratos do Backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../processamento-planos-s7/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Extração Autorizada S7
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../s7-b01-validacao/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validação S7-B01
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../processamento-planos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Histórico de Processamento S6
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../privacidade-planos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Privacidade dos Planos
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../matriz-release-2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Matriz de aceite da Release 2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implantacao/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plano de Implantação
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../arquitetura/modelo-de-dados/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Modelo de Dados
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../arquitetura/banco-de-dados/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Especificação do Banco
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../arquitetura/catalogo-de-turmas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Catálogo de turmas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../produto/requisitos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Requisitos
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../produto/padroes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Padrões de Projeto
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../arquitetura/frontend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interface e Design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../produto/personas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Personas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_19" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_19" id="__nav_19_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprints
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_19_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_19">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Sprints
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sprint-1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 1
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sprint-2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sprint-3/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sprint-4/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 4
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sprint-5/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 5
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sprint-6/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 6
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 7
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 7
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Índice">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Índice
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#decisoes-da-entrega" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decisões da entrega
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#organizacao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Organização
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#issues-planejadas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Issues planejadas
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Issues planejadas">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#s7-b01-concluir-extracao-assincrona-de-provas-e-trabalhos-com-ia" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S7-B01 - Concluir extração assíncrona de provas e trabalhos com IA
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="S7-B01 - Concluir extração assíncrona de provas e trabalhos com IA">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#objetivo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Objetivo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tasks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tasks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#criterios-de-aceite" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Critérios de aceite
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#observacoes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observações
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#evidencias-para-fechamento" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evidências para fechamento
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s7-f01-consolidar-requisitos-decisoes-e-contratos-da-entrega" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S7-F01 - Consolidar requisitos, decisões e contratos da entrega
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="S7-F01 - Consolidar requisitos, decisões e contratos da entrega">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#objetivo_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Objetivo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tasks_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tasks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#criterios-de-aceite_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Critérios de aceite
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#evidencias-para-fechamento_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evidências para fechamento
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s7-b02-validar-infraestrutura-gratuita-integracoes-e-ci" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S7-B02 - Validar infraestrutura gratuita, integrações e CI
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="S7-B02 - Validar infraestrutura gratuita, integrações e CI">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#objetivo_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Objetivo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tasks_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tasks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#criterios-de-aceite_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Critérios de aceite
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#observacoes_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observações
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#evidencias-para-fechamento_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evidências para fechamento
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s7-d01-modelar-turmas-vinculos-versoes-e-isolamento-dos-planos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S7-D01 - Modelar turmas, vínculos, versões e isolamento dos planos
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="S7-D01 - Modelar turmas, vínculos, versões e isolamento dos planos">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#objetivo_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Objetivo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tasks_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tasks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#criterios-de-aceite_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Critérios de aceite
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#evidencias-para-fechamento_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evidências para fechamento
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s7-b03-integrar-o-catalogo-publico-do-followw-no-backend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S7-B03 - Integrar o catálogo público do Followw no backend
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="S7-B03 - Integrar o catálogo público do Followw no backend">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#objetivo_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Objetivo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tasks_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tasks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#criterios-de-aceite_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Critérios de aceite
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#evidencias-para-fechamento_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evidências para fechamento
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s7-f02-implementar-catalogo-e-minhas-turmas-na-interface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S7-F02 - Implementar catálogo e “Minhas turmas” na interface
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="S7-F02 - Implementar catálogo e “Minhas turmas” na interface">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#objetivo_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Objetivo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tasks_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tasks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#criterios-de-aceite_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Critérios de aceite
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#evidencias-para-fechamento_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evidências para fechamento
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s7-b04-validar-a-integracao-da-consulta-e-confirmacao-de-planos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S7-B04 - Validar a integração da consulta e confirmação de planos
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="S7-B04 - Validar a integração da consulta e confirmação de planos">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#objetivo_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Objetivo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tasks_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tasks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#criterios-de-aceite_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Critérios de aceite
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#evidencias-para-fechamento_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evidências para fechamento
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s7-f03-integrar-envio-revisao-do-texto-candidatos-e-agenda" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S7-F03 - Integrar envio, revisão do texto, candidatos e agenda
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="S7-F03 - Integrar envio, revisão do texto, candidatos e agenda">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#objetivo_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Objetivo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tasks_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tasks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#criterios-de-aceite_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Critérios de aceite
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#evidencias-para-fechamento_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evidências para fechamento
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s7-f04-completar-autenticacao-confirmacao-de-e-mail-e-recuperacao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S7-F04 - Completar autenticação, confirmação de e-mail e recuperação
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="S7-F04 - Completar autenticação, confirmação de e-mail e recuperação">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#objetivo_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Objetivo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tasks_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tasks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#criterios-de-aceite_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Critérios de aceite
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#evidencias-para-fechamento_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evidências para fechamento
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s7-b05-coletar-eventos-da-agenda-unb-com-atualizacao-e-deduplicacao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S7-B05 - Coletar eventos da Agenda UnB com atualização e deduplicação
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="S7-B05 - Coletar eventos da Agenda UnB com atualização e deduplicação">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#objetivo_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Objetivo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tasks_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tasks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#criterios-de-aceite_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Critérios de aceite
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#evidencias-para-fechamento_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evidências para fechamento
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s7-b06-publicar-o-agenda-unb-na-vercel-com-servicos-integrados" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S7-B06 - Publicar o Agenda UnB na Vercel com serviços integrados
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="S7-B06 - Publicar o Agenda UnB na Vercel com serviços integrados">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#objetivo_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Objetivo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tasks_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tasks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#criterios-de-aceite_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Critérios de aceite
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#evidencias-para-fechamento_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evidências para fechamento
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#esclarecimentos-de-contrato-08112026" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Esclarecimentos de contrato — 08/11/2026
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sprint-8/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 8
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_20" >
+        
+          
+          <label class="md-nav__link" for="__nav_20" id="__nav_20_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release Notes
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_20_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_20">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Release Notes
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../processo/release-notes/v0-1-0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.1.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../processo/release-notes/v0-2-0-beta-1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.2.0-beta.1
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../atualizacoes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Atualizações e contratos da R2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../processo/uso-de-ia/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Uso de IA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../processo/contribuindo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Como Contribuir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Índice">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Índice
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#decisoes-da-entrega" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decisões da entrega
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#organizacao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Organização
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#issues-planejadas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Issues planejadas
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Issues planejadas">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#s7-b01-concluir-extracao-assincrona-de-provas-e-trabalhos-com-ia" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S7-B01 - Concluir extração assíncrona de provas e trabalhos com IA
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="S7-B01 - Concluir extração assíncrona de provas e trabalhos com IA">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#objetivo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Objetivo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tasks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tasks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#criterios-de-aceite" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Critérios de aceite
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#observacoes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observações
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#evidencias-para-fechamento" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evidências para fechamento
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s7-f01-consolidar-requisitos-decisoes-e-contratos-da-entrega" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S7-F01 - Consolidar requisitos, decisões e contratos da entrega
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="S7-F01 - Consolidar requisitos, decisões e contratos da entrega">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#objetivo_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Objetivo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tasks_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tasks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#criterios-de-aceite_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Critérios de aceite
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#evidencias-para-fechamento_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evidências para fechamento
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s7-b02-validar-infraestrutura-gratuita-integracoes-e-ci" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S7-B02 - Validar infraestrutura gratuita, integrações e CI
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="S7-B02 - Validar infraestrutura gratuita, integrações e CI">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#objetivo_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Objetivo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tasks_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tasks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#criterios-de-aceite_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Critérios de aceite
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#observacoes_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observações
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#evidencias-para-fechamento_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evidências para fechamento
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s7-d01-modelar-turmas-vinculos-versoes-e-isolamento-dos-planos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S7-D01 - Modelar turmas, vínculos, versões e isolamento dos planos
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="S7-D01 - Modelar turmas, vínculos, versões e isolamento dos planos">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#objetivo_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Objetivo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tasks_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tasks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#criterios-de-aceite_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Critérios de aceite
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#evidencias-para-fechamento_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evidências para fechamento
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s7-b03-integrar-o-catalogo-publico-do-followw-no-backend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S7-B03 - Integrar o catálogo público do Followw no backend
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="S7-B03 - Integrar o catálogo público do Followw no backend">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#objetivo_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Objetivo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tasks_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tasks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#criterios-de-aceite_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Critérios de aceite
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#evidencias-para-fechamento_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evidências para fechamento
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s7-f02-implementar-catalogo-e-minhas-turmas-na-interface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S7-F02 - Implementar catálogo e “Minhas turmas” na interface
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="S7-F02 - Implementar catálogo e “Minhas turmas” na interface">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#objetivo_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Objetivo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tasks_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tasks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#criterios-de-aceite_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Critérios de aceite
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#evidencias-para-fechamento_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evidências para fechamento
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s7-b04-validar-a-integracao-da-consulta-e-confirmacao-de-planos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S7-B04 - Validar a integração da consulta e confirmação de planos
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="S7-B04 - Validar a integração da consulta e confirmação de planos">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#objetivo_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Objetivo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tasks_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tasks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#criterios-de-aceite_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Critérios de aceite
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#evidencias-para-fechamento_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evidências para fechamento
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s7-f03-integrar-envio-revisao-do-texto-candidatos-e-agenda" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S7-F03 - Integrar envio, revisão do texto, candidatos e agenda
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="S7-F03 - Integrar envio, revisão do texto, candidatos e agenda">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#objetivo_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Objetivo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tasks_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tasks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#criterios-de-aceite_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Critérios de aceite
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#evidencias-para-fechamento_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evidências para fechamento
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s7-f04-completar-autenticacao-confirmacao-de-e-mail-e-recuperacao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S7-F04 - Completar autenticação, confirmação de e-mail e recuperação
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="S7-F04 - Completar autenticação, confirmação de e-mail e recuperação">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#objetivo_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Objetivo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tasks_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tasks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#criterios-de-aceite_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Critérios de aceite
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#evidencias-para-fechamento_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evidências para fechamento
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s7-b05-coletar-eventos-da-agenda-unb-com-atualizacao-e-deduplicacao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S7-B05 - Coletar eventos da Agenda UnB com atualização e deduplicação
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="S7-B05 - Coletar eventos da Agenda UnB com atualização e deduplicação">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#objetivo_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Objetivo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tasks_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tasks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#criterios-de-aceite_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Critérios de aceite
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#evidencias-para-fechamento_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evidências para fechamento
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s7-b06-publicar-o-agenda-unb-na-vercel-com-servicos-integrados" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S7-B06 - Publicar o Agenda UnB na Vercel com serviços integrados
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="S7-B06 - Publicar o Agenda UnB na Vercel com serviços integrados">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#objetivo_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Objetivo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tasks_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tasks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#criterios-de-aceite_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Critérios de aceite
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#evidencias-para-fechamento_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evidências para fechamento
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#esclarecimentos-de-contrato-08112026" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Esclarecimentos de contrato — 08/11/2026
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+  
+
+
+  <nav class="md-path" aria-label="Navegação" >
+    <ol class="md-path__list">
+      
+        
+  
+  
+    <li class="md-path__item">
+      <a href="../.." class="md-path__link">
+        
+  <span class="md-ellipsis">
+    Início
+  </span>
+
+      </a>
+    </li>
+  
+
+      
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="../sprint-1/" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    Sprints
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ol>
+  </nav>
+
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="sprint-7">Sprint 7</h1>
+<p>Planejamento aprovado para 07–15/11/2026. Entrega final em 25/11/2026. As tarefas abaixo representam trabalho planejado e dependem das evidências de aceite para conclusão.</p>
+<h2 id="decisoes-da-entrega">Decisões da entrega</h2>
+<p>Consulte os <a href="../../atualizacoes/#contratos-da-release-2">contratos</a> e a <a href="../../matriz-release-2/">matriz de aceite</a> para os critérios vigentes.</p>
+<ul>
+<li>Seleção manual de turmas pelo catálogo público Followw, com vínculo autodeclarado.</li>
+<li>Planos privados por padrão, com edição conforme papel e visibilidade. Compartilhamento voluntário de conteúdo revisado. O PDF original é descartado após a extração local.</li>
+<li>IA limitada a provas e trabalhos, com revisão do texto antes do envio e confirmação antes da criação de eventos.</li>
+<li>A Agenda UnB Notícias alimenta o catálogo. Eventos completos são publicados automaticamente e exceções seguem para revisão. Adicionar aos meus eventos e Conferir evento são ações independentes.</li>
+<li>Professores e administradores moderam eventos. Administradores gerenciam papéis e categorias.</li>
+<li>Lembretes na plataforma 24 horas antes de eventos da própria agenda. Exportação direta ao Google Agenda com consentimento adicional e e-mail verificado correspondente. ICS complementa Apple Calendar e Outlook.</li>
+<li>Primeira URL Vercel até 12/11 e ambiente integrado até 15/11. Congelamento funcional em 20/11, homologação até 23/11, ensaio em 24/11 e aceite em 25/11.</li>
+</ul>
+<h2 id="organizacao">Organização</h2>
+<p>F identifica frontend, B backend e D dados. A numeração é independente por área e sprint. Para atividades transversais, a área corresponde à frente coordenadora. Prioridades foram atribuídas considerando dependências e marcos da entrega. Cada issue tem até dois responsáveis formais, com apoios adicionais registrados no conteúdo.</p>
+<p><a href="https://github.com/unb-mds/2026-2-AgendaUnB/milestone/7">Milestone da Sprint 7</a></p>
+<h2 id="issues-planejadas">Issues planejadas</h2>
+<h3 id="s7-b01-concluir-extracao-assincrona-de-provas-e-trabalhos-com-ia">S7-B01 - Concluir extração assíncrona de provas e trabalhos com IA</h3>
+<p><a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/51">Issue #51</a></p>
+<h4 id="objetivo">Objetivo</h4>
+<p>Concluir a extração da antiga S6-B01. Transformar texto de planos em candidatos privados a provas e trabalhos, sujeitos à confirmação do aluno.</p>
+<ul>
+<li><strong>Sprint</strong> <a href="https://github.com/unb-mds/2026-2-AgendaUnB/milestone/7">Sprint 07</a></li>
+<li><strong>Janela</strong> 09–13/11/2026</li>
+<li><strong>Responsável principal</strong> @heitormontt</li>
+<li><strong>Corresponsável</strong> @pontesluis</li>
+<li><strong>Dependências</strong> S7-F01 (<a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/67">#67</a>), S7-B02 (<a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/68">#68</a>) e S7-D01 (<a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/69">#69</a>). Reaproveitar <a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/40">#40</a>, <a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/53">#53</a> e <a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/54">#54</a>. Integração da interface em S7-F03 (<a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/73">#73</a>).</li>
+<li><strong>Requisitos</strong> RF05, RF06, RNF02, RNF06 e RNF10.</li>
+</ul>
+<h4 id="tasks">Tasks</h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> Reaproveitar as validações de PDF digital de até 10 MB e 10 páginas, extrair texto no servidor com referência de página quando disponível e aceitar texto bruto com limite documentado.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> Extrair localmente e descartar o PDF original/temporários ao fim da preparação, inclusive em falha. Minimizar identificadores, mostrar o texto exato e exigir autorização antes de enviar somente o trecho aprovado ao Gemini.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> Documentar provedor/modelo, configuração por ambiente, limite de custo por arquivo, timeout e tentativas limitadas. Manter credenciais no servidor e processar em job persistido e recuperável.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> Validar saída estruturada com título, tipo prova/trabalho, data/horário quando disponíveis, ambiguidade e trecho/página de origem. Tratar o texto como dado, sem execução de instruções, navegação ou ferramentas acionadas pelo documento.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> Persistir candidatos privados sem criar eventos definitivos. Tratar falha, 429, timeout, resultado vazio e reprocessamento, sem registrar PDF ou texto integral em logs.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Oferecer organização manual para PDF escaneado ou conteúdo ainda pessoal/confidencial. Habilitar o provedor em produção após validação de termos e elegibilidade em S7-B02 (<a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/68">#68</a>).</li>
+</ul>
+<h4 id="criterios-de-aceite">Critérios de aceite</h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> Com amostras anonimizadas e resultado esperado, demonstrar que só provas e trabalhos viram candidatos. Registrar acertos, omissões e datas inventadas. Aulas e referências bibliográficas ficam fora, e datas incompletas exigem correção sem inferência de ano ou horário.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> Demonstrar retomada e retry sem duplicar candidatos ativos, além de estados recuperáveis para erros e ausência de avaliações.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> Medir RNF06 com corpus de até 10 páginas. Incluir fila e provedor, separar tempo humano de revisão e documentar o tempo inicial de preparação. Verificar a meta de menos de 20 s e registrar desvios.</li>
+</ul>
+<h4 id="observacoes">Observações</h4>
+<p>A minimização por regex tem alcance limitado. Enviar conteúdo ao serviço gratuito somente se o texto aprovado atender às regras aplicáveis de dados pessoais e confidenciais.</p>
+<h4 id="evidencias-para-fechamento">Evidências para fechamento</h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Anexar à issue o PR, a versão implantada e o resultado de cada cenário dos critérios de aceite, identificando falhas ainda abertas.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Registrar o nome do revisor e a revisão dos contratos, permissões e dados afetados por esta entrega.</li>
+</ul>
+<p><strong>Evidência local em 10/11/2026:</strong> <a href="../../processamento-planos-s7/">contrato e métricas</a>,
+<a href="../../s7-b01-validacao/">revisão técnica e pendências</a>. O caminho manual e o bloqueio
+operacional estão implementados; produção continua pendente de S7-B02, implantação
+validada e revisão humana. Os checks acima representam implementação/validação
+local, sem aprovação automática de dados reais ou fechamento das dependências.</p>
+<h3 id="s7-f01-consolidar-requisitos-decisoes-e-contratos-da-entrega">S7-F01 - Consolidar requisitos, decisões e contratos da entrega</h3>
+<p><a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/67">Issue #67</a></p>
+<h4 id="objetivo_1">Objetivo</h4>
+<p>Fixar as decisões da Release 2 e publicar contratos para frontend, backend e dados. O resultado está nos <a href="../../atualizacoes/#contratos-da-release-2">contratos</a> e na <a href="../../matriz-release-2/">matriz de aceite</a>.</p>
+<ul>
+<li><strong>Sprint</strong> <a href="https://github.com/unb-mds/2026-2-AgendaUnB/milestone/7">Sprint 07</a></li>
+<li><strong>Janela</strong> 07–08/11/2026</li>
+<li><strong>Responsável principal</strong> @Thomas4ugust0</li>
+<li><strong>Apoio adicional</strong> Toda a equipe valida os contratos e critérios das suas frentes.</li>
+<li><strong>Dependências</strong> Nenhuma.</li>
+<li><strong>Requisitos</strong> RF05–RF07, RF11, RF12, RF18, RF21, RNF02, RNF04 e RNF13. A matriz cobre RF01–RF21 e RNF01–RNF13.</li>
+</ul>
+<h4 id="tasks_1">Tasks</h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Definir RF21 como exportação direta, acionada pelo usuário, para uma agenda secundária “Agenda UnB” via Google Calendar API. Registrar consentimento adicional, contratos de conexão/desconexão, mapeamento de IDs e reexportação idempotente. Manter ICS como compatibilidade com Apple Calendar/Outlook. A sincronização automática bidirecional fica fora do recorte.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Atualizar a visão e os requisitos canônicos, incluindo as funcionalidades antecipadas para esta entrega.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Revisar RF05/RF06 para substituir atestado de matrícula por seleção manual de oferta do catálogo público do Followw. Registrar vínculo autodeclarado e separar o catálogo de matrícula, notas, avisos privados e login Followw/SIGAA.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Revisar RF07/RNF02 para definir planos privados por padrão e compartilhamento voluntário após revisão. Distinguir contribuição de estudante, envio por perfil professor e origem institucional comprovada.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Delimitar moderação por professor/admin e gestão de papéis e categorias por admin. Documentar agenda pessoal, redirecionamento agregado e histórico em RF12/RF13/RF18.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Registrar o escopo de lembretes na plataforma, coleta inicial pela Agenda UnB Notícias e extração de provas e trabalhos com confirmação humana.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Definir contratos de turma, plano/versão, candidato, evento com intervalo/dia inteiro, vínculo de agenda, redirecionamento e lembrete. Harmonizar estados de processamento e planejar migrações.</li>
+</ul>
+<h4 id="criterios-de-aceite_1">Critérios de aceite</h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Publicar matriz RF01–RF21 e RNF01–RNF13 com issue, responsável, critério verificável e estado.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Documentar exemplos de payload e erros, identidade canônica de turma, fuso <code>America/Sao_Paulo</code>, datas ambíguas e permissões.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Registrar exceções existentes de nomenclatura do banco e manter renomeações gerais fora do escopo.</li>
+</ul>
+<h4 id="evidencias-para-fechamento_1">Evidências para fechamento</h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Anexar à issue o PR, a versão implantada e o resultado de cada cenário dos critérios de aceite, identificando falhas ainda abertas.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Registrar o nome do revisor e a revisão dos contratos, permissões e dados afetados por esta entrega.</li>
+</ul>
+<h3 id="s7-b02-validar-infraestrutura-gratuita-integracoes-e-ci">S7-B02 - Validar infraestrutura gratuita, integrações e CI</h3>
+<p><a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/68">Issue #68</a></p>
+<h4 id="objetivo_2">Objetivo</h4>
+<p>Demonstrar a viabilidade de Followw público, SMTP, Gemini e jobs persistidos dentro do orçamento zero, com CI reproduzível.</p>
+<ul>
+<li><strong>Sprint</strong> <a href="https://github.com/unb-mds/2026-2-AgendaUnB/milestone/7">Sprint 07</a></li>
+<li><strong>Janela</strong> Provas até 08/11/2026. Conclusão até 10/11/2026.</li>
+<li><strong>Responsável principal</strong> @pontesluis</li>
+<li><strong>Corresponsável</strong> @heitormontt</li>
+<li><strong>Apoio adicional</strong> Thomas apoia a integração de autenticação e o alinhamento dos contratos.</li>
+<li><strong>Dependências</strong> Pode começar em paralelo a S7-F01 (<a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/67">#67</a>).</li>
+<li><strong>Requisitos</strong> RF16, RNF03, RNF11 e RNF13.</li>
+</ul>
+<h4 id="tasks_2">Tasks</h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Validar Google Calendar API habilitada, escopo <code>https://www.googleapis.com/auth/calendar.app.created</code>, consentimento OAuth, usuários de teste, condições de publicação/verificação, cotas e renovação do token Google. Criar agenda secundária e evento sintético, demonstrar revogação e registrar requisitos de liberação pública e bloqueios antes da integração em <a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/82">#82</a>.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Executar chamadas reais aos endpoints públicos Followw e registrar paginação, limites e cobertura observada.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Demonstrar envio de confirmação e recuperação via SMTP para endereço fora da equipe Supabase.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Chamar o modelo Gemini escolhido com texto sintético. Conferir cotas, termos de conteúdo e condições de elegibilidade, inclusive idade do público universitário.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Executar uma tarefa persistida na hospedagem candidata e demonstrar retomada após reinício. Definir onde rodam FastAPI, worker, coletor e scheduler e registrar limites e custo efetivo.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Configurar fila/tabela persistida e processamento recuperável, limites de cota, tratamento de 429/timeout, segredos de servidor e logs sem conteúdo acadêmico.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Configurar checks essenciais de frontend, backend e migrations no CI com os comandos existentes.</li>
+</ul>
+<h4 id="criterios-de-aceite_2">Critérios de aceite</h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Anexar evidência das cinco provas com configuração reproduzível. Credenciais permanecem fora do frontend e do repositório.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Comprovar retomada após reinício, tratamento de limite/timeout e migrations tanto em base limpa quanto na atualização da base existente.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Demonstrar SMTP, elegibilidade do Gemini e hospedagem sem custo, ou registrar imediatamente o requisito bloqueado e a alternativa escolhida.</li>
+</ul>
+<h4 id="observacoes_1">Observações</h4>
+<p>Validar SMTP próprio para destinatários externos. Consultar a documentação de <a href="https://supabase.com/docs/guides/auth/auth-smtp">SMTP do Supabase</a>, os <a href="https://ai.google.dev/gemini-api/terms">termos do Gemini</a> e a <a href="https://docs.followw.app/arquitetura">arquitetura do Followw</a> durante as provas. O consentimento do usuário não dispensa as condições do provedor.</p>
+<h4 id="evidencias-para-fechamento_2">Evidências para fechamento</h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Anexar à issue o PR, a versão implantada e o resultado de cada cenário dos critérios de aceite, identificando falhas ainda abertas.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Registrar o nome do revisor e a revisão dos contratos, permissões e dados afetados por esta entrega.</li>
+</ul>
+<h3 id="s7-d01-modelar-turmas-vinculos-versoes-e-isolamento-dos-planos">S7-D01 - Modelar turmas, vínculos, versões e isolamento dos planos</h3>
+<p><a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/69">Issue #69</a></p>
+<h4 id="objetivo_3">Objetivo</h4>
+<p>Evoluir o esquema de planos existentes para associar ofertas de turma, versões e vínculos preservando o isolamento de dados.</p>
+<ul>
+<li><strong>Sprint</strong> <a href="https://github.com/unb-mds/2026-2-AgendaUnB/milestone/7">Sprint 07</a></li>
+<li><strong>Janela</strong> 08–10/11/2026</li>
+<li><strong>Responsável principal</strong> @felipecduque7</li>
+<li><strong>Corresponsável</strong> @marrathomaz</li>
+<li><strong>Apoio adicional</strong> Luis apoia migrations e validação da infraestrutura de dados.</li>
+<li><strong>Dependências</strong> Contrato de S7-F01 (<a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/67">#67</a>). Reaproveitar <a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/43">#43</a>, <a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/53">#53</a> e <a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/54">#54</a>.</li>
+<li><strong>Requisitos</strong> RF05, RF07, RNF02 e RNF04.</li>
+</ul>
+<h4 id="tasks_3">Tasks</h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Modelar a oferta canônica com período, origem pública e data de atualização. Preferir identificador de disciplina da origem e, na falta dele, combinar código, número da turma, período e unidade/nível quando necessário.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Criar vínculo único entre usuário e oferta. Associar plano e versão à oferta com autoria, visibilidade privada/compartilhada e candidatos com evidência.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Preparar chaves e índices de importação por usuário/candidato/versão. Alinhar ORM, migrations, constraints, RLS e autorização no Storage.</li>
+</ul>
+<h4 id="criterios-de-aceite_3">Critérios de aceite</h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Executar migrations em dados existentes e demonstrar compatibilidade com o ORM.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Seguir uma turma repetidamente mantém um vínculo, e ofertas de semestres diferentes permanecem distintas.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Usuário B não acessa texto ou candidatos privados de A pela API, banco ou Storage. Verificar descarte do PDF após extração local e remoção dos originais legados conforme a migração.</li>
+</ul>
+<h4 id="evidencias-para-fechamento_3">Evidências para fechamento</h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Anexar à issue o PR, a versão implantada e o resultado de cada cenário dos critérios de aceite, identificando falhas ainda abertas.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Registrar o nome do revisor e a revisão dos contratos, permissões e dados afetados por esta entrega.</li>
+</ul>
+<h3 id="s7-b03-integrar-o-catalogo-publico-do-followw-no-backend">S7-B03 - Integrar o catálogo público do Followw no backend</h3>
+<p><a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/70">Issue #70</a></p>
+<h4 id="objetivo_4">Objetivo</h4>
+<p>Expor o catálogo público de turmas do Followw para seleção manual, com cache resiliente.</p>
+<ul>
+<li><strong>Sprint</strong> <a href="https://github.com/unb-mds/2026-2-AgendaUnB/milestone/7">Sprint 07</a></li>
+<li><strong>Janela</strong> 08–11/11/2026</li>
+<li><strong>Responsável principal</strong> @heitormontt</li>
+<li><strong>Corresponsável</strong> @felipecduque7</li>
+<li><strong>Dependências</strong> Contratos de S7-F01 (<a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/67">#67</a>), endpoints validados em S7-B02 (<a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/68">#68</a>) e persistência de S7-D01 (<a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/69">#69</a>) para a integração final.</li>
+<li><strong>Requisitos</strong> RF05 e RNF11.</li>
+</ul>
+<h4 id="tasks_4">Tasks</h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Implementar adaptador de servidor com lista permitida de endpoints públicos, timeout e tentativas limitadas. Usar <code>/public/classrooms/units</code>, <code>/public/classrooms</code> e consultas filtradas a <code>/public/subjects</code> conforme a prova.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Consultar por unidade, período e código respeitando paginação e limites reais. Evitar busca vazia de disciplinas que acione recomendação autenticada. Restringir a sincronização ao servidor e a chamadas públicas sem token de usuário.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Persistir cache e data de atualização. Devolver à interface a indicação de catálogo desatualizado quando a fonte estiver indisponível.</li>
+</ul>
+<h4 id="criterios-de-aceite_4">Critérios de aceite</h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Demonstrar busca real por disciplina, unidade e período, com identidade estável em sincronizações repetidas.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Simular indisponibilidade e confirmar preservação das turmas seguidas e do último catálogo válido.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Verificar que só endpoints públicos foram chamados e documentar a cobertura efetivamente observada.</li>
+</ul>
+<h4 id="evidencias-para-fechamento_4">Evidências para fechamento</h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Anexar à issue o PR, a versão implantada e o resultado de cada cenário dos critérios de aceite, identificando falhas ainda abertas.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Registrar o nome do revisor e a revisão dos contratos, permissões e dados afetados por esta entrega.</li>
+</ul>
+<h3 id="s7-f02-implementar-catalogo-e-minhas-turmas-na-interface">S7-F02 - Implementar catálogo e “Minhas turmas” na interface</h3>
+<p><a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/71">Issue #71</a></p>
+<h4 id="objetivo_5">Objetivo</h4>
+<p>Permitir ao usuário escolher manualmente a oferta correta e usar suas turmas na jornada de planos de ensino.</p>
+<ul>
+<li><strong>Sprint</strong> <a href="https://github.com/unb-mds/2026-2-AgendaUnB/milestone/7">Sprint 07</a></li>
+<li><strong>Janela</strong> 09–12/11/2026</li>
+<li><strong>Responsável principal</strong> @Thomas4ugust0</li>
+<li><strong>Corresponsável</strong> @Bielziin07</li>
+<li><strong>Dependências</strong> S7-F01 (<a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/67">#67</a>). Integração real com S7-D01 (<a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/69">#69</a>) e S7-B03 (<a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/70">#70</a>).</li>
+<li><strong>Requisitos</strong> RF05, RNF07, RNF08 e RNF09.</li>
+</ul>
+<h4 id="tasks_5">Tasks</h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Criar busca por disciplina e seleção de oferta com número, semestre, unidade e horários disponíveis.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Integrar seguir/deixar de seguir com persistência após login e incluir seleção da turma no envio de plano. Explicar que o vínculo é autodeclarado.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Mostrar planos disponíveis ou convite para envio. Preservar eventos particulares já importados ao deixar de seguir uma turma.</li>
+</ul>
+<h4 id="criterios-de-aceite_5">Critérios de aceite</h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Buscar, seguir e reencontrar uma turma após recarregar, distinguindo disciplinas homônimas e ofertas de períodos diferentes. Navegar para os planos da oferta correta.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Verificar orientações de vazio, erro e catálogo desatualizado, navegação por teclado e uso a partir de 360 px.</li>
+</ul>
+<h4 id="evidencias-para-fechamento_5">Evidências para fechamento</h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Anexar à issue o PR, a versão implantada e o resultado de cada cenário dos critérios de aceite, identificando falhas ainda abertas.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Registrar o nome do revisor e a revisão dos contratos, permissões e dados afetados por esta entrega.</li>
+</ul>
+<h3 id="s7-b04-validar-a-integracao-da-consulta-e-confirmacao-de-planos">S7-B04 - Validar a integração da consulta e confirmação de planos</h3>
+<p><a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/72">Issue #72</a></p>
+<h4 id="objetivo_6">Objetivo</h4>
+<p>Validar o fluxo de confirmação já entregue na sprint 6 com a extração real e preparar a importação por usuário na sprint 8.</p>
+<ul>
+<li><strong>Sprint</strong> <a href="https://github.com/unb-mds/2026-2-AgendaUnB/milestone/7">Sprint 07</a></li>
+<li><strong>Janela</strong> 10–13/11/2026</li>
+<li><strong>Responsável principal</strong> @marrathomaz</li>
+<li><strong>Corresponsável</strong> @felipecduque7</li>
+<li><strong>Dependências</strong> S7-F01 (<a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/67">#67</a>) e S7-D01 (<a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/69">#69</a>). Integrar resultados de S7-B01 (<a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/51">#51</a>) e reaproveitar a consulta/confirmação concluída na <a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/52">#52</a> e a transação da <a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/54">#54</a>.</li>
+<li><strong>Requisitos</strong> RF07 e RF09.</li>
+</ul>
+<h4 id="tasks_6">Tasks</h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Reutilizar <code>GET /api/v1/syllabus/{id}</code> e <code>POST /api/v1/syllabus/{id}/confirm</code>, conferindo estados, schemas, constraints, permissões e migrations aplicadas.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Verificar seleção parcial, edição de data/título/tipo e descarte, preservando a procedência no evento particular.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Preparar importação de candidatos compartilhados com decisão isolada por usuário. Definir reimportação explícita após exclusão e bloquear restauração involuntária por retry antigo.</li>
+</ul>
+<h4 id="criterios-de-aceite_6">Critérios de aceite</h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Demonstrar que apenas itens selecionados e válidos viram eventos do usuário. Recusar candidato de outro plano e exigir correção de data ambígua.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Testar em PostgreSQL permissões, unicidade por usuário, confirmações repetidas e concorrentes, além de rollback sem gravação parcial.</li>
+</ul>
+<h4 id="evidencias-para-fechamento_6">Evidências para fechamento</h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Anexar à issue o PR, a versão implantada e o resultado de cada cenário dos critérios de aceite, identificando falhas ainda abertas.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Registrar o nome do revisor e a revisão dos contratos, permissões e dados afetados por esta entrega.</li>
+</ul>
+<h3 id="s7-f03-integrar-envio-revisao-do-texto-candidatos-e-agenda">S7-F03 - Integrar envio, revisão do texto, candidatos e agenda</h3>
+<p><a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/73">Issue #73</a></p>
+<h4 id="objetivo_7">Objetivo</h4>
+<p>Completar em homologação a jornada de plano particular até a agenda com dados e processamento reais.</p>
+<ul>
+<li><strong>Sprint</strong> <a href="https://github.com/unb-mds/2026-2-AgendaUnB/milestone/7">Sprint 07</a></li>
+<li><strong>Janela</strong> 10–15/11/2026</li>
+<li><strong>Responsável principal</strong> @Bielziin07</li>
+<li><strong>Corresponsável</strong> @Thomas4ugust0</li>
+<li><strong>Dependências</strong> S7-F02 (<a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/71">#71</a>), S7-B01 (<a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/51">#51</a>) e S7-B04 (<a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/72">#72</a>). Pode começar pelos contratos. Reaproveitar <a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/49">#49</a> e <a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/50">#50</a>.</li>
+<li><strong>Requisitos</strong> RF05–RF09, RNF06–RNF10.</li>
+</ul>
+<h4 id="tasks_7">Tasks</h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Integrar PDF/texto, escolha da turma, histórico de envios e acompanhamento do processamento. Trocar o editor vazio/desabilitado em <code>SyllabusReviewPanel.jsx</code> pelos dados reais.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Exibir antes do processamento o texto minimizado editável, o destino e a autorização separada para enviar ao provedor.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Mostrar candidatos com origem e alertas, seleção individual/em lote e correção. Chamar o endpoint real de confirmação e atualizar a agenda.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Tratar recarga, envio duplicado, falhas recuperáveis e PDF inválido/escaneado com alternativa por texto ou organização manual. Fornecer feedback acessível.</li>
+</ul>
+<h4 id="criterios-de-aceite_7">Critérios de aceite</h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Demonstrar em homologação, sem mocks: seguir turma → enviar → revisar texto → autorizar → acompanhar → corrigir avaliações → importar → abrir na agenda.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Verificar que o envio ao provedor começa após autorização, que o evento só é criado após confirmação e que o progresso persiste após recarga.</li>
+</ul>
+<h4 id="evidencias-para-fechamento_7">Evidências para fechamento</h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Anexar à issue o PR, a versão implantada e o resultado de cada cenário dos critérios de aceite, identificando falhas ainda abertas.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Registrar o nome do revisor e a revisão dos contratos, permissões e dados afetados por esta entrega.</li>
+</ul>
+<h3 id="s7-f04-completar-autenticacao-confirmacao-de-e-mail-e-recuperacao">S7-F04 - Completar autenticação, confirmação de e-mail e recuperação</h3>
+<p><a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/74">Issue #74</a></p>
+<h4 id="objetivo_8">Objetivo</h4>
+<p>Completar cadastro e recuperação via Supabase, homologar Google OAuth e reforçar a autorização no servidor.</p>
+<ul>
+<li><strong>Sprint</strong> <a href="https://github.com/unb-mds/2026-2-AgendaUnB/milestone/7">Sprint 07</a></li>
+<li><strong>Janela</strong> 09–15/11/2026</li>
+<li><strong>Responsável principal</strong> @Thomas4ugust0</li>
+<li><strong>Corresponsável</strong> @marrathomaz</li>
+<li><strong>Dependências</strong> SMTP homologado em S7-B02 (<a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/68">#68</a>). Reaproveitar a base de autenticação da <a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/16">#16</a>.</li>
+<li><strong>Requisitos</strong> RF01–RF04, RNF01, RNF04, RNF07 e RNF09.</li>
+</ul>
+<h4 id="tasks_8">Tasks</h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Implementar autorização incremental para Calendar com <code>state</code> e PKCE. Exigir e-mail Google verificado correspondente ao da conta Agenda UnB e testar recusa e divergência. Guardar e renovar tokens no servidor e removê-los na desconexão com revogação. Integrar com <a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/82">#82</a>.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Tratar cadastro sem sessão, tela de confirmação, retorno do link, reenvio com intervalo e links expirados ou reutilizados. Integrar recuperação e troca de senha pelo Supabase.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Adicionar mostrar/ocultar senha, confirmação, validação e autocomplete apropriados. Tratar retorno e erros do Google OAuth sem confirmação local redundante.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Verificar e-mail confirmado e autorização no servidor. Impedir escalada via domínio informado ou metadata do cliente. Restringir alterações de papel de terceiros a admin.</li>
+</ul>
+<h4 id="criterios-de-aceite_8">Critérios de aceite</h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Com SMTP homologado, demonstrar cadastro e confirmação com endereço externo à equipe, reenvio, links expirados/reutilizados conforme política e recuperação real. Bloquear operações protegidas de conta não confirmada.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Testar login/logout por e-mail e Google, retorno OAuth e tentativa de autopromoção por requisição direta. Verificar ausência de senhas e tokens nos logs.</li>
+</ul>
+<h4 id="evidencias-para-fechamento_8">Evidências para fechamento</h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Anexar à issue o PR, a versão implantada e o resultado de cada cenário dos critérios de aceite, identificando falhas ainda abertas.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Registrar o nome do revisor e a revisão dos contratos, permissões e dados afetados por esta entrega.</li>
+</ul>
+<h3 id="s7-b05-coletar-eventos-da-agenda-unb-com-atualizacao-e-deduplicacao">S7-B05 - Coletar eventos da Agenda UnB com atualização e deduplicação</h3>
+<p><a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/75">Issue #75</a></p>
+<h4 id="objetivo_9">Objetivo</h4>
+<p>Alimentar a agenda pela fonte institucional Agenda UnB Notícias, com origem verificável e execução recorrente.</p>
+<ul>
+<li><strong>Sprint</strong> <a href="https://github.com/unb-mds/2026-2-AgendaUnB/milestone/7">Sprint 07</a></li>
+<li><strong>Janela</strong> 10–15/11/2026</li>
+<li><strong>Responsável principal</strong> @pontesluis</li>
+<li><strong>Corresponsável</strong> @marrathomaz</li>
+<li><strong>Apoio adicional</strong> Felipe apoia as migrations de eventos.</li>
+<li><strong>Dependências</strong> S7-F01 (<a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/67">#67</a>) e S7-B02 (<a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/68">#68</a>).</li>
+<li><strong>Requisitos</strong> RF14–RF16 e RNF11.</li>
+</ul>
+<h4 id="tasks_9">Tasks</h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Implementar coletor periódico da <a href="https://noticias.unb.br/component/agenda/agendas">lista paginada e dos detalhes da Agenda UnB Notícias</a>, observando restrições de acesso e frequência moderada.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Persistir fonte, identificador/URL canônica, hash e última coleta. Fazer upsert por chave única da origem. Conciliar URL idêntica já cadastrada manualmente e enviar similaridade de título/data para revisão.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Normalizar início/fim, dia inteiro, campus, local e link externo. Tratar <code>00:00</code> de preenchimento sem inventar horário e distinguir informes de eventos.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Publicar automaticamente os eventos completos e inequívocos da fonte. Enviar casos ambíguos, incompletos e possíveis duplicatas para revisão. Exibir a procedência.</li>
+</ul>
+<h4 id="criterios-de-aceite_9">Critérios de aceite</h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Demonstrar execução agendada em homologação, duas execuções sucessivas e concorrentes sem duplicatas e atualização de data no mesmo registro.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Verificar que indisponibilidade da fonte preserva registros, que decisões de moderação e campos editados localmente são respeitados e que a cobertura multicampus reflete os dados disponíveis.</li>
+</ul>
+<h4 id="evidencias-para-fechamento_9">Evidências para fechamento</h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Anexar à issue o PR, a versão implantada e o resultado de cada cenário dos critérios de aceite, identificando falhas ainda abertas.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Registrar o nome do revisor e a revisão dos contratos, permissões e dados afetados por esta entrega.</li>
+</ul>
+<h3 id="s7-b06-publicar-o-agenda-unb-na-vercel-com-servicos-integrados">S7-B06 - Publicar o Agenda UnB na Vercel com serviços integrados</h3>
+<p><a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/76">Issue #76</a></p>
+<h4 id="objetivo_10">Objetivo</h4>
+<p>Disponibilizar o frontend React/Vite em uma URL Vercel HTTPS estável e demonstrar sua operação junto de FastAPI, Supabase Auth, banco e jobs.</p>
+<ul>
+<li><strong>Sprint</strong> <a href="https://github.com/unb-mds/2026-2-AgendaUnB/milestone/7">Sprint 07</a></li>
+<li><strong>Janela</strong> Configuração de 09 a 10/11/2026. Primeira URL até 12/11. Aceite integrado até 15/11.</li>
+<li><strong>Responsável principal</strong> @pontesluis</li>
+<li><strong>Corresponsável</strong> @Thomas4ugust0</li>
+<li><strong>Apoio adicional</strong> Heitor apoia a conexão da API e a execução de jobs. Thomas apoia Vercel e rotas SPA.</li>
+<li><strong>Dependências</strong> S7-B02 (<a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/68">#68</a>). Validar S7-F04 (<a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/74">#74</a>) no domínio publicado e testar as jornadas de S7-F02 (<a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/71">#71</a>), S7-F03 (<a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/73">#73</a>) e S7-B05 (<a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/75">#75</a>).</li>
+<li><strong>Requisitos</strong> RNF03, RNF09, RNF11 e RNF13. O ambiente habilita a homologação dos RF.</li>
+</ul>
+<h4 id="tasks_10">Tasks</h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Configurar callbacks OAuth da integração Calendar no domínio HTTPS de produção e ambiente de teste. Guardar client secret e material de criptografia no servidor. Validar conexão, retorno e renovação no domínio publicado em conjunto com <a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/74">#74</a>, preparando o aceite da <a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/82">#82</a>.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Configurar diretório raiz <code>frontend</code>, build <code>npm run build</code>, saída <code>dist</code> e fallback SPA que preserve rotas de API. Domínio próprio é opcional.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Separar preview e produção, incluindo variáveis e dados. Manter chaves de serviço Supabase e Gemini fora do bundle <code>VITE_*</code>. Impedir que previews escrevam em produção ou disparem coleta/lembretes reais.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Aplicar a arquitetura escolhida em S7-B02 (<a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/68">#68</a>) para API, worker, coletor e scheduler. Validar execução, limites, custo zero, persistência e uploads antes de usar Vercel para esses componentes. Usar hospedagem separada compatível quando necessário.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Testar o caminho autorizado de upload para 10 MB. Se o caminho ultrapassar limites da hospedagem, definir transporte compatível com validação e privacidade.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Configurar API pública HTTPS, CORS com origens explícitas e URLs de retorno do Supabase. Aplicar migrations de forma controlada e ligar deploy à branch e aos checks definidos.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Documentar arquitetura, limites, variáveis sem valores secretos, observabilidade e rollback de frontend/API compatível com o schema.</li>
+</ul>
+<h4 id="criterios-de-aceite_10">Critérios de aceite</h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Abrir a URL Vercel em outra máquina ou rede. Confirmar HTTPS, rotas profundas após refresh, build reproduzível e tratamento de falha da API na interface.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Demonstrar cadastro, confirmação, recuperação, Google OAuth, consultas da API, upload/revisão/importação e agenda no ambiente publicado. Jobs e coleta executam na hospedagem sem navegador ou computador da equipe.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Ensaiar rollback e verificar que logs são úteis e livres de dados sensíveis.</li>
+</ul>
+<h4 id="evidencias-para-fechamento_10">Evidências para fechamento</h4>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Anexar à issue o PR, a versão implantada e o resultado de cada cenário dos critérios de aceite, identificando falhas ainda abertas.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Registrar o nome do revisor e a revisão dos contratos, permissões e dados afetados por esta entrega.</li>
+</ul>
+<h2 id="esclarecimentos-de-contrato-08112026">Esclarecimentos de contrato — 08/11/2026</h2>
+<p>O RNF11 cobre exclusivamente a indisponibilidade do Followw. Referências anteriores deste planejamento a RNF11 em coleta de notícias, exportação ou infraestrutura geral não ampliam essa garantia; permanecem os contratos específicos dessas funcionalidades.</p>
+<p>Toda data extraída começa como candidata. Somente a confirmação explícita do usuário a transforma em avaliação efetiva na sua agenda; em versões compartilhadas, essa decisão pertence a cada conta. A revisão deve ser breve: mostrar candidatos em uma lista, permitir selecionar vários e confirmar o lote em uma única ação, destacar apenas campos ambíguos que exigem correção e preservar as escolhas durante ajustes. Não exigir uma sequência de confirmações por item nem importar automaticamente. Avaliar a fluidez na homologação com o tempo e as dificuldades observadas, sem inventar um limite numérico ainda não acordado.</p>
+<p>Retirar o compartilhamento da versão original não retira nem exclui suas revisões: elas mantêm sua própria visibilidade e continuam disponíveis quando compartilhadas. Cópias já importadas na agenda também permanecem. Essa regra trata da retirada de compartilhamento, não define a política de exclusão de conta.</p>
+<p>Uma revisão feita por professor ou admin mantém a procedência institucional já validada da versão de origem. Registrar a versão de origem, a evidência institucional herdada, o autor da revisão e seu papel no momento da alteração. A interface distingue documento institucional de origem e alterações posteriores da comunidade. Papel professor/admin não cria procedência institucional quando a origem não a possuía; revisões estudantis não recebem essa herança automaticamente.</p>
+<p>A confirmação e reimportação devem seguir a chave por ação descrita nos <a href="../../atualizacoes/#confirmacao-rapida-e-reimportacao">contratos da R2</a>. Professor/admin publicam diretamente suas revisões de conteúdo já compartilhado.</p>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Voltar para o topo
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.path", "navigation.top", "search.suggest", "search.highlight", "content.code.copy"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copiado para \u00e1rea de transfer\u00eancia", "clipboard.copy": "Copiar para \u00e1rea de transfer\u00eancia", "search.result.more.one": "mais 1 nesta p\u00e1gina", "search.result.more.other": "# mais nesta p\u00e1gina", "search.result.none": "Nenhum documento encontrado", "search.result.one": "1 documento encontrado", "search.result.other": "# documentos encontrados", "search.result.placeholder": "Digite para iniciar a busca", "search.result.term.missing": "Ausente", "select.version": "Selecione a vers\u00e3o"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+    
+  </body>
+</html>

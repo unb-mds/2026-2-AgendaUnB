@@ -1,0 +1,2578 @@
+
+<!doctype html>
+<html lang="pt" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Operação do adaptador público Followw, publicação atômica, vínculos e seleção de ofertas nos planos.">
+      
+      
+      
+      
+        <link rel="prev" href="../banco-de-dados/">
+      
+      
+        <link rel="next" href="../../produto/requisitos/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+    
+    
+      
+        <title>Catálogo de turmas — integração #70 e #71 - Agenda UnB Docs</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#contratos-e-origem" class="md-skip">
+          Pular para conteúdo
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Cabeçalho">
+    <a href="../.." title="Agenda UnB Docs" class="md-header__button md-logo" aria-label="Agenda UnB Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Agenda UnB Docs
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Catálogo de turmas — integração #70 e #71
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Modo automático"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Modo automático" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Mudar para modo escuro"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Mudar para modo escuro" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Mudar para modo claro"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Mudar para modo claro" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Buscar" placeholder="Buscar" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Pesquisar">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Limpar" aria-label="Limpar" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Inicializando busca
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/unb-mds/2026-2-AgendaUnB" title="Ir para repositório" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    unb-mds/G8-2026-2
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Abas" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Início
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../produto/visao/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Visão do Produto
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../visao-geral/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Arquitetura
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../adrs/" class="md-tabs__link">
+          
+  
+  
+  Decisões arquiteturais
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../api-specs/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Contratos do Backend
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../processamento-planos-s7/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Extração Autorizada S7
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../s7-b01-validacao/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Validação S7-B01
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../processamento-planos/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Histórico de Processamento S6
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../privacidade-planos/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Privacidade dos Planos
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../matriz-release-2/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Matriz de aceite da Release 2
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../implantacao/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Plano de Implantação
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../modelo-de-dados/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Modelo de Dados
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../banco-de-dados/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Especificação do Banco
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Catálogo de turmas
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../produto/requisitos/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Requisitos
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../produto/padroes/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Padrões de Projeto
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../frontend/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Interface e Design
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../produto/personas/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Personas
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../sprints/sprint-1/" class="md-tabs__link">
+          
+  
+  
+  Sprints
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../processo/release-notes/v0-1-0/" class="md-tabs__link">
+          
+  
+  
+  Release Notes
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../processo/uso-de-ia/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Uso de IA
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../processo/contribuindo/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Como Contribuir
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navegação" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Agenda UnB Docs" class="md-nav__button md-logo" aria-label="Agenda UnB Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Agenda UnB Docs
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/unb-mds/2026-2-AgendaUnB" title="Ir para repositório" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    unb-mds/G8-2026-2
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Início
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../produto/visao/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visão do Produto
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../visao-geral/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arquitetura
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisões arquiteturais
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Decisões arquiteturais
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Índice e guia de leitura
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/adr-001-integracao-fastapi-supabase/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-001 — Integração FastAPI e Supabase
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/adr-002-separar-hospedagem-e-ambientes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-002 — Hospedagem e ambientes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/adr-003-minimizar-dados-de-planos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-003 — Minimização de dados de planos
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/adr-004-api-monolitica/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-004 — Manter a API em uma aplicação FastAPI única
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/adr-005-validacao-de-sessao/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-005 — Validar a sessão no Supabase Auth e consultar o papel no banco
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/adr-006-autorizacao-em-camadas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-006 — Aplicar autorização na API, nas RPCs e nas políticas RLS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/adr-007-migracoes-sql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-007 — Usar migrações SQL como referência do esquema completo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/adr-008-vinculos-de-eventos-publicos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-008 — Salvar vínculos aos eventos públicos na agenda pessoal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/adr-009-catalogo-publico-de-turmas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-009 — Integrar o catálogo público de turmas com identidade local e cache
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/adr-010-versoes-e-confirmacao-de-planos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-010 — Versionar planos e exigir confirmação individual para importar candidatos
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/adr-011-datas-civis-e-instantes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-011 — Distinguir datas civis de instantes e usar fim exclusivo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/adr-012-exportacao-google-idempotente/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-012 — Exportar por ação explícita para uma agenda Google secundária
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/adr-013-lembretes-persistentes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-013 — Persistir lembretes com agendamento idempotente e revalidação
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api-specs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contratos do Backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../processamento-planos-s7/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Extração Autorizada S7
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../s7-b01-validacao/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validação S7-B01
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../processamento-planos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Histórico de Processamento S6
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../privacidade-planos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Privacidade dos Planos
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../matriz-release-2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Matriz de aceite da Release 2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implantacao/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plano de Implantação
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../modelo-de-dados/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Modelo de Dados
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../banco-de-dados/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Especificação do Banco
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Catálogo de turmas
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Catálogo de turmas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Índice">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Índice
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#contratos-e-origem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Contratos e origem
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#operacao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Operação
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#api-e-interface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API e interface
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#evidencias-locais-10112026" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evidências locais — 10/11/2026
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pendencias-de-homologacao-e-fechamento" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pendências de homologação e fechamento
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resultado-final-da-validacao-local" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resultado final da validação local
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jornada-unica" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Jornada única
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Jornada única">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#correcao-da-jornada-e-inicializacao-local" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Correção da jornada e inicialização local
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#primeira-carga-no-desenvolvimento-local" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Primeira carga no desenvolvimento local
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#carga-local-concluida" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Carga local concluída
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../produto/requisitos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Requisitos
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../produto/padroes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Padrões de Projeto
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../frontend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interface e Design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../produto/personas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Personas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_19" >
+        
+          
+          <label class="md-nav__link" for="__nav_19" id="__nav_19_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprints
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_19_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_19">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Sprints
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sprints/sprint-1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 1
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sprints/sprint-2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sprints/sprint-3/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sprints/sprint-4/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 4
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sprints/sprint-5/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 5
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sprints/sprint-6/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 6
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sprints/sprint-7/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 7
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sprints/sprint-8/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 8
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_20" >
+        
+          
+          <label class="md-nav__link" for="__nav_20" id="__nav_20_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release Notes
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_20_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_20">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Release Notes
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../processo/release-notes/v0-1-0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.1.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../processo/release-notes/v0-2-0-beta-1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.2.0-beta.1
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../atualizacoes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Atualizações e contratos da R2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../processo/uso-de-ia/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Uso de IA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../processo/contribuindo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Como Contribuir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Índice">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Índice
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#contratos-e-origem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Contratos e origem
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#operacao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Operação
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#api-e-interface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API e interface
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#evidencias-locais-10112026" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evidências locais — 10/11/2026
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pendencias-de-homologacao-e-fechamento" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pendências de homologação e fechamento
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resultado-final-da-validacao-local" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resultado final da validação local
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jornada-unica" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Jornada única
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Jornada única">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#correcao-da-jornada-e-inicializacao-local" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Correção da jornada e inicialização local
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#primeira-carga-no-desenvolvimento-local" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Primeira carga no desenvolvimento local
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#carga-local-concluida" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Carga local concluída
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+  
+
+
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+  <h1>Catálogo de turmas</h1>
+
+<h2 id="contratos-e-origem">Contratos e origem</h2>
+<p>Implementação baseada na #67, no esquema S7-D01 da #69 e na migração do <a href="https://github.com/unb-mds/2026-2-AgendaUnB/pull/104">PR #104</a>, commit <code>8a8cf42ef07e7b15278b3b78277b42eea4cf8483</code>. A migração original foi preservada; a evolução está em <code>20261111120000_publicacao_catalogo.sql</code>. RF05, RNF07–09 e RNF11 orientam esta integração.</p>
+<p>O servidor permite apenas GET HTTPS em <code>api.followw.app</code>, nas rotas <code>/public/classrooms/units</code>, <code>/public/classrooms</code> e <code>/public/subjects</code>. Não usa credenciais, cookies, proxy do ambiente ou redirecionamentos. A busca de disciplinas exige unidade ou código e período. Os contratos observados retornam listas sem paginação remota exposta; não se inventam parâmetros de paginação. A paginação da API do Agenda UnB é local.</p>
+<p>A lista ao vivo determina presença. O ID de <code>subject.sigaa_id</code> identifica a disciplina. Somente uma correspondência exata por código, unidade, período e número textual permite adotar <code>classrooms[].sigaa_id</code> como ID de oferta. <code>01</code> permanece <code>01</code>, nível desconhecido fica nulo e professor/horário não participam da identidade. Respostas inválidas, identidades incompletas e colisões nunca são convertidas silenciosamente. Identidades rejeitadas ficam nos metadados da execução para revisão.</p>
+<h2 id="operacao">Operação</h2>
+<p>Aplicar as migrações pendentes e implantar backend e frontend juntos: PDF multipart e texto JSON agora exigem <code>offering_id</code>. As leituras e a revisão de planos legados continuam disponíveis.</p>
+<p>Em <code>backend</code>, configurar <code>DATABASE_URL</code> de servidor com acesso às tabelas e funções. Usar conexão direta ou pool em modo sessão: a exclusão mútua usa advisory lock de sessão; pool em modo transação não serve para este comando.</p>
+<div class="highlight"><pre><span></span><code>python<span class="w"> </span>-m<span class="w"> </span>src.database.check_schema
+python<span class="w"> </span>-m<span class="w"> </span>src.modules.classes.sync<span class="w"> </span>--period<span class="w"> </span><span class="m">2026</span>.2
+</code></pre></div>
+<p>O comando consulta todas as unidades descobertas uma vez, em sequência. Períodos adicionais exigem flags repetidas, por exemplo <code>--period 2026.2 --period 2027.1</code>, após validar cobertura. Sem flags, somente <code>2026.2</code>. Semestres fora de 1/2 são rejeitados com <code>periodo_nao_suportado</code>, sem convertê-los; verão não é habilitado.</p>
+<p>Limites do adaptador: intervalo mínimo de um segundo entre inícios de chamadas, timeout de 20 segundos por operação HTTP, uma repetição para falhas transitórias. <code>Retry-After</code> aceita segundos ou data HTTP até 60 segundos; espera maior interrompe a tentativa. Esses valores não representam cotas confirmadas do Followw.</p>
+<p>Uma execução por vez, sem rota HTTP de sincronização. Consultas HTTP leem somente o banco. Após a coleta, uma transação chama <code>registrar_oferta_catalogo</code>, associa <code>publicacao_id</code> e publica a execução concluída. Leituras do catálogo são protegidas contra publicação concorrente. Uma unidade vazia válida conta como consultada; falha da busca ao vivo em qualquer unidade cancela a publicação inteira. Falha apenas no enriquecimento não retira as ofertas ao vivo: registra a cobertura do enriquecimento e utiliza a identidade natural.</p>
+<p><code>sincronizacoes_catalogo</code> contém unidades, períodos, cobertura por unidade/período, quantidades, rejeições e código sanitizado de erro. Não armazena respostas brutas. Ofertas ausentes na nova publicação saem da busca sem exclusão física; vínculos, planos e eventos permanecem. Falha conserva a publicação e a data anteriores. <code>estado_catalogo</code> indica <code>stale</code> após falha ou 24 horas. Antes da primeira publicação válida, busca e filtros retornam 503; uma publicação vazia válida é cache, retornando 200 com lista vazia.</p>
+<p>Não habilitar recorrência antes de medir duração e cobertura de uma varredura integral em homologação. A saída JSON do comando inclui a cobertura; guardar essa saída como evidência operacional.</p>
+<h2 id="api-e-interface">API e interface</h2>
+<p>Todas as rotas abaixo exigem a autenticação Supabase existente:</p>
+<table>
+<thead>
+<tr>
+<th>Operação</th>
+<th>Contrato</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GET /api/v1/class-offerings</code></td>
+<td><code>year</code>, <code>semester</code>, <code>unit</code> (ID/sigla), <code>subject_code</code> exato, <code>q</code> (nome/código/professor/turma), <code>limit</code> 20–100 (mínimo 1), <code>offset</code> ≥0</td>
+</tr>
+<tr>
+<td><code>GET /api/v1/class-offerings/filters</code></td>
+<td>Unidades e períodos da última publicação, <code>source_updated_at</code>, <code>stale</code></td>
+</tr>
+<tr>
+<td><code>GET /api/v1/class-offerings/{id}</code></td>
+<td>Oferta por UUID, inclusive retirada, com <code>available</code></td>
+</tr>
+<tr>
+<td><code>GET /api/v1/me/class-offerings</code></td>
+<td>Vínculos da sessão, inclusive ofertas retiradas</td>
+</tr>
+<tr>
+<td><code>PUT /api/v1/me/class-offerings/{id}</code></td>
+<td>Seguir oferta disponível, idempotente, 204</td>
+</tr>
+<tr>
+<td><code>DELETE /api/v1/me/class-offerings/{id}</code></td>
+<td>Remover somente o vínculo da sessão, idempotente, 204</td>
+</tr>
+<tr>
+<td><code>GET /api/v1/class-offerings/{id}/shared-plans</code></td>
+<td>Versões compartilhadas para seguidores, paginação 20/100, 403 para não seguidores; não expõe texto privado</td>
+</tr>
+<tr>
+<td><code>GET /api/v1/syllabus?offering_id={id}</code></td>
+<td>Histórico particular filtrado pela oferta; sem filtro mantém o histórico legado</td>
+</tr>
+<tr>
+<td><code>POST /api/v1/syllabus/upload</code> e <code>/text</code></td>
+<td><code>offering_id</code> obrigatório; 409 se oferta retirada, 503 sem publicação; disciplina/turma/período derivados do catálogo</td>
+</tr>
+</tbody>
+</table>
+<p>A busca devolve <code>items</code>, <code>total</code>, <code>limit</code>, <code>offset</code>, <code>source_updated_at</code> e <code>stale</code>, com ordenação estável por código, unidade, período, turma e UUID. Cada item contém UUID, nome/código da disciplina, turma, ano/semestre, unidade, nível, professor, horário e disponibilidade. Erros seguem <code>detail</code> da API existente; filtros inválidos retornam 422.</p>
+<p>A rota <code>/plano-de-ensino?modo=catalogo</code> exige login. “Minhas turmas” persiste no servidor e abre <code>?modo=catalogo&amp;oferta={UUID}</code>. A jornada mostra histórico particular, convite para envio e versões compartilhadas; estas são de consulta nesta entrega. Publicação, votação e importação de versões compartilhadas permanecem nas entregas específicas da R2. A revisão e confirmação de candidatos particulares reutilizam o fluxo existente. A demonstração mantém fixtures e ações locais em modo separado.</p>
+<p>“Tentar novamente” repete a leitura local; nunca dispara sincronização do Followw. Em 503 há acesso ao cadastro manual. Deixar de seguir preserva os eventos particulares já importados.</p>
+<h2 id="evidencias-locais-10112026">Evidências locais — 10/11/2026</h2>
+<ul>
+<li>Sondagem real: 211 unidades; <code>code=FGA0108</code>, <code>semester=2026.2</code>: duas ofertas ao vivo, uma disciplina com duas ofertas enriquecidas; duas normalizadas, zero rejeitadas, dois IDs de oferta. Executada com <code>PYTHONPATH=.</code> e <code>python scripts/probe_followw_catalog.py</code>, sem gravação de catálogo.</li>
+<li>Migrações: aplicadas na cópia isolada <code>agenda_catalog_7071_verified</code> do esquema local existente; todas as 28 migrações aplicadas em <code>agenda_catalog_7071_fresh</code>, com estruturas internas Auth/Storage e sem tabelas da aplicação. Não equivale a homologar serviços hospedados de Auth/Storage.</li>
+<li>Backend: testes HTTP de autenticação, filtros, paginação, vínculo idempotente/isolado, retirada, cache, privacidade e exigência de oferta; adaptador com timeout, retry, 429, redirecionamento, respostas inválidas, credenciais ausentes e identidade; PostgreSQL com publicação completa, adoção de ID, retirada e falha intermediária. Comandos e resultados finais devem acompanhar o PR.</li>
+<li>Frontend: testes Playwright de vínculo após recarga, oferta correta, paginação, vazio, 503, login, teclado e largura 360/1365; regressão de envio/revisão em 360/768/1365 e temas claro/escuro. Capturas do catálogo inspecionadas em desktop e celular; detector de interface sem achados.</li>
+</ul>
+<h2 id="pendencias-de-homologacao-e-fechamento">Pendências de homologação e fechamento</h2>
+<p>Não foram executados deploy, varredura integral das 211 unidades nem teste de indisponibilidade contra o ambiente hospedado. A amostra de FGA0108 não comprova cobertura global. Registrar versão implantada, saída da varredura, cenário de falha com vínculo existente, links do PR e nome do revisor humano nas issues #70/#71 antes de fechá-las. Nenhuma issue foi fechada ou marcada como homologada por esta implementação.</p>
+<p>Reversão: desabilitar o comando operacional e reverter consumidores junto com o backend; preservar tabelas e vínculos. Não apagar ofertas ou reverter migrações destrutivamente para ocultar uma publicação.</p>
+<h2 id="resultado-final-da-validacao-local">Resultado final da validação local</h2>
+<ul>
+<li>Backend: <code>python -m pytest -q</code> — 209 passaram, três ignorados (integrações opcionais), com PostgreSQL isolado.</li>
+<li>Navegador: <code>E2E_PORT=5187 E2E_BROWSER_CHANNEL=chrome npx playwright test --workers=2</code> — 44 passaram.</li>
+<li>Lógica frontend: <code>npm test</code> — 19 passaram.</li>
+<li><code>npm run build</code> passou; aviso de chunk principal acima de 500 kB permanece.</li>
+<li>Build da documentação não executado: MkDocs não está instalado no venv local.</li>
+<li>As 28 migrações passaram em base sem tabelas da aplicação; as duas novas passaram na atualização da cópia isolada.</li>
+</ul>
+<h2 id="jornada-unica">Jornada única</h2>
+<p>A página <code>/plano-de-ensino</code> apresenta apenas a Demonstração interativa, agora conectada à API autenticada para catálogo, vínculos, envios e planos. O seletor de variantes foi removido. <code>make dev</code> inicia Supabase, aplica migrações locais, verifica o esquema e inicia API e Vite; <code>BACKEND_PORT</code> também configura o proxy do frontend. A API inicia sem o recarregador do Uvicorn para compatibilidade com Windows.</p>
+<h3 id="correcao-da-jornada-e-inicializacao-local">Correção da jornada e inicialização local</h3>
+<p>A jornada original de quatro etapas foi restaurada. Visitantes usam exemplos locais; usuários autenticados usam catálogo, vínculos, preparação, revisão e confirmação pela API dentro dessas etapas. Não há seletor de variantes. O inicializador <code>scripts/dev.py</code>, chamado por <code>make dev</code>, escolhe portas livres quando as solicitadas estão ocupadas, informa as URLs efetivas e configura o proxy e CORS correspondentes. Ele espera o health da API e encerra seus próprios processos quando um serviço falha ou a sessão recebe Ctrl+C. Serviços anteriores são preservados.</p>
+<h3 id="primeira-carga-no-desenvolvimento-local">Primeira carga no desenvolvimento local</h3>
+<p><code>make dev</code> verifica a existência de uma publicação concluída. Quando ainda não há
+catálogo válido, inicia o comando de sincronização como processo separado da API.
+A consulta retorna 503 durante essa carga, e a interface explica a espera e repete
+a leitura local a cada 15 segundos. Não chama o Followw pelo navegador.
+O comando registra o progresso por unidade no terminal. Ao adquirir o lock de
+execução, marca execuções antigas ainda <code>executando</code> como interrompidas, pois o
+lock comprova que não existe outro sincronizador ativo. Uma nova execução nunca
+publica parcialmente para contornar a ausência de cache.</p>
+<h3 id="carga-local-concluida">Carga local concluída</h3>
+<p>Execução <code>5a4fa5df-bde0-4c98-902a-bc5dd7c55d06</code>: 211 unidades consultadas em 2026.2, 9.154 ofertas publicadas. Filtros HTTP 200 com 211 unidades; busca FGA0108/FCTE/2026.2 HTTP 200 com duas ofertas e <code>stale: false</code>. Validação HTTP local via TestClient com autenticação substituída para a leitura, banco real local. Não representa deploy.</p>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Voltar para o topo
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.path", "navigation.top", "search.suggest", "search.highlight", "content.code.copy"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copiado para \u00e1rea de transfer\u00eancia", "clipboard.copy": "Copiar para \u00e1rea de transfer\u00eancia", "search.result.more.one": "mais 1 nesta p\u00e1gina", "search.result.more.other": "# mais nesta p\u00e1gina", "search.result.none": "Nenhum documento encontrado", "search.result.one": "1 documento encontrado", "search.result.other": "# documentos encontrados", "search.result.placeholder": "Digite para iniciar a busca", "search.result.term.missing": "Ausente", "select.version": "Selecione a vers\u00e3o"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+    
+  </body>
+</html>

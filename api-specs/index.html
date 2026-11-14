@@ -1,0 +1,3461 @@
+
+<!doctype html>
+<html lang="pt" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentação oficial do projeto Agenda UnB — Métodos de Desenvolvimento de Software (MDS) 2026/2">
+      
+      
+      
+      
+        <link rel="prev" href="../arquitetura/adrs/adr-013-lembretes-persistentes/">
+      
+      
+        <link rel="next" href="../processamento-planos-s7/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+    
+    
+      
+        <title>Contratos do Backend - Agenda UnB Docs</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#contratos-do-backend" class="md-skip">
+          Pular para conteúdo
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Cabeçalho">
+    <a href=".." title="Agenda UnB Docs" class="md-header__button md-logo" aria-label="Agenda UnB Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Agenda UnB Docs
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Contratos do Backend
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Modo automático"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Modo automático" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Mudar para modo escuro"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Mudar para modo escuro" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Mudar para modo claro"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Mudar para modo claro" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Buscar" placeholder="Buscar" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Pesquisar">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Limpar" aria-label="Limpar" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Inicializando busca
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/unb-mds/2026-2-AgendaUnB" title="Ir para repositório" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    unb-mds/G8-2026-2
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Abas" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Início
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../produto/visao/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Visão do Produto
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../arquitetura/visao-geral/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Arquitetura
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../arquitetura/adrs/" class="md-tabs__link">
+          
+  
+  
+  Decisões arquiteturais
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Contratos do Backend
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../processamento-planos-s7/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Extração Autorizada S7
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../s7-b01-validacao/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Validação S7-B01
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../processamento-planos/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Histórico de Processamento S6
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../privacidade-planos/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Privacidade dos Planos
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../matriz-release-2/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Matriz de aceite da Release 2
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../implantacao/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Plano de Implantação
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../arquitetura/modelo-de-dados/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Modelo de Dados
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../arquitetura/banco-de-dados/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Especificação do Banco
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../arquitetura/catalogo-de-turmas/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Catálogo de turmas
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../produto/requisitos/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Requisitos
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../produto/padroes/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Padrões de Projeto
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../arquitetura/frontend/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Interface e Design
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../produto/personas/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Personas
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../sprints/sprint-1/" class="md-tabs__link">
+          
+  
+  
+  Sprints
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../processo/release-notes/v0-1-0/" class="md-tabs__link">
+          
+  
+  
+  Release Notes
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../processo/uso-de-ia/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Uso de IA
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../processo/contribuindo/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Como Contribuir
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navegação" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Agenda UnB Docs" class="md-nav__button md-logo" aria-label="Agenda UnB Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Agenda UnB Docs
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/unb-mds/2026-2-AgendaUnB" title="Ir para repositório" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    unb-mds/G8-2026-2
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Início
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../produto/visao/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visão do Produto
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../arquitetura/visao-geral/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arquitetura
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisões arquiteturais
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Decisões arquiteturais
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../arquitetura/adrs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Índice e guia de leitura
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../arquitetura/adrs/adr-001-integracao-fastapi-supabase/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-001 — Integração FastAPI e Supabase
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../arquitetura/adrs/adr-002-separar-hospedagem-e-ambientes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-002 — Hospedagem e ambientes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../arquitetura/adrs/adr-003-minimizar-dados-de-planos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-003 — Minimização de dados de planos
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../arquitetura/adrs/adr-004-api-monolitica/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-004 — Manter a API em uma aplicação FastAPI única
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../arquitetura/adrs/adr-005-validacao-de-sessao/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-005 — Validar a sessão no Supabase Auth e consultar o papel no banco
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../arquitetura/adrs/adr-006-autorizacao-em-camadas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-006 — Aplicar autorização na API, nas RPCs e nas políticas RLS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../arquitetura/adrs/adr-007-migracoes-sql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-007 — Usar migrações SQL como referência do esquema completo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../arquitetura/adrs/adr-008-vinculos-de-eventos-publicos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-008 — Salvar vínculos aos eventos públicos na agenda pessoal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../arquitetura/adrs/adr-009-catalogo-publico-de-turmas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-009 — Integrar o catálogo público de turmas com identidade local e cache
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-010 — Versionar planos e exigir confirmação individual para importar candidatos
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../arquitetura/adrs/adr-011-datas-civis-e-instantes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-011 — Distinguir datas civis de instantes e usar fim exclusivo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../arquitetura/adrs/adr-012-exportacao-google-idempotente/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-012 — Exportar por ação explícita para uma agenda Google secundária
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../arquitetura/adrs/adr-013-lembretes-persistentes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-013 — Persistir lembretes com agendamento idempotente e revalidação
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contratos do Backend
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contratos do Backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Índice">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Índice
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#referencia-e-limites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Referência e limites
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#convencoes-comuns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Convenções comuns
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#payloads-e-respostas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Payloads e respostas
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Payloads e respostas">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#entrada-de-evento" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Entrada de evento
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#objetos-retornados" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Objetos retornados
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#inventario-http" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Inventário HTTP
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Inventário HTTP">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#eventos-publicos-r1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Eventos públicos — R1
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#agenda-pessoal-r1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agenda pessoal — R1
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sugestoes-pos-r1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sugestões — pós-R1
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#eventos-salvos-pos-r1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Eventos salvos — pós-R1
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#planos-de-ensino" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Planos de ensino
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#saude-r1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Saúde — R1
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#exportacao-para-o-google-calendar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exportação para o Google Calendar
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#erros-fastapi" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Erros FastAPI
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#exemplos-curl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exemplos cURL
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#contratos-supabase-separados-da-api-fastapi" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Contratos Supabase separados da API FastAPI
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Contratos Supabase separados da API FastAPI">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#notificacoes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notificações
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verificacao-e-manutencao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verificação e manutenção
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#planos-particulares-atualizacao-s6-b01-09112026" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Planos particulares — atualização S6-B01 (09/11/2026)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Planos particulares — atualização S6-B01 (09/11/2026)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#post-apiv1syllabusupload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /api/v1/syllabus/upload
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-apiv1syllabussyllabus_id" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /api/v1/syllabus/{syllabus_id}
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#atualizacao-s7-b01-preparacao-e-autorizacao-do-texto-10112026" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Atualização S7-B01 — preparação e autorização do texto (10/11/2026)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Atualização S7-B01 — preparação e autorização do texto (10/11/2026)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#catalogo-e-selecao-real-de-ofertas-7071" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Catálogo e seleção real de ofertas (#70/#71)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#envio-vinculado-a-conta-s7-f03-73" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Envio vinculado à conta — S7-F03 (#73)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../processamento-planos-s7/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Extração Autorizada S7
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../s7-b01-validacao/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validação S7-B01
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../processamento-planos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Histórico de Processamento S6
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../privacidade-planos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Privacidade dos Planos
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../matriz-release-2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Matriz de aceite da Release 2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../implantacao/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plano de Implantação
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../arquitetura/modelo-de-dados/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Modelo de Dados
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../arquitetura/banco-de-dados/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Especificação do Banco
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../arquitetura/catalogo-de-turmas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Catálogo de turmas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../produto/requisitos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Requisitos
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../produto/padroes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Padrões de Projeto
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../arquitetura/frontend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interface e Design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../produto/personas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Personas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_19" >
+        
+          
+          <label class="md-nav__link" for="__nav_19" id="__nav_19_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprints
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_19_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_19">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Sprints
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sprints/sprint-1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 1
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sprints/sprint-2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sprints/sprint-3/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sprints/sprint-4/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 4
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sprints/sprint-5/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 5
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sprints/sprint-6/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 6
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sprints/sprint-7/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 7
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sprints/sprint-8/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 8
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_20" >
+        
+          
+          <label class="md-nav__link" for="__nav_20" id="__nav_20_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release Notes
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_20_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_20">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Release Notes
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../processo/release-notes/v0-1-0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.1.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../processo/release-notes/v0-2-0-beta-1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.2.0-beta.1
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../atualizacoes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Atualizações e contratos da R2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../processo/uso-de-ia/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Uso de IA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../processo/contribuindo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Como Contribuir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Índice">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Índice
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#referencia-e-limites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Referência e limites
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#convencoes-comuns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Convenções comuns
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#payloads-e-respostas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Payloads e respostas
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Payloads e respostas">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#entrada-de-evento" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Entrada de evento
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#objetos-retornados" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Objetos retornados
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#inventario-http" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Inventário HTTP
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Inventário HTTP">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#eventos-publicos-r1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Eventos públicos — R1
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#agenda-pessoal-r1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agenda pessoal — R1
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sugestoes-pos-r1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sugestões — pós-R1
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#eventos-salvos-pos-r1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Eventos salvos — pós-R1
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#planos-de-ensino" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Planos de ensino
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#saude-r1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Saúde — R1
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#exportacao-para-o-google-calendar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exportação para o Google Calendar
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#erros-fastapi" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Erros FastAPI
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#exemplos-curl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exemplos cURL
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#contratos-supabase-separados-da-api-fastapi" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Contratos Supabase separados da API FastAPI
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Contratos Supabase separados da API FastAPI">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#notificacoes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notificações
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verificacao-e-manutencao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verificação e manutenção
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#planos-particulares-atualizacao-s6-b01-09112026" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Planos particulares — atualização S6-B01 (09/11/2026)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Planos particulares — atualização S6-B01 (09/11/2026)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#post-apiv1syllabusupload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /api/v1/syllabus/upload
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-apiv1syllabussyllabus_id" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /api/v1/syllabus/{syllabus_id}
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#atualizacao-s7-b01-preparacao-e-autorizacao-do-texto-10112026" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Atualização S7-B01 — preparação e autorização do texto (10/11/2026)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Atualização S7-B01 — preparação e autorização do texto (10/11/2026)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#catalogo-e-selecao-real-de-ofertas-7071" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Catálogo e seleção real de ofertas (#70/#71)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#envio-vinculado-a-conta-s7-f03-73" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Envio vinculado à conta — S7-F03 (#73)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+  
+
+
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="contratos-do-backend">Contratos do backend</h1>
+<h2 id="referencia-e-limites">Referência e limites</h2>
+<p>Este inventário descreve o backend atual. Para os contratos planejados, consulte <a href="../atualizacoes/#contratos-da-release-2">Release 2</a>.</p>
+<p>A API possui operações HTTP de aplicação (inventário abaixo), incluindo <code>/health</code>. <code>/docs</code>, <code>/redoc</code> e <code>/openapi.json</code> são recursos de documentação gerados pelo FastAPI, não operações de negócio. Consulte também <a href="../arquitetura/visao-geral/">Arquitetura</a>, <a href="../produto/padroes/">Padrões</a> e <a href="../implantacao/">Implantação</a>.</p>
+<p>Fontes: <code>backend/src/main.py</code>, <code>modules/events/router.py</code>, <code>modules/events/schemas.py</code>, <code>modules/google_calendar/router.py</code>, <code>middlewares/auth.py</code> e <code>database/models.py</code> (relativos a <code>backend/src/</code>). O OpenAPI ajuda a conferir campos e rotas, mas não descreve integralmente os handlers de erro personalizados.</p>
+<h2 id="convencoes-comuns">Convenções comuns</h2>
+<ul>
+<li>Base local: <code>http://127.0.0.1:8000/api/v1</code>.</li>
+<li>Corpos JSON usam <code>Content-Type: application/json</code>. Rotas autenticadas exigem <code>Authorization: Bearer &lt;token&gt;</code> do Supabase Auth.</li>
+<li>Papéis persistidos: <code>student</code>, <code>professor</code>, <code>admin</code>. O servidor obtém o ID da sessão e consulta o papel em <code>profiles</code>; o cliente não escolhe a identidade.</li>
+<li>Toda rota autenticada exige e-mail confirmado no Supabase Auth. Metadata nunca concede <code>admin</code>; <code>professor</code> só é aceito como solicitação após confirmação do endereço real <code>@unb.br</code> da conta Auth. Uma pessoa pode mudar o próprio papel de estudante para professor com esse e-mail confirmado; papel de terceiros só muda pela RPC de admin.</li>
+<li><code>{event_id}</code> é UUID. UUID malformado gera falha de validação; UUID válido ausente recebe o comportamento indicado em cada operação.</li>
+<li>GET e DELETE não têm corpo definido; PUT de evento salvo também não. Listas de eventos retornam arrays, e listas vazias retornam <code>[]</code>. O histórico de planos usa um envelope de paginação.</li>
+<li>Os schemas ignoram campos extras; enviar <code>status</code> ou <code>author_id</code> não altera os valores definidos pelo servidor. Isso não equivale a rejeitar esses campos com 422.</li>
+</ul>
+<h2 id="payloads-e-respostas">Payloads e respostas</h2>
+<h3 id="entrada-de-evento">Entrada de evento</h3>
+<p><code>EventCreate</code> é usado na criação pública e na sugestão. <code>PersonalEventCreate</code> e <code>PersonalEventUpdate</code> usam os mesmos campos comuns, sem <code>external_url</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Tipo</th>
+<th>Obrigatório</th>
+<th>Regra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>title</code></td>
+<td>string</td>
+<td>Sim</td>
+<td>3–200 caracteres após remoção de espaços nas extremidades; não aceita null</td>
+</tr>
+<tr>
+<td><code>starts_at</code></td>
+<td>datetime</td>
+<td>Sim</td>
+<td>Data/hora ISO 8601 com fuso, por exemplo <code>2026-11-10T14:00:00-03:00</code>; não aceita null</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td>string ou null</td>
+<td>Não</td>
+<td>Até 10.000 caracteres; padrão null</td>
+</tr>
+<tr>
+<td><code>campus</code></td>
+<td>string ou null</td>
+<td>Não</td>
+<td>Nome existente, 2–120 caracteres; padrão null</td>
+</tr>
+<tr>
+<td><code>category</code></td>
+<td>string ou null</td>
+<td>Não</td>
+<td>Nome existente, 2–80 caracteres; padrão null</td>
+</tr>
+<tr>
+<td><code>location</code></td>
+<td>string ou null</td>
+<td>Não</td>
+<td>Até 250 caracteres; padrão null; ver limitação dos eventos pessoais</td>
+</tr>
+<tr>
+<td><code>external_url</code></td>
+<td>URL HTTP/HTTPS ou null</td>
+<td>Não</td>
+<td>Somente evento público/sugestão; validado por <code>HttpUrl</code>; padrão null</td>
+</tr>
+</tbody>
+</table>
+<p>Strings são aparadas. Strings vazias ou contendo somente espaços em <code>description</code>, <code>campus</code>, <code>category</code> e <code>location</code> viram null. Isso não se aplica a <code>external_url</code>: para ausência de link, omitir ou enviar null. Campus e categoria são resolvidos por nome, ignorando maiúsculas/minúsculas, e não por UUID. Nome desconhecido na escrita retorna 422.</p>
+<p>O PUT pessoal exige <code>title</code> e <code>starts_at</code>, assim como o POST. Não é uma atualização parcial: omitir descrição, campus ou categoria substitui esses valores por null. Não existe PATCH nem rota de atualização pública, embora exista um schema <code>EventUpdate</code> sem rota associada.</p>
+<p>Exemplo <code>EventCreate</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Encontro de extensão"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Apresentação de projetos da comunidade acadêmica."</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"starts_at"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2026-11-10T14:00:00-03:00"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"campus"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"category"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"location"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Auditório"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"external_url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://example.org/encontro"</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="objetos-retornados">Objetos retornados</h3>
+<p><code>EventRead</code> contém todos os campos abaixo. <code>id</code> é UUID e <code>starts_at</code> é datetime; <code>title</code> é string. Os demais campos aceitam null. A criação pública e a sugestão persistem descrição ausente como string vazia. Autoria e status não aparecem na resposta, embora sejam definidos no banco.</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"11111111-1111-4111-8111-111111111111"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Encontro de extensão"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Apresentação de projetos da comunidade acadêmica."</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"starts_at"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2026-11-10T17:00:00Z"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"campus"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"category"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"location"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Auditório"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"external_url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://example.org/encontro"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"organizer_name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Pessoa de exemplo"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"organizer_avatar"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><code>PersonalEventRead</code> retorna <code>id</code>, <code>title</code>, <code>description</code>, <code>starts_at</code>, <code>campus</code>, <code>category</code> e <code>location</code>, com os mesmos tipos. Não retorna URL externa nem organizador. <strong>Limitação atual:</strong> <code>location</code> é aceito na entrada pessoal, mas as rotas não o persistem e o serializador o retorna como null. O cliente não deve esperar que esse valor seja recuperado.</p>
+<p><code>SavedEventStatus</code> é <code>{ "saved": true }</code> ou <code>{ "saved": false }</code>. Respostas 204 não contêm JSON nem outro corpo.</p>
+<h2 id="inventario-http">Inventário HTTP</h2>
+<p>Nas tabelas, as rotas iniciadas por <code>/api/v1</code> usam os schemas acima. Todas as operações que acessam dados podem retornar <strong>503</strong> em falha SQLAlchemy. As autenticadas também podem retornar <strong>401</strong> (sessão ausente/inválida), <strong>403</strong> (perfil ausente) e <strong>503</strong> (validação de sessão indisponível). Esses erros comuns somam-se aos erros específicos listados. Escritas podem retornar <strong>409</strong> se uma constraint produzir <code>IntegrityError</code>.</p>
+<h3 id="eventos-publicos-r1">Eventos públicos — R1</h3>
+<table>
+<thead>
+<tr>
+<th>Método e rota</th>
+<th>Acesso</th>
+<th>Entrada</th>
+<th>Sucesso</th>
+<th>Erros específicos</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GET /api/v1/events</code></td>
+<td>Público</td>
+<td>Filtros abaixo</td>
+<td>200, <code>EventRead[]</code>, somente aprovados, ordenados por início crescente</td>
+<td>422, filtros inválidos</td>
+</tr>
+<tr>
+<td><code>GET /api/v1/events/{event_id}</code></td>
+<td>Público</td>
+<td>UUID no caminho</td>
+<td>200, <code>EventRead</code> aprovado</td>
+<td>422, UUID; 404, ausente ou não aprovado</td>
+</tr>
+<tr>
+<td><code>POST /api/v1/events</code></td>
+<td>Professor/admin</td>
+<td><code>EventCreate</code></td>
+<td>201, <code>EventRead</code>; autoria da sessão e status <code>aprovado</code></td>
+<td>403, papel; 422, payload/referências; 409</td>
+</tr>
+<tr>
+<td><code>DELETE /api/v1/events/{event_id}</code></td>
+<td>Professor/admin</td>
+<td>UUID no caminho</td>
+<td>204; exclui o evento e vínculos em cascata</td>
+<td>403, papel; 422, UUID; 404, ausente; 409</td>
+</tr>
+</tbody>
+</table>
+<p>A exclusão pública não exige que o gestor seja o autor e não filtra status. A autorização é por papel.</p>
+<table>
+<thead>
+<tr>
+<th>Query de listagem pública</th>
+<th>Tipo e padrão</th>
+<th>Semântica</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>campus</code></td>
+<td>string opcional, 2–120 caracteres</td>
+<td>Nome exato sem diferenciar caixa, aparado; nome desconhecido produz lista vazia</td>
+</tr>
+<tr>
+<td><code>category</code></td>
+<td>string opcional, 2–80 caracteres</td>
+<td>Mesma regra de campus</td>
+</tr>
+<tr>
+<td><code>startDate</code></td>
+<td>datetime opcional</td>
+<td>Limite inferior inclusivo sobre <code>starts_at</code>; exige fuso</td>
+</tr>
+<tr>
+<td><code>endDate</code></td>
+<td>datetime opcional</td>
+<td>Limite superior inclusivo; exige fuso e não pode preceder <code>startDate</code></td>
+</tr>
+<tr>
+<td><code>q</code></td>
+<td>string opcional, 1–120 caracteres</td>
+<td>Busca no título via <code>ILIKE '%texto%'</code>; <code>%</code> e <code>_</code> conservam semântica de curingas SQL</td>
+</tr>
+<tr>
+<td><code>limit</code></td>
+<td>inteiro, padrão 50</td>
+<td>De 1 a 100</td>
+</tr>
+<tr>
+<td><code>offset</code></td>
+<td>inteiro, padrão 0</td>
+<td>Maior ou igual a zero</td>
+</tr>
+</tbody>
+</table>
+<p>Não há filtro de turno no backend: ele é aplicado pela interface. O frontend percorre páginas de 100; a API não fornece total nem cursor. A ordenação pública usa apenas data, sem desempate por ID.</p>
+<h3 id="agenda-pessoal-r1">Agenda pessoal — R1</h3>
+<p>Todas as operações exigem sessão e restringem os dados ao usuário autenticado.</p>
+<table>
+<thead>
+<tr>
+<th>Método e rota</th>
+<th>Entrada</th>
+<th>Sucesso</th>
+<th>Erros específicos</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GET /api/v1/me/events</code></td>
+<td>Sem parâmetros definidos</td>
+<td>200, <code>PersonalEventRead[]</code>, início crescente, sem paginação</td>
+<td>Erros comuns</td>
+</tr>
+<tr>
+<td><code>GET /api/v1/me/events/{event_id}</code></td>
+<td>UUID</td>
+<td>200, <code>PersonalEventRead</code></td>
+<td>422, UUID; 404, ausente ou de outro usuário</td>
+</tr>
+<tr>
+<td><code>POST /api/v1/me/events</code></td>
+<td><code>PersonalEventCreate</code></td>
+<td>201, <code>PersonalEventRead</code></td>
+<td>422, payload/referências; 409</td>
+</tr>
+<tr>
+<td><code>PUT /api/v1/me/events/{event_id}</code></td>
+<td>UUID + <code>PersonalEventUpdate</code></td>
+<td>200, <code>PersonalEventRead</code></td>
+<td>422, UUID/payload/referências; 404, ausente ou de outro usuário; 409</td>
+</tr>
+<tr>
+<td><code>DELETE /api/v1/me/events/{event_id}</code></td>
+<td>UUID</td>
+<td>204</td>
+<td>422, UUID; 404, ausente ou de outro usuário; 409</td>
+</tr>
+</tbody>
+</table>
+<h3 id="sugestoes-pos-r1">Sugestões — pós-R1</h3>
+<table>
+<thead>
+<tr>
+<th>Método e rota</th>
+<th>Acesso e entrada</th>
+<th>Sucesso</th>
+<th>Erros específicos</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>POST /api/v1/suggestions</code></td>
+<td>Somente <code>student</code>; <code>EventCreate</code></td>
+<td>201, <code>EventRead</code>; autoria da sessão, status <code>pendente</code>, notificação via trigger</td>
+<td>403, papel; 422, payload/referências; 409</td>
+</tr>
+</tbody>
+</table>
+<p>Receber 201 não significa aprovação. O item não aparece no catálogo até ser aprovado pela RPC de moderação.</p>
+<h3 id="eventos-salvos-pos-r1">Eventos salvos — pós-R1</h3>
+<p>Todas as operações exigem sessão. O vínculo não copia o evento e não constitui inscrição.</p>
+<table>
+<thead>
+<tr>
+<th>Método e rota</th>
+<th>Entrada</th>
+<th>Sucesso</th>
+<th>Erros específicos</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GET /api/v1/me/saved-events</code></td>
+<td>Sem parâmetros definidos</td>
+<td>200, <code>EventRead[]</code>, somente aprovados vinculados; ordem por início e ID; sem paginação</td>
+<td>Erros comuns</td>
+</tr>
+<tr>
+<td><code>GET /api/v1/me/saved-events/{event_id}</code></td>
+<td>UUID</td>
+<td>200, <code>SavedEventStatus</code>; false se vínculo ausente, evento inexistente ou não aprovado</td>
+<td>422, UUID</td>
+</tr>
+<tr>
+<td><code>PUT /api/v1/me/saved-events/{event_id}</code></td>
+<td>UUID, sem corpo</td>
+<td>200, <code>{ "saved": true }</code>, inclusive se já salvo</td>
+<td>422, UUID; 404, evento ausente/não aprovado; 409, conflito não recuperável</td>
+</tr>
+<tr>
+<td><code>DELETE /api/v1/me/saved-events/{event_id}</code></td>
+<td>UUID</td>
+<td>204, inclusive se não houver vínculo/evento</td>
+<td>422, UUID; 409</td>
+</tr>
+</tbody>
+</table>
+<p>PUT e DELETE são idempotentes. O PUT recupera colisão de inserção concorrente quando o vínculo já foi criado. DELETE só remove o vínculo do usuário atual.</p>
+<h3 id="planos-de-ensino">Planos de ensino</h3>
+<p>As operações exigem autenticação e só consultam ou confirmam planos do usuário autenticado.</p>
+<table>
+<thead>
+<tr>
+<th>Operação</th>
+<th>Entrada</th>
+<th>Resposta</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>POST /api/v1/syllabus/upload</code></td>
+<td><code>multipart/form-data</code> com <code>file</code> (PDF), <code>disciplina</code>, <code>turma</code>, <code>ano</code> (2000 a 2100) e <code>semestre</code> (1 ou 2). <code>file</code> e <code>offering_id</code> são obrigatórios; disciplina, turma e período são derivados da oferta disponível.</td>
+<td>202, plano registrado como <code>pendente</code>. Ano e semestre são persistidos quando informados.</td>
+</tr>
+<tr>
+<td><code>GET /api/v1/syllabus</code></td>
+<td><code>limit</code> de 1 a 100 (padrão 20), <code>offset</code> a partir de 0 (padrão 0).</td>
+<td>200, <code>{ "items": [], "total": 0, "limit": 20, "offset": 0 }</code> para histórico vazio. Ordena por criação e ID decrescentes.</td>
+</tr>
+<tr>
+<td><code>GET /api/v1/syllabus/{syllabus_id}</code></td>
+<td>UUID do plano.</td>
+<td>200, dados do plano e <code>candidates</code>. 404 para plano ausente ou de outra conta.</td>
+</tr>
+<tr>
+<td><code>POST /api/v1/syllabus/{syllabus_id}/confirm</code></td>
+<td>UUID de um plano concluído e lista <code>candidates</code> com os IDs e os ajustes das avaliações selecionadas.</td>
+<td>200, eventos confirmados na agenda pessoal.</td>
+</tr>
+</tbody>
+</table>
+<p>O histórico e o detalhe retornam <code>ano</code> e <code>semestre</code>. Planos antigos podem ter esses campos, <code>fileName</code> e <code>filePath</code> nulos. O upload aplica a cota de 10 envios em cinco dias (429 ao exceder) e valida o PDF antes de gravar. O cliente autenticado consulta os próprios planos e PDFs, enquanto o backend grava o arquivo e o registro de acompanhamento.</p>
+<h3 id="saude-r1">Saúde — R1</h3>
+<p><code>GET /health</code>: público, sem parâmetros ou corpo, retorna 200 com <code>{ "status": "ok" }</code>. Não consulta banco nem Auth; não é uma verificação de prontidão de todas as dependências.</p>
+<h3 id="exportacao-para-o-google-calendar">Exportação para o Google Calendar</h3>
+<p>O login Google do Supabase solicita identidade. A permissão do Calendar é opcional e começa em <strong>Meus Eventos</strong>, para qualquer sessão com e-mail confirmado, inclusive por senha. O cliente OAuth do Calendar usa um projeto Google Cloud separado do login.</p>
+<table>
+<thead>
+<tr>
+<th>Operação</th>
+<th>Entrada</th>
+<th>Resposta</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>POST /api/v1/me/google-calendar/authorization</code></td>
+<td>Bearer Supabase.</td>
+<td>200 com <code>authorization_url</code> e <code>expires_in_seconds</code>. O desafio de uso único usa <code>state</code> e PKCE S256 e expira em 10 minutos.</td>
+</tr>
+<tr>
+<td><code>POST /api/v1/me/google-calendar/callback</code></td>
+<td>Formulário do Google com <code>state</code> e <code>code</code> ou <code>error</code>.</td>
+<td>303 para a URL configurada com <code>google_calendar</code> indicando o resultado. Confere o escopo <code>calendar.app.created</code> e o e-mail Google verificado com o e-mail confirmado atual da Agenda UnB.</td>
+</tr>
+<tr>
+<td><code>GET /api/v1/me/google-calendar/connection</code></td>
+<td>Bearer Supabase.</td>
+<td>200 com <code>connected</code> e <code>recovery_required</code>.</td>
+</tr>
+<tr>
+<td><code>DELETE /api/v1/me/google-calendar/connection</code></td>
+<td>Bearer Supabase.</td>
+<td>200 com <code>disconnected</code> e <code>revocation</code>. Revoga o acesso no Google, remove as credenciais locais e invalida autorizações em andamento. Se a revogação remota falhar, o retorno orienta removê-la na Conta Google.</td>
+</tr>
+<tr>
+<td><code>PUT /api/v1/me/google-calendar/destination</code></td>
+<td>Bearer Supabase e <code>calendar_id</code>.</td>
+<td>204 após validar no Google o ID da agenda secundária Agenda UnB. Se o usuário confirmar que a agenda não existe, envia <code>calendar_id: null</code> para liberar nova criação.</td>
+</tr>
+<tr>
+<td><code>POST /api/v1/me/google-calendar/exports</code></td>
+<td>Bearer Supabase e <code>events</code> com 1 a 20 referências <code>{ id, kind }</code>. <code>kind</code> é <code>personal</code> ou <code>saved</code>.</td>
+<td>200 com <code>id</code>, <code>kind</code> e <code>status</code> por item. Estados <code>exported</code>, <code>already_exported</code> ou <code>failed</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>O servidor consulta eventos pessoais do dono e eventos públicos aprovados que ele salvou. A exportação cria ou reutiliza a agenda secundária <strong>Agenda UnB</strong>, envia título e horário em <code>America/Sao_Paulo</code> e usa uma hora de duração para o modelo atual. Repetir um item usa o mesmo ID remoto. A desconexão preserva o ID da agenda para reconexão com a mesma identidade. Em caso de resposta incerta da criação, use a recuperação do destino em <strong>Meus Eventos</strong>. Os tokens ficam cifrados no servidor e são renovados quando necessário. Se o Google retornar <code>invalid_grant</code>, a API remove as credenciais inválidas, retorna 409 e pede nova conexão.</p>
+<h2 id="erros-fastapi">Erros FastAPI</h2>
+<table>
+<thead>
+<tr>
+<th>HTTP</th>
+<th>Situação</th>
+<th>Formato</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>401</td>
+<td>Bearer ausente, sessão expirada/inválida ou identidade inválida retornada pelo Auth</td>
+<td><code>{"detail":"mensagem"}</code></td>
+</tr>
+<tr>
+<td>403</td>
+<td>Perfil não encontrado, e-mail ainda não confirmado ou papel sem permissão</td>
+<td><code>{"detail":"mensagem"}</code></td>
+</tr>
+<tr>
+<td>404</td>
+<td>Recurso não disponível conforme as regras da operação</td>
+<td><code>{"detail":"mensagem"}</code></td>
+</tr>
+<tr>
+<td>409</td>
+<td><code>IntegrityError</code> não recuperado pela operação</td>
+<td><code>{"detail":"A operação conflita com os dados existentes."}</code></td>
+</tr>
+<tr>
+<td>422</td>
+<td>Validação automática de payload/path/query</td>
+<td><code>detail</code> textual e array <code>errors</code> de erros Pydantic</td>
+</tr>
+<tr>
+<td>422</td>
+<td>Regra explícita: campus/categoria desconhecido ou intervalo inválido</td>
+<td>Somente <code>detail</code> textual</td>
+</tr>
+<tr>
+<td>503</td>
+<td>Falha SQLAlchemy ou comunicação/configuração do Auth</td>
+<td><code>{"detail":"mensagem"}</code></td>
+</tr>
+</tbody>
+</table>
+<p>Falhas de configuração OAuth também retornam 503. Falha temporária com Google pode retornar 502/503; autorização expirada/revogada pede reconexão (409). O callback sempre redireciona com estado genérico e não repassa <code>error_description</code>, código ou tokens.</p>
+<p>Exemplo de validação de título curto:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"detail"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Título: deve ter pelo menos 3 caracteres"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span>
+<span class="w">    </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string_too_short"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"loc"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"body"</span><span class="p">,</span><span class="w"> </span><span class="s2">"title"</span><span class="p">],</span>
+<span class="w">    </span><span class="nt">"msg"</span><span class="p">:</span><span class="w"> </span><span class="s2">"String should have at least 3 characters"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"input"</span><span class="p">:</span><span class="w"> </span><span class="s2">"AB"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"ctx"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"min_length"</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">}</span>
+<span class="w">  </span><span class="p">}]</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>O conteúdo auxiliar de <code>errors</code> depende da versão do Pydantic, que não está fixada nas dependências. Erros inesperados não têm envelope de aplicação garantido. <strong>Dívida conhecida:</strong> o handler passa <code>exc.errors()</code> diretamente a <code>JSONResponse</code>; erros de validadores com objetos não serializáveis em <code>ctx</code> podem resultar em 500, apesar da intenção de retornar 422. A especificação não promete 422 para esse caso sem correção e teste específicos. O upload já responde 202 para o registro do plano. A execução do worker externo e sua integração são parte da Release 2.</p>
+<h2 id="exemplos-curl">Exemplos cURL</h2>
+<p>Exemplos para Bash/Git Bash, com IDs fictícios. Substitua o token e use o ID real devolvido por um POST; não envie dados pessoais reais em demonstrações.</p>
+<div class="highlight"><pre><span></span><code><span class="nv">API</span><span class="o">=</span><span class="s1">'http://127.0.0.1:8000/api/v1'</span>
+<span class="nv">TOKEN</span><span class="o">=</span><span class="s1">'&lt;token-da-sessao&gt;'</span>
+<span class="nv">EVENT_ID</span><span class="o">=</span><span class="s1">'11111111-1111-4111-8111-111111111111'</span>
+
+curl<span class="w"> </span>--get<span class="w"> </span><span class="s2">"</span><span class="nv">$API</span><span class="s2">/events"</span><span class="w"> </span>--data-urlencode<span class="w"> </span><span class="s1">'startDate=2026-11-01T00:00:00-03:00'</span><span class="w"> </span>--data-urlencode<span class="w"> </span><span class="s1">'limit=20'</span>
+curl<span class="w"> </span><span class="s2">"</span><span class="nv">$API</span><span class="s2">/events/</span><span class="nv">$EVENT_ID</span><span class="s2">"</span>
+curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">"</span><span class="nv">$API</span><span class="s2">/events"</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span><span class="w"> </span>-H<span class="w"> </span><span class="s1">'Content-Type: application/json'</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{"title":"Encontro de extensão","starts_at":"2026-11-10T14:00:00-03:00"}'</span>
+curl<span class="w"> </span>-i<span class="w"> </span>-X<span class="w"> </span>DELETE<span class="w"> </span><span class="s2">"</span><span class="nv">$API</span><span class="s2">/events/</span><span class="nv">$EVENT_ID</span><span class="s2">"</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span>
+
+curl<span class="w"> </span><span class="s2">"</span><span class="nv">$API</span><span class="s2">/me/events"</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span>
+curl<span class="w"> </span><span class="s2">"</span><span class="nv">$API</span><span class="s2">/me/events/</span><span class="nv">$EVENT_ID</span><span class="s2">"</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span>
+curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">"</span><span class="nv">$API</span><span class="s2">/me/events"</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span><span class="w"> </span>-H<span class="w"> </span><span class="s1">'Content-Type: application/json'</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{"title":"Estudo em grupo","starts_at":"2026-11-10T14:00:00-03:00"}'</span>
+curl<span class="w"> </span>-X<span class="w"> </span>PUT<span class="w"> </span><span class="s2">"</span><span class="nv">$API</span><span class="s2">/me/events/</span><span class="nv">$EVENT_ID</span><span class="s2">"</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span><span class="w"> </span>-H<span class="w"> </span><span class="s1">'Content-Type: application/json'</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{"title":"Estudo revisado","starts_at":"2026-11-11T14:00:00-03:00","description":null}'</span>
+curl<span class="w"> </span>-i<span class="w"> </span>-X<span class="w"> </span>DELETE<span class="w"> </span><span class="s2">"</span><span class="nv">$API</span><span class="s2">/me/events/</span><span class="nv">$EVENT_ID</span><span class="s2">"</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span>
+
+curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">"</span><span class="nv">$API</span><span class="s2">/suggestions"</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span><span class="w"> </span>-H<span class="w"> </span><span class="s1">'Content-Type: application/json'</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{"title":"Proposta de encontro","starts_at":"2026-11-10T14:00:00-03:00"}'</span>
+curl<span class="w"> </span><span class="s2">"</span><span class="nv">$API</span><span class="s2">/me/saved-events"</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span>
+curl<span class="w"> </span><span class="s2">"</span><span class="nv">$API</span><span class="s2">/me/saved-events/</span><span class="nv">$EVENT_ID</span><span class="s2">"</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span>
+curl<span class="w"> </span>-X<span class="w"> </span>PUT<span class="w"> </span><span class="s2">"</span><span class="nv">$API</span><span class="s2">/me/saved-events/</span><span class="nv">$EVENT_ID</span><span class="s2">"</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span>
+curl<span class="w"> </span>-i<span class="w"> </span>-X<span class="w"> </span>DELETE<span class="w"> </span><span class="s2">"</span><span class="nv">$API</span><span class="s2">/me/saved-events/</span><span class="nv">$EVENT_ID</span><span class="s2">"</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span>
+curl<span class="w"> </span><span class="s1">'http://127.0.0.1:8000/health'</span>
+</code></pre></div>
+<h2 id="contratos-supabase-separados-da-api-fastapi">Contratos Supabase separados da API FastAPI</h2>
+<p>O frontend usa o SDK autenticado, conforme <code>frontend/src/lib/moderation.js</code>. As quatro RPCs abaixo são definidas na migração <code>20261018000000_moderacao_e_notificacoes.sql</code>. Não existem rotas FastAPI <code>/admin</code> ou de decisão de sugestão. Funções auxiliares/legadas do banco não são enumeradas como operações da interface.</p>
+<table>
+<thead>
+<tr>
+<th>RPC</th>
+<th>Acesso</th>
+<th>Parâmetros</th>
+<th>Resultado</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>listar_sugestoes</code></td>
+<td>Professor/admin</td>
+<td><code>p_status</code> texto, padrão <code>pendente</code>, valores <code>pendente/aprovado/rejeitado</code>; <code>p_busca</code> texto, padrão vazio; <code>p_offset</code> inteiro ≥0, padrão 0</td>
+<td><code>{items, total, pending}</code>; páginas de 20, ordem por criação crescente e ID; busca título/autor; <code>pending</code> é contagem global de sugestões pendentes</td>
+</tr>
+<tr>
+<td><code>moderar_sugestao</code></td>
+<td>Professor/admin</td>
+<td><code>p_evento_id</code> UUID e <code>p_status</code> texto obrigatórios (<code>aprovado/rejeitado</code>); <code>p_justificativa</code> texto opcional, padrão null</td>
+<td>Retorno SQL void; só decide sugestão pendente; recusa exige texto aparado de 1–2.000 caracteres; aprovação limpa justificativa</td>
+</tr>
+<tr>
+<td><code>admin_buscar_usuarios</code></td>
+<td>Admin</td>
+<td><code>p_busca</code> texto vazio; <code>p_papel</code> vazio ou <code>student/professor/admin</code>; <code>p_confirmado</code> vazio ou <code>sim/nao</code>; <code>p_offset</code> inteiro ≥0, padrão 0</td>
+<td><code>{items, total, all, unconfirmed}</code>; 20 por página, criação decrescente e ID; busca nome/e-mail; <code>all</code> e <code>unconfirmed</code> independem dos filtros</td>
+</tr>
+<tr>
+<td><code>admin_definir_papel</code></td>
+<td>Admin</td>
+<td><code>p_usuario_id</code> UUID, <code>p_novo_papel</code> e <code>p_papel_atual</code> textos obrigatórios; papéis <code>student/professor/admin</code></td>
+<td>Retorno SQL void; bloqueia linha, compara cargo atual e chama <code>admin_alterar_papel</code>; impede rebaixar a própria conta admin</td>
+</tr>
+</tbody>
+</table>
+<p>Enviar filtros opcionais omitidos ou com seus padrões, não null como substituto indiscriminado. Itens de sugestão: <code>id</code>, <code>titulo</code>, <code>descricao</code>, <code>data_evento</code>, <code>localizacao</code>, <code>link_externo</code>, <code>status</code>, <code>justificativa_recusa</code>, <code>criado_em</code>, <code>autor_nome</code>, <code>campus</code>, <code>categoria</code>. Itens de usuário: <code>id</code>, <code>email</code>, <code>nome_completo</code>, <code>papel</code>, <code>criado_em</code>, <code>ultimo_login</code> (pode ser null), <code>email_confirmado</code> booleano. Listas vazias têm <code>items: []</code> e contagens numéricas.</p>
+<p>Exemplo de chamada e resposta vazia:</p>
+<div class="highlight"><pre><span></span><code><span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">data</span><span class="p">,</span><span class="w"> </span><span class="nx">error</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="nx">supabase</span><span class="p">.</span><span class="nx">rpc</span><span class="p">(</span><span class="s1">'listar_sugestoes'</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">p_status</span><span class="o">:</span><span class="w"> </span><span class="s1">'pendente'</span><span class="p">,</span><span class="w"> </span><span class="nx">p_busca</span><span class="o">:</span><span class="w"> </span><span class="s1">''</span><span class="p">,</span><span class="w"> </span><span class="nx">p_offset</span><span class="o">:</span><span class="w"> </span><span class="mf">0</span><span class="p">,</span>
+<span class="p">});</span>
+<span class="c1">// data: { items: [], total: 0, pending: 0 }</span>
+<span class="c1">// Sempre verificar error antes de usar data.</span>
+</code></pre></div>
+<p>Erros SQL explícitos incluem <code>42501</code> (permissão), <code>22023</code> (filtro, papel ou decisão inválidos) e <code>P0002</code> (sugestão indisponível/já decidida ou perfil alterado/ausente). O SDK também pode retornar erros de sessão, como <code>PGRST301</code>. São códigos do Supabase/PostgreSQL, não códigos HTTP nem o envelope FastAPI; o consumidor verifica <code>error.code</code>/<code>error.message</code>. A migração <code>20261018000100</code> permite ao admin atribuir professor a e-mail externo, preservando a restrição institucional no cadastro/autopromoção.</p>
+<h3 id="notificacoes">Notificações</h3>
+<p>O SDK consulta <code>notificacoes</code> diretamente, filtrando <code>usuario_id</code>, com contagem exata, ordem <code>criado_em</code> decrescente e ID crescente, e intervalo inclusivo <code>page*20</code> a <code>page*20+19</code>. Uma segunda consulta conta não lidas (<code>lida_em IS NULL</code>). O wrapper retorna <code>{items, total, unread}</code>.</p>
+<p>Cada item tem <code>id</code>, <code>usuario_id</code>, <code>evento_id</code>, <code>tipo</code> (<code>submissao/aprovacao/recusa</code>), <code>titulo_evento</code>, <code>justificativa</code>, <code>criado_em</code> e <code>lida_em</code>. O banco permite ao destinatário apenas leitura e atualização de <code>lida_em</code>; a interface marca IDs próprios ainda não lidos com timestamp ISO. RLS e permissões de coluna fazem a proteção, não apenas o filtro do cliente. Triggers geram avisos na mesma transação da submissão/decisão. Não são lembretes programados.</p>
+<h2 id="verificacao-e-manutencao">Verificação e manutenção</h2>
+<p>Conferir inventário com <code>app.openapi()</code> e revisar manualmente handlers, permissões e SQL. Os testes de eventos, sugestões e salvos usam SQLite e substituem dependências de autenticação: não comprovam integração real com Auth nem RLS. Os testes de moderação de banco exigem Supabase local descartável. Ver <a href="../processo/contribuindo/">Contribuição</a> e o registro de validação em <a href="../arquitetura/visao-geral/#9-verificacao">Arquitetura</a>.</p>
+<p>Qualquer alteração de rota, schema, autorização, erro ou RPC deve atualizar este documento no mesmo PR. Inscrições, categorias REST e atualização pública não são contratos disponíveis.</p>
+<h2 id="planos-particulares-atualizacao-s6-b01-09112026">Planos particulares — atualização S6-B01 (09/11/2026)</h2>
+<h3 id="post-apiv1syllabusupload">POST <code>/api/v1/syllabus/upload</code></h3>
+<p>Autenticação obrigatória. Recebe <code>multipart/form-data</code> com <code>file</code> PDF e campos
+<code>offering_id</code> obrigatório, com disciplina e turma derivadas do catálogo. Valida extensão, MIME, assinatura, integridade,
+senha, tamanho (10 MB), quantidade (dez páginas) e presença de texto selecionável.
+Lê no máximo limite + 1 byte antes de rejeitar excesso. O parser roda em processo
+separado com prazo de 8s (<code>SYLLABUS_UPLOAD_VALIDATION_TIMEOUT_SECONDS</code>); a espera
+e o acesso síncrono ao Storage/banco não bloqueiam o event loop da API.
+Salva o arquivo no bucket privado e a linha do dono como <code>pendente</code>; retorna
+<strong>202</strong>, sem esperar por IA. Se o banco falhar, compensa o arquivo no Storage.</p>
+<p>Resposta: <code>id</code>, <code>userId</code>, <code>fileName</code>, <code>filePath</code>, <code>fileSize</code>, <code>fileType</code>, <code>status</code>,
+<code>createdAt</code> e <code>message</code>. <code>filePath</code> é referência privada, não URL pública assinada.
+401 sem sessão; 400 arquivo inválido/protegido/sem texto/excesso de páginas; 413
+excesso de bytes; 422 prazo de pré-validação excedido; 502/503 indisponibilidade
+de Storage, banco ou processo de validação. Timeout/falha da pré-validação não
+persistem arquivo ou tarefa. A pré-validação é aguardada antes do 202; o prazo
+inclui criação do processo e admite até 2,2s adicionais para encerrá-lo.</p>
+<h3 id="get-apiv1syllabussyllabus_id">GET <code>/api/v1/syllabus/{syllabus_id}</code></h3>
+<p>Autenticado e restrito ao proprietário: UUID válido de outro dono ou inexistente
+retorna <strong>404</strong>. Retorna metadados do upload e <code>status</code>, <code>extractedEventsCount</code>,
+<code>errorMessage</code>, <code>errorCode</code>, <code>pageCount</code>, <code>attempts</code>, <code>processingStartedAt</code>,
+<code>processedAt</code>, <code>processingDurationMs</code>, <code>totalDurationMs</code>, <code>disciplina</code> e <code>turma</code>. Campos ainda não
+disponíveis são nulos; <code>attempts</code> começa em zero. Estados: <code>pendente</code>,
+<code>processando</code>, <code>concluido</code> e <code>falha</code>. Erros são mensagens fixas e códigos da S6-D01.
+Concluído com contagem zero significa documento sem cronograma identificado.
+<code>processingDurationMs</code> mede a última tentativa; <code>totalDurationMs</code> mede da criação
+do registro ao término, incluindo fila/retentativas, e é nulo antes de finalizar.</p>
+<p>O <a href="../processamento-planos/">worker independente</a> consome a fila. Ele fica
+desativado até a configuração explícita e a validação das políticas S6-D02.
+Upload e worker não criam compromissos. As rotas de listagem, detalhe e confirmação
+S6-B02 já existentes, descritas acima, operam sobre <code>avaliacoes</code> legadas; os
+candidatos privados do worker em <code>candidatos_avaliacao</code> ainda exigem conciliação
+com esse contrato antes da integração no ambiente da equipe.
+O contrato transacional de banco S6-D02 já está disponível em
+<a href="../privacidade-planos/#contrato-transacional-para-s6-b02"><code>revisar_candidatos_plano</code></a>.</p>
+<h2 id="atualizacao-s7-b01-preparacao-e-autorizacao-do-texto-10112026">Atualização S7-B01 — preparação e autorização do texto (10/11/2026)</h2>
+<p>Este contrato substitui o fluxo de upload/extração S6 descrito acima.</p>
+<table>
+<thead>
+<tr>
+<th>Operação</th>
+<th>Entrada</th>
+<th>Resultado</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>POST /api/v1/syllabus/upload</code></td>
+<td>Multipart PDF validado, até 10 MiB/dez páginas; metadados existentes</td>
+<td>202, texto preparado privado, <code>filePath: null</code>, <code>authorizationRequired: true</code>, <code>preparedTextAvailable: true</code>. O PDF é descartado e não vai ao Storage.</td>
+</tr>
+<tr>
+<td><code>POST /api/v1/syllabus/text</code></td>
+<td>JSON <code>text</code> e <code>offering_id</code> obrigatórios; até 40.000 bytes UTF-8</td>
+<td>202, preparação privada, <code>fileType: text</code>; página de origem nula.</td>
+</tr>
+<tr>
+<td><code>GET /api/v1/syllabus/{id}/text</code></td>
+<td>Sessão do dono</td>
+<td>200 com <code>pages: [{pagina, texto}]</code>, <code>textHash</code>, <code>authorizationRequired</code>, <code>provider</code>, <code>providerAvailable</code>, <code>maxTextBytes</code>, <code>warning</code>, <code>preparationDurationMs</code>, <code>textRevision</code>. Resposta <code>no-store</code>.</td>
+</tr>
+<tr>
+<td><code>POST /api/v1/syllabus/{id}/extractions</code></td>
+<td>JSON <code>pages</code>, <code>textHash</code>, <code>authorize: true</code>, <code>contentEligible: true</code>, <code>reprocess</code> opcional</td>
+<td>202, autorização registrada e elegibilidade para a fila persistente. Repetir o mesmo hash sem reprocessar não cria execução adicional.</td>
+</tr>
+</tbody>
+</table>
+<p>O hash usa SHA-256 do JSON UTF-8 compacto, com <code>pagina</code>/<code>texto</code> nessa ordem em
+cada página; não é assinatura de autorização. O servidor valida JWT/dono, limites,
+referências, integridade e declarações, recusa identificadores comuns ainda
+presentes e não altera o texto aprovado antes de enviá-lo ao provedor.</p>
+<p>Erros: 400 PDF inválido/protegido/sem texto; 401 sem sessão; 404 para plano alheio/inexistente; 413 excesso de bytes;
+422 conteúdo, referências, declarações ou hash malformados; 409 hash divergente,
+execução em andamento, preparação antiga sem texto ou limite acumulado atingido;
+503 indisponibilidade/bloqueio operacional do provedor. O corpo continua
+<code>{"detail": "mensagem sanitizada"}</code>. Não há persistência do PDF após falha.</p>
+<p>Detalhe/listagem preservam estados anteriores. <code>authorizationRequired</code> distingue
+a revisão inicial da fila pronta; <code>preparedTextAvailable</code> identifica o protocolo
+S7. Detalhe inclui <code>preparationDurationMs</code>, <code>reviewDurationMs</code> e
+<code>totalDurationMs</code> desde a autorização, separando a espera do estudante. Planos
+históricos sem preparação mantêm a revisão legada e não recebem autorização
+retroativa. A consulta e a confirmação particular usam agora <code>avaliacoes</code>, a mesma tabela
+do worker, filtrando a versão autorizada. Cada candidato inclui <code>suggestedDate</code>,
+<code>suggestedTime</code>, <code>ambiguousFields</code> e <code>versionId</code>; <code>startsAt</code> continua nulo quando
+não existe instante/fuso confirmado. O contrato legado não exige ainda
+<code>Idempotency-Key</code>; sua evolução e a confirmação compartilhada seguem S7-B04/S7-F03.
+O produtor não escreve eventos automaticamente e retry não recria evento apagado.</p>
+<p><a href="../processamento-planos-s7/">Fluxo, flags e evidências</a>.</p>
+<h3 id="catalogo-e-selecao-real-de-ofertas-7071">Catálogo e seleção real de ofertas (#70/#71)</h3>
+<p>A integração autenticada, rotas de catálogo/filtros/vínculos e operação estão em
+<a href="../arquitetura/catalogo-de-turmas/">Catálogo de turmas</a>. PDF multipart e texto JSON
+passam a exigir <code>offering_id</code> (UUID da oferta disponível). O servidor deriva
+nome da disciplina, turma e período, ignorando metadados livres para associação.
+Histórico particular aceita <code>offering_id</code> opcional; dados privados continuam
+restritos ao proprietário. <code>GET /class-offerings/{id}/shared-plans</code> expõe apenas
+versões compartilhadas a seguidores da oferta, sem o texto privado do autor.</p>
+<h3 id="envio-vinculado-a-conta-s7-f03-73">Envio vinculado à conta — S7-F03 (#73)</h3>
+<p>PDF e texto exigem também que a conta autenticada siga a oferta. Ausência de
+vínculo, inclusive após deixar de seguir, retorna 403 com <code>detail</code> orientando
+seguir a turma. A verificação ocorre antes da extração e novamente antes da
+persistência. Em PostgreSQL, a segunda consulta bloqueia o vínculo até o commit,
+serializando a gravação com a remoção concorrente do vínculo. Oferta retirada
+continua retornando 409; catálogo sem publicação retorna 503.</p>
+<p>A interface consulta a oferta e <code>GET /me/class-offerings</code> antes de habilitar
+PDF/texto. Falhas ou respostas inválidas bloqueiam o envio e oferecem nova consulta.
+Histórico e planos particulares continuam acessíveis ao dono após deixar de seguir.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Voltar para o topo
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.path", "navigation.top", "search.suggest", "search.highlight", "content.code.copy"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copiado para \u00e1rea de transfer\u00eancia", "clipboard.copy": "Copiar para \u00e1rea de transfer\u00eancia", "search.result.more.one": "mais 1 nesta p\u00e1gina", "search.result.more.other": "# mais nesta p\u00e1gina", "search.result.none": "Nenhum documento encontrado", "search.result.one": "1 documento encontrado", "search.result.other": "# documentos encontrados", "search.result.placeholder": "Digite para iniciar a busca", "search.result.term.missing": "Ausente", "select.version": "Selecione a vers\u00e3o"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+    
+  </body>
+</html>
