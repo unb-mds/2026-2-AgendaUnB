@@ -5,8 +5,10 @@ import App from './App.jsx'
 import SecondPage from './pages/SecondPage.jsx'
 import PaginaDeEvento from './pages/PaginaDeEvento.jsx'
 import { AuthProvider } from './contexts/AuthContext.jsx'
+import { AUTH_RETURN_PATH } from './lib/auth.js'
 import './styles/global.css'
 import './styles/management.css'
+const AuthReturnPage = lazy(() => import('./pages/AuthReturnPage.jsx'))
 const AdminPage = lazy(() => import('./pages/AdminPage.jsx'))
 const SuggestionsPage = lazy(() => import('./pages/SuggestionsPage.jsx'))
 const TeachingPlanPage = lazy(() => import('./pages/TeachingPlanPage.jsx'))
@@ -23,6 +25,7 @@ createRoot(document.getElementById('root')).render(
     <AuthProvider>
       <Suspense fallback={<div className="management-state" role="status">Carregando página…</div>}><Routes>
         <Route path="/" element={<><SearchMetadata /><App /></>} />
+        <Route path={AUTH_RETURN_PATH} element={<AuthReturnPage />} />
         <Route path="/eventos" element={<><SearchMetadata /><SecondPage /></>} />
         <Route path="/segunda-pagina" element={<LegacyEventsRedirect />} />
         <Route path="/plano-de-ensino" element={<><SearchMetadata /><TeachingPlanPage /></>} />
