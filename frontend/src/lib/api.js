@@ -15,10 +15,18 @@ async function request(path, { auth = false, ...options } = {}) {
     headers.set('Authorization', `Bearer ${session.access_token}`);
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
+  let response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
+  } catch {
+    throw new Error('A API está indisponível. Verifique sua conexão e tente novamente.');
+  }
   if (response.status === 204) return null;
 
   const result = await response.json().catch(() => null);
+  if (response.ok && result === null) {
+    throw new Error('A API retornou uma resposta inválida. Tente novamente mais tarde.');
+  }
   if (!response.ok) {
     let detail = result?.detail;
     if (Array.isArray(detail)) {
@@ -93,6 +101,7 @@ export function toUiEvent(event, isPersonal = false) {
   return {
     id: event.id,
     titulo: event.title,
+    startsAt: event.starts_at,
     data: `${startsAt.getFullYear()}-${pad(startsAt.getMonth() + 1)}-${pad(startsAt.getDate())}`,
     horario: `${pad(startsAt.getHours())}:${pad(startsAt.getMinutes())}`,
     campus: event.campus || '',

@@ -1,39 +1,42 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "services": {
-    "backend": {
-      "root": "backend",
-      "framework": "fastapi"
+  "framework": "vite",
+  "installCommand": "npm --prefix frontend ci",
+  "buildCommand": "npm --prefix frontend run build",
+  "outputDirectory": "frontend/dist",
+  "redirects": [
+    { "source": "/eventos.html", "destination": "/eventos", "permanent": true },
+    { "source": "/index.html", "destination": "/", "permanent": true },
+    { "source": "/eventos/", "destination": "/eventos", "permanent": true }
+  ],
+  "headers": [
+    {
+      "source": "/auth/retorno",
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex" },
+        { "key": "Cache-Control", "value": "no-store" },
+        { "key": "Referrer-Policy", "value": "no-referrer" }
+      ]
     },
-    "frontend": {
-      "root": "frontend",
-      "framework": "vite"
+    {
+      "source": "/:page(admin|sugestoes|segunda-pagina|plano-de-ensino|app.html)/:path*",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }]
+    },
+    {
+      "source": "/eventos",
+      "has": [{ "type": "query", "key": "aba", "value": "meus" }],
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }]
+    },
+    {
+      "source": "/prototipo-plano-de-ensino/:path*",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }]
     }
-  },
+  ],
   "rewrites": [
-    {
-      "source": "/health",
-      "destination": {
-        "service": "backend"
-      }
-    },
-    {
-      "source": "/api/search",
-      "destination": {
-        "service": "frontend"
-      }
-    },
-    {
-      "source": "/api/(.*)",
-      "destination": {
-        "service": "backend"
-      }
-    },
-    {
-      "source": "/(.*)",
-      "destination": {
-        "service": "frontend"
-      }
-    }
+    { "source": "/auth/retorno", "destination": "/app.html" },
+    { "source": "/sitemap.xml", "destination": "/api/search?kind=sitemap" },
+    { "source": "/evento/:id", "destination": "/api/search?kind=event&id=:id" },
+    { "source": "/eventos", "destination": "/eventos.html" },
+    { "source": "/:page(admin|sugestoes|segunda-pagina|plano-de-ensino)/:path*", "destination": "/app.html" }
   ]
 }
