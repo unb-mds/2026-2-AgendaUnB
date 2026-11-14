@@ -394,6 +394,7 @@ def get_syllabus_status(
         candidate_query.order_by(SyllabusCandidate.source_page.asc(), SyllabusCandidate.id.asc())
     ).all()
     own_imports: dict[UUID, tuple[str, UUID | None, str | None]] = {}
+    active_owner_events: set[UUID] = set()
     if not is_owner and candidates:
         candidate_ids = [candidate.id for candidate in candidates]
         decisions = db.execute(
@@ -407,6 +408,17 @@ def get_syllabus_status(
         ).all()
         for candidate_id, result, event_id, kind in decisions:
             own_imports.setdefault(candidate_id, (result, event_id, kind))
+    elif is_owner and candidates:
+        confirmed_ids = [candidate.id for candidate in candidates if candidate.status == "confirmado"]
+        if confirmed_ids:
+            active_owner_events = set(
+                db.scalars(
+                    select(PersonalEvent.origin_candidate_id).where(
+                        PersonalEvent.user_id == current_user.id,
+                        PersonalEvent.origin_candidate_id.in_(confirmed_ids),
+                    )
+                ).all()
+            )
 
     return SyllabusDetailResponse(
         id=syllabus.id,
@@ -438,8 +450,11 @@ def get_syllabus_status(
         candidates=[
             _candidate_read(
                 candidate,
-                status_override=("confirmado" if own_imports.get(candidate.id, (None, None, None))[1] is not None else "pendente")
-                if not is_owner else None,
+                status_override=(
+                    ("confirmado" if own_imports.get(candidate.id, (None, None, None))[1] is not None else "pendente")
+                    if not is_owner
+                    else ("pendente" if candidate.status == "confirmado" and candidate.id not in active_owner_events else None)
+                ),
                 kind_override=own_imports.get(candidate.id, (None, None, None))[2] if not is_owner else None,
             )
             for candidate in candidates

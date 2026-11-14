@@ -69,7 +69,7 @@ requisições. Controles de autorização ficam suspensos em falha de consulta.
 
 O painel mostra os candidatos reais com estado persistido, página/trecho de
 origem, sugestões e campos ambíguos. O usuário seleciona individualmente ou em
-lote e corrige título, tipo, data, horário e fuso. A seleção em lote preserva
+lote e corrige título, tipo, data e horário. A seleção em lote preserva
 itens retirados da seleção. Confirmados, descartados e estados desconhecidos
 ficam bloqueados para edição. Rascunhos e seleções são locais até a confirmação.
 
@@ -77,7 +77,7 @@ ficam bloqueados para edição. Rascunhos e seleções são locais até a confir
 Editar revoga essa conferência. A jornada por oferta exige também conferir a
 identidade da turma. **Confirmar e importar** envia somente selecionados válidos
 a `POST /syllabus/{id}/confirm`, com limite de 100 itens. O editor exige título
-entre três e 200 caracteres, tipo Prova/Trabalho e data/hora com fuso explícito.
+entre três e 200 caracteres, tipo Prova/Trabalho e data/hora com fuso padrão de Brasília (`-03:00`).
 
 O contrato atual recebe `candidateId`, `title`, `startsAt`, `category` e
 `description`. O evento usa a categoria existente `Acadêmico`; o tipo revisado
