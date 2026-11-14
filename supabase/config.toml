@@ -239,15 +239,20 @@ otp_length = 6
 # Number of seconds before the email OTP expires (defaults to 1 hour).
 otp_expiry = 3600
 
-# Use a production-ready SMTP server
+# ──────────────────────────────────────────────────────────────────────────────
+# SMTP para ambiente hospedado (S7-B02)
+# Em desenvolvimento local o Supabase usa o Inbucket embutido (porta 14324);
+# descomente e configure apenas no ambiente de produção / staging.
+# As credenciais NUNCA devem ser commitadas: use variáveis de ambiente.
+# ──────────────────────────────────────────────────────────────────────────────
 # [auth.email.smtp]
 # enabled = true
-# host = "smtp.sendgrid.net"
+# host = "env(SMTP_HOST)"
 # port = 587
-# user = "apikey"
-# pass = "env(SENDGRID_API_KEY)"
-# admin_email = "admin@email.com"
-# sender_name = "Admin"
+# user = "env(SMTP_USER)"
+# pass = "env(SMTP_PASS)"
+# admin_email = "env(SMTP_SENDER_EMAIL)"
+# sender_name = "env(SMTP_SENDER_NAME)"
 
 [auth.email.template.confirmation]
 subject = "Confirme seu e-mail na Agenda UnB"
