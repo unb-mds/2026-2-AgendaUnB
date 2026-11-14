@@ -1273,8 +1273,8 @@ body.light .tp-review-footer .tp-error { color:#a3221b; }
 .tp-steps { scroll-margin-top: 100px; }
 
 /* Legal links remain readable in both themes, including visited links. */
-.legal-links, .legal-links a { color: #ffffff7a; }
-body.light .legal-links, body.light .legal-links a { color: #0000008c; }
+.legal-links, .legal-links a { color: #fff; }
+body.light .legal-links, body.light .legal-links a { color: #000; }
 
 .public-search-page {
   max-width: 50rem;
