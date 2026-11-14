@@ -154,15 +154,18 @@ O histórico e o detalhe retornam `ano` e `semestre`. Planos antigos podem ter e
 
 ### Exportação para o Google Calendar
 
-As rotas exigem uma sessão Supabase aberta via Google e e-mail confirmado. Uma sessão por senha recebe 403, mesmo quando o perfil também tem uma identidade Google.
+O login Google do Supabase solicita identidade. A permissão do Calendar é opcional e começa em **Meus Eventos**, para qualquer sessão com e-mail confirmado, inclusive por senha. O cliente OAuth do Calendar usa um projeto Google Cloud separado do login.
 
 | Operação | Entrada | Resposta |
 | --- | --- | --- |
-| `POST /api/v1/me/google-calendar/connection` | Credencial de renovação retornada pelo Supabase no callback de login. | 204 após validar no Google o escopo `calendar.app.created`, o `sub` e o e-mail verificado da mesma conta. |
-| `GET /api/v1/me/google-calendar/connection` | Bearer Supabase. | 200 com `connected`. |
-| `POST /api/v1/me/google-calendar/exports` | `events` com 1 a 20 referências `{ id, kind }`. `kind` é `personal` ou `saved`. | 200 com `id`, `kind` e `status` por item. Estados `exported`, `already_exported` ou `failed`. |
+| `POST /api/v1/me/google-calendar/authorization` | Bearer Supabase. | 200 com `authorization_url` e `expires_in_seconds`. O desafio de uso único usa `state` e PKCE S256 e expira em 10 minutos. |
+| `POST /api/v1/me/google-calendar/callback` | Formulário do Google com `state` e `code` ou `error`. | 303 para a URL configurada com `google_calendar` indicando o resultado. Confere o escopo `calendar.app.created` e o e-mail Google verificado com o e-mail confirmado atual da Agenda UnB. |
+| `GET /api/v1/me/google-calendar/connection` | Bearer Supabase. | 200 com `connected` e `recovery_required`. |
+| `DELETE /api/v1/me/google-calendar/connection` | Bearer Supabase. | 200 com `disconnected` e `revocation`. Revoga o acesso no Google, remove as credenciais locais e invalida autorizações em andamento. Se a revogação remota falhar, o retorno orienta removê-la na Conta Google. |
+| `PUT /api/v1/me/google-calendar/destination` | Bearer Supabase e `calendar_id`. | 204 após validar no Google o ID da agenda secundária Agenda UnB. Se o usuário confirmar que a agenda não existe, envia `calendar_id: null` para liberar nova criação. |
+| `POST /api/v1/me/google-calendar/exports` | Bearer Supabase e `events` com 1 a 20 referências `{ id, kind }`. `kind` é `personal` ou `saved`. | 200 com `id`, `kind` e `status` por item. Estados `exported`, `already_exported` ou `failed`. |
 
-O servidor consulta apenas eventos pessoais do dono e eventos públicos aprovados que ele salvou. A exportação cria ou reutiliza a agenda secundária **Agenda UnB**, envia título e horário em `America/Sao_Paulo` e usa uma hora de duração para o modelo atual, que guarda somente o início. Repetir um item usa o mesmo ID remoto e preserva a cópia existente. As credenciais do Google ficam criptografadas no servidor. Após revogação, entre novamente com Google e conceda acesso para retomar o fluxo. Consulte o [guia de configuração](implantacao.md#autenticação-e-google-agenda-s7-f04).
+O servidor consulta eventos pessoais do dono e eventos públicos aprovados que ele salvou. A exportação cria ou reutiliza a agenda secundária **Agenda UnB**, envia título e horário em `America/Sao_Paulo` e usa uma hora de duração para o modelo atual. Repetir um item usa o mesmo ID remoto. A desconexão preserva o ID da agenda para reconexão com a mesma identidade. Em caso de resposta incerta da criação, use a recuperação do destino em **Meus Eventos**. Os tokens ficam cifrados no servidor e são renovados quando necessário. Se o Google retornar `invalid_grant`, a API remove as credenciais inválidas, retorna 409 e pede nova conexão.
 
 ## Erros FastAPI
 

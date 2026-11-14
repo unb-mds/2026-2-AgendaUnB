@@ -579,9 +579,9 @@ body.light .event-tag { background: rgba(0, 0, 0, 0.05); }
 .events-page { --events-control-height: 49px; }
 
 .btn-toggle-group {
-  display: flex; min-height: var(--events-control-height); background: #0f172a; border-radius: 999px; padding: 6px; border: 1px solid var(--border-color);
+  display: flex; min-height: var(--events-control-height); background: rgb(26, 34, 53); border-radius: 999px; padding: 6px; border: 1px solid var(--border-color);
 }
-body.light .btn-toggle-group { background: #e2e8f0; }
+body.light .btn-toggle-group { background: #ffffff; }
 .btn-toggle-item {
   padding: 10px 24px; border-radius: 999px; border: none; cursor: pointer; font-weight: 600; transition: all 0.3s; background: transparent; color: var(--text-muted);
 }
@@ -1273,8 +1273,8 @@ body.light .tp-review-footer .tp-error { color:#a3221b; }
 .tp-steps { scroll-margin-top: 100px; }
 
 /* Legal links remain readable in both themes, including visited links. */
-.legal-links, .legal-links a { color: #fff; }
-body.light .legal-links, body.light .legal-links a { color: #000; }
+.legal-links, .legal-links a { color: #ffffff7a; }
+body.light .legal-links, body.light .legal-links a { color: #0000008c; }
 
 .public-search-page {
   max-width: 50rem;
@@ -1287,20 +1287,42 @@ body.light .legal-links, body.light .legal-links a { color: #000; }
 .public-search-page a { color: #88caff; text-decoration: underline; text-underline-offset: .2em; }
 .public-event-description { white-space: pre-line; overflow-wrap: anywhere; }
 
-.manage-button.google-calendar-action {
+.manage-button.google-calendar-action,
+.manage-button.google-calendar-secondary {
   min-height: var(--events-control-height);
   max-width: 100%;
+  padding-inline: 20px;
   font-family: inherit;
   border-radius: 999px;
+  background: rgb(26, 34, 53);
+  border-color: var(--border-color);
+  color: var(--text-color);
+  font-weight: 550;
   text-align: start;
+  transition: background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, color 0.25s ease;
 }
-.manage-button.google-calendar-action:hover:not(:disabled) {
-  border-color: var(--manage-border);
+.manage-button.google-calendar-secondary {
+  background: transparent;
+  color: var(--text-muted);
+}
+body.light .manage-button.google-calendar-action {
+  background: var(--card-bg);
+}
+.manage-button.google-calendar-action:hover:not(:disabled),
+.manage-button.google-calendar-secondary:hover:not(:disabled) {
+  background: var(--card-bg);
+  border-color: var(--accent-color);
+  color: var(--text-color);
+}
+body.light .manage-button.google-calendar-action:hover:not(:disabled),
+body.light .manage-button.google-calendar-secondary:hover:not(:disabled) {
+  background: #f8fafc;
 }
 .google-calendar-action img { flex: none; }
 .google-calendar-action span { min-width: 0; overflow-wrap: anywhere; }
-.google-calendar-action:focus-visible {
-  outline: 2px solid var(--manage-link);
+.google-calendar-action:focus-visible,
+.google-calendar-secondary:focus-visible {
+  outline: 2px solid var(--text-color);
   outline-offset: 2px;
 }
 .google-calendar-event-list {

@@ -9,34 +9,134 @@ const saoPauloTime = new Intl.DateTimeFormat('pt-BR', {
   dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Sao_Paulo',
 });
 const keyOf = event => `${event.criadoPorMim ? 'personal' : 'saved'}:${event.id}`;
+const callbackMessages = new Map([
+  ['denied', 'O acesso ao Google Agenda não foi concedido.'],
+  ['email_mismatch', 'Use uma conta Google com o mesmo e-mail verificado da Agenda UnB.'],
+  ['invalid_state', 'A solicitação expirou ou já foi usada. Inicie a conexão novamente.'],
+  ['different_google_account', 'Desconecte a conta Google anterior antes de tentar outra.'],
+  ['offline_access_unavailable', 'O Google não concedeu acesso para renovar a conexão. Tente conectar novamente.'],
+  ['failed', 'Não foi possível conectar ao Google Agenda. Tente novamente.'],
+]);
 
-export default function GoogleCalendarConnection({ events }) {
-  const [available, setAvailable] = useState(false);
+export default function GoogleCalendarConnection({ events, callbackResult }) {
+  const [connection, setConnection] = useState(null);
   const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  const [recoveryOpen, setRecoveryOpen] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
     request(`${ROOT}/connection`, { auth: true, signal: controller.signal })
-      .then(result => { if (!controller.signal.aborted) setAvailable(result?.connected === true); })
-      .catch(() => {});
+      .then(result => { if (!controller.signal.aborted) setConnection(result); })
+      .catch(() => {
+        if (!controller.signal.aborted) setError('Não foi possível consultar a conexão com o Google Agenda.');
+      });
     return () => controller.abort();
-  }, []);
+  }, [callbackResult]);
 
-  if (!available) return null;
+  async function changeConnection(method) {
+    setBusy(true);
+    setError('');
+    setNotice('');
+    try {
+      if (method === 'POST') {
+        const result = await request(`${ROOT}/authorization`, { auth: true, method });
+        const url = new URL(result.authorization_url);
+        if (url.origin !== 'https://accounts.google.com') throw new Error();
+        window.location.assign(url);
+        return;
+      }
+      const result = await request(`${ROOT}/connection`, { auth: true, method });
+      setConnection({ connected: false });
+      setNotice(result.revocation === 'not_confirmed_remove_access_in_google'
+        ? 'Desconectado. Remova o acesso também nas conexões da sua Conta Google.'
+        : 'Google Agenda desconectado.');
+    } catch (err) {
+      setError(err.status ? err.message : 'Não foi possível atualizar a conexão com o Google Agenda.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function recover(event, createNew = false) {
+    event.preventDefault();
+    setBusy(true);
+    setError('');
+    const calendarId = createNew ? null : new FormData(event.currentTarget).get('calendar_id').trim();
+    try {
+      await request(`${ROOT}/destination`, {
+        auth: true, method: 'PUT', body: JSON.stringify({ calendar_id: calendarId }),
+      });
+      setConnection(current => ({ ...current, recovery_required: false }));
+      setRecoveryOpen(false);
+      setNotice(createNew ? 'A próxima exportação criará a agenda Agenda UnB.' : 'Agenda UnB recuperada.');
+    } catch (err) {
+      setError(err.status ? err.message : 'Não foi possível recuperar a agenda.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function refreshConnection() {
+    try {
+      setConnection(await request(`${ROOT}/connection`, { auth: true }));
+    } catch {
+      // The export dialog already displays the operation error.
+    }
+  }
 
   return (
     <>
-      <button type="button" className="manage-button google-calendar-action"
-        aria-haspopup="dialog" disabled={!events.length} onClick={() => setOpen(true)}>
-        <img src="/google-calendar-2026.svg" alt="" width="24" height="24" />
-        <span>{EXPORT_LABEL}</span>
-      </button>
-      {open && <ExportDialog events={events} onClose={() => setOpen(false)} />}
+      {connection?.connected ? (
+        <>
+          <button type="button" className="manage-button google-calendar-secondary" disabled={busy} onClick={() => changeConnection('DELETE')}>
+            Desconectar Google Agenda
+          </button>
+          {connection.recovery_required ? (
+            <button type="button" className="manage-button google-calendar-action" aria-haspopup="dialog" onClick={() => setRecoveryOpen(true)}>
+              <img src="/google-calendar-2026.svg" alt="" width="24" height="24" />
+              <span>Recuperar agenda do Google</span>
+            </button>
+          ) : (
+            <button type="button" className="manage-button google-calendar-action"
+              aria-haspopup="dialog" disabled={!events.length} onClick={() => setOpen(true)}>
+              <img src="/google-calendar-2026.svg" alt="" width="24" height="24" />
+              <span>{EXPORT_LABEL}</span>
+            </button>
+          )}
+        </>
+      ) : (
+        <button type="button" className="manage-button google-calendar-action" disabled={busy} onClick={() => changeConnection('POST')}>
+          <img src="/google-calendar-2026.svg" alt="" width="24" height="24" />
+          <span>Conectar ao Google Agenda</span>
+        </button>
+      )}
+      {!recoveryOpen && <Feedback error={error || (!notice && callbackMessages.get(callbackResult))} />}
+      <Feedback success={notice || (callbackResult === 'connected' && connection?.connected ? 'Google Agenda conectado.' : '')} />
+      {open && <ExportDialog events={events} onClose={() => setOpen(false)} onFailure={refreshConnection} />}
+      {recoveryOpen && (
+        <Modal title="Recuperar agenda do Google" onClose={() => setRecoveryOpen(false)} busy={busy}>
+          <form onSubmit={recover}>
+            <p>Abra as configurações da agenda Agenda UnB no Google e copie o ID em “Integrar agenda”.</p>
+            <label htmlFor="google-calendar-id">ID da agenda</label>
+            <input className="modal-input" id="google-calendar-id" name="calendar_id" required maxLength={512} />
+            <Feedback error={error} />
+            <div className="dialog-actions">
+              <button type="button" className="manage-button" disabled={busy} onClick={event => recover(event, true)}>
+                Confirmei que a agenda não existe
+              </button>
+              <button type="submit" className="manage-button primary" disabled={busy}>Recuperar agenda</button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </>
   );
 }
 
-function ExportDialog({ events, onClose }) {
+function ExportDialog({ events, onClose, onFailure }) {
   const [selection, setSelection] = useState([]);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
@@ -77,6 +177,7 @@ function ExportDialog({ events, onClose }) {
       if (failed.length) setError('Alguns eventos não foram exportados. Tente novamente com os itens selecionados.');
     } catch (err) {
       setError(err.status ? err.message : 'Não foi possível exportar. Verifique sua conexão e tente novamente.');
+      if (err.status === 409 || err.status === 503) await onFailure();
     } finally {
       busy.current = false;
       setPending(false);

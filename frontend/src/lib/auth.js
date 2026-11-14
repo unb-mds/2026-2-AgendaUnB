@@ -61,8 +61,6 @@ export async function signInWithGoogle() {
     options: {
       redirectTo: returnUrl(),
       skipBrowserRedirect: true,
-      scopes: 'https://www.googleapis.com/auth/calendar.app.created',
-      queryParams: { access_type: 'offline', prompt: 'consent', include_granted_scopes: 'true' },
     },
   });
   if (error || !data?.url) return { error: 'Não foi possível iniciar o login com Google. Tente novamente.' };

@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 from src.database.models import GoogleCalendarConnection, PersonalEvent, PublicEvent, SavedPublicEvent
 from src.middlewares.auth import CurrentUser
 from src.modules.google_calendar.service import (
-    GoogleOAuthSettings, REAUTHORIZE, get_access_token, get_connection, lock_account,
+    GoogleOAuthSettings, REAUTHORIZE, clear_credentials, get_access_token, get_connection, lock_account,
 )
 
 CALENDAR_API = "https://www.googleapis.com/calendar/v3"
@@ -24,6 +24,8 @@ SAO_PAULO = ZoneInfo("America/Sao_Paulo")
 # The current event model stores a start time only.
 DEFAULT_DURATION = timedelta(hours=1)
 PENDING_CALENDAR = "creation-pending"
+CALENDAR_NAME = "Agenda UnB"
+RECOVER_DESTINATION = "Confirme o ID da agenda Agenda UnB antes de tentar exportar novamente."
 
 
 class ExportItem(BaseModel):
@@ -72,20 +74,70 @@ def _post(client: httpx.Client, path: str, token: str, payload: dict) -> httpx.R
     return client.post(f"{CALENDAR_API}/{path}", headers={"Authorization": f"Bearer {token}"}, json=payload)
 
 
+def calendar_recovery_pending(connection: GoogleCalendarConnection | None) -> bool:
+    return connection is not None and connection.calendar_id == PENDING_CALENDAR
+
+
+def _access_token(db: Session, connection: GoogleCalendarConnection, settings: GoogleOAuthSettings) -> str:
+    try:
+        return get_access_token(connection, settings)
+    except HTTPException as exc:
+        if exc.status_code == 409:
+            clear_credentials(connection)
+            db.commit()
+        raise
+
+
+def recover_calendar(db: Session, user: CurrentUser, calendar_id: str | None) -> None:
+    settings = GoogleOAuthSettings.from_env()
+    lock_account(db, user.id)
+    connection = get_connection(db, user)
+    if connection is None:
+        raise HTTPException(409, REAUTHORIZE)
+    if not calendar_recovery_pending(connection):
+        if connection.calendar_id == calendar_id:
+            return
+        raise HTTPException(409, "Nenhuma agenda precisa de recuperação.")
+    if calendar_id is None:
+        connection.calendar_id = None
+        db.commit()
+        return
+    if calendar_id.casefold() == "primary":
+        raise HTTPException(422, "Informe o ID da agenda secundária Agenda UnB.")
+
+    token = _access_token(db, connection, settings)
+    try:
+        response = httpx.get(f"{CALENDAR_API}/calendars/{quote(calendar_id, safe='')}",
+                             headers={"Authorization": f"Bearer {token}"}, timeout=8)
+        if response.status_code == 401:
+            clear_credentials(connection)
+            db.commit()
+            raise HTTPException(409, REAUTHORIZE)
+        if response.status_code in (403, 404, 410):
+            raise HTTPException(422, "O Google não encontrou uma agenda Agenda UnB acessível por esta conexão.")
+        if not response.is_success:
+            raise HTTPException(503, "Não foi possível consultar a agenda no Google.")
+        data = response.json()
+    except (httpx.RequestError, ValueError):
+        raise HTTPException(503, "Não foi possível consultar a agenda no Google.") from None
+    if not isinstance(data, dict) or data.get("id") != calendar_id or data.get("summary") != CALENDAR_NAME:
+        raise HTTPException(422, "Informe o ID da agenda secundária Agenda UnB.")
+    connection.calendar_id = calendar_id
+    db.commit()
+
+
 def _calendar_id(db: Session, client: httpx.Client, connection: GoogleCalendarConnection, token: str) -> str:
-    pending_message = "Não foi possível confirmar a criação da agenda Agenda UnB. Verifique o Google Agenda antes de continuar."
-    if connection.calendar_id == PENDING_CALENDAR:
-        raise HTTPException(409, pending_message)
+    if calendar_recovery_pending(connection):
+        raise HTTPException(409, RECOVER_DESTINATION)
     if connection.calendar_id:
         return connection.calendar_id
 
-    # A second request can see this marker while Google is creating the calendar.
-    connection.calendar_id = PENDING_CALENDAR
-    db.commit()
+    # Keep the profile lock until the result is known, including across a disconnect.
     try:
-        response = _post(client, "calendars", token, {"summary": "Agenda UnB", "timeZone": SAO_PAULO.key})
-        if response.status_code < 500 and not response.is_success:
-            connection.calendar_id = None
+        response = _post(client, "calendars", token, {"summary": CALENDAR_NAME, "timeZone": SAO_PAULO.key})
+        if 400 <= response.status_code < 500:
+            if response.status_code == 401:
+                clear_credentials(connection)
             db.commit()
             if response.status_code in (401, 403):
                 raise HTTPException(409, REAUTHORIZE)
@@ -96,7 +148,9 @@ def _calendar_id(db: Session, client: httpx.Client, connection: GoogleCalendarCo
     except (httpx.RequestError, ValueError, AttributeError):
         calendar_id = None
     if not isinstance(calendar_id, str) or not calendar_id:
-        raise HTTPException(503, pending_message)
+        connection.calendar_id = PENDING_CALENDAR
+        db.commit()
+        raise HTTPException(503, RECOVER_DESTINATION)
     connection.calendar_id = calendar_id
     return calendar_id
 
@@ -106,18 +160,12 @@ def export_events(db: Session, user: CurrentUser, items: list[ExportItem]) -> li
         raise HTTPException(422, "Selecione cada evento uma única vez.")
     events = _load_events(db, user, items)
     settings = GoogleOAuthSettings.from_env()
-    lock_account(db, user)
+    lock_account(db, user.id)
     connection = get_connection(db, user)
     if connection is None:
         raise HTTPException(409, REAUTHORIZE)
 
-    try:
-        token = get_access_token(connection, settings)
-    except HTTPException as exc:
-        if exc.status_code == 409:
-            connection.granted_scope = ""
-            db.commit()
-        raise
+    token = _access_token(db, connection, settings)
 
     with httpx.Client(timeout=8) as client:
         # Materialize the payloads before a commit expires the loaded ORM rows.
@@ -134,13 +182,17 @@ def export_events(db: Session, user: CurrentUser, items: list[ExportItem]) -> li
                     status = "exported"
                 elif response.status_code == 409:
                     status = "already_exported"
-                elif response.status_code == 401:
-                    lock_account(db, user)
+                elif response.status_code in (401, 404, 410):
+                    lock_account(db, user.id)
                     current = get_connection(db, user)
-                    if current and current.encrypted_access_token == encrypted_access_token:
-                        current.granted_scope = ""
+                    if (current and current.encrypted_access_token == encrypted_access_token
+                            and current.calendar_id == destination):
+                        if response.status_code == 401:
+                            clear_credentials(current)
+                        else:
+                            current.calendar_id = PENDING_CALENDAR
                     db.commit()
-                    raise HTTPException(409, REAUTHORIZE)
+                    raise HTTPException(409, REAUTHORIZE if response.status_code == 401 else RECOVER_DESTINATION)
                 else:
                     status = "failed"
             except httpx.RequestError:

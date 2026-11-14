@@ -196,9 +196,9 @@ A [#81](https://github.com/unb-mds/2026-2-AgendaUnB/issues/81) prevê um aviso p
 
 ## Google Agenda e ICS
 
-1. **Autorizar.** Todo login com Google solicita o escopo [`calendar.app.created`](https://developers.google.com/workspace/calendar/api/auth) durante o OAuth. O backend valida a sessão OAuth, a identidade Google e o e-mail verificado antes de guardar as credenciais criptografadas. A exportação fica disponível em **Meus Eventos** após consentimento.
+1. **Autorizar.** Em **Meus Eventos**, a ação **Conectar Google Agenda** solicita o escopo [`calendar.app.created`](https://developers.google.com/workspace/calendar/api/auth) durante o OAuth. O backend valida o retorno OAuth, a identidade Google e a correspondência com o e-mail confirmado da Agenda UnB antes de guardar as credenciais cifradas. Sessões por senha também podem conectar. A exportação fica disponível em **Meus Eventos** após consentimento.
 2. **Exportar.** O fluxo atual permite selecionar até 20 eventos pessoais ou públicos salvos. A cópia usa título, horário de Brasília e duração de uma hora, com ID estável por evento. A primeira exportação cria uma agenda secundária **Agenda UnB**. Falhas são apresentadas por item e a seleção mantém os itens que precisam de nova tentativa.
-3. **Revogar.** A autorização é gerenciada nas conexões da Conta Google. Após revogar, um novo login com Google e o consentimento de calendário permitem recuperar a exportação.
+3. **Revogar.** A ação **Desconectar Google Agenda** remove as credenciais locais e revoga o acesso no Google. Um novo consentimento com a mesma conta permite reutilizar a agenda. Se a resposta de criação se perder, o usuário pode informar o ID da agenda ou confirmar que ela não existe.
 
 Os contratos abaixo descrevem a ampliação prevista na S8-F03 (#82), incluindo seleção por período, lotes assíncronos, confirmação de sobrescrita, reconciliação do destino e exportação ICS.
 
