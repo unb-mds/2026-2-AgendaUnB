@@ -15,10 +15,18 @@ async function request(path, { auth = false, ...options } = {}) {
     headers.set('Authorization', `Bearer ${session.access_token}`);
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
+  let response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
+  } catch {
+    throw new Error('A API está indisponível. Verifique sua conexão e tente novamente.');
+  }
   if (response.status === 204) return null;
 
   const result = await response.json().catch(() => null);
+  if (response.ok && result === null) {
+    throw new Error('A API retornou uma resposta inválida. Tente novamente mais tarde.');
+  }
   if (!response.ok) {
     let detail = result?.detail;
     if (Array.isArray(detail)) {

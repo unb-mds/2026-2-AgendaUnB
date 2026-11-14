@@ -1,10 +1,17 @@
 import { createClient } from '@supabase/supabase-js'
+import { getSupabaseConfig } from './supabaseConfig.js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+let supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+let supabaseAnonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn("Faltam variáveis de ambiente do Supabase.")
+try {
+  const config = getSupabaseConfig(import.meta.env)
+  supabaseUrl = config.url
+  supabaseAnonKey = config.key
+} catch (err) {
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.warn("Faltam variáveis de ambiente do Supabase ou configuração inválida:", err.message)
+  }
 }
 
 // Provider credentials are used only during the callback, never persisted with the app session.
@@ -39,7 +46,7 @@ export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '', {
 })
 
 export function createRecoveryClient() {
-  return createClient(supabaseUrl, supabaseAnonKey, {
+  return createClient(supabaseUrl || '', supabaseAnonKey || '', {
     auth: {
       storageKey: 'agenda-password-recovery',
       persistSession: false,
