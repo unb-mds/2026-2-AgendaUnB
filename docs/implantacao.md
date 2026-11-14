@@ -218,14 +218,18 @@ URLs, IDs dos projetos, região e responsáveis nominais serão preenchidos quan
 | Variável/configuração | Destino | Tratamento |
 | --- | --- | --- |
 | `VITE_API_URL` | Build Vercel | Pública; URL HTTPS da API **incluindo `/api/v1`**; ausente de `.env.example` atualmente |
-| `VITE_SUPABASE_URL` | Build Vercel | Pública; URL do projeto do ambiente |
-| `VITE_SUPABASE_ANON_KEY` | Build Vercel | Chave pública anon do ambiente; segurança depende de Auth/RLS |
+| `VITE_SUPABASE_URL` | Build e função de busca Vercel | Pública; URL do projeto do ambiente |
+| `VITE_SUPABASE_ANON_KEY` | Build e função de busca Vercel | Chave pública anon do ambiente; segurança depende de Auth/RLS |
 | `DATABASE_URL` | Runtime Render | Segredo; conexão SQLAlchemy `postgresql+psycopg://...`, credenciais próprias do ambiente e TLS |
 | `SUPABASE_URL` | Runtime Render | URL do mesmo projeto usado pelo frontend |
 | `SUPABASE_ANON_KEY` | Runtime Render | Chave anon usada na validação do token pelo Auth |
 | `CORS_ORIGINS` | Runtime Render | Origens exatas da SPA, separadas por vírgula, sem caminho; evitar curingas |
 | `PORT` | Runtime Render | Fornecida pelo provedor; usada pelo comando de início |
-| `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID` / `SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET` | Supabase local/configuração do provedor OAuth hospedado | Client ID e segredo do Google; segredo nunca enviado ao bundle |
+| `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID` / `SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET` | Supabase Auth | Cliente de login. Em ambiente hospedado, configure o provedor diretamente no Supabase. |
+| `GOOGLE_CALENDAR_CLIENT_ID` / `GOOGLE_CALENDAR_CLIENT_SECRET` | Runtime da API | Cliente web do projeto Google Cloud dedicado ao Calendar. |
+| `GOOGLE_CALENDAR_REDIRECT_URI` | Runtime da API | Callback HTTPS exato da API com caminho `/api/v1/me/google-calendar/callback`. |
+| `GOOGLE_CALENDAR_FRONTEND_REDIRECT_URI` | Runtime da API | URL fixa da SPA, por exemplo `https://agendaunb.com.br/eventos?aba=meus`. |
+| `GOOGLE_TOKEN_ENCRYPTION_KEY` | Runtime da API | Chave Fernet exclusiva e persistente do ambiente para criptografar as credenciais do Calendar. |
 | `TEST_SUPABASE_DB_URL` | Job de teste | Somente conexão do Supabase local descartável; testes rejeitam host remoto |
 | Tokens Vercel/Render/Supabase e senha de migração | GitHub Environments/Secrets | Segredos exclusivos da automação; provisionar somente na implementação do pipeline |
 
@@ -247,21 +251,21 @@ A raiz do repositório contém a configuração [`vercel.json`](../vercel.json) 
     },
     "frontend": {
       "root": "frontend",
-      "framework": "vite",
-      "rewrites": [
-        { "source": "/(.*)", "destination": "/index.html" }
-      ]
+      "framework": "vite"
     }
   },
   "rewrites": [
     { "source": "/health", "destination": { "service": "backend" } },
+    { "source": "/api/search", "destination": { "service": "frontend" } },
     { "source": "/api/(.*)", "destination": { "service": "backend" } },
     { "source": "/(.*)", "destination": { "service": "frontend" } }
   ]
 }
 ```
 
-O fallback SPA está configurado tanto nas regras do serviço `frontend` quanto em [`frontend/vercel.json`](../frontend/vercel.json) para garantir acesso direto e recarga em `/eventos`, `/evento/<id>`, `/sugestoes`, `/admin` e `/plano-de-ensino`.
+O [roteamento do frontend](../frontend/vercel.json) gera títulos, descrições e URLs canônicas no HTML da home e da lista de eventos durante o build. As rotas da SPA, como `/admin` e `/plano-de-ensino`, continuam aceitando acesso direto e recarga.
+
+A função [de busca](../frontend/api/search.js) responde a `/sitemap.xml` e `/evento/<id>`. Configure a URL e a chave pública do Supabase do mesmo ambiente no build e na função. As leituras passam pela RLS anônima e selecionam apenas eventos aprovados. A CDN pode guardar respostas públicas por cinco minutos. Teste o sitemap, um evento aprovado e um ID inexistente no preview antes da promoção. Após o deploy, envie o sitemap e solicite indexação no Search Console.
 
 A SPA consome a API através de URLs relativas (`/api/v1/...`), aproveitando o roteamento unificado da Vercel no mesmo domínio sem requisições cross-origin (CORS). Se necessário apontar para um backend externo, a variável `VITE_API_URL` pode ser preenchida no ambiente.
 
@@ -272,11 +276,38 @@ A SPA consome a API através de URLs relativas (`/api/v1/...`), aproveitando o r
 > 1. Adotar upload direto do frontend para o Supabase Storage via client SDK com RLS ou pre-signed URLs (enviando ao FastAPI apenas metadados/referência); ou
 > 2. Manter a execução do backend como Web Service dedicado (ex: Render/container) para as rotas com transferências volumosas.
 
-Configurar no Supabase a Site URL da SPA e as URLs de retorno necessárias para login OAuth/confirmação de e-mail de cada ambiente. No Google, registrar o callback fornecido pelo projeto Supabase correspondente. Manter as origens de homologação e produção separadas; não abrir CORS de produção para previews arbitrários.
+### Autenticação e Google Agenda (S7-F04)
+
+1. No Supabase do ambiente, configure a Site URL da SPA e permita a URL exata `/auth/retorno` na origem correspondente. Habilite a confirmação de e-mail, mantenha pelo menos 8 caracteres para a senha e use intervalo mínimo de 60 segundos para novo envio.
+2. Configure o SMTP de homologação e copie para **Confirm signup** e **Reset password** os templates [confirmation.html](../supabase/templates/confirmation.html) e [recovery.html](../supabase/templates/recovery.html). Os links carregam o hash no fragmento e exigem uma ação na página para consumi-lo. Desative o rastreamento de cliques nos e-mails de autenticação.
+3. Para login com Google, habilite o provedor no Supabase e cadastre no Google Cloud a URL de callback fornecida pelo Supabase. O login retorna para `/auth/retorno` e troca o código via PKCE.
+4. Use um projeto Google Cloud separado para o Calendar. O Google revoga permissões no nível do projeto, inclusive para outros clientes do mesmo projeto. Habilite a Calendar API, configure o consentimento para `https://www.googleapis.com/auth/calendar.app.created` e crie um cliente web com o callback de `GOOGLE_CALENDAR_REDIRECT_URI`. Configure as variáveis de Calendar e a chave Fernet na API do ambiente. [Revogação OAuth no Google](https://developers.google.com/identity/protocols/oauth2/web-server#tokenrevoke)
+5. Aplique as migrações no ambiente de homologação e publique o mesmo commit da API e do frontend. No modo **Teste**, use uma conta autorizada na lista de testadores. A liberação pública segue as condições de consentimento e verificação da [#68](https://github.com/unb-mds/2026-2-AgendaUnB/issues/68).
+6. Valide login e logout por senha e Google. Em **Meus Eventos**, teste conexão por ambos os tipos de sessão, recusa, e-mail divergente, exportação de evento sintético, renovação, nova conexão e revogação. Após desconectar, confirme que o login segue disponível e que a agenda remota permanece. Confira os logs da API, do Supabase e da hospedagem em busca de senhas, códigos e tokens.
+7. Quando o SMTP da #68 estiver homologado, registre cadastro e confirmação em caixa externa, reenvio após o intervalo, link expirado e reutilizado e recuperação real. Anexe à #74 o PR, o commit implantado, os resultados de cada cenário e a revisão humana dos contratos, permissões e dados.
+
+| Cenário da S7-F04 | Evidência local | Evidência de homologação |
+| --- | --- | --- |
+| Cadastro e recuperação por senha | Supabase local com Mailpit confirmou cadastro sem sessão, bloqueio de login antes da confirmação, consumo único do link, troca de senha e login/logout. Playwright simulou reenvio, expiração e reuso. | Entrega e consumo de links em caixa externa via SMTP da #68. |
+| Confirmação e papéis | Testes da API e do PostgreSQL verificaram o bloqueio sem confirmação e as restrições de papel. | Registrar o resultado na versão implantada. |
+| Login Google e autorização do Calendar | Playwright e pytest cobriram retorno, recusa, divergência de e-mail, expiração, renovação, nova autorização, desconexão e recuperação do destino. | Testar no Google com o cliente Calendar da #68, em sessão Google e em sessão por senha, e conferir os logs publicados. |
+
+A configuração local do Supabase inclui os templates e envia ao Mailpit. Mantenha separadas as origens de homologação e produção.
 
 ## Fluxo de CI/CD proposto
 
-Nenhuma etapa abaixo existe como workflow da aplicação nesta referência. O workflow de documentação continua independente.
+O workflow `.github/workflows/supabase-ci.yml` valida o banco em PRs e pushes
+na `main` que alteram `supabase/**`, `backend/**` ou o próprio workflow, além de
+permitir execução manual. Ele inicia o Supabase local com migrations e seed,
+reprova erros de lint e executa `backend/tests/test_*database.py` com Python 3.11.
+Os testes usam uma cópia do banco recém-inicializado (schema e seed) em `agenda_catalog_ci`, banco local
+descartável necessário para o teste de publicação que faz commits. A porta vem
+de `supabase/config.toml`; nenhuma credencial de produção é necessária. Testes
+pgTAP só executam quando há arquivos SQL em `supabase/tests`. O stack é encerrado
+mesmo em caso de falha. A execução no GitHub Actions ainda precisa ser confirmada.
+
+O restante do fluxo abaixo continua proposto; este workflow não publica a aplicação.
+O workflow de documentação continua independente.
 
 1. **PR:** instalar dependências; executar pytest com SQLite, testes de calendário, build frontend e MkDocs. Subir Supabase local descartável, aplicar migrações/seed e executar os testes PostgreSQL com `TEST_SUPABASE_DB_URL` local. Falha bloqueia promoção; teste ignorado não equivale a aprovação de RLS.
 2. **Merge em `main`:** repetir as verificações do commit final e publicar homologação, com exclusão mútua por ambiente para impedir migrações/deploys simultâneos. Somente jobs com sucesso liberam a sequência de publicação.

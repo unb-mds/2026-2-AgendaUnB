@@ -26,7 +26,7 @@ def database():
         for role in ('student', 'other', 'professor', 'admin', 'personal'):
             uid = str(uuid4())
             email = f'test-{uid}@example.com' if role == 'personal' else f'test-{uid}@unb.br'
-            conn.execute(text("insert into auth.users(id,email,raw_user_meta_data) values (:id,:email,:meta)"),
+            conn.execute(text("insert into auth.users(id,email,email_confirmed_at,raw_user_meta_data) values (:id,:email,now(),:meta)"),
                          {'id': uid, 'email': email, 'meta': json.dumps({'nome_completo': 'Teste ' + role})})
             if role in ('professor', 'admin'):
                 conn.execute(text('update public.profiles set papel=:role where id=:id'), {'role': role, 'id': uid})

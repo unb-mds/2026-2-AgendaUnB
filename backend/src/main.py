@@ -13,6 +13,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from src.modules.classes.router import router as classes_router
 from src.modules.events.router import router as events_router
+from src.modules.google_calendar.router import router as google_calendar_router
 from src.modules.syllabus.router import router as syllabus_router
 from src.middlewares.upload_limits import UploadLimitsMiddleware
 from src.deployment import cors_origins
@@ -84,6 +85,7 @@ app.add_middleware(
 
 app.include_router(classes_router, prefix="/api/v1")
 app.include_router(events_router, prefix="/api/v1")
+app.include_router(google_calendar_router, prefix="/api/v1")
 app.include_router(syllabus_router, prefix="/api/v1")
 
 

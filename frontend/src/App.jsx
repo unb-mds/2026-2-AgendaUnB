@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext'
 import NavBar from './components/NavBar'
+import AuthDialog from './components/AuthDialog'
 import './styles/global.css'
 
 // ............................
@@ -60,37 +61,14 @@ export default function App() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const authIntent = searchParams.get('auth');
-  const { user, profile, signInWithGoogle, signOut, signUpWithEmail, signInWithEmail } = useAuth();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const { user, profile } = useAuth();
+  const [authMode, setAuthMode] = useState(null);
+  const [theme, setTheme] = useState(() => document.body.classList.contains('light') ? 'light' : 'dark');
 
   useEffect(() => {
-    if (authIntent === 'signup') {
-      setIsMenuOpen(true);
-      setIsLoginOpen(false);
-    } else if (authIntent === 'login') {
-      setIsLoginOpen(true);
-      setIsMenuOpen(false);
-    }
+    if (['login', 'signup', 'recover', 'confirm'].includes(authIntent)) setAuthMode(authIntent);
   }, [authIntent]);
 
-  // Formulário de cadastro
-  const [cadNome, setCadNome] = useState('');
-  const [cadEmail, setCadEmail] = useState('');
-  const [cadSenha, setCadSenha] = useState('');
-  const [cadConfirmaSenha, setCadConfirmaSenha] = useState('');
-
-  // Formulário de login
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginSenha, setLoginSenha] = useState('');
-
-  // Mensagem de erro e trava contra clique duplo
-  const [erroForm, setErroForm] = useState('');
-  const [avisoForm, setAvisoForm] = useState('');
-  const [enviando, setEnviando] = useState(false);
-
-  const [theme, setTheme] = useState('dark')
-  const [role, setRole] = useState('estudante')
   const heroRef = useRef(null)
   const videoRef = useRef(null)
 
@@ -101,25 +79,6 @@ export default function App() {
   }, [theme])
 
   const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark')
-  // Para fechar o modal com ESC
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        setIsMenuOpen(false);
-        setIsLoginOpen(false);
-        setErroForm('');
-      }
-    };
-
-    if (isMenuOpen || isLoginOpen) {
-      window.addEventListener('keydown', handleKeyDown);
-    }
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isMenuOpen, isLoginOpen]);
-
   // Quando sair da tela, o video para
   useEffect(() => {
     const video = videoRef.current;
@@ -144,91 +103,6 @@ export default function App() {
     return () => observer.disconnect();
   }, [theme]); // Depende do theme pois a tag de vídeo é recriada na troca de tema
 
-  const handleCriarConta = async () => {
-    setErroForm('');
-
-    if (cadSenha.length < 8) {
-      setErroForm('A senha precisa ter ao menos 8 caracteres.');
-      return;
-    }
-    if (cadSenha !== cadConfirmaSenha) {
-      setErroForm('As senhas não coincidem.');
-      return;
-    }
-
-    setEnviando(true);
-
-    // O seletor da tela usa 'estudante'/'professor';
-    // o banco espera 'student'/'professor'.
-    const { erro, needsEmailConfirmation } = await signUpWithEmail({
-      email: cadEmail,
-      password: cadSenha,
-      nomeCompleto: cadNome,
-      papel: role === 'professor' ? 'professor' : 'student',
-    });
-
-    setEnviando(false);
-
-    if (erro) {
-      setErroForm(erro);
-      return;
-    }
-
-    if (needsEmailConfirmation) {
-      setAvisoForm('Confira seu e-mail e abra o link de confirmação. Depois, entre com seu e-mail e senha.');
-      setLoginEmail(cadEmail.trim());
-      setCadSenha('');
-      setCadConfirmaSenha('');
-      setIsMenuOpen(false);
-      setIsLoginOpen(true);
-      return;
-    }
-    setIsMenuOpen(false);
-    navigate('/eventos');
-  };
-
-  const handleEntrar = async () => {
-    setErroForm('');
-    setEnviando(true);
-
-    const { erro } = await signInWithEmail({
-      email: loginEmail,
-      password: loginSenha,
-    });
-
-    setEnviando(false);
-
-    if (erro) {
-      setErroForm(erro);
-      return;
-    }
-
-    setIsLoginOpen(false);
-    navigate('/eventos');
-  };
-
-  const handleGoogle = async () => {
-    setErroForm('');
-    setAvisoForm('');
-    setEnviando(true);
-    const { erro } = await signInWithGoogle();
-    setEnviando(false);
-    if (erro) setErroForm(erro);
-  };
-
-  useEffect(() => {
-    if (user && authIntent === 'login') navigate('/eventos', { replace: true });
-  }, [user, authIntent, navigate]);
-
-  useEffect(() => {
-    const hash = new URLSearchParams(window.location.hash.slice(1));
-    if (searchParams.has('error') || hash.has('error')) {
-      setErroForm('Não foi possível concluir a autenticação. Tente novamente ou entre com e-mail e senha.');
-      setIsLoginOpen(true);
-      window.history.replaceState(null, '', '/?auth=login');
-    }
-  }, [searchParams]);
-
   // ............................
   // RENDER
   // ............................
@@ -250,241 +124,11 @@ export default function App() {
         pageType="home" 
         isDark={theme === 'dark'} 
         toggleTheme={toggleTheme} 
-        onLoginClick={() => setIsLoginOpen(true)} 
-        onCreateAccountClick={() => setIsMenuOpen(true)} 
+        onLoginClick={() => setAuthMode('login')}
+        onCreateAccountClick={() => setAuthMode('signup')}
       />
 
-        {/*MODAL CRIAR CONTA*/}
-        {isMenuOpen && (
-          <div className="modal-overlay" onClick={() => { setIsMenuOpen(false); setErroForm(''); }}>
-            <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-              
-              {/* Botão Fechar */}
-              <button 
-                className="modal-close"
-                onClick={() => { setIsMenuOpen(false); setErroForm(''); }}
-              >
-                ✕
-              </button>
-              <h2 style={{
-                textAlign: 'center',
-                fontFamily: "'Orbitron', sans-serif",
-                color: theme === 'dark' ? '#ffffff' : '#1a1a2e',
-                fontSize: '1.65rem',
-                fontWeight: 700,
-                letterSpacing: '0.04em',
-                marginBottom: '6px',
-                textShadow: theme === 'dark' ? '0 0 20px rgba(0, 139, 255, 0.45)' : 'none'
-              }}>
-                Criar Conta
-              </h2>
-              <p style={{
-                textAlign: 'center',
-                color: theme === 'dark' ? 'rgba(255, 255, 255, 0.55)' : 'rgba(26, 26, 46, 0.6)',
-                fontSize: '0.85rem',
-                marginBottom: '26px'
-              }}>
-                Crie sua conta para acessar o portal da Agenda UnB
-              </p>
-              <container className="role-selector">
-                <button 
-                  onClick={() => setRole('estudante')}
-                  className={role === 'estudante' ? "modal-btn-secondary-on" : "modal-btn-secondary-off"}
-                >
-                  Estudante
-                </button>
-                <button 
-                  onClick={() => setRole('professor')}
-                  className={role === 'professor' ? "modal-btn-secondary-on" : "modal-btn-secondary-off"}
-                >
-                  Professor
-                </button>
-              </container>
-
-              {/* Campos do Formulário */}
-              <div className="modal-input-group">
-                <label className="modal-label">Nome Completo <span style={{color: 'rgb(0, 139, 255)'}}>*</span></label>
-                <input 
-                  type="text" 
-                  placeholder="Seu nome completo" 
-                  className="modal-input" 
-                  value={cadNome}
-                  onChange={(e) => setCadNome(e.target.value)}
-                />
-              </div>
-
-              <div className="modal-input-group">
-                <label className="modal-label">Email <span style={{color: 'rgb(0, 139, 255)'}}>*</span></label>
-                <input 
-                  type="email" 
-                  placeholder={role === 'professor' ? "nome.sobrenome@unb.br" : "seu@email.com"} 
-                  className="modal-input" 
-                  value={cadEmail}
-                  onChange={(e) => setCadEmail(e.target.value)}
-                />
-              </div>
-
-              <div className="modal-input-group">
-                <label className="modal-label">Senha <span style={{color: 'rgb(0, 139, 255)'}}>*</span></label>
-                <input 
-                  type="password" 
-                  placeholder="Mínimo 8 caracteres" 
-                  className="modal-input" 
-                  value={cadSenha}
-                  onChange={(e) => setCadSenha(e.target.value)}
-                />
-              </div>
-
-              <div className="modal-input-group">
-                <label className="modal-label">Confirmar Senha <span style={{color: 'rgb(0, 139, 255)'}}>*</span></label>
-                <input 
-                  type="password" 
-                  placeholder="Mínimo 8 caracteres" 
-                  className="modal-input" 
-                  value={cadConfirmaSenha}
-                  onChange={(e) => setCadConfirmaSenha(e.target.value)}
-                />
-              </div>
-
-              {avisoForm && <p role="status">{avisoForm}</p>}
-              {erroForm && (
-                <p style={{
-                  color: '#ff6b6b',
-                  fontSize: '0.85rem',
-                  textAlign: 'center',
-                  marginBottom: '12px'
-                }}>
-                  {erroForm}
-                </p>
-              )}
-
-              <button 
-                className="modal-btn-primary"
-                onClick={handleCriarConta}
-                disabled={enviando}
-              >
-                {enviando ? 'Criando...' : 'Criar Conta'}
-              </button>
-
-              {role !== 'professor' && (
-                <>
-                  <div className="modal-divider">ou</div>
-
-                  <button 
-                    className="modal-btn-google"
-                    onClick={handleGoogle}
-                disabled={enviando}
-                  >
-                    <svg width="18" height="18" viewBox="0 0 48 48">
-                      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.7 17.74 9.5 24 9.5z"/>
-                      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-                      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-                      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-                    </svg>
-                    Continuar com Google
-                  </button>
-                </> 
-              )}
-
-            </div>
-          </div>
-        )}
-
-        {/*MODAL LOGIN*/}
-        {isLoginOpen && (
-          <div className="modal-overlay" onClick={() => { setIsLoginOpen(false); setErroForm(''); }}>
-            <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-              
-              {/* Botão Fechar */}
-              <button 
-                className="modal-close"
-                onClick={() => { setIsLoginOpen(false); setErroForm(''); }}
-              >
-                ✕
-              </button>
-              <h2 style={{
-                textAlign: 'center',
-                fontFamily: "'Orbitron', sans-serif",
-                color: theme === 'dark' ? '#ffffff' : '#1a1a2e',
-                fontSize: '1.65rem',
-                fontWeight: 700,
-                letterSpacing: '0.04em',
-                marginBottom: '6px',
-                textShadow: theme === 'dark' ? '0 0 20px rgba(0, 139, 255, 0.45)' : 'none'
-              }}>
-                Entrar
-              </h2>
-              <p style={{
-                textAlign: 'center',
-                color: theme === 'dark' ? 'rgba(255, 255, 255, 0.55)' : 'rgba(26, 26, 46, 0.6)',
-                fontSize: '0.85rem',
-                marginBottom: '26px'
-              }}>
-                Acesse sua conta do portal Agenda UnB
-              </p>
-
-              {/* Campos do Formulário */}
-              <div className="modal-input-group">
-                <label className="modal-label">Email <span style={{color: 'rgb(0, 139, 255)'}}>*</span></label>
-                <input 
-                  type="email" 
-                  placeholder="seu@email.com" 
-                  className="modal-input" 
-                  value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
-                />
-              </div>
-
-              <div className="modal-input-group">
-                <label className="modal-label">Senha <span style={{color: 'rgb(0, 139, 255)'}}>*</span></label>
-                <input 
-                  type="password" 
-                  placeholder="Sua senha" 
-                  className="modal-input" 
-                  value={loginSenha}
-                  onChange={(e) => setLoginSenha(e.target.value)}
-                />
-              </div>
-
-              {avisoForm && <p role="status">{avisoForm}</p>}
-              {erroForm && (
-                <p style={{
-                  color: '#ff6b6b',
-                  fontSize: '0.85rem',
-                  textAlign: 'center',
-                  marginBottom: '12px'
-                }}>
-                  {erroForm}
-                </p>
-              )}
-
-              <button 
-                className="modal-btn-primary"
-                onClick={handleEntrar}
-                disabled={enviando}
-              >
-                {enviando ? 'Entrando...' : 'Entrar'}
-              </button>
-
-              <div className="modal-divider">ou</div>
-
-              <button 
-                className="modal-btn-google"
-                onClick={handleGoogle}
-                disabled={enviando}
-              >
-                <svg width="18" height="18" viewBox="0 0 48 48">
-                  <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.7 17.74 9.5 24 9.5z"/>
-                  <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-                  <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-                  <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-                </svg>
-                Continuar com Google
-              </button>
-
-            </div>
-          </div>
-        )}
+        {authMode && <AuthDialog mode={authMode} setMode={setAuthMode} />}
 
         {/* HERO */}
         <section 

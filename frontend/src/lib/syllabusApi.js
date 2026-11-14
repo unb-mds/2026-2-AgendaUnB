@@ -1,5 +1,5 @@
 import { request } from './api';
-import { approvedTextHash } from './approvedText';
+import { approvedTextHash, normalizeTextPreview } from './approvedText';
 import { normalizePlan, normalizePlanList, SYLLABUS_PAGE_SIZE } from './syllabus';
 
 async function syllabusRequest(path, { signal, timeout = 30000, ...options } = {}) {
@@ -10,6 +10,9 @@ async function syllabusRequest(path, { signal, timeout = 30000, ...options } = {
   const timer = setTimeout(() => controller.abort(new DOMException('Tempo de espera excedido.', 'TimeoutError')), timeout);
   try {
     return await request(`/syllabus${path}`, { ...options, auth: true, signal: controller.signal });
+  } catch (error) {
+    if (controller.signal.aborted && !signal?.aborted) throw controller.signal.reason;
+    throw error;
   } finally {
     clearTimeout(timer);
     signal?.removeEventListener('abort', cancel);
@@ -17,12 +20,11 @@ async function syllabusRequest(path, { signal, timeout = 30000, ...options } = {
 }
 
 export const syllabusApi = {
-  confirm: (id, candidates) => syllabusRequest(`/${encodeURIComponent(id)}/confirm`, { method: "POST", body: JSON.stringify({ candidates }) }),
   async prepareText(text, signal, offeringId) {
     return normalizePlan(await syllabusRequest('/text', { method: 'POST', body: JSON.stringify({ text, offering_id: offeringId }), signal }));
   },
-  text(id, signal) {
-    return syllabusRequest(`/${encodeURIComponent(id)}/text`, { signal });
+  async text(id, signal) {
+    return normalizeTextPreview(await syllabusRequest(`/${encodeURIComponent(id)}/text`, { signal }));
   },
   async authorize(id, pages, reprocess, signal) {
     const textHash = await approvedTextHash(pages);
@@ -44,5 +46,16 @@ export const syllabusApi = {
   },
   async get(id, signal) {
     return normalizePlan(await syllabusRequest(`/${encodeURIComponent(id)}`, { signal }));
+  },
+  async confirm(id, candidates, signal) {
+    const result = await syllabusRequest(`/${encodeURIComponent(id)}/confirm`, {
+      method: 'POST', body: JSON.stringify({ candidates }), signal,
+    });
+    const requested = new Set(candidates.map(item => item.candidateId));
+    if (result?.syllabusId !== id || !Array.isArray(result.events) || result.events.some(event =>
+      typeof event?.id !== 'string' || event.origin?.syllabusId !== id || !requested.delete(event.origin.candidateId))) {
+      throw new Error('A resposta da confirmação não pôde ser verificada.');
+    }
+    return result.events;
   },
 };
