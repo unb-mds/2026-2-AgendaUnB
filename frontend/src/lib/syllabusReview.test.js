@@ -1,17 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCandidateReviewDraft, selectReviewItems, createReviewDraft, validReviewDate, validUtcOffset, validateReviewItem } from './syllabusReview.js';
+import { buildReviewConfirmation, createCandidateReviewDraft, selectReviewItems, createReviewDraft, validReviewDate, validUtcOffset, validateReviewItem } from './syllabusReview.js';
 
-test('candidatos usam sugestões civis e só preservam fuso explícito da origem', () => {
+test('candidatos usam sugestões civis e convertem startsAt explícito para Brasília', () => {
   const candidates = [
     { id: 'a', status: 'pendente', suggestedDate: '2026-12-01', suggestedTime: '14:30:45' },
-    { id: 'b', status: 'confirmado', startsAt: '2026-12-01T14:30:00-03:00' },
+    { id: 'b', status: 'confirmado', startsAt: '2026-12-01T14:30:00Z' },
     { id: 'c', status: 'desconhecido', startsAt: '2026-12-01T14:30:00' },
   ];
   const [a, b, c] = createCandidateReviewDraft(candidates);
-  assert.equal(a.date, '2026-12-01'); assert.equal(a.time, '14:30:45'); assert.equal(a.utcOffset, '');
-  assert.equal(b.utcOffset, '-03:00'); assert.equal(b.editable, false);
-  assert.equal(c.date, ''); assert.equal(c.utcOffset, ''); assert.equal(c.editable, false);
+  assert.equal(a.date, '2026-12-01'); assert.equal(a.time, '14:30:45');
+  assert.equal(b.date, '2026-12-01'); assert.equal(b.time, '11:30:00'); assert.equal(b.editable, false);
+  assert.equal(c.date, ''); assert.equal(c.editable, false);
   assert.ok([a, b, c].every(item => item.decision === 'pending'));
 });
 
@@ -37,12 +37,11 @@ test('validação da revisão real respeita limites de título e tipos de avalia
   assert.ok(validateReviewItem({ ...item, time: '14:30:60' }, true).time);
 });
 
-test('rascunho não seleciona itens nem infere horário ou fuso', () => {
+test('rascunho não seleciona itens nem infere horário', () => {
   const source = [{ id: 'a', title: 'Prova', date: '2026-11-10' }];
   const [draft] = createReviewDraft(source);
   assert.equal(draft.decision, 'pending');
   assert.equal(draft.time, '');
-  assert.equal(draft.utcOffset, '');
   draft.title = 'Alterada';
   assert.equal(source[0].title, 'Prova');
 });
@@ -64,8 +63,24 @@ test('somente selecionados exigem campos; revisão parcial é permitida', () => 
   const [draft] = createReviewDraft([{ id: 'a' }]);
   assert.deepEqual(validateReviewItem(draft), {});
   assert.deepEqual(validateReviewItem({ ...draft, decision: 'discarded' }), {});
-  assert.deepEqual(Object.keys(validateReviewItem({ ...draft, decision: 'selected' })), ['title', 'date', 'time', 'utcOffset']);
-  const valid = { ...draft, decision: 'selected', title: 'Prova', date: '2026-11-10', time: '00:00', utcOffset: '-03:00' };
+  assert.deepEqual(Object.keys(validateReviewItem({ ...draft, decision: 'selected' })), ['title', 'date', 'time']);
+  const valid = { ...draft, decision: 'selected', title: 'Prova', date: '2026-11-10', time: '00:00' };
   assert.deepEqual(validateReviewItem(valid), {});
   for (const time of ['24:00', '12:60', '9:00']) assert.ok(validateReviewItem({ ...valid, time }).time);
+});
+test('buildReviewConfirmation inclui tipo revisado, título, data em Brasília (-03:00) e procedência', () => {
+  const candidates = [{ id: 'a', status: 'pendente', sourceExcerpt: 'Prova escrita.' }];
+  const draft = [{
+    id: 'a', decision: 'selected', title: '  Prova 1  ', type: 'Prova',
+    date: '2026-12-01', time: '14:00',
+  }];
+  const [payload] = buildReviewConfirmation(draft, candidates);
+  assert.deepEqual(payload, {
+    candidateId: 'a',
+    title: 'Prova 1',
+    type: 'prova',
+    startsAt: '2026-12-01T14:00-03:00',
+    category: 'Acadêmico',
+    description: 'Tipo de avaliação: Prova\n\nProva escrita.',
+  });
 });
