@@ -23,3 +23,11 @@ test('hosted builds require HTTPS and the API version prefix', () => {
   }
   assert.doesNotThrow(() => validateDeploymentConfig(env, { VERCEL_ENV: 'production' }));
 });
+test('allows Vercel system VITE_VERCEL_ variables', () => {
+  assert.doesNotThrow(() => validateDeploymentConfig({
+    ...env,
+    VITE_VERCEL_ENV: 'production',
+    VITE_VERCEL_GIT_REPO_ID: '123456',
+    VITE_VERCEL_URL: 'agendaunb.com.br',
+  }, { VERCEL_ENV: 'production' }));
+});

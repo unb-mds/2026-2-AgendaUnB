@@ -19,7 +19,7 @@ function publicHttpsUrl(value, name) {
 // Build-time policy: errors never include configuration values.
 export function validateDeploymentConfig(env, platform = {}) {
   for (const name of Object.keys(env)) {
-    if (name.startsWith('VITE_') && !PUBLIC_KEYS.has(name)) {
+    if (name.startsWith('VITE_') && !PUBLIC_KEYS.has(name) && !name.startsWith('VITE_VERCEL_')) {
       throw new Error(`${name}: variável pública não autorizada. Segredos pertencem ao servidor.`);
     }
   }
