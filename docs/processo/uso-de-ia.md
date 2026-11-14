@@ -33,6 +33,34 @@ O campo **verificado** é o mais importante. Sem ele, a entrada declara o uso ma
 
 ## Entradas
 
+### 11/11/2026 — Revisão final e documentação da jornada (#73)
+
+- **Quem:** Gabriel Escramin (solicitante).
+- **Ferramenta:** Codex (OpenAI), Impeccable polish/harden e Playwright.
+- **O que foi pedido:** Revisar o acabamento e consolidar evidências locais e pendências de homologação.
+- **O que entrou no repositório:** Explicação dos campos obrigatórios e do bloqueio da confirmação, teste da orientação e guia atualizado da jornada particular.
+- **O que foi corrigido:** O guia ainda descrevia revisão indisponível, variantes removidas e retenção de PDF no Storage como comportamento atual. Essas descrições foram substituídas pelo contrato vigente.
+- **Verificação:** Inspeção visual do editor e estados de erro/sucesso em celular e desktop, conferência de links locais e cálculo de contraste dos pares de tokens de texto revisados. A execução final das suítes e seus limites está consolidada no guia de planos.
+- **Limites:** Sem homologação, medição RNF06, auditoria WCAG completa ou aprovação humana. O build MkDocs não pôde ser executado porque o módulo não está instalado no ambiente.
+
+### 11/11/2026 — Recuperação da jornada particular (#73)
+
+- **Quem:** Gabriel Escramin 
+- **Ferramenta:** Codex (OpenAI), project-standards e Impeccable (harden/polish).
+- **O que foi pedido:** Completar validações, histórico e recuperação de falhas da jornada de planos.
+- **O que entrou no repositório:** Contagem UTF-8, validação da prévia, consulta obrigatória após autorização incerta, proteção de respostas assíncronas, atualização do histórico e navegação de recuperação por PDF/texto.
+- **O que foi corrigido:** Limite por caracteres divergente do servidor, prévia malformada causando falha de renderização, possibilidade de repetir autorização sem conferir estado salvo e histórico desatualizado após autorizar.
+- **Limites da verificação:** Testes locais do frontend e navegador com respostas controladas. A jornada real e o tempo RNF06 precisam de homologação com backend, banco e provedor disponíveis.
+
+### 11/11/2026 — Oferta seguida obrigatória no envio de planos (#73)
+
+- **Quem:** Gabriel Escramin 
+- **Ferramenta:** Codex (OpenAI), skills project-standards, code-review e Impeccable (harden/polish).
+- **O que foi pedido:** Revisar as dependências e exigir vínculo da própria conta para PDF/texto, com autorização explícita para o ajuste de backend.
+- **O que entrou no repositório:** Verificação de oferta disponível e vínculo antes da extração e antes da persistência, bloqueio de envio na interface até consultar as turmas seguidas, testes de regressão, ajuste da paginação em celular e contrato HTTP atualizado.
+- **O que foi corrigido:** O identificador de uma oferta disponível podia ser inserido diretamente na URL ou enviado à API sem seguir a turma. O histórico particular permanece acessível ao dono após remover o vínculo.
+- **Limites:** Testes locais utilizam SQLite e fixtures de autenticação; testes de navegador controlam as respostas da API. PostgreSQL concorrente e a jornada completa em homologação exigem validação própria. O merge da main preparado anteriormente permanece separado das alterações desta etapa no índice do Git.
+
 ### 10/11/2026 — Resolução dos conflitos do PR #108 (dev → main)
 
 - **Quem:** Codex, a pedido de Thomas.
@@ -243,3 +271,11 @@ Este arquivo foi redigido com auxílio da I.A. A estrutura e o texto das entrada
 - **Pedido:** testar implementações da API do Followw.
 - **Verificações:** testes automatizados HTTP, adaptador, PostgreSQL isolado e Playwright; build frontend; migrações na atualização e em base sem tabelas da aplicação. Sondagem pública pequena retornou 211 unidades e duas ofertas de FGA0108/2026.2, ambas com ID inequívoco. Detalhes e limitações em `docs/arquitetura/catalogo-de-turmas.md`.
 - **Limites:** sem deploy, escrita no Supabase hospedado, varredura integral, mensagens em issues ou fechamento de issues. Revisor humano e homologação ainda pendentes.
+
+### 13/11/2026 — SEO do Agenda UnB
+
+- **Solicitante:** Thomas. **Ferramenta:** Codex.
+- **Pedido:** melhorar a descoberta do site pelo Google e abrir um PR para a `dev`.
+- **O que entrou:** HTML e metadados para páginas públicas, guias com fontes oficiais da UnB, sitemap de eventos aprovados e regras de indexação.
+- **Verificações:** build e 25 testes do frontend, HTTP local dos guias e testes da função com respostas simuladas do Supabase. A validação do roteamento e do cache na Vercel fica para a homologação.
+- **Decisão:** a marcação estruturada de eventos depende de endereços completos no catálogo. As páginas públicas usam o campo de local disponível e não inferem um endereço.

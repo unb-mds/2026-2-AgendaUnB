@@ -1,3 +1,4 @@
+import GoogleCalendarConnection from '../components/GoogleCalendarConnection';
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -389,11 +390,13 @@ export default function SegundaPagina() {
   const isDark = theme === 'dark';
 
   // --- ESTADOS DA APLICAÇÃO ---
-  const [eventos, setEventos] = useState([]);
-  const [carregandoEventos, setCarregandoEventos] = useState(true);
+  const initialVisao = searchParams.get('aba') === 'meus' ? 'MEUS' : 'Públicos';
+  const initialCachedPublic = initialVisao === 'Públicos' ? eventsApi.getCachedPublic() : null;
+  const [eventos, setEventos] = useState(() => initialCachedPublic ? initialCachedPublic.map(event => toUiEvent(event)) : []);
+  const [carregandoEventos, setCarregandoEventos] = useState(() => !initialCachedPublic);
   const [erroEventos, setErroEventos] = useState('');
 
-  const [visaoEventos, setVisaoEventos] = useState(() => searchParams.get('aba') === 'meus' ? 'MEUS' : 'Públicos');
+  const [visaoEventos, setVisaoEventos] = useState(initialVisao);
   const [modoVisualizacao, setModoVisualizacao] = useState('lista');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [savingEvent, setSavingEvent] = useState(false);
@@ -441,36 +444,48 @@ export default function SegundaPagina() {
   useEffect(() => {
     let active = true;
     const loadEvents = async () => {
-      setCarregandoEventos(true);
       setErroEventos('');
-      try {
-        let mappedEvents;
-        if (visaoEventos === 'MEUS') {
+      if (visaoEventos === 'MEUS') {
+        setCarregandoEventos(true);
+        try {
           const [personal, saved] = await Promise.all([eventsApi.listPersonal(), eventsApi.listSaved()]);
-          mappedEvents = [
+          const mappedEvents = [
             ...personal.map(event => toUiEvent(event, true)),
             ...saved.map(event => ({ ...toUiEvent(event), salvoNaAgenda: true })),
           ].sort((a, b) => `${a.data}T${a.horario}`.localeCompare(`${b.data}T${b.horario}`));
-        } else {
-          const result = await eventsApi.listPublic({
-            campus: filtroCampus,
-            category: filtroArea,
-            search: searchQuery,
-          });
-          mappedEvents = result.map(event => toUiEvent(event));
+          if (active) setEventos(mappedEvents);
+        } catch (error) {
+          if (active) setErroEventos(error.message || 'Não foi possível carregar os eventos.');
+        } finally {
+          if (active) setCarregandoEventos(false);
         }
+        return;
+      }
+
+      const cached = eventsApi.getCachedPublic();
+      if (cached) {
+        setEventos(cached.map(event => toUiEvent(event)));
+        setCarregandoEventos(false);
+      } else {
+        setCarregandoEventos(true);
+      }
+
+      try {
+        const result = await eventsApi.listPublic();
         if (active) {
-          setEventos(mappedEvents);
+          setEventos(result.map(event => toUiEvent(event)));
         }
       } catch (error) {
-        if (active) setErroEventos(error.message || 'Não foi possível carregar os eventos.');
+        if (active && !cached) {
+          setErroEventos(error.message || 'Não foi possível carregar os eventos.');
+        }
       } finally {
         if (active) setCarregandoEventos(false);
       }
     };
     loadEvents();
     return () => { active = false; };
-  }, [visaoEventos, filtroCampus, filtroArea, searchQuery, user?.id]);
+  }, [visaoEventos, visaoEventos === 'MEUS' ? user?.id : null]);
 
   // --- FUNÇÕES AUXILIARES ---
   const getAreaIcon = (areaName) => {
@@ -646,7 +661,7 @@ export default function SegundaPagina() {
       
       <NavBar pageType="second" isDark={isDark} toggleTheme={toggleTheme} />
 
-      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '8rem 1.5rem 2rem' }}>
+      <main className="events-page" style={{ maxWidth: '1200px', margin: '0 auto', padding: '8rem 1.5rem 2rem' }}>
         
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2.5rem' }}>
           <div className="btn-toggle-group">
@@ -731,23 +746,27 @@ export default function SegundaPagina() {
             {visaoEventos === 'MEUS' ? 'MEUS EVENTOS' : 'EVENTOS PÚBLICOS'}
             <span className="material-symbols-outlined" aria-hidden="true" style={{ color: accentColor, fontSize: '1.4rem' }}>event</span>
           </h2>
-          <div className="btn-toggle-group events-view-toggle" role="group" aria-label="Visualização dos eventos">
-            <button
-              type="button"
-              className={`btn-toggle-item ${modoVisualizacao === 'lista' ? 'active' : ''}`}
-              aria-pressed={modoVisualizacao === 'lista'}
-              onClick={() => setModoVisualizacao('lista')}
-            >
-              Lista
-            </button>
-            <button
-              type="button"
-              className={`btn-toggle-item ${modoVisualizacao === 'calendario' ? 'active' : ''}`}
-              aria-pressed={modoVisualizacao === 'calendario'}
-              onClick={() => setModoVisualizacao('calendario')}
-            >
-              Calendário
-            </button>
+          <div className="events-section-actions">
+            {user && visaoEventos === 'MEUS' &&
+              <GoogleCalendarConnection key={user.id} callbackResult={searchParams.get('google_calendar')} events={carregandoEventos || erroEventos ? [] : eventosFiltrados} />}
+            <div className="btn-toggle-group events-view-toggle" role="group" aria-label="Visualização dos eventos">
+              <button
+                type="button"
+                className={`btn-toggle-item ${modoVisualizacao === 'lista' ? 'active' : ''}`}
+                aria-pressed={modoVisualizacao === 'lista'}
+                onClick={() => setModoVisualizacao('lista')}
+              >
+                Lista
+              </button>
+              <button
+                type="button"
+                className={`btn-toggle-item ${modoVisualizacao === 'calendario' ? 'active' : ''}`}
+                aria-pressed={modoVisualizacao === 'calendario'}
+                onClick={() => setModoVisualizacao('calendario')}
+              >
+                Calendário
+              </button>
+            </div>
           </div>
         </div>
 
@@ -769,7 +788,7 @@ export default function SegundaPagina() {
             {eventosFiltrados.map((evento) => (
               <div 
                 key={`${evento.visibilidade}-${evento.id}`}
-                className="event-card" 
+                className="event-card"
                 onClick={() => navigate(`/evento/${evento.id}`, { state: { evento } })}
                 style={{ cursor: 'pointer' }}
               >

@@ -1,0 +1,153 @@
+.auth-dialog.modal-box,
+.auth-return-panel.modal-box {
+  --auth-muted: #bdc7d8;
+  --auth-link: #9acbff;
+  --auth-error: #ffabab;
+  --auth-focus: #79bbff;
+  width: min(30rem, calc(100% - 2rem));
+  padding: 0;
+  color: #f7f9ff;
+  overflow-wrap: anywhere;
+}
+
+body.light :is(.auth-dialog, .auth-return-panel) {
+  --auth-muted: #46536a;
+  --auth-link: #0051a8;
+  --auth-error: #a4192d;
+  --auth-focus: #005fcc;
+  color: #18243a;
+}
+
+.auth-dialog.modal-box {
+  position: fixed;
+  margin: auto;
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.auth-dialog::backdrop {
+  background: rgb(2 6 16 / 82%);
+  backdrop-filter: blur(8px);
+}
+
+body.light .auth-dialog::backdrop { background: rgb(223 232 244 / 75%); }
+
+.auth-dialog-content {
+  position: relative;
+  padding: 2.5rem clamp(1rem, 5vw, 2rem) 1.5rem;
+}
+
+.auth-dialog .modal-close {
+  top: .5rem;
+  right: .5rem;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  color: var(--auth-muted);
+}
+
+.auth-title {
+  font: 700 clamp(1.25rem, 4vw, 1.6rem)/1.3 'Orbitron', sans-serif;
+  margin: 0 1rem 1.25rem;
+  text-align: center;
+  text-wrap: balance;
+}
+
+.auth-title:focus { outline: none; }
+
+.auth-description {
+  color: var(--auth-muted);
+  line-height: 1.5;
+  margin: 0 0 1rem;
+}
+
+:is(.auth-dialog, .auth-return-panel) .modal-label {
+  color: var(--auth-muted);
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+:is(.auth-dialog, .auth-return-panel) .modal-input-group { margin-bottom: .875rem; }
+:is(.auth-dialog, .auth-return-panel) .modal-input { font-size: 1rem; }
+.auth-dialog .role-selector { margin-bottom: 1rem; }
+.auth-dialog .modal-btn-secondary-off,
+body.light .auth-dialog .modal-btn-secondary-off { color: var(--auth-muted); }
+.auth-dialog .modal-divider,
+body.light .auth-dialog .modal-divider { color: var(--auth-muted); margin-block: .75rem; }
+
+.auth-dialog-content .material-symbols-outlined {
+  display: block;
+  width: 24px;
+  height: 24px;
+  line-height: 24px;
+  overflow: hidden;
+  text-align: start;
+}
+
+.auth-password { position: relative; }
+.auth-password .modal-input { padding-inline-end: 3.25rem; }
+.auth-password-toggle {
+  position: absolute;
+  inset-inline-end: .125rem;
+  inset-block-start: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--auth-muted);
+  cursor: pointer;
+}
+
+.auth-link {
+  display: inline-block;
+  min-height: 44px;
+  padding: .65rem 0;
+  border: 0;
+  background: transparent;
+  color: var(--auth-link);
+  font: inherit;
+  text-underline-offset: .22em;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.auth-back { display: block; margin: .25rem auto 0; text-align: center; }
+
+.auth-field-hint, .auth-error {
+  margin: .375rem 0 .75rem;
+  color: var(--auth-muted);
+  font-size: .875rem;
+  line-height: 1.45;
+}
+.auth-password-hint { margin-top: -.5rem; }
+.auth-error { color: var(--auth-error); }
+.auth-countdown { text-align: center; font-variant-numeric: tabular-nums; }
+
+:is(.auth-dialog, .auth-return-panel) .modal-btn-primary { margin-bottom: .25rem; }
+:is(.auth-dialog, .auth-return-panel) .modal-btn-primary:hover { background-color: #0052b9; }
+:is(.auth-dialog, .auth-return-panel) button:disabled { opacity: .62; cursor: default; transform: none; }
+:is(.auth-dialog, .auth-return-panel) :is(a, input, button):focus-visible {
+  outline: 2px solid var(--auth-focus);
+  outline-offset: 2px;
+}
+.auth-action { display: block; text-align: center; text-decoration: none; }
+
+.auth-return {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 1rem 0;
+  background: var(--bg-color, #080c16);
+}
+.auth-return-panel .auth-dialog-content { padding-top: 2rem; }
+:is(.auth-dialog, .auth-return-panel) ::selection { background: #005fd2; color: #fff; }
+:is(.auth-dialog, .auth-return-panel) input { caret-color: var(--auth-focus); }
+
+@media (prefers-reduced-motion: reduce) {
+  :is(.auth-dialog, .auth-return-panel) :is(button, input) { transition: none; }
+}
