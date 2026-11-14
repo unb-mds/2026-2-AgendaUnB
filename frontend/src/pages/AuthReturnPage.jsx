@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import PasswordField from '../components/PasswordField';
 import { changePassword, validateNewPassword } from '../lib/auth';
-import { request } from '../lib/api';
 import { createRecoveryClient, supabase } from '../lib/supabase';
 import '../styles/auth.css';
 
@@ -20,25 +19,6 @@ function readReturn() {
     type: fragment.get('type'),
     tokenHash: fragment.get('token_hash'),
   };
-}
-
-async function saveCalendarGrant(session) {
-  const { access_token: accessToken, provider_refresh_token: refreshToken } = session;
-  const headers = { Authorization: `Bearer ${accessToken}` };
-  try {
-    if (refreshToken) {
-      await request('/me/google-calendar/connection', {
-        method: 'POST', headers,
-        body: JSON.stringify({ refresh_token: refreshToken }),
-        signal: AbortSignal.timeout(20000),
-      });
-      return true;
-    }
-    const status = await request('/me/google-calendar/connection', { headers, signal: AbortSignal.timeout(5000) });
-    return status?.connected === true;
-  } catch {
-    return false;
-  }
 }
 
 export default function AuthReturnPage() {
@@ -75,16 +55,14 @@ export default function AuthReturnPage() {
     let active = true;
     googleExchange.current ??= (async () => {
       const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(callback.code);
-      if (exchangeError || !data.session) return null;
-      const calendarError = !(await saveCalendarGrant(data.session));
-      return { calendarError };
+      return !exchangeError && Boolean(data?.session);
     })();
     async function exchange() {
       try {
         const result = await googleExchange.current;
         if (!active) return;
         if (result) {
-          navigate('/eventos', { replace: true, state: result });
+          navigate('/eventos', { replace: true });
           return;
         }
       } catch {

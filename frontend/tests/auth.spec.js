@@ -113,13 +113,10 @@ test('recuperação envia link e usa sessão temporária para redefinir senha', 
 });
 
 for (const mode of ['login', 'signup']) {
-  test(`Google solicita o Calendar automaticamente no fluxo ${mode}`, async ({ page }) => {
+  test(`Google autentica sem solicitar o Calendar no fluxo ${mode}`, async ({ page }) => {
     await authClient(page, `
       async signInWithOAuth({ options }) {
-        if (options.scopes !== 'https://www.googleapis.com/auth/calendar.app.created'
-            || options.queryParams.access_type !== 'offline' || options.queryParams.prompt !== 'consent') {
-          throw new Error('Missing Google Calendar consent');
-        }
+        if (options.scopes || options.queryParams) throw new Error('Unexpected Calendar consent');
         return { data: { url: options.redirectTo + '?code=test-code' } };
       },
       async exchangeCodeForSession(code) {
@@ -127,17 +124,11 @@ for (const mode of ['login', 'signup']) {
         const session = {
           user: { id: 'google-user', email: 'pessoa@example.com' },
           access_token: 'fake-supabase-token',
-          provider_refresh_token: 'fake-provider-grant',
         };
         notify('SIGNED_IN', session);
         return { data: { session } };
       },
     `);
-    await page.route('**/api/v1/me/google-calendar/connection', route => {
-      expect(route.request().headers().authorization).toBe('Bearer fake-supabase-token');
-      expect(route.request().postDataJSON()).toEqual({ refresh_token: 'fake-provider-grant' });
-      return route.fulfill({ status: 204 });
-    });
     await page.goto(`/?auth=${mode}`);
     await expect(page.getByRole('dialog').getByRole('checkbox')).toHaveCount(0);
     await page.getByRole('button', { name: 'Continuar com Google' }).click();
@@ -153,25 +144,6 @@ test('recusa do Google oferece retorno para o login', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Não foi possível entrar com Google' })).toBeVisible();
   await page.getByRole('link', { name: 'Voltar para entrar' }).click();
   await expect(page.getByRole('button', { name: 'Continuar com Google' })).toBeVisible();
-});
-
-test('consentimento parcial mantém a sessão e informa como liberar a exportação', async ({ page }) => {
-  const session = calendarSession('oauth');
-  await authClient(page, `
-    async exchangeCodeForSession() {
-      const session = ${JSON.stringify(session)};
-      notify('SIGNED_IN', session);
-      return { data: { session } };
-    },
-  `);
-  await page.route('**/api/v1/me/google-calendar/connection', route => {
-    expect(route.request().method()).toBe('GET');
-    return route.fulfill({ json: { connected: false } });
-  });
-  await page.goto('/auth/retorno?code=test-code');
-  await expect(page).toHaveURL(/\/eventos$/);
-  await expect(page.getByRole('button', { name: 'Sair da conta' })).toBeVisible();
-  await expect(page.getByText('O login foi concluído. Para exportar eventos', { exact: false })).toBeVisible();
 });
 
 function calendarSession(method) {
@@ -228,22 +200,42 @@ test('Google com permissão exporta apenas os eventos selecionados', async ({ pa
   expect((await periodSelector.boundingBox()).height).toBe(referenceHeight);
 });
 
-for (const [method, connected] of [['password', true], ['oauth', false]]) {
-  test(`exportação fica oculta para sessão ${method} sem acesso ao calendário`, async ({ page }) => {
-    const session = calendarSession(method);
+for (const outcome of ['denied', 'email_mismatch', 'connected']) {
+  test(`Calendar mantém sessão por senha após retorno ${outcome}`, async ({ page }) => {
+    const session = calendarSession('password');
+    let connected = false;
     await authClient(page, `async getSession() { return { data: { session: ${JSON.stringify(session)} } }; },`, session);
     await page.route('**/api/v1/me/events', route => route.fulfill({ json: [] }));
     await page.route('**/api/v1/me/saved-events', route => route.fulfill({ json: [] }));
-    let checks = 0;
+    await page.route('https://accounts.google.com/o/oauth2/v2/auth**', route => {
+      connected = outcome === 'connected';
+      return route.fulfill({
+        status: 302, headers: { location: new URL(`/eventos?aba=meus&google_calendar=${outcome}`, page.url()).href },
+      });
+    });
+    await page.route('**/api/v1/me/google-calendar/authorization', route => {
+      expect(route.request().method()).toBe('POST');
+      return route.fulfill({ json: { authorization_url: 'https://accounts.google.com/o/oauth2/v2/auth?state=simulado' } });
+    });
     await page.route('**/api/v1/me/google-calendar/connection', route => {
-      checks += 1;
+      if (route.request().method() === 'DELETE') {
+        connected = false;
+        return route.fulfill({ json: { disconnected: true, revocation: 'confirmed' } });
+      }
       return route.fulfill({ json: { connected } });
     });
     await page.goto('/eventos?aba=meus');
-    await expect(page.getByText('Nenhum evento encontrado')).toBeVisible();
-    if (method === 'oauth') await expect.poll(() => checks).toBe(1);
-    else expect(checks).toBe(0);
-    await expect(page.getByRole('button', { name: 'Exportar para o Google Agenda' })).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'Conectar Google Agenda' })).toHaveCount(0);
+    const connect = page.getByRole('button', { name: 'Conectar Google Agenda', exact: true });
+    await connect.click();
+    await expect(page).toHaveURL(new RegExp(`google_calendar=${outcome}`));
+    if (connected) {
+      await expect(page.getByText('Google Agenda conectado.')).toBeVisible();
+      await page.getByRole('button', { name: 'Desconectar Google Agenda', exact: true }).click();
+      await expect(page.getByText('Google Agenda desconectado.')).toBeVisible();
+      await expect(connect).toBeVisible();
+    } else {
+      await expect(page.getByText(outcome === 'denied' ? /não foi concedido/ : /mesmo e-mail verificado/)).toBeVisible();
+    }
+    await expect(page.getByRole('button', { name: 'Sair da conta' })).toBeVisible();
   });
 }

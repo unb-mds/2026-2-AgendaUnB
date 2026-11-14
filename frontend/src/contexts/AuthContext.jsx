@@ -3,18 +3,7 @@ import { supabase } from '../lib/supabase';
 
 const AuthContext = createContext({});
 
-function isGoogleSession(session) {
-  if (!session?.user?.identities?.some(identity => identity.provider === 'google')) return false;
-  try {
-    const payload = session.access_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-    return JSON.parse(atob(payload)).amr?.some(entry => entry.method === 'oauth') === true;
-  } catch {
-    return false;
-  }
-}
-
 export const AuthProvider = ({ children }) => {
-  const [googleSession, setGoogleSession] = useState(false);
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -41,7 +30,6 @@ export const AuthProvider = ({ children }) => {
       if (currentId !== nextId) { setProfile(null); setLoading(!!nextId); }
       currentId = nextId;
       setUser(session?.user ?? null);
-      setGoogleSession(isGoogleSession(session));
       if (nextId) {
         // Supabase calls must run outside the Auth callback's internal lock.
         setTimeout(() => { if (active && currentId === nextId) fetchProfile(nextId); }, 0);
@@ -63,7 +51,6 @@ export const AuthProvider = ({ children }) => {
     <AuthContext.Provider
       value={{
         user,
-        googleSession,
         profile,
         loading,
         isProfessor: profile?.papel === 'professor',

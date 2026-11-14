@@ -31,7 +31,7 @@ Este documento reúne os **Requisitos Funcionais (RF)** e **Requisitos Não Func
 | **RF18** | **Histórico da agenda pessoal** | O sistema deve exibir separadamente eventos públicos passados ainda adicionados à agenda e compromissos privados passados do próprio usuário. Redirecionamentos à fonte são uma métrica agregada e ficam fora do histórico pessoal. Inscrição externa e presença dependem do organizador. |
 | **RF19** | **Filtros e Busca de Eventos** | O sistema deve permitir filtrar e classificar eventos por categoria (prova, trabalho, palestra, cultural), campus/instituto e intervalo de datas. |
 | **RF20** | **Alternância de Tema (Dark / Light)** | O sistema deve disponibilizar alternância de tema visual entre modo escuro (_Dark Mode_) e modo claro (_Light Mode_). |
-| **RF21** | **Exportação de calendário** | O usuário deve poder selecionar período e eventos da própria agenda e exportá-los diretamente para uma agenda secundária Agenda UnB pela Google Calendar API. A exportação direta exige login com Google e consentimento de calendário nesse login.
+| **RF21** | **Exportação de calendário** | O usuário deve poder selecionar período e eventos da própria agenda e exportá-los diretamente para uma agenda secundária Agenda UnB pela Google Calendar API. A exportação direta exige consentimento adicional do Calendar e conta Google com e-mail verificado correspondente ao e-mail confirmado da Agenda UnB. A conexão também está disponível para quem entrou com e-mail e senha. |
 
 ---
 

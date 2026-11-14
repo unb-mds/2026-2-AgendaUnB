@@ -1,6 +1,6 @@
 import GoogleCalendarConnection from '../components/GoogleCalendarConnection';
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { eventsApi, toApiEvent, toUiEvent } from '../lib/api';
 import NavBar from '../components/NavBar';
@@ -377,8 +377,7 @@ const CustomTimePicker = ({ value, onChange, placeholder, dropUp = false, classN
 export default function SegundaPagina() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { state: navigationState } = useLocation();
-  const { user, profile, signOut, isProfessor, isAdmin, googleSession } = useAuth();
+  const { user, profile, signOut, isProfessor, isAdmin } = useAuth();
   // --- GERENCIAMENTO DE TEMA LOCAL ---
   const [theme, setTheme] = useState(() => document.body.classList.contains('light') ? 'light' : 'dark');
   
@@ -727,9 +726,6 @@ export default function SegundaPagina() {
           </div>
         </div>
 
-        {googleSession && navigationState?.calendarError && (
-          <Feedback error="O login foi concluído. Para exportar eventos, entre novamente com Google e permita o acesso ao Google Agenda." />
-        )}
         <Feedback success={suggestionSuccess} />
         <div className="events-section-header">
           <h2 className="events-section-title">
@@ -737,8 +733,8 @@ export default function SegundaPagina() {
             <span className="material-symbols-outlined" aria-hidden="true" style={{ color: accentColor, fontSize: '1.4rem' }}>event</span>
           </h2>
           <div className="events-section-actions">
-            {googleSession && visaoEventos === 'MEUS' &&
-              <GoogleCalendarConnection key={user.id} events={carregandoEventos || erroEventos ? [] : eventosFiltrados} />}
+            {user && visaoEventos === 'MEUS' &&
+              <GoogleCalendarConnection key={user.id} callbackResult={searchParams.get('google_calendar')} events={carregandoEventos || erroEventos ? [] : eventosFiltrados} />}
             <div className="btn-toggle-group events-view-toggle" role="group" aria-label="Visualização dos eventos">
               <button
                 type="button"
