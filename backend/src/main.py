@@ -24,6 +24,8 @@ app = FastAPI(
     version="1.0.0",
 )
 logger = logging.getLogger("agenda_unb.api")
+if os.environ.get("APP_ENV", "local") != "local":
+    logging.getLogger("uvicorn.access").disabled = True
 
 
 @app.exception_handler(IntegrityError)

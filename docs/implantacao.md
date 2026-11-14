@@ -2,20 +2,25 @@
 
 ## Operação da S7-B06
 
-Em 12/11/2026, [agendaunb.com.br](https://agendaunb.com.br) e
-[agendaunb.vercel.app](https://agendaunb.vercel.app) servem o deploy Vercel
-`dpl_BSi2Y5L536ETTZS4PtqMV5gr6cib` (`2a92144`). O domínio `www` redireciona
-para o domínio principal. O bundle aponta para a
-[API de homologação no Render](https://agenda-unb-api-homolog.onrender.com/health)
-e para o projeto Supabase de homologação `pzniltzdhyuzzdqbppjw`. Essa é a
-topologia observada, com separação de dados entre homologação e produção pendente.
+Em 14/11/2026, por decisão do PO de manter ambiente único nesta fase (sem
+serviços ou projetos duplicados entre homologação e produção por prazo e
+orçamento), [agendaunb.com.br](https://agendaunb.com.br) e
+[2026-2-agendaunb-agenda-un-b.vercel.app](https://2026-2-agendaunb-agenda-un-b.vercel.app)
+servem o frontend Vite na Vercel (o endereço legado `agendaunb.vercel.app`
+retorna `DEPLOYMENT_NOT_FOUND`). O domínio `www` redireciona para o domínio
+principal. O bundle aponta para a
+[API no Render](https://agenda-unb-api-homolog.onrender.com/health)
+(`agenda-unb-api-homolog`) e para o projeto Supabase `pzniltzdhyuzzdqbppjw`
+(`agenda-unb-homolog`), com as 31 migrações versionadas aplicadas,
+sincronização do catálogo `2026.2` executada e supressão de `uvicorn.access`
+quando `APP_ENV != "local"`.
 
-| Componente | Configuração para a próxima publicação |
+| Componente | Configuração ativa |
 | --- | --- |
-| SPA | Vercel, raiz `frontend`, Vite, `npm ci`, `npm run build`, saída `dist`. As rotas `/api` e `/health` ficam fora do fallback da SPA. |
-| API | FastAPI em container Python 3.11 no Render. Usar HTTPS direto para `/api/v1`, inclusive no upload. O Blueprint descreve um serviço Free de produção com publicação manual. Confirmar antes se haverá novo serviço ou migração de um existente. |
-| Auth, dados e Storage | Projetos Supabase independentes, com credenciais por ambiente. O Render usa a conexão PostgreSQL com TLS e o pooler em modo de sessão quando a rede exigir IPv4. |
-| Worker e coletor | GitHub Actions em `main` com segredos no environment `production-jobs` e ativação explícita por job. Esta é a proposta para a prova de custo zero da [#68](https://github.com/unb-mds/2026-2-AgendaUnB/issues/68). |
+| SPA | Vercel, raiz `frontend` (e configuração equivalente na raiz em [`vercel.json`](../vercel.json)), Vite, `npm ci`, `npm run build`, saída `dist`. As rotas `/api/search`, `/sitemap.xml`, `/evento/:id` e `/auth/retorno` têm rewrites dedicados e ficam preservadas no fallback. |
+| API | FastAPI em Python 3.11 no Render (`agenda-unb-api-homolog`). Usar HTTPS direto para `/api/v1`, inclusive no upload. O Blueprint em [`render.yaml`](../render.yaml) reflete o serviço único Free com publicação manual. |
+| Auth, dados e Storage | Projeto Supabase único `pzniltzdhyuzzdqbppjw` (`agenda-unb-homolog`), compartilhado entre API, frontend e jobs, com 31 migrações aplicadas até `20261113212429` e conexão PostgreSQL via TLS (`sslmode=require`). |
+| Worker, coletor e catálogo | GitHub Actions com segredos no environment `production-jobs` e disparo manual/agendado por job (`worker`, `collector` e `catalog` para `python -m src.modules.classes.sync --period 2026.2`), validando a operação de custo zero da [#68](https://github.com/unb-mds/2026-2-AgendaUnB/issues/68). |
 
 O PDF vai diretamente do navegador para o Render com Bearer do Supabase e
 multipart. O limite é 10 MiB (10.485.760 bytes), com espaço adicional para o
@@ -24,14 +29,14 @@ A revisão e a autorização do texto continuam necessárias para iniciar
 processamento por IA. A Vercel limita o payload de Functions a 4,5 MB.
 [Limites da Vercel](https://vercel.com/docs/functions/limitations#request-body-size).
 
-### Configurar os ambientes
+### Configurar o ambiente único
 
 | Local | Variáveis e configuração |
 | --- | --- |
-| Vercel Production | `VITE_API_URL` com a URL HTTPS da API terminada em `/api/v1`, `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` do projeto correspondente. A chave legada anon também funciona. |
-| Vercel Preview | Habilitar as variáveis de sistema da Vercel para o build ler `VERCEL_ENV`. Definir `VITE_DEPLOYMENT_ENV=preview`, as três variáveis públicas de homologação e as referências públicas `PRODUCTION_API_ORIGIN` e `PRODUCTION_SUPABASE_URL`. O build rejeita preview com a mesma origem de API ou Auth que produção, ou com referências ausentes. Usar um domínio de teste estável para CORS e Auth. |
-| Render | `APP_ENV=production` ou `preview`, `DATABASE_URL` com TLS, `SUPABASE_URL`, `SUPABASE_ANON_KEY` e `SUPABASE_SERVICE_ROLE_KEY` do mesmo projeto. Definir `CORS_ORIGINS` com origens HTTPS exatas. Em produção, os hosts atuais são `https://agendaunb.com.br` e `https://agendaunb.vercel.app`. |
-| Supabase Auth | Definir `https://agendaunb.com.br` como Site URL de produção. Adicionar `https://agendaunb.com.br/?auth=login` e as rotas exatas usadas pela versão publicada para confirmação e recuperação. O projeto de teste recebe somente os retornos de teste. Manter URLs legadas válidas enquanto houver links emitidos. |
+| Vercel | `VITE_API_URL` com `https://agenda-unb-api-homolog.onrender.com/api/v1`, `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` do projeto `pzniltzdhyuzzdqbppjw` (chave legada anon também aceita). |
+| Previews Vercel | Como o projeto opera com ambiente único por decisão do PO, habilitar `VERCEL_ENV` apenas quando houver projeto/origem de produção distintos; caso contrário, `deploymentConfig.js` valida que `VITE_API_URL` seja HTTPS terminado em `/api/v1` e bloqueia variáveis `VITE_*` não listadas. |
+| Render | `APP_ENV=production` (com `uvicorn.access` desativado fora de `local`), `DATABASE_URL` com TLS, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `GOOGLE_CALENDAR_REDIRECT_URI=https://agenda-unb-api-homolog.onrender.com/api/v1/me/google-calendar/callback`, `GOOGLE_CALENDAR_FRONTEND_REDIRECT_URI=https://agendaunb.com.br/eventos?aba=meus` e `CORS_ORIGINS=https://agendaunb.com.br,https://2026-2-agendaunb-agenda-un-b.vercel.app`. |
+| Supabase Auth | Definir `https://agendaunb.com.br` como Site URL e incluir `https://agendaunb.com.br/?auth=login`, `https://agendaunb.com.br/auth/retorno`, `https://agendaunb.com.br/eventos`, `https://2026-2-agendaunb-agenda-un-b.vercel.app/?auth=login` e `https://2026-2-agendaunb-agenda-un-b.vercel.app/auth/retorno` em Redirect URLs. |
 
 Manter chaves de serviço, Gemini, SMTP, OAuth e criptografia nos serviços
 servidores que as usam. O bundle público recebe apenas os valores acima.
@@ -39,9 +44,9 @@ Manter `SYLLABUS_PROVIDER_TERMS_READY` desativado até a validação da #68.
 
 ### Google OAuth
 
-Para **login**, registrar `https://agendaunb.com.br` em Origens JavaScript
-autorizadas do cliente Web Agenda UnB, mantendo `https://agendaunb.vercel.app`
-enquanto esse endereço estiver em uso. O URI de retorno do cliente de login é
+Para **login**, registrar `https://agendaunb.com.br` e
+`https://2026-2-agendaunb-agenda-un-b.vercel.app` em Origens JavaScript
+autorizadas do cliente Web Agenda UnB. O URI de retorno do cliente de login é
 `https://pzniltzdhyuzzdqbppjw.supabase.co/auth/v1/callback` para o projeto atual.
 Quando o projeto de produção for separado, registrar o callback dele no
 respectivo cliente Web. Atualizar o branding com a home, a
@@ -237,37 +242,15 @@ O Vite lê o ambiente na raiz do repositório (`envDir: '..'`) e incorpora `VITE
 
 Configurar a conexão PostgreSQL usando a opção oferecida pelo projeto Supabase que seja alcançável pelo Render, preferindo pooler em modo de sessão quando necessário por conectividade. Confirmar TLS, driver psycopg e limites de conexões antes da homologação. Não afirmar que RLS protege conexões administrativas: o backend também deve aplicar suas verificações de usuário/papel.
 
-### SPA, CORS e arquitetura multi-serviços (Vercel)
+### SPA, CORS e configuração Vercel
 
-A raiz do repositório contém a configuração [`vercel.json`](../vercel.json) operando em modo de múltiplos serviços (Vercel Services):
-
-```json
-{
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "services": {
-    "backend": {
-      "root": "backend",
-      "framework": "fastapi"
-    },
-    "frontend": {
-      "root": "frontend",
-      "framework": "vite"
-    }
-  },
-  "rewrites": [
-    { "source": "/health", "destination": { "service": "backend" } },
-    { "source": "/api/search", "destination": { "service": "frontend" } },
-    { "source": "/api/(.*)", "destination": { "service": "backend" } },
-    { "source": "/(.*)", "destination": { "service": "frontend" } }
-  ]
-}
-```
+Tanto [`frontend/vercel.json`](../frontend/vercel.json) (usado quando o Root Directory é `frontend`) quanto [`vercel.json`](../vercel.json) na raiz configuram exclusivamente o frontend Vite (`framework: "vite"`, saída `dist` / `frontend/dist`), preservando `/api/search` (`kind=sitemap` e `kind=event`), `/auth/retorno` -> `/app.html`, `/eventos` -> `/eventos.html` e rotas profundas em `/app.html`.
 
 O [roteamento do frontend](../frontend/vercel.json) gera títulos, descrições e URLs canônicas no HTML da home e da lista de eventos durante o build. As rotas da SPA, como `/admin` e `/plano-de-ensino`, continuam aceitando acesso direto e recarga.
 
-A função [de busca](../frontend/api/search.js) responde a `/sitemap.xml` e `/evento/<id>`. Configure a URL e a chave pública do Supabase do mesmo ambiente no build e na função. As leituras passam pela RLS anônima e selecionam apenas eventos aprovados. A CDN pode guardar respostas públicas por cinco minutos. Teste o sitemap, um evento aprovado e um ID inexistente no preview antes da promoção. Após o deploy, envie o sitemap e solicite indexação no Search Console.
+A função [de busca](../frontend/api/search.js) responde a `/sitemap.xml` e `/evento/<id>`. Configure a URL e a chave pública do Supabase do mesmo ambiente no build e na função. As leituras passam pela RLS anônima e selecionam apenas eventos aprovados. A CDN pode guardar respostas públicas por cinco minutos. Teste o sitemap, um evento aprovado e um ID inexistente após a publicação. Após o deploy, envie o sitemap e solicite indexação no Search Console.
 
-A SPA consome a API através de URLs relativas (`/api/v1/...`), aproveitando o roteamento unificado da Vercel no mesmo domínio sem requisições cross-origin (CORS). Se necessário apontar para um backend externo, a variável `VITE_API_URL` pode ser preenchida no ambiente.
+A SPA consome a API no Render diretamente por HTTPS através de `VITE_API_URL` (exigida no build em `frontend/src/lib/deploymentConfig.js`, terminada em `/api/v1`), inclusive no upload de 10 MiB, com `CORS_ORIGINS` restrito às origens explícitas da Vercel no Render.
 
 > [!WARNING]
 > **Atenção ao limite de upload (4,5 MB nas Vercel Functions):**
