@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext'
+import { eventsApi } from './lib/api'
 import NavBar from './components/NavBar'
 import AuthDialog from './components/AuthDialog'
 import './styles/global.css'
@@ -68,6 +69,10 @@ export default function App() {
   useEffect(() => {
     if (['login', 'signup', 'recover', 'confirm'].includes(authIntent)) setAuthMode(authIntent);
   }, [authIntent]);
+
+  useEffect(() => {
+    eventsApi.prefetchPublic();
+  }, []);
 
   const heroRef = useRef(null)
   const videoRef = useRef(null)
