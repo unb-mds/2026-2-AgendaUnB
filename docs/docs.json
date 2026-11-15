@@ -71,6 +71,7 @@
           "api-specs",
           "processamento-planos-s7",
           "s7-b01-validacao",
+          "s7-b02-validacao",
           "privacidade-planos",
           "implantacao",
           {
