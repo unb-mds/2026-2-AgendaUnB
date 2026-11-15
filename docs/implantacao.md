@@ -131,12 +131,7 @@ logs dos provedores também omitem tokens, credenciais e conteúdo acadêmico.
 
 ## Plano original e histórico
 
-Em 10/11/2026, cinco migrações foram aplicadas no Supabase Cloud da equipe,
-levando o histórico de 21 para 26 versões. O [registro da operação](supabase-nuvem-2026-11-10.md)
-documenta o ensaio, o backup e a preservação dos dados. O [roteiro da S7-B02](s7-b02-homologacao.md)
-reúne as provas preparadas para a issue #68.
-
-O [ADR-002](arquitetura/adrs/adr-002-separar-hospedagem-e-ambientes.md) registra a proposta de separação da hospedagem e dos ambientes. Este plano detalha a configuração, a publicação e a recuperação.
+O protocolo de migrações seguras e as decisões de infraestrutura estão consolidados nas [ADR-002](arquitetura/adrs/adr-002-separar-hospedagem-e-ambientes.md) e [ADR-007](arquitetura/adrs/adr-007-migracoes-sql.md). Este plano detalha a configuração, a publicação e a recuperação.
 
 O plano abaixo registra a proposta de **24/10/2026**, com referência no commit `e0ecf46`. A seção de operação acima documenta a configuração da S7-B06 e as verificações mais recentes.
 
@@ -202,7 +197,7 @@ Além da API, provisionar processo independente com comando, na pasta `backend`,
 `python -m src.modules.syllabus.worker`. Deve usar o mesmo banco e Storage privado
 da API e reiniciar após interrupções. O ciclo de requisição HTTP não executa IA.
 Configurar `GEMINI_API_KEY` como segredo do servidor, nunca no frontend; demais
-limites, preços e comandos estão em [Processamento de planos](processamento-planos.md).
+limites, preços e regras de fila/orçamento estão na [ADR-014](arquitetura/adrs/adr-014-processamento-assincrono-planos-ia.md).
 
 Aplicar #40, S6-D01, `20261109110000_fila_processamento_planos.sql` e
 `20261109113000_privacidade_e_revisao_planos.sql` (S6-D02).
@@ -212,7 +207,7 @@ Somente então habilitar os dois parâmetros no ambiente correspondente. A avali
 sintética com Gemini não homologa privacidade, Storage remoto ou fila em produção.
 Esta entrega não provisiona serviço nem aplica migrações remotas.
 O worker também verifica pré-requisitos nos catálogos do banco e recusa configuração
-incompleta, mesmo com as flags ativas. Consultar o [guia S6-D02](privacidade-planos.md)
+incompleta, mesmo com as flags ativas. Consultar as [ADR-003](arquitetura/adrs/adr-003-minimizar-dados-de-planos.md) e [ADR-014](arquitetura/adrs/adr-014-processamento-assincrono-planos-ia.md)
 para conferir o banco local antes de ativar o processo.
 
 | Ambiente | Aplicação e dados | Uso e publicação |
@@ -363,8 +358,8 @@ CORS, Auth/retornos de login, bucket privado e revisão explícita com contas de
 homologação antes de habilitar as flags. A aprovação local não equivale à aprovação
 do ambiente hospedado. A suíte local foi feita para rejeitar hosts remotos; a
 homologação na nuvem deve ter procedimento próprio, com dados sintéticos e o
-projeto de destino identificado. Ver o [fluxo HTTP local](privacidade-planos.md#integracao-http-local-de-auth-storage-e-processamento)
-e as [variáveis do worker](processamento-planos.md).
+projeto de destino identificado. Ver as [ADR-003](arquitetura/adrs/adr-003-minimizar-dados-de-planos.md)
+e [ADR-014](arquitetura/adrs/adr-014-processamento-assincrono-planos-ia.md).
 
 
 ### Correção de configuração em produção (11/11/2026)

@@ -87,7 +87,7 @@ Os textos de #38 e #40 abaixo são propostas de atualização das mesmas issues,
 
 **Dependências:** RPCs e políticas administrativas já existentes (#42).
 
-**Decisão posterior:** o painel mantém as RPCs Supabase existentes como interface única. As rotas REST duplicadas foram removidas. A proposta deste item foi substituída; o contrato vigente e os testes de autorização estão descritos em [Contratos do backend](../api-specs.md#contratos-supabase-separados-da-api-fastapi) e [Painel administrativo](../painel-administrativo.md).
+**Decisão posterior:** o painel mantém as RPCs Supabase existentes como interface única. As rotas REST duplicadas foram removidas. A proposta deste item foi substituída; o contrato vigente e os testes de autorização estão descritos em [Contratos do backend](../api-specs.md#contratos-supabase-separados-da-api-fastapi), [ADR-001](../arquitetura/adrs/adr-001-integracao-fastapi-supabase.md) e [ADR-006](../arquitetura/adrs/adr-006-autorizacao-em-camadas.md).
 
 ### #40 — Endpoint Base de Upload de Plano de Ensino
 
@@ -167,8 +167,8 @@ Tasks:
 - [x] Tratar falhas do provedor e documentos sem cronograma, registrando `falha` ou resultado vazio conforme o caso.
 - [x] Criar amostras anonimizadas com referência esperada e medir extrações corretas, omissões, datas inventadas e tempo total; verificar a meta de menos de 20s para PDFs de até 10 páginas e registrar desvios.
 
-**Evidência local (09/11/2026):** implementação e testes descritos no
-[guia de processamento](../processamento-planos.md), com
+**Evidência local (09/11/2026):** decisões e testes descritos na
+[ADR-014](../arquitetura/adrs/adr-014-processamento-assincrono-planos-ia.md), com
 [corpus Gemini sintético](../benchmarks/syllabus-gemini-2026-11-09.json),
 [integração HTTP local](../benchmarks/syllabus-http-local-2026-11-09.json) e
 [regressão do upload isolado](../benchmarks/syllabus-upload-local-2026-11-09.json).
@@ -243,5 +243,5 @@ Tasks:
 - [Documento de visão](../produto/visao.md): Modelo Dual e prioridade da extração assistida.
 - [Arquitetura](../arquitetura/visao-geral.md): FastAPI, Supabase Auth/Storage e estado atual do processamento.
 - [Especificação de banco](../arquitetura/banco-de-dados.md) e [modelo de dados](../arquitetura/modelo-de-dados.md): estruturas existentes, que precisam evoluir para propriedade estudantil e estados.
-- [Painel administrativo](../painel-administrativo.md): permissões, RPCs e notificações já entregues.
+- [ADR-001](../arquitetura/adrs/adr-001-integracao-fastapi-supabase.md) e [ADR-006](../arquitetura/adrs/adr-006-autorizacao-em-camadas.md): permissões, RPCs e notificações já entregues.
 - Migrações `20260923172640` e `20261014120200`: planos atuais com `professor_id` obrigatório, leitura pública de avaliações e bucket PDF privado de até 10 MB. Essas limitações fundamentam as issues de dados.

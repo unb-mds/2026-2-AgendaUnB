@@ -39,8 +39,7 @@ Use a navegação do site ou os links abaixo.
 * [Arquitetura](arquitetura/visao-geral.md) — Visão arquitetural, tecnologias, frontend, backend e modelos de dados.
 * [Decisões arquiteturais (ADRs)](arquitetura/adrs/index.md) — Decisões, estados, consequências e orientações para contribuir.
 * [Contratos do backend](api-specs.md) — Rotas, payloads, respostas e integrações Supabase.
-* [Plano de implantação](implantacao.md) — Proposta de hospedagem, CI/CD e homologação.
-* [Supabase Cloud em 10/11/2026](supabase-nuvem-2026-11-10.md) — Migrações aplicadas, preservação dos dados e configuração Render/Vercel.
+* [Plano de implantação](implantacao.md) — Hospedagem, CI/CD e homologação.
 * [Requisitos](produto/requisitos.md) — Especificação completa de Requisitos Funcionais (RF) e Não Funcionais (RNF).
 * [Padrões de Projeto](produto/padroes.md) — Glossário e convenções de código e nomenclatura.
 * [Sprints](sprints/sprint-1.md) — Acompanhamento ágil das entregas por ciclo de desenvolvimento.
@@ -52,12 +51,11 @@ Use a navegação do site ou os links abaixo.
 A [v0.1.0](processo/release-notes/v0-1-0.md) registra a entrega de 28/09/2026. Consulte [Atualizações pós-R1](atualizacoes.md) para o estado documentado em 19/10/2026, incluindo calendário, eventos públicos salvos e administração.
 
 * [Eventos salvos](eventos-salvos.md) — Vínculos com a agenda pessoal, API e migração.
-* [Painel administrativo e sugestões](painel-administrativo.md) — Permissões, moderação, notificações e testes.
+* [Integração FastAPI/Supabase e autorização](arquitetura/adrs/adr-001-integracao-fastapi-supabase.md) — Permissões, moderação, notificações e RPCs administrativas ([ADR-006](arquitetura/adrs/adr-006-autorizacao-em-camadas.md)).
 * [Interface e design](arquitetura/frontend.md) — Navegação e experiência de uso.
-* [Validação S7-B02](s7-b02-validacao.md) — Infraestrutura gratuita, Followw público, SMTP, Gemini e CI reproduzível.
+* [Hospedagem e ambientes](arquitetura/adrs/adr-002-separar-hospedagem-e-ambientes.md) — Infraestrutura gratuita, SMTP, CI reproduzível e isolamento ([ADR-007](arquitetura/adrs/adr-007-migracoes-sql.md)).
 
-A implementação local da [S7-B01](processamento-planos-s7.md) oferece preparação de PDF/texto, revisão do trecho e autorização para o Gemini. O provedor permanece desativado por padrão até homologação e validação de elegibilidade. A implantação e a integração completa com turmas/importação têm acompanhamento separado.
-O guia de [planos de ensino](planos-de-ensino-frontend.md) descreve o envio, o histórico e os limites do fluxo atual.
+A extração de planos de ensino oferece preparação local de PDF/texto, revisão e autorização do trecho ([ADR-003](arquitetura/adrs/adr-003-minimizar-dados-de-planos.md)), processamento assíncrono resiliente ([ADR-014](arquitetura/adrs/adr-014-processamento-assincrono-planos-ia.md)) e confirmação idempotente versionada ([ADR-010](arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos.md)); a execução externa do provedor permanece controlada por flags operacionais.
 
 
 ## Planejamento e histórico de issues

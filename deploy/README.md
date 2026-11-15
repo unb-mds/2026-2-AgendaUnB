@@ -1,8 +1,6 @@
 # Supabase Cloud + Render + Vercel
 
-O banco `pzniltzdhyuzzdqbppjw` recebeu as cinco migrações pendentes em
-10/11/2026. O [registro da operação](../docs/supabase-nuvem-2026-11-10.md)
-descreve backup, testes, preservação dos dados e limitações.
+O [guia de implantação](../docs/implantacao.md) e as decisões [ADR-002](../docs/arquitetura/adrs/adr-002-separar-hospedagem-e-ambientes.md) e [ADR-007](../docs/arquitetura/adrs/adr-007-migracoes-sql.md) registram a arquitetura de hospedagem, o protocolo seguro de migrações e as verificações operacionais.
 
 Na configuração atual do repositório, [`vercel.json`](../vercel.json) e
 [`frontend/vercel.json`](../frontend/vercel.json) publicam **exclusivamente o
@@ -14,7 +12,7 @@ Os modelos deste diretório documentam as variáveis esperadas pelos dois servi�
 
 ## Render
 
-| Configuração | API (`agenda-unb-api-homolog`) | Jobs agendados (GitHub Actions) |
+| Configuração | API (Render Web Service) | Jobs agendados (GitHub Actions) |
 | --- | --- | --- |
 | Tipo / Runner | Web Service (`runtime: docker`) | `.github/workflows/production-jobs.yml` (`ubuntu-latest`) |
 | Repositório / Branch | `unb-mds/2026-2-AgendaUnB` / `main` | `main` (`environment: production-jobs`) |
@@ -73,7 +71,7 @@ automaticamente as credenciais do banco compartilhado para todos os previews.
 4. Configurar `CORS_ORIGINS` no Render com a mesma origem da SPA, sem caminho ou
    barra final. Incluir somente os domínios aprovados para o ambiente.
 5. Se usar Google OAuth, configurar o provedor no painel Supabase e o callback
-   `https://pzniltzdhyuzzdqbppjw.supabase.co/auth/v1/callback` no Google.
+   `https://<PROJECT_REF>.supabase.co/auth/v1/callback` no Google.
    As variáveis `SUPABASE_AUTH_EXTERNAL_GOOGLE_*` do Supabase CLI local não
    configuram automaticamente o provedor hospedado.
 
