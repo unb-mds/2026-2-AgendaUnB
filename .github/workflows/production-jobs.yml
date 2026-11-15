@@ -1,0 +1,93 @@
+name: Jobs de produção
+
+on:
+  schedule:
+    - cron: '13,43 * * * *'
+    - cron: '27 10 * * *'
+  workflow_dispatch:
+    inputs:
+      job:
+        description: Job a executar
+        type: choice
+        required: true
+        options: [worker, collector, catalog]
+
+permissions:
+  contents: read
+
+jobs:
+  worker:
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      vars.PRODUCTION_SYLLABUS_WORKER_ENABLED == 'true' &&
+      (github.event.schedule == '13,43 * * * *' || inputs.job == 'worker')
+    runs-on: ubuntu-latest
+    environment: production-jobs
+    timeout-minutes: 10
+    concurrency: production-syllabus-worker
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - run: python -m pip install -r backend/requirements.txt
+      - working-directory: backend
+        env:
+          APP_ENV: production
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          SYLLABUS_WORKER_ENABLED: 'true'
+          SYLLABUS_PRIVACY_READY: ${{ vars.SYLLABUS_PRIVACY_READY }}
+          SYLLABUS_PROVIDER_TERMS_READY: ${{ vars.SYLLABUS_PROVIDER_TERMS_READY }}
+        run: python -m src.modules.syllabus.worker --once
+
+  collector:
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      vars.PRODUCTION_EVENT_COLLECTION_ENABLED == 'true' &&
+      (github.event.schedule == '27 10 * * *' || inputs.job == 'collector')
+    runs-on: ubuntu-latest
+    environment: production-jobs
+    timeout-minutes: 10
+    concurrency: production-event-collector
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - run: python -m pip install -r backend/requirements.txt
+      - working-directory: backend
+        env:
+          APP_ENV: production
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python -m src.modules.events.collector
+
+  catalog:
+    if: github.event_name == 'workflow_dispatch' && inputs.job == 'catalog'
+    runs-on: ubuntu-latest
+    environment: production-jobs
+    timeout-minutes: 15
+    concurrency: production-catalog-sync
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - run: python -m pip install -r backend/requirements.txt
+      - working-directory: backend
+        env:
+          APP_ENV: production
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python -m src.modules.classes.sync --period 2026.2

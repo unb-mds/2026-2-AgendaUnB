@@ -47,13 +47,34 @@ export const syllabusApi = {
   async get(id, signal) {
     return normalizePlan(await syllabusRequest(`/${encodeURIComponent(id)}`, { signal }));
   },
-  async confirm(id, candidates, signal) {
+  async confirm(id, candidates, options) {
+    const {
+      idempotencyKey = crypto.randomUUID(),
+      signal,
+    } = typeof options === 'string'
+      ? { idempotencyKey: options }
+      : options && typeof options === 'object' && 'aborted' in options
+        ? { signal: options }
+        : (options || {});
     const result = await syllabusRequest(`/${encodeURIComponent(id)}/confirm`, {
-      method: 'POST', body: JSON.stringify({ candidates }), signal,
+      method: 'POST',
+      headers: { 'Idempotency-Key': idempotencyKey },
+      body: JSON.stringify({ candidates }),
+      signal,
     });
     const requested = new Set(candidates.map(item => item.candidateId));
-    if (result?.syllabusId !== id || !Array.isArray(result.events) || result.events.some(event =>
-      typeof event?.id !== 'string' || event.origin?.syllabusId !== id || !requested.delete(event.origin.candidateId))) {
+    const removed = new Set((result?.items || []).filter(item => item?.removed).map(item => item.candidateId));
+    const returned = new Set();
+    const validEvents = Array.isArray(result?.events) && result.events.every(event => {
+      const candidateId = event?.origin?.candidateId;
+      if (typeof event?.id !== 'string' || event.origin?.syllabusId !== id || !requested.has(candidateId) || returned.has(candidateId)) {
+        return false;
+      }
+      returned.add(candidateId);
+      return true;
+    });
+    const allAccountedFor = [...requested].every(candidateId => returned.has(candidateId) || removed.has(candidateId));
+    if (result?.syllabusId !== id || !validEvents || !allAccountedFor) {
       throw new Error('A resposta da confirmação não pôde ser verificada.');
     }
     return result.events;
