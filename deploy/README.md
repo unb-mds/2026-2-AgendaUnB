@@ -4,32 +4,32 @@ O banco `pzniltzdhyuzzdqbppjw` recebeu as cinco migrações pendentes em
 10/11/2026. O [registro da operação](../docs/supabase-nuvem-2026-11-10.md)
 descreve backup, testes, preservação dos dados e limitações.
 
-A configuração na raiz do repositório integra a SPA e a API na Vercel. Nesse
-modo, deixe `VITE_API_URL` vazia para usar `/api/v1` no mesmo domínio. Use os
-modelos deste diretório para a opção com API externa no Render. O
-[PR #113](https://github.com/unb-mds/2026-2-AgendaUnB/pull/113) acompanha a
-implantação integrada.
+Na configuração atual do repositório, [`vercel.json`](../vercel.json) e
+[`frontend/vercel.json`](../frontend/vercel.json) publicam **exclusivamente o
+frontend Vite** na Vercel, enquanto a API roda no Render via
+[`render.yaml`](../render.yaml) (`runtime: docker`) e os jobs agendados rodam
+no GitHub Actions via [`.github/workflows/production-jobs.yml`](../.github/workflows/production-jobs.yml).
+Os modelos deste diretório documentam as variáveis esperadas pelos dois serviços.
 
 ## Render
 
-| Configuração | API | Worker de extração |
+| Configuração | API (`agenda-unb-api-homolog`) | Jobs agendados (GitHub Actions) |
 | --- | --- | --- |
-| Tipo de serviço | Web Service / Python | Background Worker / Python |
-| Repositório | `unb-mds/2026-2-AgendaUnB` | Mesmo repositório |
-| Branch de origem | `main` | `main` |
+| Tipo / Runner | Web Service (`runtime: docker`) | `.github/workflows/production-jobs.yml` (`ubuntu-latest`) |
+| Repositório / Branch | `unb-mds/2026-2-AgendaUnB` / `main` | `main` (`environment: production-jobs`) |
 | Root Directory | `backend` | `backend` |
-| Build Command | `pip install -r requirements.txt` | Mesmo comando |
-| Start Command | `uvicorn src.main:app --host 0.0.0.0 --port $PORT` | `python -m src.modules.syllabus.worker` |
+| Build / Runtime | `backend/Dockerfile` (`python:3.11-slim`) | `setup-python@v5` (`3.11`) + `pip install -r requirements.txt` |
+| Start / Execução | `uvicorn src.main:app --host 0.0.0.0 --port ${PORT:-8000} --no-access-log` | `worker --once`, `collector` e `classes.sync` |
 | Health Check Path | `/health` | Não recebe HTTP |
-| Variáveis | `render.env.example`, preenchido | Mesmo conjunto de servidor |
+| Variáveis | `render.env.example`, preenchido | Secrets/Vars do ambiente `production-jobs` |
 
-A API pode usar uma instância Free para homologação, sujeita a suspensão por
-inatividade. Background Worker não oferece instância Free. A definição de
-hospedagem/custo do worker permanece pendente na #68; nenhum serviço pago foi
-provisionado. Não ativar deploy do worker com as flags em `false`, pois ele encerra
-com uma mensagem de configuração pendente. Após a aprovação de S7-B02 e a
-homologação, ativar as três flags e publicar o worker. A API precisa das mesmas
-flags para disponibilizar o fluxo de autorização/extração.
+A API utiliza instância Free no Render (`plan: free` em `render.yaml`), sujeita a
+suspensão por inatividade. Background Worker no Render não oferece instância Free;
+por isso os jobs recorrentes (`worker`, `collector` e `catalog`) foram movidos
+para `.github/workflows/production-jobs.yml`. Não ativar as flags de produção do
+worker (`PRODUCTION_SYLLABUS_WORKER_ENABLED` / `SYLLABUS_*_READY`) antes da
+aprovação da S7-B02 e da homologação. A API precisa das mesmas flags `SYLLABUS_*`
+para disponibilizar o fluxo de autorização/extração.
 
 Usar a conexão Session Pooler oferecida pelo projeto e manter `sslmode=require`.
 A senha na URL precisa estar codificada como componente de URL. O arquivo privado
@@ -60,9 +60,9 @@ automaticamente as credenciais do banco compartilhado para todos os previews.
 
 ## Chaves e retornos de autenticação
 
-1. No painel Supabase do projeto, copiar a chave publishable/anon existente para
-   `SUPABASE_ANON_KEY` no Render e `VITE_SUPABASE_ANON_KEY` na Vercel. As duas
-   representam o mesmo projeto. A chave pública local testada retornou HTTP 401
+1. No painel Supabase do projeto, copiar a chave publishable (ou anon legada) para
+   `SUPABASE_ANON_KEY` no Render e `VITE_SUPABASE_PUBLISHABLE_KEY` (ou `VITE_SUPABASE_ANON_KEY`)
+   na Vercel. As duas representam o mesmo projeto. A chave pública local testada retornou HTTP 401
    no endpoint `/auth/v1/settings` remoto.
 2. Para o cliente Storage atual, preencher `SUPABASE_SERVICE_ROLE_KEY` no Render
    com a chave JWT legada `service_role`. `sb_secret_*` não é JWT e exige adaptar

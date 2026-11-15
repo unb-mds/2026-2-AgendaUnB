@@ -1,5 +1,8 @@
 # Roteiro de homologação da S7-B02
 
+> [!NOTE]
+> Este roteiro foi elaborado em 13/11/2026 para orientar a coleta das provas finais da [issue #68](https://github.com/unb-mds/2026-2-AgendaUnB/issues/68). O relatório consolidado de validação da S7-B02 encontra-se em [s7-b02-validacao.md](s7-b02-validacao.md).
+
 Use este roteiro para registrar as provas pendentes da [issue #68](https://github.com/unb-mds/2026-2-AgendaUnB/issues/68). O [PR #116](https://github.com/unb-mds/2026-2-AgendaUnB/pull/116) registra a migração e a preparação do ambiente. Os resultados abaixo distinguem as verificações já executadas das provas ainda previstas.
 
 ## Acessos para alinhar com Thomas
