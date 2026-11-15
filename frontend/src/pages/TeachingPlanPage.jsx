@@ -4,6 +4,7 @@ import { Feedback, Icon, ManagementShell } from '../components/ManagementUI';
 import { useAuth } from '../contexts/AuthContext';
 import { useSyllabusResource } from '../hooks/useSyllabusResource';
 import { syllabusApi } from '../lib/syllabusApi';
+import { catalogApi } from '../lib/classCatalogApi';
 import SyllabusReviewPanel from '../components/SyllabusReviewPanel';
 import SyllabusTextReview, { SyllabusTextInput } from '../components/SyllabusTextReview';
 import JourneyPlanReview from '../components/JourneyPlanReview';
@@ -100,13 +101,22 @@ function PlanUpload({ onUploaded, offer }) {
   </section>;
 }
 
-function PlanTracking({ id, onClose, offeringId, onConfirmed, onChanged }) {
+function PlanTracking({ id, onClose, offer, onConfirmed, onChanged }) {
+  const offeringId = offer?.id;
   const load = useCallback(async signal => {
     const plan = await syllabusApi.get(id, signal);
     if (offeringId && plan.offeringId !== offeringId) throw new Error('Este plano pertence a outra oferta. Abra um plano pelo histórico desta turma.');
     return plan;
   }, [id, offeringId]);
   const { data: plan, loading, error, retry } = useSyllabusResource(id, load, isProcessing);
+  const linkedOfferingId = plan?.offeringId;
+  const needsSchedule = !offer && plan?.status === 'concluido' && !plan.authorizationRequired && plan.candidates?.some(
+    candidate => candidate.status === 'pendente' && candidate.type === 'prova' && !candidate.suggestedTime && !candidate.startsAt
+  );
+  const loadLinkedOffer = useCallback(signal => catalogApi.get(linkedOfferingId, signal), [linkedOfferingId]);
+  const linkedOffer = useSyllabusResource(needsSchedule ? linkedOfferingId : null, loadLinkedOffer);
+  const reviewOffer = offer || linkedOffer.data;
+  const classSchedule = reviewOffer?.available && reviewOffer.id === linkedOfferingId ? reviewOffer.schedule : undefined;
   const headingRef = useRef(null);
   useEffect(() => { headingRef.current?.focus(); }, [id]);
   const state = PLAN_STATES[plan?.status];
@@ -131,7 +141,11 @@ function PlanTracking({ id, onClose, offeringId, onConfirmed, onChanged }) {
       {(empty || plan.status === 'falha') && <div className="plan-recovery"><Link className="manage-button" to={`/plano-de-ensino?${new URLSearchParams({ ...(plan.offeringId ? { oferta: plan.offeringId } : {}), etapa: '2' })}`}>Enviar outro PDF ou texto</Link><Link className="management-text-button" to={manualPath}>Cadastrar prazos manualmente</Link></div>}
     </>}
     {!loading && !error && plan?.preparedTextAvailable && <SyllabusTextReview key={plan.id} plan={plan} onAuthorized={() => { retry(); onChanged(); }} />}
-    {!plan?.authorizationRequired && (!loading && !error && offeringId && plan?.status === "concluido" && plan.candidates?.length ? <JourneyPlanReview key={plan.id} plan={plan} onConfirmed={onConfirmed} /> : <SyllabusReviewPanel selected plan={plan} loading={loading} error={error} />)}
+    {!plan?.authorizationRequired && (linkedOffer.loading
+      ? <p role="status">Consultando o horário da turma…</p>
+      : !loading && !error && offeringId && plan?.status === 'concluido' && plan.candidates?.length
+        ? <JourneyPlanReview key={plan.id} plan={plan} classSchedule={classSchedule} onConfirmed={onConfirmed} />
+        : <SyllabusReviewPanel selected plan={plan} classSchedule={classSchedule} loading={loading} error={error} />)}
   </section>;
 }
 
@@ -159,7 +173,7 @@ function PlanWorkspace({ userId, offer, step, onStep }) {
   };
   return <>
     <Link className="management-text-button" to="/plano-de-ensino">Voltar ao catálogo de turmas</Link>{offer && <OfferingDetails offer={offer} />}
-    <div className="plan-layout"><div>{step === 2 && offer?.available && offer?.following ? <><PlanUpload key={offer.id} offer={offer} onUploaded={onUploaded} /><SyllabusTextInput key={`text-${offer.id}`} offeringId={offer.id} onPrepared={onUploaded} /></> : step === 2 ? <p>Selecione uma oferta disponível que sua conta segue no catálogo para enviar um plano. Seus envios anteriores continuam no histórico.</p> : null}</div><div className="plan-sidebar">{selectedId ? <PlanTracking key={selectedId} id={selectedId} onChanged={history.retry} offeringId={offer?.id} onConfirmed={() => onStep(4)} onClose={() => { setSelection(null); document.getElementById('plan-subject')?.focus(); }} /> : <PlanHelp />}</div></div>
+    <div className="plan-layout"><div>{step === 2 && offer?.available && offer?.following ? <><PlanUpload key={offer.id} offer={offer} onUploaded={onUploaded} /><SyllabusTextInput key={`text-${offer.id}`} offeringId={offer.id} onPrepared={onUploaded} /></> : step === 2 ? <p>Selecione uma oferta disponível que sua conta segue no catálogo para enviar um plano. Seus envios anteriores continuam no histórico.</p> : null}</div><div className="plan-sidebar">{selectedId ? <PlanTracking key={selectedId} id={selectedId} onChanged={history.retry} offer={offer} onConfirmed={() => onStep(4)} onClose={() => { setSelection(null); document.getElementById('plan-subject')?.focus(); }} /> : <PlanHelp />}</div></div>
     {offer?.following && <SharedClassPlans key={offer.id} offeringId={offer.id} />}
     {!selectedId && <SyllabusReviewPanel />}
     <section className="plan-history" aria-labelledby="plan-history-title" aria-busy={history.loading}>
