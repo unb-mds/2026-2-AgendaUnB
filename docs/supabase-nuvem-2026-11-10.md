@@ -9,8 +9,8 @@ a conclusão do banco foi confirmada depois em uma nova conexão.
 Foram aplicadas as cinco migrações pendentes da `dev`, preservando os arquivos SQL
 versionados. O histórico remoto passou de **21 para 26 versões** e coincidiu
 com o inventário usado na operação. A contagem registra o estado de 10/11/2026.
-A `main` recebeu depois as migrações do catálogo `20261110142000` e
-`20261111120000`. O histórico remoto delas precisa ser conferido antes do deploy.
+O [guia de implantação](implantacao.md#operacao-da-s7-b06) registra o estado
+posterior, com 31 versões aplicadas até `20261113212429`.
 
 | Versão | Alteração |
 | --- | --- |
@@ -117,9 +117,8 @@ vazios e identificados no guia; não importar os arquivos incompletos sem preenc
 Na opção com API externa, as variáveis de servidor pertencem ao Render. O build
 do frontend usa `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` e `VITE_API_URL`.
 A função de busca da Vercel também usa as duas variáveis públicas do Supabase.
-Na configuração com múltiplos serviços, `VITE_API_URL` pode ficar vazia para
-usar a API no mesmo domínio. O [plano de implantação](implantacao.md) detalha
-essa configuração.
+Na configuração adotada depois, `VITE_API_URL` aponta para a API HTTPS no
+Render. O [guia de implantação](implantacao.md) detalha essa configuração.
 
 Pendências identificadas durante a operação de 10/11/2026:
 

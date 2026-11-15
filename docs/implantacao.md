@@ -17,8 +17,8 @@ quando `APP_ENV != "local"`.
 
 | Componente | Configuração ativa |
 | --- | --- |
-| SPA | Vercel, raiz `frontend` (e configuração equivalente na raiz em [`vercel.json`](../vercel.json)), Vite, `npm ci`, `npm run build`, saída `dist`. As rotas `/api/search`, `/sitemap.xml`, `/evento/:id` e `/auth/retorno` têm rewrites dedicados e ficam preservadas no fallback. |
-| API | FastAPI em Python 3.11 no Render (`agenda-unb-api-homolog`). Usar HTTPS direto para `/api/v1`, inclusive no upload. O Blueprint em [`render.yaml`](../render.yaml) reflete o serviço único Free com publicação manual. |
+| SPA | Vercel, raiz `frontend` (e configuração equivalente na raiz em [`vercel.json`](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/vercel.json)), Vite, `npm ci`, `npm run build`, saída `dist`. As rotas `/api/search`, `/sitemap.xml`, `/evento/:id` e `/auth/retorno` têm rewrites dedicados e ficam preservadas no fallback. |
+| API | FastAPI em Python 3.11 no Render (`agenda-unb-api-homolog`). Usar HTTPS direto para `/api/v1`, inclusive no upload. O Blueprint em [`render.yaml`](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/render.yaml) reflete o serviço único Free com publicação manual. |
 | Auth, dados e Storage | Projeto Supabase único `pzniltzdhyuzzdqbppjw` (`agenda-unb-homolog`), compartilhado entre API, frontend e jobs, com 31 migrações aplicadas até `20261113212429` e conexão PostgreSQL via TLS (`sslmode=require`). |
 | Worker, coletor e catálogo | GitHub Actions com segredos no environment `production-jobs` e disparo manual/agendado por job (`worker`, `collector` e `catalog` para `python -m src.modules.classes.sync --period 2026.2`), validando a operação de custo zero da [#68](https://github.com/unb-mds/2026-2-AgendaUnB/issues/68). |
 
@@ -130,6 +130,11 @@ logs dos provedores também omitem tokens, credenciais e conteúdo acadêmico.
 | Aceite integrado | Faltam SMTP com destinatário externo, jornadas com sessão no domínio publicado, execução dos jobs hospedados, revisão de logs dos provedores e revisão humana. |
 
 ## Plano original e histórico
+
+Em 10/11/2026, cinco migrações foram aplicadas no Supabase Cloud da equipe,
+levando o histórico de 21 para 26 versões. O [registro da operação](supabase-nuvem-2026-11-10.md)
+documenta o ensaio, o backup e a preservação dos dados. O [roteiro da S7-B02](s7-b02-homologacao.md)
+reúne as provas preparadas para a issue #68.
 
 O [ADR-002](arquitetura/adrs/adr-002-separar-hospedagem-e-ambientes.md) registra a proposta de separação da hospedagem e dos ambientes. Este plano detalha a configuração, a publicação e a recuperação.
 
@@ -262,7 +267,7 @@ A SPA consome a API no Render diretamente por HTTPS através de `VITE_API_URL` (
 ### Autenticação e Google Agenda (S7-F04)
 
 1. No Supabase do ambiente, configure a Site URL da SPA e permita a URL exata `/auth/retorno` na origem correspondente. Habilite a confirmação de e-mail, mantenha pelo menos 8 caracteres para a senha e use intervalo mínimo de 60 segundos para novo envio.
-2. Configure o SMTP de homologação e copie para **Confirm signup** e **Reset password** os templates [confirmation.html](../supabase/templates/confirmation.html) e [recovery.html](../supabase/templates/recovery.html). Os links carregam o hash no fragmento e exigem uma ação na página para consumi-lo. Desative o rastreamento de cliques nos e-mails de autenticação.
+2. Configure o SMTP de homologação e copie para **Confirm signup** e **Reset password** os templates [confirmation.html](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/supabase/templates/confirmation.html) e [recovery.html](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/supabase/templates/recovery.html). Os links carregam o hash no fragmento e exigem uma ação na página para consumi-lo. Desative o rastreamento de cliques nos e-mails de autenticação.
 3. Para login com Google, habilite o provedor no Supabase e cadastre no Google Cloud a URL de callback fornecida pelo Supabase. O login retorna para `/auth/retorno` e troca o código via PKCE.
 4. Use um projeto Google Cloud separado para o Calendar. O Google revoga permissões no nível do projeto, inclusive para outros clientes do mesmo projeto. Habilite a Calendar API, configure o consentimento para `https://www.googleapis.com/auth/calendar.app.created` e crie um cliente web com o callback de `GOOGLE_CALENDAR_REDIRECT_URI`. Configure as variáveis de Calendar e a chave Fernet na API do ambiente. [Revogação OAuth no Google](https://developers.google.com/identity/protocols/oauth2/web-server#tokenrevoke)
 5. Aplique as migrações no ambiente de homologação e publique o mesmo commit da API e do frontend. No modo **Teste**, use uma conta autorizada na lista de testadores. A liberação pública segue as condições de consentimento e verificação da [#68](https://github.com/unb-mds/2026-2-AgendaUnB/issues/68).
@@ -340,9 +345,6 @@ Aceitar a implantação apenas com evidências registradas de migrações, build
 Nenhum desses papéis representa atribuição nominal já aprovada. Mudanças de hospedagem, variáveis, migrações ou pipeline devem atualizar este documento no mesmo PR. Ver [Arquitetura](arquitetura/visao-geral.md), [Contratos](api-specs.md) e [Contribuição](processo/contribuindo.md).
 
 ## Transição do desenvolvimento local para o projeto Supabase da equipe
-
-Esta seção registra o plano anterior. A execução de 10/11/2026 e as configurações
-do ambiente hospedado estão no [registro atualizado](supabase-nuvem-2026-11-10.md).
 
 O time informou que Felipe Couto Duque está preparando o projeto Supabase na
 nuvem. O desenvolvimento de `feat/geminiapi` e os testes continuam locais enquanto

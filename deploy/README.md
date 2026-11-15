@@ -9,7 +9,8 @@ Na configuração atual do repositório, [`vercel.json`](../vercel.json) e
 frontend Vite** na Vercel, enquanto a API roda no Render via
 [`render.yaml`](../render.yaml) (`runtime: docker`) e os jobs agendados rodam
 no GitHub Actions via [`.github/workflows/production-jobs.yml`](../.github/workflows/production-jobs.yml).
-Os modelos deste diretório documentam as variáveis esperadas pelos dois serviços.
+Os modelos deste diretório documentam as variáveis esperadas pelos dois serviços
+(ver também o [plano de implantação](../docs/implantacao.md)).
 
 ## Render
 
