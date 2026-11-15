@@ -1,4 +1,29 @@
-// Local editor model, not an API payload. Map the approved S6-B02 contract here later.
+// Local editor model, not an API payload.
+export const BRASILIA_UTC_OFFSET = '-03:00';
+
+function formatInBrasilia(isoInstant) {
+  if (!isoInstant) return null;
+  const parsed = new Date(isoInstant);
+  if (Number.isNaN(parsed.getTime())) return null;
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Sao_Paulo',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    }).formatToParts(parsed).map(part => [part.type, part.value])
+  );
+  const hour = parts.hour === '24' ? '00' : parts.hour;
+  return {
+    date: `${parts.year}-${parts.month}-${parts.day}`,
+    time: `${hour}:${parts.minute}:${parts.second}`,
+  };
+}
+
 export function createReviewDraft(items) {
   if (!Array.isArray(items)) throw new Error('Lista de avaliações inválida.');
   const ids = new Set();
@@ -9,7 +34,47 @@ export function createReviewDraft(items) {
     ids.add(item.id);
     const string = key => typeof item[key] === 'string' ? item[key] : '';
     return { id: item.id, title: string('title'), type: string('type'), date: string('date'),
-      time: string('time'), utcOffset: '', decision: 'pending' };
+      time: string('time'), decision: 'pending' };
+  });
+}
+
+export function createCandidateReviewDraft(candidates) {
+  return createReviewDraft(candidates).map((draft, index) => {
+    const candidate = candidates[index];
+    const hasExplicitZone = /(?:Z|[+-]\d{2}:\d{2})$/.test(candidate.startsAt || '');
+    const brasilia = hasExplicitZone ? formatInBrasilia(candidate.startsAt) : null;
+    return { ...draft, type: draft.type.toLowerCase(),
+      date: candidate.suggestedDate ?? brasilia?.date ?? '',
+      time: candidate.suggestedTime ?? brasilia?.time ?? '',
+      status: candidate.status, versionId: candidate.versionId,
+      editable: candidate.status === 'pendente' };
+  });
+}
+
+export function selectReviewItems(items, selected) {
+  return items.map(item => item.editable === false || (selected && item.decision === 'discarded')
+    ? item : { ...item, decision: selected ? 'selected' : item.decision === 'selected' ? 'pending' : item.decision });
+}
+
+export function buildReviewConfirmation(draft, candidates) {
+  const pending = new Map(candidates.filter(item => item.status === 'pendente').map(item => [item.id, item]));
+  const selected = draft.filter(item => item.decision === 'selected');
+  if (!selected.length || selected.length > 100 || new Set(selected.map(item => item.id)).size !== selected.length
+    || selected.some(item => !pending.has(item.id) || Object.keys(validateReviewItem(item, true)).length)) {
+    throw new Error('Revise as avaliações selecionadas antes de confirmar.');
+  }
+  return selected.map(item => {
+    const type = item.type.toLowerCase() === 'prova' ? 'Prova' : 'Trabalho';
+    const excerpt = pending.get(item.id).sourceExcerpt;
+    const description = excerpt ? `Tipo de avaliação: ${type}\n\n${excerpt}` : `Tipo de avaliação: ${type}`;
+    return {
+      candidateId: item.id,
+      title: item.title.trim(),
+      type: item.type.toLowerCase(),
+      startsAt: `${item.date}T${item.time}${BRASILIA_UTC_OFFSET}`,
+      category: 'Acadêmico',
+      description: Array.from(description).slice(0, 10000).join(''),
+    };
   });
 }
 
@@ -26,12 +91,13 @@ export function validUtcOffset(value) {
   return hours <= 14 && minutes < 60 && (hours !== 14 || minutes === 0) && value !== '-00:00';
 }
 
-export function validateReviewItem(item) {
+export function validateReviewItem(item, strict = false) {
   if (item.decision !== 'selected') return {};
   const errors = {};
   if (!item.title.trim()) errors.title = 'Informe o título da avaliação.';
+  if (strict && (Array.from(item.title.trim()).length < 3 || Array.from(item.title.trim()).length > 200)) errors.title = 'Informe um título entre 3 e 200 caracteres.';
+  if (strict && !['prova', 'trabalho'].includes(item.type.toLowerCase())) errors.type = 'Selecione Prova ou Trabalho.';
   if (!validReviewDate(item.date)) errors.date = 'Informe uma data válida.';
-  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(item.time)) errors.time = 'Informe o horário entre 00:00 e 23:59.';
-  if (!validUtcOffset(item.utcOffset)) errors.utcOffset = 'Informe o fuso como -03:00 ou +00:00 (até ±14:00).';
+  if (!/^([01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d{1,6})?)?$/.test(item.time)) errors.time = 'Informe um horário válido entre 00:00 e 23:59:59.';
   return errors;
 }
