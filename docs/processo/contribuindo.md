@@ -98,6 +98,16 @@ npx supabase db reset   # Aplica migrações e seed
 - Studio local: [http://localhost:14323](http://localhost:14323)
 - API Local: `http://127.0.0.1:14321`
 
+Para usar **Continuar com Google** no desenvolvimento, cadastre
+`http://127.0.0.1:14321/auth/v1/callback` como URI de redirecionamento do cliente
+OAuth no Google Cloud e abra o frontend em `http://127.0.0.1:5173`.
+O `make setup` e o `make dev` passam as credenciais Google do `.env` da raiz
+ao CLI do Supabase. No fluxo manual, exporte
+`SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID` e
+`SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET` antes de iniciar o Supabase.
+Se o Auth já estiver rodando com outras credenciais, execute `make db-stop`
+seguido de `make dev` para recarregar a configuração e preservar o volume local.
+
 <a id="setup-backend"></a>
 
 #### Executar o Backend (FastAPI)
