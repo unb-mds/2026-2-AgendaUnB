@@ -103,20 +103,16 @@ check-backend:
 	@"$(PYTHON)" -m pip install -r "$(ROOT_DIR)/backend/requirements-dev.txt"
 
 check-frontend:
-	@if [ ! -d "$(ROOT_DIR)/frontend/node_modules" ]; then \
-		echo "[INFO] Instalando dependencias do Frontend..."; \
-		cd "$(ROOT_DIR)/frontend" && npm install; \
-	fi
+	@echo "[INFO] Sincronizando dependencias do Frontend..."
+	@cd "$(ROOT_DIR)/frontend" && npm ci --no-audit --no-fund
 
 # ------------------------------------------------------------------------------
 # Setup Completo
 # ------------------------------------------------------------------------------
-setup: check-env check-backend
+setup: check-env check-backend check-frontend
 	@echo "[SETUP] Iniciando configuracao completa do ambiente..."
-	@echo "[SETUP] Instalando dependencias do Frontend..."
-	@cd "$(ROOT_DIR)/frontend" && npm install
 	@echo "[SETUP] Inicializando banco de dados Supabase..."
-	@npx supabase start
+	@"$(PYTHON)" "$(ROOT_DIR)/scripts/start_supabase.py"
 	@echo ""
 	@echo "[OK] Setup concluido com sucesso!"
 	@echo "Execute: make dev"
@@ -152,7 +148,11 @@ docs:
 # ------------------------------------------------------------------------------
 db-start:
 	@echo "[INFO] Verificando / Iniciando Supabase..."
-	@npx supabase start
+	@if [ -x "$(PYTHON)" ]; then \
+		"$(PYTHON)" "$(ROOT_DIR)/scripts/start_supabase.py"; \
+	else \
+		npx supabase start; \
+	fi
 
 db-stop:
 	@echo "[INFO] Parando containers do Supabase..."

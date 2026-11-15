@@ -28,7 +28,7 @@ export default function SyllabusReviewPanel({ selected = false, plan, loading = 
     {candidates?.length ? <CandidateReview key={JSON.stringify([plan.id, candidates])} planId={plan.id} initialCandidates={candidates} onConfirmed={onConfirmed} onEdited={onEdited} confirmationAllowed={confirmationAllowed} /> : <SyllabusReviewEditor value={[]} disabled emptyMessage={candidates?.length === 0 ? 'A análise terminou sem avaliações. Você pode cadastrar os prazos manualmente em Meus Eventos.' : message} />}
     <details className="plan-file-help">
       <summary>O que poderei revisar?</summary>
-      <p>Você pode corrigir título, tipo, data, horário e fuso. Somente as avaliações selecionadas entram na agenda quando você confirma a importação.</p>
+      <p>Você pode corrigir título, tipo, data e horário. Somente as avaliações selecionadas entram na agenda quando você confirma a importação.</p>
     </details>
   </div>;
 }
@@ -41,6 +41,7 @@ function CandidateReview({ planId, initialCandidates, onConfirmed, onEdited, con
   const [success, setSuccess] = useState('');
   const [unverifiedIds, setUnverifiedIds] = useState(null);
   const requestRef = useRef(null);
+  const idempotencyKeyRef = useRef(null);
   useEffect(() => () => requestRef.current?.abort(), []);
 
   async function confirm() {
@@ -53,8 +54,13 @@ function CandidateReview({ planId, initialCandidates, onConfirmed, onEdited, con
     let batch;
     try {
       batch = buildReviewConfirmation(draft, candidates);
-      const events = await syllabusApi.confirm(planId, batch, controller.signal);
+      idempotencyKeyRef.current ??= crypto.randomUUID();
+      const events = await syllabusApi.confirm(planId, batch, {
+        idempotencyKey: idempotencyKeyRef.current,
+        signal: controller.signal,
+      });
       if (controller.signal.aborted) return;
+      idempotencyKeyRef.current = null;
       const confirmed = new Set(batch.map(item => item.candidateId));
       // The API also accepts already-confirmed candidates whose events were removed.
       setCandidates(current => current.map(item => confirmed.has(item.id) ? { ...item, status: 'confirmado' } : item));
@@ -103,6 +109,7 @@ function CandidateReview({ planId, initialCandidates, onConfirmed, onEdited, con
       setCandidates(latest.candidates);
       setDraft(reconciled);
       setUnverifiedIds(null);
+      idempotencyKeyRef.current = null;
       const confirmed = latest.candidates.filter(item => unverifiedIds.has(item.id) && item.status === 'confirmado').length;
       setSuccess(`Avaliações atualizadas. ${confirmed} de ${unverifiedIds.size} itens do último envio constam como confirmados. Revise os itens que ainda estiverem pendentes.`);
     } catch (failure) {
@@ -114,7 +121,7 @@ function CandidateReview({ planId, initialCandidates, onConfirmed, onEdited, con
   }
 
   return <>
-    <SyllabusReviewEditor value={draft} onChange={items => { setDraft(items); onEdited?.(); }} onConfirm={confirm}
+    <SyllabusReviewEditor value={draft} onChange={items => { idempotencyKeyRef.current = null; setDraft(items); onEdited?.(); }} onConfirm={confirm}
       confirmationAllowed={confirmationAllowed} busy={busy} disabled={busy || Boolean(unverifiedIds)} renderCandidate={(_, index) => {
     const candidate = candidates[index];
     return <div className="syllabus-candidate">
@@ -127,7 +134,7 @@ function CandidateReview({ planId, initialCandidates, onConfirmed, onEdited, con
           {candidate.startsAt && <div><dt>Data e horário registrados</dt><dd>{candidate.startsAt}</dd></div>}
         </dl>
         {(candidate.ambiguous || candidate.ambiguousFields.length > 0) && <p className="syllabus-review-error">Requer conferência{candidate.ambiguousFields.length ? `: ${candidate.ambiguousFields.map(field => fields[field] || field).join(', ')}` : ': informações incertas no documento'}.</p>}
-        {(!candidate.suggestedDate || !candidate.suggestedTime) && !candidate.startsAt && <p>Data ou horário incompletos. Será necessário informá-los antes da confirmação, com fuso horário.</p>}
+        {(!candidate.suggestedDate || !candidate.suggestedTime) && !candidate.startsAt && <p>Data ou horário incompletos. Será necessário informá-los antes da confirmação (horário de Brasília).</p>}
         <p><strong>Origem:</strong> {candidate.sourcePage === null ? 'Sem referência de página' : `Página ${candidate.sourcePage}`}</p>
         {candidate.sourceExcerpt ? <blockquote>{candidate.sourceExcerpt}</blockquote> : <p>Trecho de origem não informado.</p>}
     </div>;

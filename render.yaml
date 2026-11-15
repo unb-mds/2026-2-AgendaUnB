@@ -1,0 +1,33 @@
+previews:
+  generation: "off"
+
+services:
+  - type: web
+    name: agenda-unb-api-homolog
+    runtime: docker
+    plan: free
+    branch: main
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    autoDeployTrigger: "off"
+    healthCheckPath: /health
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: CORS_ORIGINS
+        value: https://agendaunb.com.br,https://2026-2-agendaunb-agenda-un-b.vercel.app
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SYLLABUS_WORKER_ENABLED
+        value: "false"
+      - key: SYLLABUS_PRIVACY_READY
+        value: "false"
+      - key: SYLLABUS_PROVIDER_TERMS_READY
+        value: "false"

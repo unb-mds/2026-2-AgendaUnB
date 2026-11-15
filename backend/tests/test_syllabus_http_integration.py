@@ -25,7 +25,7 @@ from src.modules.syllabus.processing_config import ProcessingConfig
 from src.modules.syllabus.privacy import privacy_checks
 from src.modules.syllabus.worker import SyllabusWorker
 from src.services.storage import SupabaseStorageService, get_storage_service
-from syllabus_samples import make_pdf
+from syllabus_samples import make_pdf, pad_pdf
 
 
 @dataclass(repr=False)
@@ -162,6 +162,9 @@ def test_authenticated_upload_private_download_processing_and_review(local_http,
     if provider_kind == "gemini" and not config.api_key:
         pytest.fail("GEMINI_API_KEY ausente; nenhuma leitura do registro do Windows é feita")
     pdf = make_pdf(["Plano inteiramente sintetico\nCronograma\nProva de integracao - 10/11/2026 - 14:00.\nTrabalho de integracao - 24/11/2026."])
+    if provider_kind == "reference":
+        pdf = pad_pdf(pdf, 10 * 1024 * 1024)
+        assert len(pdf) == 10 * 1024 * 1024
     started = time.monotonic()
     response = client.post("/api/v1/syllabus/upload",headers=ctx.headers("owner"),
                            files={"file":("integracao.pdf",pdf,"application/pdf")}, data={"offering_id": ctx.offering_id})
@@ -224,6 +227,7 @@ def test_authenticated_upload_private_download_processing_and_review(local_http,
         assert len(events) == 1 and events[0].title == "Prova revisada HTTP"
     # Somente métricas; nenhum token, corpo do PDF ou retorno bruto da IA.
     ctx.result = {"case":"upload_processing_review","provider":provider_kind,
+                  "upload_bytes":len(pdf),
                   "flow_total_seconds":round(time.monotonic()-started,3),
                   "upload_duration_ms":upload_ms,"upload_to_candidates_ms":upload_to_candidates_ms,
                   "upload_to_candidates_under_20s":upload_to_candidates_ms < 20000,

@@ -36,20 +36,68 @@ class Profile(Base):
     avatar_url: Mapped[str | None] = mapped_column(String, nullable=True)
 
 
+class GoogleCalendarOAuthState(Base):
+    """Desafio OAuth de uso único; armazena o hash de state e o verificador PKCE cifrado."""
+
+    __tablename__ = "google_calendar_oauth_states"
+
+    state_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    agenda_email: Mapped[str] = mapped_column(String, nullable=False)
+    encrypted_code_verifier: Mapped[str] = mapped_column(Text, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        "criado_em", DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class GoogleCalendarConnection(Base):
+    """Credenciais Google criptografadas; nunca devolvidas pela API."""
+
+    __tablename__ = "google_calendar_connections"
+
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), primary_key=True
+    )
+    google_sub: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
+    google_email: Mapped[str] = mapped_column(String, nullable=False)
+    calendar_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    encrypted_access_token: Mapped[str | None] = mapped_column(Text, nullable=True)
+    encrypted_refresh_token: Mapped[str | None] = mapped_column(Text, nullable=True)
+    access_token_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    granted_scope: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        "criado_em", DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        "atualizado_em", DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+
 class PublicEvent(Base):
     __tablename__ = "eventos"
 
     id: Mapped[UUID] = mapped_column(
         Uuid(as_uuid=True), primary_key=True, default=uuid4
     )
-    author_id: Mapped[UUID] = mapped_column(
-        "autor_id", Uuid(as_uuid=True), ForeignKey("profiles.id"), nullable=False
+    # Nulo em evento coletado: quem o identifica é a fonte (S7-B05).
+    author_id: Mapped[UUID | None] = mapped_column(
+        "autor_id", Uuid(as_uuid=True), ForeignKey("profiles.id"), nullable=True
     )
     title: Mapped[str] = mapped_column("titulo", String, nullable=False)
     description: Mapped[str] = mapped_column("descricao", Text, nullable=False)
-    starts_at: Mapped[datetime] = mapped_column(
-        "data_evento", DateTime(timezone=True), nullable=False, index=True
+    # Todo evento aprovado tem início; só item coletado em revisão pode não ter.
+    starts_at: Mapped[datetime | None] = mapped_column(
+        "data_evento", DateTime(timezone=True), nullable=True, index=True
     )
+    # ADR-011: fim exclusivo. Em dia inteiro, o banco preenche starts_at e
+    # ends_at com a meia-noite de Brasília de start_date e end_date.
+    ends_at: Mapped[datetime | None] = mapped_column("data_fim", DateTime(timezone=True), nullable=True)
+    all_day: Mapped[bool] = mapped_column("dia_inteiro", Boolean, default=False, nullable=False)
+    start_date: Mapped[date | None] = mapped_column("data_inicio_civil", Date, nullable=True)
+    end_date: Mapped[date | None] = mapped_column("data_fim_civil", Date, nullable=True)
     location: Mapped[str | None] = mapped_column("localizacao", String, nullable=True)
     external_url: Mapped[str | None] = mapped_column("link_externo", String, nullable=True)
     campus_id: Mapped[UUID | None] = mapped_column(
@@ -65,9 +113,30 @@ class PublicEvent(Base):
 
     justificativa_recusa: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # Procedência da coleta (S7-B05). Só registrar_evento_coletado() preenche.
+    source: Mapped[str | None] = mapped_column("fonte", String, nullable=True)
+    source_id: Mapped[str | None] = mapped_column("fonte_id", String, nullable=True)
+    source_url: Mapped[str | None] = mapped_column("fonte_url", String, nullable=True)
+    source_kind: Mapped[str | None] = mapped_column("fonte_tipo", String, nullable=True)
+    source_hash: Mapped[str | None] = mapped_column("fonte_hash", String, nullable=True)
+    collected_at: Mapped[datetime | None] = mapped_column("coletado_em", DateTime(timezone=True), nullable=True)
+    # Mantido pelo banco: campos alterados na plataforma, que a coleta não sobrescreve.
+    edited_fields: Mapped[list[str]] = mapped_column(
+        "campos_editados", JSON().with_variant(ARRAY(Text), "postgresql"), default=list, nullable=False
+    )
+    review_reason: Mapped[str | None] = mapped_column("motivo_revisao", String, nullable=True)
+    possible_duplicate_of: Mapped[UUID | None] = mapped_column(
+        "possivel_duplicata_de", Uuid(as_uuid=True), ForeignKey("eventos.id", ondelete="SET NULL"), nullable=True
+    )
+    moderated_by: Mapped[UUID | None] = mapped_column(
+        "moderado_por", Uuid(as_uuid=True), ForeignKey("profiles.id", ondelete="SET NULL"), nullable=True
+    )
+    moderated_at: Mapped[datetime | None] = mapped_column("moderado_em", DateTime(timezone=True), nullable=True)
+
     campus: Mapped[Campus | None] = relationship()
     category: Mapped[Category | None] = relationship()
-    author: Mapped[Profile] = relationship()
+    # foreign_keys: eventos também referencia profiles em moderado_por.
+    author: Mapped[Profile | None] = relationship(foreign_keys=[author_id])
 
 
 class SavedPublicEvent(Base):
@@ -100,6 +169,11 @@ class PersonalEvent(Base):
     starts_at: Mapped[datetime] = mapped_column(
         "data_hora", DateTime(timezone=True), nullable=False, index=True
     )
+    # ADR-011: mesmas regras de PublicEvent (fim exclusivo, dia inteiro em data civil).
+    ends_at: Mapped[datetime | None] = mapped_column("data_fim", DateTime(timezone=True), nullable=True)
+    all_day: Mapped[bool] = mapped_column("dia_inteiro", Boolean, default=False, nullable=False)
+    start_date: Mapped[date | None] = mapped_column("data_inicio_civil", Date, nullable=True)
+    end_date: Mapped[date | None] = mapped_column("data_fim_civil", Date, nullable=True)
     campus_id: Mapped[UUID | None] = mapped_column(
         Uuid(as_uuid=True), ForeignKey("campus.id"), nullable=True
     )
@@ -352,6 +426,67 @@ class SyllabusVersion(Base):
     created_at: Mapped[datetime] = mapped_column(
         "criado_em", DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+
+class EventCollectionRun(Base):
+    """Uma execução do coletor de eventos (S7-B05)."""
+
+    __tablename__ = "coletas_eventos"
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    source: Mapped[str] = mapped_column("fonte", String, nullable=False)
+    status: Mapped[str] = mapped_column(String, default="executando", nullable=False)
+    started_at: Mapped[datetime] = mapped_column(
+        "iniciada_em", DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    finished_at: Mapped[datetime | None] = mapped_column("concluida_em", DateTime(timezone=True), nullable=True)
+    items_read: Mapped[int] = mapped_column("itens_lidos", Integer, default=0, nullable=False)
+    created: Mapped[int] = mapped_column("criados", Integer, default=0, nullable=False)
+    updated: Mapped[int] = mapped_column("atualizados", Integer, default=0, nullable=False)
+    unchanged: Mapped[int] = mapped_column("inalterados", Integer, default=0, nullable=False)
+    reconciled: Mapped[int] = mapped_column("conciliados", Integer, default=0, nullable=False)
+    sent_to_review: Mapped[int] = mapped_column("para_revisao", Integer, default=0, nullable=False)
+    # Código curto (http_503, timeout). Nunca HTML ou conteúdo da fonte.
+    error_code: Mapped[str | None] = mapped_column("erro_codigo", String, nullable=True)
+
+
+class ImportOperation(Base):
+    """Ação de confirmação identificada pela Idempotency-Key (ADR-010). Gravada por confirmar_importacao()."""
+
+    __tablename__ = "operacoes_importacao"
+    __table_args__ = (
+        UniqueConstraint("user_id", "chave", name="operacoes_importacao_chave_unica"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False
+    )
+    idempotency_key: Mapped[str] = mapped_column("chave", String, nullable=False)
+    version_id: Mapped[UUID | None] = mapped_column(
+        "versao_id", Uuid(as_uuid=True), ForeignKey("versoes_plano.id", ondelete="SET NULL"), nullable=True
+    )
+    content_hash: Mapped[str] = mapped_column("conteudo_hash", String, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        "criado_em", DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class ImportItem(Base):
+    """Item de uma operação. event_id fica nulo quando a pessoa apaga o evento."""
+
+    __tablename__ = "itens_importacao"
+
+    operation_id: Mapped[UUID] = mapped_column(
+        "operacao_id", Uuid(as_uuid=True), ForeignKey("operacoes_importacao.id", ondelete="CASCADE"), primary_key=True
+    )
+    candidate_id: Mapped[UUID] = mapped_column("avaliacao_id", Uuid(as_uuid=True), primary_key=True)
+    event_id: Mapped[UUID | None] = mapped_column(
+        "evento_pessoal_id", Uuid(as_uuid=True), ForeignKey("eventos_pessoais.id", ondelete="SET NULL"), nullable=True
+    )
+    result: Mapped[str] = mapped_column("resultado", String, nullable=False)  # criado | ja_importado
+    candidate_type: Mapped[str | None] = mapped_column("tipo_revisado", String, nullable=True)
+
 
 class CatalogSync(Base):
     __tablename__ = "sincronizacoes_catalogo"
