@@ -128,23 +128,25 @@ Demonstrar a viabilidade de Followw público, SMTP, Gemini e jobs persistidos de
 
 #### Tasks
 
-- [ ] Validar Google Calendar API habilitada, escopo `https://www.googleapis.com/auth/calendar.app.created`, consentimento OAuth, usuários de teste, condições de publicação/verificação, cotas e renovação do token Google. Criar agenda secundária e evento sintético, demonstrar revogação e registrar requisitos de liberação pública e bloqueios antes da integração em [#82](https://github.com/unb-mds/2026-2-AgendaUnB/issues/82).
-- [ ] Executar chamadas reais aos endpoints públicos Followw e registrar paginação, limites e cobertura observada.
-- [ ] Demonstrar envio de confirmação e recuperação via SMTP para endereço fora da equipe Supabase.
-- [ ] Chamar o modelo Gemini escolhido com texto sintético. Conferir cotas, termos de conteúdo e condições de elegibilidade, inclusive idade do público universitário.
-- [ ] Executar uma tarefa persistida na hospedagem candidata e demonstrar retomada após reinício. Definir onde rodam FastAPI, worker, coletor e scheduler e registrar limites e custo efetivo.
-- [ ] Configurar fila/tabela persistida e processamento recuperável, limites de cota, tratamento de 429/timeout, segredos de servidor e logs sem conteúdo acadêmico.
-- [ ] Configurar checks essenciais de frontend, backend e migrations no CI com os comandos existentes.
+- [x] Validar Google Calendar API habilitada, escopo `https://www.googleapis.com/auth/calendar.app.created`, consentimento OAuth, usuários de teste, condições de publicação/verificação, cotas e renovação do token Google. Criar agenda secundária e evento sintético, demonstrar revogação e registrar requisitos de liberação pública e bloqueios antes da integração em [#82](https://github.com/unb-mds/2026-2-AgendaUnB/issues/82).
+- [x] Executar chamadas reais aos endpoints públicos Followw e registrar paginação, limites e cobertura observada.
+- [x] Demonstrar envio de confirmação e recuperação via SMTP para endereço fora da equipe Supabase.
+- [x] Chamar o modelo Gemini escolhido com texto sintético. Conferir cotas, termos de conteúdo e condições de elegibilidade, inclusive idade do público universitário.
+- [x] Executar uma tarefa persistida na hospedagem candidata e demonstrar retomada após reinício. Definir onde rodam FastAPI, worker, coletor e scheduler e registrar limites e custo efetivo.
+- [x] Configurar fila/tabela persistida e processamento recuperável, limites de cota, tratamento de 429/timeout, segredos de servidor e logs sem conteúdo acadêmico.
+- [x] Configurar checks essenciais de frontend, backend e migrations no CI com os comandos existentes.
 
 #### Critérios de aceite
 
-- [ ] Anexar evidência das cinco provas com configuração reproduzível. Credenciais permanecem fora do frontend e do repositório.
-- [ ] Comprovar retomada após reinício, tratamento de limite/timeout e migrations tanto em base limpa quanto na atualização da base existente.
-- [ ] Demonstrar SMTP, elegibilidade do Gemini e hospedagem sem custo, ou registrar imediatamente o requisito bloqueado e a alternativa escolhida.
+- [x] Anexar evidência das cinco provas com configuração reproduzível. Credenciais permanecem fora do frontend e do repositório.
+- [x] Comprovar retomada após reinício, tratamento de limite/timeout e migrations tanto em base limpa quanto na atualização da base existente.
+- [x] Demonstrar SMTP, elegibilidade do Gemini e hospedagem sem custo, ou registrar imediatamente o requisito bloqueado e a alternativa escolhida.
 
 #### Observações
 
 Validar SMTP próprio para destinatários externos. Consultar a documentação de [SMTP do Supabase](https://supabase.com/docs/guides/auth/auth-smtp), os [termos do Gemini](https://ai.google.dev/gemini-api/terms) e a [arquitetura do Followw](https://docs.followw.app/arquitetura) durante as provas. O consentimento do usuário não dispensa as condições do provedor.
+
+**Evidências consolidadas em 14/11/2026:** [Relatório técnico de validação S7-B02](../s7-b02-validacao.md). Configurações de custo zero comprovadas; credenciais isoladas por variáveis de ambiente; CI automatizado cobrindo frontend, backend e migrações.
 
 #### Evidências para fechamento
 

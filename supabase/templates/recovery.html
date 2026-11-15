@@ -1,9 +1,81 @@
 <!doctype html>
 <html lang="pt-BR">
-<body>
-  <h1>Redefina sua senha</h1>
-  <p>Abra a Agenda UnB para escolher uma nova senha.</p>
-  <p><a href="{{ .RedirectTo }}#type=recovery&amp;token_hash={{ .TokenHash }}">Redefina sua senha</a></p>
-  <p>Se você não fez essa solicitação, pode ignorar este e-mail.</p>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
+  <title>Redefina sua senha · Agenda UnB</title>
+  <style>
+    :root { color-scheme: light dark; supported-color-schemes: light dark; }
+    .email-action:hover { background-color: #004cae !important; }
+    .email-action:focus-visible { outline: 2px solid #008bff; outline-offset: 3px; }
+    @media screen and (max-width: 480px) {
+      .email-outer { padding: 20px 12px !important; }
+      .email-header { padding: 26px 24px 28px !important; }
+      .email-content { padding: 26px 24px !important; }
+      .email-title { font-size: 30px !important; line-height: 34px !important; }
+      .email-button { width: 100% !important; }
+    }
+    @media (prefers-color-scheme: dark) {
+      .email-background { background-color: #080c16 !important; }
+      .email-header { background-color: #101a2c !important; }
+      .email-content { background-color: #1a2235 !important; border-color: #334057 !important; }
+      .email-copy { color: #e0e8f3 !important; }
+      .email-note { background-color: #101a2c !important; }
+      .email-note-title { color: #f4f7fc !important; }
+      .email-secondary, .email-footer { color: #b0bfd0 !important; }
+      .email-separator { border-color: #334057 !important; }
+    }
+  </style>
+</head>
+<body class="email-background" style="margin:0; padding:0; background-color:#f0f4f8; font-family:Inter,Arial,sans-serif; -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%;">
+  <div hidden aria-hidden="true" style="display:none; max-height:0; max-width:0; overflow:hidden; opacity:0; mso-hide:all;">Use este link para escolher uma nova senha para a sua conta.</div>
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#f0f4f8" class="email-background" style="background-color:#f0f4f8;">
+    <tr>
+      <td align="center" class="email-outer" style="padding:40px 16px;">
+        <!--[if mso]><table role="presentation" width="560" cellspacing="0" cellpadding="0" border="0"><tr><td><![endif]-->
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%; max-width:560px; font-family:Inter,Arial,sans-serif;">
+          <tr>
+            <td bgcolor="#101a2c" class="email-header" style="padding:30px 40px 32px; background-color:#101a2c; border-top:4px solid #008bff;">
+              <p style="margin:0 0 24px; color:#ffffff; font-size:19px; line-height:25px; font-weight:700;">Agenda UnB</p>
+              <h1 class="email-title" style="margin:0 0 12px; color:#ffffff; font-size:36px; line-height:41px; font-weight:700; letter-spacing:-0.02em; text-wrap:balance;">Redefina sua senha</h1>
+              <p style="margin:0; color:#cad8ec; font-size:16px; line-height:25px;">Recebemos um pedido para redefinir a senha da sua conta na Agenda UnB.</p>
+            </td>
+          </tr>
+          <tr>
+            <td bgcolor="#ffffff" class="email-content" style="padding:30px 39px 32px; background-color:#ffffff; border:1px solid #d7e0ea; border-top:0; border-radius:0 0 14px 14px;">
+              <p class="email-copy" style="margin:0 0 20px; color:#293950; font-size:16px; line-height:25px;">Abra a página de recuperação para escolher uma nova senha de acesso.</p>
+              <table role="presentation" align="center" cellspacing="0" cellpadding="0" border="0" class="email-button" style="margin:0 auto;">
+                <tr>
+                  <td align="center" bgcolor="#005fd2" style="background-color:#005fd2; border-radius:10px; mso-padding-alt:14px 24px;">
+                    <a href="{{ .RedirectTo }}#type=recovery&amp;token_hash={{ .TokenHash }}" class="email-action" style="display:block; padding:14px 24px; background-color:#005fd2; border-radius:10px; color:#ffffff; text-decoration:none; font-size:16px; line-height:22px; font-weight:700; mso-padding-alt:0;">Redefinir senha</a>
+                  </td>
+                </tr>
+              </table>
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-top:24px;">
+                <tr>
+                  <td bgcolor="#f0f4f8" class="email-note" style="padding:14px 16px; background-color:#f0f4f8; border-radius:10px;">
+                    <p class="email-note-title" style="margin:0 0 3px; color:#18263b; font-size:14px; line-height:20px; font-weight:700;">O link é válido por 1 hora</p>
+                    <p class="email-secondary" style="margin:0; color:#4d5f74; font-size:14px; line-height:21px;">Se o link expirar, solicite outro link na opção Esqueci minha senha da Agenda UnB.</p>
+                  </td>
+                </tr>
+              </table>
+              <div class="email-separator" style="margin-top:24px; padding-top:20px; border-top:1px solid #d7e0ea;">
+                <h2 class="email-note-title" style="margin:0 0 5px; color:#18263b; font-size:15px; line-height:21px; font-weight:700;">Não pediu uma nova senha?</h2>
+                <p class="email-secondary" style="margin:0; color:#4d5f74; font-size:14px; line-height:21px;">Você pode ignorar esta mensagem. Sua senha só muda quando você salva uma nova.</p>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" class="email-footer" style="padding:20px 12px 0; color:#4d5f74; font-size:13px; line-height:20px;">
+              Agenda UnB · Universidade de Brasília
+            </td>
+          </tr>
+        </table>
+        <!--[if mso]></td></tr></table><![endif]-->
+      </td>
+    </tr>
+  </table>
 </body>
 </html>
