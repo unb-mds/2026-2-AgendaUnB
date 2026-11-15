@@ -73,6 +73,18 @@ lote e corrige título, tipo, data e horário. A seleção em lote preserva
 itens retirados da seleção. Confirmados, descartados e estados desconhecidos
 ficam bloqueados para edição. Rascunhos e seleções são locais até a confirmação.
 
+Em **Revisar datas**, uma prova pendente com data definida e sem horário no plano
+recebe uma sugestão de início da aula. A tela usa o campo `schedule` da oferta
+vinculada, retornado pela API de turmas, e consulta a grade pelo dia da semana da
+prova. Por exemplo, `24T23` sugere 14h numa segunda ou quarta.
+[Grade de horários do SIGAA na UnB](https://design.unb.br/codigos-aulas-sigaa/).
+
+O campo indica a origem da sugestão e continua editável. Trocar a data recalcula
+o horário sugerido. Uma hora informada no plano ou editada pelo estudante é
+preservada. Se não houver aula, houver mais de um bloco no dia ou o horário
+não puder ser interpretado, o preenchimento é manual. A sugestão fica no
+rascunho da revisão até o estudante confirmar a importação.
+
 **Conferir selecionados** valida campos e direciona o foco ao primeiro erro.
 Editar revoga essa conferência. A jornada por oferta exige também conferir a
 identidade da turma. **Confirmar e importar** envia somente selecionados válidos
