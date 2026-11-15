@@ -5,6 +5,11 @@
 
 Use este roteiro para registrar as provas pendentes da [issue #68](https://github.com/unb-mds/2026-2-AgendaUnB/issues/68). O [PR #116](https://github.com/unb-mds/2026-2-AgendaUnB/pull/116) registra a migração e a preparação do ambiente. Os resultados abaixo distinguem as verificações já executadas das provas ainda previstas.
 
+Este roteiro registra as evidências disponíveis em 13/11/2026. Antes de repetir
+uma prova, confira os resultados posteriores no [relatório da S7-B02](s7-b02-validacao.md),
+a configuração do ambiente no [guia de implantação](implantacao.md) e o checklist
+da issue #68.
+
 ## Acessos para alinhar com Thomas
 
 | Prova | Acesso e preparação |
