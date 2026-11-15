@@ -13,6 +13,7 @@ def privacy_checks(connection) -> dict[str, bool]:
       ), private_policies as (
         select * from pg_catalog.pg_policies
         where schemaname='public' and tablename in ('planos_ensino','avaliacoes')
+          and permissive='PERMISSIVE'
       ), review_function as (
         select p.* from pg_catalog.pg_proc p
         where p.oid=to_regprocedure('public.revisar_candidatos_plano(uuid,jsonb)')
@@ -50,12 +51,12 @@ def privacy_checks(connection) -> dict[str, bool]:
         exists(select 1 from storage.buckets where id='syllabus_files' and not public
           and file_size_limit between 1 and 10485760
           and allowed_mime_types=array['application/pdf']) as private_bucket,
-        ((select count(*)=2 from pg_catalog.pg_policies where schemaname='storage' and tablename='objects')
-          and (select count(*)=1 from pg_catalog.pg_policies where schemaname='storage' and tablename='objects'
+        ((select count(*)=2 from pg_catalog.pg_policies where schemaname='storage' and tablename='objects' and permissive='PERMISSIVE')
+          and (select count(*)=1 from pg_catalog.pg_policies where schemaname='storage' and tablename='objects' and permissive='PERMISSIVE'
             and roles=array['authenticated']::name[] and cmd='SELECT'
             and position('auth.uid()' in coalesce(qual,with_check))>0
             and policyname='planos: usuario le apenas os proprios arquivos')
-          and exists(select 1 from pg_catalog.pg_policies where schemaname='storage' and tablename='objects'
+          and exists(select 1 from pg_catalog.pg_policies where schemaname='storage' and tablename='objects' and permissive='PERMISSIVE'
             and policyname='planos: back-end le todos os arquivos' and cmd='SELECT'
             and roles=array['service_role']::name[] and position('syllabus_files' in qual)>0))
           as storage_policies,

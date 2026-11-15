@@ -13,8 +13,10 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from src.modules.classes.router import router as classes_router
 from src.modules.events.router import router as events_router
+from src.modules.google_calendar.router import router as google_calendar_router
 from src.modules.syllabus.router import router as syllabus_router
 from src.middlewares.upload_limits import UploadLimitsMiddleware
+from src.deployment import cors_origins
 
 
 app = FastAPI(
@@ -22,6 +24,8 @@ app = FastAPI(
     version="1.0.0",
 )
 logger = logging.getLogger("agenda_unb.api")
+if os.environ.get("APP_ENV", "local") != "local":
+    logging.getLogger("uvicorn.access").disabled = True
 
 
 @app.exception_handler(IntegrityError)
@@ -71,18 +75,8 @@ async def handle_validation_error(request: Request, exc: RequestValidationError)
         content={"detail": "; ".join(messages), "errors": [{"loc": e["loc"], "msg": e["msg"], "type": e["type"]} for e in exc.errors()]},
     )
 
-default_origins = "http://localhost:5173,http://127.0.0.1:5173"
-allowed_origins = [
-    origin.strip()
-    for origin in os.getenv("CORS_ORIGINS", default_origins).split(",")
-    if origin.strip()
-]
-vercel_url = os.getenv("VERCEL_URL")
-if vercel_url:
-    allowed_origins.append(f"https://{vercel_url}")
-vercel_prod_url = os.getenv("VERCEL_PROJECT_PRODUCTION_URL")
-if vercel_prod_url:
-    allowed_origins.append(f"https://{vercel_prod_url}")
+allowed_origins = cors_origins(os.environ)
+app.add_middleware(UploadLimitsMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
@@ -90,10 +84,10 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
-app.add_middleware(UploadLimitsMiddleware)
 
 app.include_router(classes_router, prefix="/api/v1")
 app.include_router(events_router, prefix="/api/v1")
+app.include_router(google_calendar_router, prefix="/api/v1")
 app.include_router(syllabus_router, prefix="/api/v1")
 
 

@@ -60,7 +60,7 @@ function DemoReview({ state, dispatch }) {
   return <div ref={container}>
     <header className="tp-section-heading"><div><h2>A IA sugere. Você confere.</h2><p>{course.title} · {courseLabel(course)}</p></div><CourseStatus plan={plan} /></header>
     <div className="tp-document"><Icon>description</Icon><div><strong>{plan.fileName}</strong><p>Dados fixos de exemplo, não extraídos do PDF selecionado.</p></div></div>
-    <p className="tp-help">Selecione as avaliações que deseja manter. Confira a evidência e informe o fuso explicitamente. Itens descartados não entram na agenda.</p>
+    <p className="tp-help">Selecione as avaliações que deseja manter. Confira a evidência; os horários usam o fuso de Brasília (UTC-3). Itens descartados não entram na agenda.</p>
     <div className="tp-review-list">{plan.candidates.map((item, index) => {
       const errors = attempted ? validateReviewItem(item) : {};
       const base = `tp-${course.id}-${item.id}`;
@@ -68,14 +68,12 @@ function DemoReview({ state, dispatch }) {
         <legend>Avaliação {index + 1}</legend>
         <div className="tp-review-top"><label className="tp-choice"><input type="checkbox" checked={item.decision === 'selected'} onChange={e => dispatch({ type: 'EDIT', id: item.id, field: 'decision', value: e.target.checked ? 'selected' : 'discarded' })} />Incluir {item.title || `avaliação ${index + 1}`}</label>
           <span className="tp-badge">{!item.time ? 'Horário pendente' : item.decision === 'discarded' ? 'Descartada' : 'Confira os dados'}</span></div>
-        <div className="tp-fields">{[['title', 'Título', 'text'], ['type', 'Tipo', 'text'], ['date', 'Data', 'date'], ['time', 'Horário', 'time'], ['utcOffset', 'Fuso UTC', 'text']].map(([field, label, type]) => <div key={field} className={field === 'title' ? 'tp-title-field' : ''}>
+        <div className="tp-fields">{[['title', 'Título', 'text'], ['type', 'Tipo', 'text'], ['date', 'Data', 'date'], ['time', 'Horário', 'time']].map(([field, label, type]) => <div key={field} className={field === 'title' ? 'tp-title-field' : ''}>
           <label htmlFor={`${base}-${field}`}>{label}{item.decision === 'selected' && field !== 'type' ? ' *' : ''}</label>
           <input id={`${base}-${field}`} type={type} value={item[field]} disabled={item.decision === 'discarded'}
-            aria-invalid={errors[field] ? true : undefined} aria-describedby={errors[field] ? `${base}-${field}-error` : field === 'utcOffset' ? `${base}-zone` : undefined}
-            placeholder={field === 'utcOffset' ? 'Ex.: -03:00' : ''}
+            aria-invalid={errors[field] ? true : undefined} aria-describedby={errors[field] ? `${base}-${field}-error` : undefined}
             onChange={e => dispatch({ type: 'EDIT', id: item.id, field, value: e.target.value })} />
           {errors[field] && <p className="tp-error" id={`${base}-${field}-error`}>{errors[field]}</p>}
-          {field === 'utcOffset' && <small id={`${base}-zone`}>Diferença para UTC na data escolhida.</small>}
         </div>)}</div>
         {item.excerpt && <p className="tp-evidence"><strong>Página {item.page}</strong> “{item.excerpt}”</p>}
       </fieldset>;

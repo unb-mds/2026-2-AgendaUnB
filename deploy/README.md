@@ -4,11 +4,11 @@ O banco `pzniltzdhyuzzdqbppjw` recebeu as cinco migrações pendentes em
 10/11/2026. O [registro da operação](../docs/supabase-nuvem-2026-11-10.md)
 descreve backup, testes, preservação dos dados e limitações.
 
-A configuração na raiz do repositório integra a SPA e a API na Vercel. Nesse
-modo, deixe `VITE_API_URL` vazia para usar `/api/v1` no mesmo domínio. Use os
-modelos deste diretório para a opção com API externa no Render. O
-[PR #113](https://github.com/unb-mds/2026-2-AgendaUnB/pull/113) acompanha a
-implantação integrada.
+Os modelos abaixo registram a preparação de 10/11/2026. A configuração adotada
+depois usa Vercel para o frontend, Render para a API e GitHub Actions para os
+jobs. Para operar o ambiente atual, siga o [guia de implantação](../docs/implantacao.md)
+e o Blueprint `render.yaml`. A Vercel precisa de `VITE_API_URL` com o endereço
+HTTPS da API no Render terminado em `/api/v1`.
 
 ## Render
 

@@ -1,4 +1,29 @@
 // Local editor model, not an API payload.
+export const BRASILIA_UTC_OFFSET = '-03:00';
+
+function formatInBrasilia(isoInstant) {
+  if (!isoInstant) return null;
+  const parsed = new Date(isoInstant);
+  if (Number.isNaN(parsed.getTime())) return null;
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Sao_Paulo',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    }).formatToParts(parsed).map(part => [part.type, part.value])
+  );
+  const hour = parts.hour === '24' ? '00' : parts.hour;
+  return {
+    date: `${parts.year}-${parts.month}-${parts.day}`,
+    time: `${hour}:${parts.minute}:${parts.second}`,
+  };
+}
+
 export function createReviewDraft(items) {
   if (!Array.isArray(items)) throw new Error('Lista de avaliações inválida.');
   const ids = new Set();
@@ -9,19 +34,18 @@ export function createReviewDraft(items) {
     ids.add(item.id);
     const string = key => typeof item[key] === 'string' ? item[key] : '';
     return { id: item.id, title: string('title'), type: string('type'), date: string('date'),
-      time: string('time'), utcOffset: '', decision: 'pending' };
+      time: string('time'), decision: 'pending' };
   });
 }
 
 export function createCandidateReviewDraft(candidates) {
   return createReviewDraft(candidates).map((draft, index) => {
     const candidate = candidates[index];
-    // Preserve civil suggestions, never derive a date or timezone from the browser.
-    const instant = candidate.startsAt?.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?)(Z|[+-]\d{2}:\d{2})$/);
+    const hasExplicitZone = /(?:Z|[+-]\d{2}:\d{2})$/.test(candidate.startsAt || '');
+    const brasilia = hasExplicitZone ? formatInBrasilia(candidate.startsAt) : null;
     return { ...draft, type: draft.type.toLowerCase(),
-      date: candidate.suggestedDate ?? instant?.[1] ?? '',
-      time: candidate.suggestedTime ?? instant?.[2] ?? '',
-      utcOffset: instant ? (instant[3] === 'Z' ? '+00:00' : instant[3]) : '',
+      date: candidate.suggestedDate ?? brasilia?.date ?? '',
+      time: candidate.suggestedTime ?? brasilia?.time ?? '',
       status: candidate.status, versionId: candidate.versionId,
       editable: candidate.status === 'pendente' };
   });
@@ -46,7 +70,8 @@ export function buildReviewConfirmation(draft, candidates) {
     return {
       candidateId: item.id,
       title: item.title.trim(),
-      startsAt: `${item.date}T${item.time}${item.utcOffset}`,
+      type: item.type.toLowerCase(),
+      startsAt: `${item.date}T${item.time}${BRASILIA_UTC_OFFSET}`,
       category: 'Acadêmico',
       description: Array.from(description).slice(0, 10000).join(''),
     };
@@ -74,6 +99,5 @@ export function validateReviewItem(item, strict = false) {
   if (strict && !['prova', 'trabalho'].includes(item.type.toLowerCase())) errors.type = 'Selecione Prova ou Trabalho.';
   if (!validReviewDate(item.date)) errors.date = 'Informe uma data válida.';
   if (!/^([01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d{1,6})?)?$/.test(item.time)) errors.time = 'Informe um horário válido entre 00:00 e 23:59:59.';
-  if (!validUtcOffset(item.utcOffset)) errors.utcOffset = 'Informe o fuso como -03:00 ou +00:00 (até ±14:00).';
   return errors;
 }
