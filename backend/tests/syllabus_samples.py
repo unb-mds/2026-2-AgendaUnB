@@ -40,6 +40,12 @@ def make_pdf(pages: list[str]) -> bytes:
     return output.getvalue()
 
 
+def pad_pdf(pdf: bytes, size: int) -> bytes:
+    # A comment after the xref table keeps the original byte offsets valid.
+    padding = b"%" + b"0" * (size - len(pdf) - 2) + b"\n"
+    return pdf.replace(b"startxref\n", padding + b"startxref\n", 1)
+
+
 def approved_source(text, page=1):
     """Autorização sintética explícita; nunca usada com documentos reais."""
     from datetime import datetime, timezone

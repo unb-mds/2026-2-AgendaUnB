@@ -22,6 +22,7 @@ from src.modules.events.schemas import (
 )
 
 router = APIRouter(tags=["events"])
+PUBLIC_EVENTS_CACHE_CONTROL = "public, max-age=60, s-maxage=300, stale-while-revalidate=600"
 
 
 def _category_id(db: Session, name: str | None) -> UUID | None:
@@ -98,6 +99,7 @@ def _personal_read(event: PersonalEvent) -> PersonalEventRead:
 
 @router.get("/events", response_model=list[EventRead])
 def list_public_events(
+    response: Response,
     campus: Annotated[str | None, Query(min_length=2, max_length=120)] = None,
     category: Annotated[str | None, Query(min_length=2, max_length=80)] = None,
     start_date: Annotated[datetime | None, Query(alias="startDate")] = None,
@@ -108,6 +110,7 @@ def list_public_events(
     db: Session = Depends(get_db),
 ) -> list[EventRead]:
     _check_date_range(start_date, end_date)
+    response.headers["Cache-Control"] = PUBLIC_EVENTS_CACHE_CONTROL
     statement = (
         select(PublicEvent)
         .where(PublicEvent.status == "aprovado")
@@ -133,7 +136,9 @@ def list_public_events(
         statement = statement.where(PublicEvent.title.ilike(f"%{search.strip()}%"))
 
     events = db.scalars(
-        statement.order_by(PublicEvent.starts_at.asc()).limit(limit).offset(offset)
+        statement.order_by(PublicEvent.starts_at.asc(), PublicEvent.id.asc())
+        .limit(limit)
+        .offset(offset)
     ).all()
     return [_public_read(event) for event in events]
 
@@ -141,6 +146,7 @@ def list_public_events(
 @router.get("/events/{event_id}", response_model=EventRead)
 def get_public_event(
     event_id: UUID,
+    response: Response,
     db: Session = Depends(get_db),
 ) -> EventRead:
     event = db.scalar(
@@ -154,6 +160,7 @@ def get_public_event(
     )
     if event is None:
         raise HTTPException(status_code=404, detail="Evento não encontrado")
+    response.headers["Cache-Control"] = PUBLIC_EVENTS_CACHE_CONTROL
     return _public_read(event)
 
 

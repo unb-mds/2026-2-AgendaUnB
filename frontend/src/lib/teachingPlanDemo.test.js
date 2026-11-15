@@ -23,16 +23,17 @@ test('o envio exige vínculo com a oferta específica e presença no catálogo',
   assert.equal(demoReducer(followed, { type: 'PROCESS', name: 'plano.pdf', available: false }), followed);
 });
 
-test('revisão parcial exige conferência, data, horário e fuso; editar revoga conferência', () => {
+test('revisão parcial exige conferência, data e horário; editar revoga conferência', () => {
   let state = prepare(open(follow(initial(), mds), mds));
   assert.equal(state.plans[mds].status, 'processing');
   assert.equal(prepare(state), state);
   state = demoReducer(state, { type: 'PROCESSED', id: mds });
   assert.equal(state.step, 3);
   state = demoReducer(state, { type: 'EDIT', id: 'first', field: 'decision', value: 'selected' });
+  state = demoReducer(state, { type: 'EDIT', id: 'first', field: 'time', value: '' });
   state = demoReducer(state, { type: 'ACK', value: true });
   assert.equal(canConfirm(state.plans[mds], state.acknowledged), false);
-  state = demoReducer(state, { type: 'EDIT', id: 'first', field: 'utcOffset', value: '-03:00' });
+  state = demoReducer(state, { type: 'EDIT', id: 'first', field: 'time', value: '14:00' });
   assert.equal(state.acknowledged, false);
   state = demoReducer(state, { type: 'ACK', value: true });
   state = demoReducer(state, { type: 'CONFIRM' });
