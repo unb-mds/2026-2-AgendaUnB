@@ -222,7 +222,7 @@ URLs, IDs dos projetos, região e responsáveis nominais serão preenchidos quan
 
 | Variável/configuração | Destino | Tratamento |
 | --- | --- | --- |
-| `VITE_API_URL` | Build Vercel | Vazia no `.env.example` para usar `/api/v1` no mesmo domínio. Para uma API externa, informar a URL HTTPS incluindo `/api/v1`. |
+| `VITE_API_URL` | Build Vercel | Pública; URL HTTPS da API **incluindo `/api/v1`** (exigida em builds Vercel por `frontend/src/lib/deploymentConfig.js`) |
 | `VITE_SUPABASE_URL` | Build e função de busca Vercel | Pública; URL do projeto do ambiente |
 | `VITE_SUPABASE_ANON_KEY` | Build e função de busca Vercel | Chave pública anon do ambiente; segurança depende de Auth/RLS |
 | `DATABASE_URL` | Runtime Render | Segredo; conexão SQLAlchemy `postgresql+psycopg://...`, credenciais próprias do ambiente e TLS |
@@ -246,7 +246,7 @@ Configurar a conexão PostgreSQL usando a opção oferecida pelo projeto Supabas
 
 Tanto [`frontend/vercel.json`](../frontend/vercel.json) (usado quando o Root Directory é `frontend`) quanto [`vercel.json`](../vercel.json) na raiz configuram exclusivamente o frontend Vite (`framework: "vite"`, saída `dist` / `frontend/dist`), preservando `/api/search` (`kind=sitemap` e `kind=event`), `/auth/retorno` -> `/app.html`, `/eventos` -> `/eventos.html` e rotas profundas em `/app.html`.
 
-O [roteamento do frontend](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/frontend/vercel.json) gera títulos, descrições e URLs canônicas no HTML da home e da lista de eventos durante o build. As rotas da SPA, como `/admin` e `/plano-de-ensino`, continuam aceitando acesso direto e recarga.
+O [roteamento do frontend](../frontend/vercel.json) gera títulos, descrições e URLs canônicas no HTML da home e da lista de eventos durante o build. As rotas da SPA, como `/admin` e `/plano-de-ensino`, continuam aceitando acesso direto e recarga.
 
 A função [de busca](../frontend/api/search.js) responde a `/sitemap.xml` e `/evento/<id>`. Configure a URL e a chave pública do Supabase do mesmo ambiente no build e na função. As leituras passam pela RLS anônima e selecionam apenas eventos aprovados. A CDN pode guardar respostas públicas por cinco minutos. Teste o sitemap, um evento aprovado e um ID inexistente após a publicação. Após o deploy, envie o sitemap e solicite indexação no Search Console.
 
