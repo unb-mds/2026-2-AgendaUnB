@@ -25,16 +25,10 @@ nav:
     - ADR-011 — Distinguir datas civis de instantes e usar fim exclusivo: arquitetura/adrs/adr-011-datas-civis-e-instantes.md
     - ADR-012 — Exportar por ação explícita para uma agenda Google secundária: arquitetura/adrs/adr-012-exportacao-google-idempotente.md
     - ADR-013 — Persistir lembretes com agendamento idempotente e revalidação: arquitetura/adrs/adr-013-lembretes-persistentes.md
+    - ADR-014 — Processamento assíncrono resiliente de planos com fila persistida, lease e orçamento: arquitetura/adrs/adr-014-processamento-assincrono-planos-ia.md
   - Contratos do Backend: api-specs.md
-  - Extração Autorizada S7: processamento-planos-s7.md
-  - Validação S7-B01: s7-b01-validacao.md
-  - Validação S7-B02: s7-b02-validacao.md
-  - Histórico de Processamento S6: processamento-planos.md
-  - Privacidade dos Planos: privacidade-planos.md
   - Matriz de aceite da Release 2: matriz-release-2.md
   - Plano de Implantação: implantacao.md
-  - Supabase Cloud — migrações de 10/11: supabase-nuvem-2026-11-10.md
-  - Homologação da S7-B02: s7-b02-homologacao.md
   - Modelo de Dados: arquitetura/modelo-de-dados.md
   - Dados de planos: arquitetura/dados-de-planos.md
   - Especificação do Banco: arquitetura/banco-de-dados.md
@@ -79,7 +73,7 @@ plugins:
         AI-USAGE.md: processo/uso-de-ia.md
         release-notes/v0.1.0.md: processo/release-notes/v0-1-0.md
         planejamento-r2-sprints-7-8.md: matriz-release-2.md
-        prototipo-planos-react.md: planos-de-ensino-frontend.md
+        prototipo-planos-react.md: arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos.md
         s6-f02-editor-parcial.md: sprints/sprint-6.md
 
 theme:

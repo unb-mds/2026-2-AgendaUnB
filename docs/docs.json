@@ -69,10 +69,6 @@
           "arquitetura/catalogo-de-turmas",
           "arquitetura/frontend",
           "api-specs",
-          "processamento-planos-s7",
-          "s7-b01-validacao",
-          "s7-b02-validacao",
-          "privacidade-planos",
           "implantacao",
           {
             "group": "Decisões arquiteturais",
@@ -90,7 +86,8 @@
               "arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos",
               "arquitetura/adrs/adr-011-datas-civis-e-instantes",
               "arquitetura/adrs/adr-012-exportacao-google-idempotente",
-              "arquitetura/adrs/adr-013-lembretes-persistentes"
+              "arquitetura/adrs/adr-013-lembretes-persistentes",
+              "arquitetura/adrs/adr-014-processamento-assincrono-planos-ia"
             ]
           }
         ]
@@ -211,7 +208,7 @@
     },
     {
       "source": "/docs/prototipo-planos-react",
-      "destination": "/docs/planos-de-ensino-frontend"
+      "destination": "/docs/arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos"
     },
     {
       "source": "/docs/s6-f02-editor-parcial",
