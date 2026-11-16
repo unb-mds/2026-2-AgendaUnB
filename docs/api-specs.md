@@ -301,14 +301,14 @@ Concluído com contagem zero significa documento sem cronograma identificado.
 `processingDurationMs` mede a última tentativa; `totalDurationMs` mede da criação
 do registro ao término, incluindo fila/retentativas, e é nulo antes de finalizar.
 
-O [worker independente](processamento-planos.md) consome a fila. Ele fica
+O [worker independente](arquitetura/adrs/adr-014-processamento-assincrono-planos-ia.md) consome a fila. Ele fica
 desativado até a configuração explícita e a validação das políticas S6-D02.
 Upload e worker não criam compromissos. As rotas de listagem, detalhe e confirmação
 S6-B02 já existentes, descritas acima, operam sobre `avaliacoes` legadas; os
 candidatos privados do worker em `candidatos_avaliacao` ainda exigem conciliação
 com esse contrato antes da integração no ambiente da equipe.
 O contrato transacional de banco S6-D02 já está disponível em
-[`revisar_candidatos_plano`](privacidade-planos.md#contrato-transacional-para-s6-b02).
+[`revisar_candidatos_plano`](arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos.md).
 
 
 ## Atualização S7-B01 — preparação e autorização do texto (10/11/2026)
@@ -348,7 +348,7 @@ e cada conta tem uma operação independente sobre a mesma versão compartilhada
 A revisão do tipo fica no item de importação da conta e não altera o candidato
 compartilhado.
 
-[Fluxo, flags e evidências](processamento-planos-s7.md).
+[Fluxo, flags e decisões](arquitetura/adrs/adr-014-processamento-assincrono-planos-ia.md) · [Minimização (ADR-003)](arquitetura/adrs/adr-003-minimizar-dados-de-planos.md) · [Versionamento e confirmação (ADR-010)](arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos.md).
 
 ### Catálogo e seleção real de ofertas (#70/#71)
 

@@ -17,8 +17,8 @@ quando `APP_ENV != "local"`.
 
 | Componente | Configuração ativa |
 | --- | --- |
-| SPA | Vercel, raiz `frontend` (e configuração equivalente na raiz em [`vercel.json`](../vercel.json)), Vite, `npm ci`, `npm run build`, saída `dist`. As rotas `/api/search`, `/sitemap.xml`, `/evento/:id` e `/auth/retorno` têm rewrites dedicados e ficam preservadas no fallback. |
-| API | FastAPI em Python 3.11 no Render (`agenda-unb-api-homolog`). Usar HTTPS direto para `/api/v1`, inclusive no upload. O Blueprint em [`render.yaml`](../render.yaml) reflete o serviço único Free com publicação manual. |
+| SPA | Vercel, raiz `frontend` (e configuração equivalente na raiz em [`vercel.json`](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/vercel.json)), Vite, `npm ci`, `npm run build`, saída `dist`. As rotas `/api/search`, `/sitemap.xml`, `/evento/:id` e `/auth/retorno` têm rewrites dedicados e ficam preservadas no fallback. |
+| API | FastAPI em Python 3.11 no Render (`agenda-unb-api-homolog`). Usar HTTPS direto para `/api/v1`, inclusive no upload. O Blueprint em [`render.yaml`](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/render.yaml) reflete o serviço único Free com publicação manual. |
 | Auth, dados e Storage | Projeto Supabase único `pzniltzdhyuzzdqbppjw` (`agenda-unb-homolog`), compartilhado entre API, frontend e jobs, com 31 migrações aplicadas até `20261113212429` e conexão PostgreSQL via TLS (`sslmode=require`). |
 | Worker, coletor e catálogo | GitHub Actions com segredos no environment `production-jobs` e disparo manual/agendado por job (`worker`, `collector` e `catalog` para `python -m src.modules.classes.sync --period 2026.2`), validando a operação de custo zero da [#68](https://github.com/unb-mds/2026-2-AgendaUnB/issues/68). |
 
@@ -131,7 +131,7 @@ logs dos provedores também omitem tokens, credenciais e conteúdo acadêmico.
 
 ## Plano original e histórico
 
-O [ADR-002](arquitetura/adrs/adr-002-separar-hospedagem-e-ambientes.md) registra a proposta de separação da hospedagem e dos ambientes. Este plano detalha a configuração, a publicação e a recuperação.
+O protocolo de migrações seguras e as decisões de infraestrutura estão consolidados nas [ADR-002](arquitetura/adrs/adr-002-separar-hospedagem-e-ambientes.md) e [ADR-007](arquitetura/adrs/adr-007-migracoes-sql.md). Este plano detalha a configuração, a publicação e a recuperação.
 
 O plano abaixo registra a proposta de **24/10/2026**, com referência no commit `e0ecf46`. A seção de operação acima documenta a configuração da S7-B06 e as verificações mais recentes.
 
@@ -197,7 +197,7 @@ Além da API, provisionar processo independente com comando, na pasta `backend`,
 `python -m src.modules.syllabus.worker`. Deve usar o mesmo banco e Storage privado
 da API e reiniciar após interrupções. O ciclo de requisição HTTP não executa IA.
 Configurar `GEMINI_API_KEY` como segredo do servidor, nunca no frontend; demais
-limites, preços e comandos estão em [Processamento de planos](processamento-planos.md).
+limites, preços e regras de fila/orçamento estão na [ADR-014](arquitetura/adrs/adr-014-processamento-assincrono-planos-ia.md).
 
 Aplicar #40, S6-D01, `20261109110000_fila_processamento_planos.sql` e
 `20261109113000_privacidade_e_revisao_planos.sql` (S6-D02).
@@ -207,7 +207,7 @@ Somente então habilitar os dois parâmetros no ambiente correspondente. A avali
 sintética com Gemini não homologa privacidade, Storage remoto ou fila em produção.
 Esta entrega não provisiona serviço nem aplica migrações remotas.
 O worker também verifica pré-requisitos nos catálogos do banco e recusa configuração
-incompleta, mesmo com as flags ativas. Consultar o [guia S6-D02](privacidade-planos.md)
+incompleta, mesmo com as flags ativas. Consultar as [ADR-003](arquitetura/adrs/adr-003-minimizar-dados-de-planos.md) e [ADR-014](arquitetura/adrs/adr-014-processamento-assincrono-planos-ia.md)
 para conferir o banco local antes de ativar o processo.
 
 | Ambiente | Aplicação e dados | Uso e publicação |
@@ -222,7 +222,7 @@ URLs, IDs dos projetos, região e responsáveis nominais serão preenchidos quan
 
 | Variável/configuração | Destino | Tratamento |
 | --- | --- | --- |
-| `VITE_API_URL` | Build Vercel | Pública; URL HTTPS da API **incluindo `/api/v1`**; ausente de `.env.example` atualmente |
+| `VITE_API_URL` | Build Vercel | Pública; URL HTTPS da API **incluindo `/api/v1`** (exigida em builds Vercel por `frontend/src/lib/deploymentConfig.js`) |
 | `VITE_SUPABASE_URL` | Build e função de busca Vercel | Pública; URL do projeto do ambiente |
 | `VITE_SUPABASE_ANON_KEY` | Build e função de busca Vercel | Chave pública anon do ambiente; segurança depende de Auth/RLS |
 | `DATABASE_URL` | Runtime Render | Segredo; conexão SQLAlchemy `postgresql+psycopg://...`, credenciais próprias do ambiente e TLS |
@@ -262,7 +262,7 @@ A SPA consome a API no Render diretamente por HTTPS através de `VITE_API_URL` (
 ### Autenticação e Google Agenda (S7-F04)
 
 1. No Supabase do ambiente, configure a Site URL da SPA e permita a URL exata `/auth/retorno` na origem correspondente. Habilite a confirmação de e-mail, mantenha pelo menos 8 caracteres para a senha e use intervalo mínimo de 60 segundos para novo envio.
-2. Configure o SMTP de homologação e copie para **Confirm signup** e **Reset password** os templates [confirmation.html](../supabase/templates/confirmation.html) e [recovery.html](../supabase/templates/recovery.html). Os links carregam o hash no fragmento e exigem uma ação na página para consumi-lo. Desative o rastreamento de cliques nos e-mails de autenticação.
+2. Configure o SMTP de homologação e copie para **Confirm signup** e **Reset password** os templates [confirmation.html](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/supabase/templates/confirmation.html) e [recovery.html](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/supabase/templates/recovery.html). Os links carregam o hash no fragmento e exigem uma ação na página para consumi-lo. Desative o rastreamento de cliques nos e-mails de autenticação.
 3. Para login com Google, habilite o provedor no Supabase e cadastre no Google Cloud a URL de callback fornecida pelo Supabase. O login retorna para `/auth/retorno` e troca o código via PKCE.
 4. Use um projeto Google Cloud separado para o Calendar. O Google revoga permissões no nível do projeto, inclusive para outros clientes do mesmo projeto. Habilite a Calendar API, configure o consentimento para `https://www.googleapis.com/auth/calendar.app.created` e crie um cliente web com o callback de `GOOGLE_CALENDAR_REDIRECT_URI`. Configure as variáveis de Calendar e a chave Fernet na API do ambiente. [Revogação OAuth no Google](https://developers.google.com/identity/protocols/oauth2/web-server#tokenrevoke)
 5. Aplique as migrações no ambiente de homologação e publique o mesmo commit da API e do frontend. No modo **Teste**, use uma conta autorizada na lista de testadores. A liberação pública segue as condições de consentimento e verificação da [#68](https://github.com/unb-mds/2026-2-AgendaUnB/issues/68).
@@ -358,8 +358,8 @@ CORS, Auth/retornos de login, bucket privado e revisão explícita com contas de
 homologação antes de habilitar as flags. A aprovação local não equivale à aprovação
 do ambiente hospedado. A suíte local foi feita para rejeitar hosts remotos; a
 homologação na nuvem deve ter procedimento próprio, com dados sintéticos e o
-projeto de destino identificado. Ver o [fluxo HTTP local](privacidade-planos.md#integracao-http-local-de-auth-storage-e-processamento)
-e as [variáveis do worker](processamento-planos.md).
+projeto de destino identificado. Ver as [ADR-003](arquitetura/adrs/adr-003-minimizar-dados-de-planos.md)
+e [ADR-014](arquitetura/adrs/adr-014-processamento-assincrono-planos-ia.md).
 
 
 ### Correção de configuração em produção (11/11/2026)
