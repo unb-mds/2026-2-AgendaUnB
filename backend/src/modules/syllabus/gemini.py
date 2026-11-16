@@ -1,5 +1,6 @@
 """Gemini REST Interactions API, sem SDK/retries implícitos ou uploads remotos."""
 import json
+import re
 import time
 
 import httpx
@@ -47,7 +48,7 @@ class GeminiProvider:
 
     def extract(self, pages: list[TextPage]) -> str:
         if not self.config.api_key or not self.config.provider_terms_ready:
-            raise ProcessingError("falha_ia")
+            raise ProcessingError("falha_ia", reason="missing_key_or_terms")
         payload = {
             "model": self.config.model,
             "system_instruction": SYSTEM_INSTRUCTION,
@@ -60,7 +61,7 @@ class GeminiProvider:
         # Verificar o envelope real contra a margem usada na reserva de custo.
         encoded = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         if len(encoded) > self.config.max_text_bytes + 16000:
-            raise ProcessingError("limite_paginas")
+            raise ProcessingError("limite_paginas", reason="payload_too_large")
         started = time.monotonic()
         try:
             with httpx.Client(timeout=self.config.timeout_seconds, follow_redirects=False,
@@ -74,27 +75,29 @@ class GeminiProvider:
                             "falha_ia",
                             retryable=response.status_code in (429, 500, 502, 503, 504),
                             rate_limited=(response.status_code == 429),
+                            reason=f"http_{response.status_code}",
                         )
                     chunks = bytearray()
                     for chunk in response.iter_bytes():
                         chunks.extend(chunk)
                         if time.monotonic() - started > self.config.timeout_seconds:
-                            raise ProcessingError("tempo_esgotado", retryable=True)
+                            raise ProcessingError("tempo_esgotado", retryable=True, reason="stream_timeout")
                         if len(chunks) > 256000:
-                            raise ProcessingError("falha_ia")
+                            raise ProcessingError("falha_ia", reason="response_too_large")
             body = json.loads(chunks)
             if body.get("status") != "completed":
-                raise ProcessingError("falha_ia")
+                status_tag = re.sub(r"[^a-z0-9_]", "_", str(body.get("status", "missing")).lower())[:24]
+                raise ProcessingError("falha_ia", reason=f"status_{status_tag}")
             parts = [part["text"] for step in body.get("steps", []) if step.get("type") == "model_output"
                      for part in step.get("content", []) if part.get("type") == "text"]
             if not parts:
-                raise ProcessingError("falha_ia")
+                raise ProcessingError("falha_ia", reason="empty_parts")
             return "".join(parts)
         except ProcessingError:
             raise
         except httpx.TimeoutException:
-            raise ProcessingError("tempo_esgotado", retryable=True) from None
+            raise ProcessingError("tempo_esgotado", retryable=True, reason="http_timeout") from None
         except httpx.RequestError:
-            raise ProcessingError("falha_ia", retryable=True) from None
+            raise ProcessingError("falha_ia", retryable=True, reason="request_error") from None
         except (ValueError, KeyError, TypeError, AttributeError):
-            raise ProcessingError("falha_ia") from None
+            raise ProcessingError("falha_ia", reason="response_parse_error") from None
