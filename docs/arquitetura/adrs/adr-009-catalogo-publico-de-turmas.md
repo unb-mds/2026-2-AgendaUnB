@@ -40,4 +40,4 @@ Validar colisões, mudança de professor/horário, ofertas de semestres diferent
 
 ## Fontes e relações
 
-[Catálogo de turmas](../catalogo-de-turmas.md) · [Catálogo e vínculo](../../atualizacoes.md#catalogo-e-vinculo-com-a-turma) · [Matriz de aceite](../../matriz-release-2.md) · [Requisitos](../../produto/requisitos.md) · [Índice de ADRs](index.md)
+[Catálogo de turmas](/arquitetura/catalogo-de-turmas) · [Catálogo e vínculo](/atualizacoes#catalogo-e-vinculo-com-a-turma) · [Matriz de aceite](/matriz-release-2) · [Requisitos](/produto/requisitos) · [Índice de ADRs](/arquitetura/adrs/index)
