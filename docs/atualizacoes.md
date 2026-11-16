@@ -34,7 +34,7 @@ Após as cinco migrações da base R1, o repositório inclui:
 | `20261018000000` | Moderação por professores/admins, RPCs paginadas, origem estudantil e notificações transacionais |
 | `20261018000100` | Atribuição de professor por admin sem restrição de domínio; cadastro/autopromoção continuam institucionais |
 
-Aplique as migrações pendentes em ordem antes de disponibilizar o código atualizado. No ambiente local já iniciado: `npx supabase migration up --local`. Os detalhes estão nos guias de [eventos salvos](eventos-salvos.md) e [painel administrativo](painel-administrativo.md).
+Aplique as migrações pendentes em ordem antes de disponibilizar o código atualizado. No ambiente local já iniciado: `npx supabase migration up --local`. Os detalhes estão em [eventos salvos](eventos-salvos.md) e nas [ADR-001](arquitetura/adrs/adr-001-integracao-fastapi-supabase.md) e [ADR-006](arquitetura/adrs/adr-006-autorizacao-em-camadas.md).
 
 ## Ainda em preparação
 
@@ -44,7 +44,7 @@ candidatos privados com procedência, recuperação e limite de custo. O worker 
 desativado por padrão. As políticas e a revisão transacional S6-D02 foram validadas
 em PostgreSQL isolado; dados reais exigem aplicá-las/homologá-las no destino. Tela e
 endpoints de revisão/confirmacão ainda pertencem à S6-B02.
-Ver [operação](processamento-planos.md) e [privacidade](privacidade-planos.md).
+Ver [ADR-003](arquitetura/adrs/adr-003-minimizar-dados-de-planos.md), [ADR-010](arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos.md) e [ADR-014](arquitetura/adrs/adr-014-processamento-assincrono-planos-ia.md).
 Upload de atestados e validação colaborativa continuam planejados, assim como
 inscrições, histórico de participação, lembretes de proximidade, exportação `.ics`
 e coleta externa.
