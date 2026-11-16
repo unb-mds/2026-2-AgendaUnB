@@ -168,4 +168,4 @@ Saneamento de dívidas técnicas de documentação. O projeto avançou para a R1
 
 ## Nota de regularização documental — 24/10/2026
 
-O checklist histórico da issue #45 acima foi preservado. Apesar das marcações de conclusão, `api-specs.md` e `implantacao.md` não estavam presentes no commit `e0ecf46`. Os documentos foram adicionados nesta consolidação: [contratos do backend](../api-specs.md) e [plano de implantação](../implantacao.md). A arquitetura e os padrões também foram revisados. A criação do plano não significa hospedagem, pipeline ou homologação executados; esta nota não altera o estado da issue no GitHub.
+O checklist histórico da issue #45 acima foi preservado. Apesar das marcações de conclusão, `api-specs.md` e `implantacao.md` não estavam presentes no commit `e0ecf46`. Os documentos foram adicionados nesta consolidação: [contratos do backend](/api-specs) e [plano de implantação](/implantacao). A arquitetura e os padrões também foram revisados. A criação do plano não significa hospedagem, pipeline ou homologação executados; esta nota não altera o estado da issue no GitHub.

@@ -38,4 +38,4 @@ Verificar o registro dos routers em backend/src/main.py e os testes dos módulos
 
 ## Fontes e relações
 
-[Visão arquitetural](../visao-geral.md#3-stack-e-organizacao) · [Requisitos](../../produto/requisitos.md) · [Índice de ADRs](index.md)
+[Visão arquitetural](/arquitetura/visao-geral#3-stack-e-organizacao) · [Requisitos](/produto/requisitos) · [Índice de ADRs](/arquitetura/adrs/index)

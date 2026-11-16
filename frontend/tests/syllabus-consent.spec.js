@@ -30,8 +30,76 @@ async function setup(page, { guest = false, items = [], total = items.length, de
   await page.route(`**/api/v1/syllabus/${plan.id}`, route => route.fulfill({ json: detail }));
   await page.route('**/api/v1/events?*', route => route.fulfill({ json: [] }));
   await page.route('**/api/v1/me/**', route => route.fulfill({ json: [] }));
+  await page.route('**/api/v1/me/class-offerings', route => route.fulfill({ json: { items: [{ id: plan.offeringId }] } }));
 }
 
+
+test('texto bruto respeita bytes UTF-8 e preserva conteúdo após resposta perdida', async ({ page }) => {
+  await setup(page);
+  let posts = 0;
+  await page.route('**/api/v1/syllabus/text', route => { posts++; return route.abort(); });
+  await page.goto(`/plano-de-ensino?oferta=${plan.offeringId}&etapa=2`);
+  const input = page.getByLabel('Texto do plano', { exact: true });
+  const submit = page.getByRole('button', { name: 'Preparar texto para revisão' });
+  await input.fill('é'.repeat(20001));
+  await expect(submit).toBeDisabled();
+  expect(posts).toBe(0);
+  const text = 'é'.repeat(20000);
+  await input.fill(text);
+  await submit.evaluate(button => { button.click(); button.click(); });
+  await expect(page.getByText(/Confira o histórico antes de tentar de novo/)).toBeVisible();
+  await expect(input).toHaveValue(text);
+  expect(posts).toBe(1);
+});
+
+test('resposta inválida da prévia oferece recuperação acessível', async ({ page }, testInfo) => {
+  await setup(page);
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.route(`**/api/v1/syllabus/${plan.id}/text`, route => route.fulfill({ json: { pages: [null] } }));
+  await page.goto(`/plano-de-ensino?plano=${plan.id}`);
+  await expect(page.getByRole('alert')).toContainText('O serviço retornou um texto inválido');
+  await expect(page.getByRole('button', { name: 'Autorizar envio ao Gemini' })).toHaveCount(0);
+  await page.setViewportSize({ width: 360, height: 900 });
+  await page.evaluate(() => document.body.classList.add('light'));
+  await page.screenshot({ path: testInfo.outputPath('text-recovery.png'), fullPage: true });
+  await page.route(`**/api/v1/syllabus/${plan.id}/text`, route => route.fulfill({ json: {
+    pages: [{ pagina: null, texto: 'Prova em 01/12/2026' }], provider: 'Google Gemini API', providerAvailable: true,
+  } }));
+  await page.getByRole('button', { name: 'Tentar carregar novamente' }).click();
+  await expect(page.getByLabel('Texto sem referência de página')).toHaveValue('Prova em 01/12/2026');
+  await expect(page.getByRole('button', { name: 'Autorizar envio ao Gemini' })).toBeDisabled();
+  expect(errors).toEqual([]);
+});
+
+for (const status of ['processando', 'concluido']) {
+  test(`autorização com resposta perdida consulta estado persistido ${status}`, async ({ page }) => {
+    await setup(page);
+    let current = { ...plan };
+    let posts = 0;
+    let reads = 0;
+    await page.route(`**/api/v1/syllabus/${plan.id}`, route => { reads++; return route.fulfill({ json: current }); });
+    await page.route(`**/api/v1/syllabus/${plan.id}/text`, route => route.fulfill({ json: {
+      pages: [{ pagina: null, texto: 'Prova em 01/12/2026' }], provider: 'Google Gemini API', providerAvailable: true,
+    } }));
+    await page.route(`**/api/v1/syllabus/${plan.id}/extractions`, route => {
+      posts++; current = { ...plan, authorizationRequired: false, status };
+      return route.abort();
+    });
+    await page.goto(`/plano-de-ensino?plano=${plan.id}`);
+    await page.getByRole('checkbox', { name: 'Revisei e removi conteúdo pessoal, sensível e confidencial.' }).check();
+    await page.getByRole('checkbox', { name: 'Autorizo o envio somente do texto acima ao Google Gemini.' }).check();
+    await page.getByRole('button', { name: 'Autorizar envio ao Gemini' }).click();
+    await expect(page.getByRole('button', { name: 'Autorizar envio ao Gemini' })).toBeDisabled();
+    await page.getByRole('button', { name: 'Consultar autorização' }).click();
+    const review = page.locator('.plan-text-review');
+    await review.locator('summary').click();
+    await expect(page.getByRole('button', { name: 'Autorizar envio ao Gemini' })).toBeDisabled();
+    await expect(page.getByRole('checkbox', { name: 'Quero executar uma nova análise deste texto.' })).not.toBeChecked();
+    expect(posts).toBe(1);
+    expect(reads).toBeGreaterThanOrEqual(2);
+  });
+}
 
 test('revisão explícita preserva texto exato, revoga consentimento ao editar e envia uma vez', async ({ page }) => {
   await setup(page, { detail: plan });
@@ -39,6 +107,11 @@ test('revisão explícita preserva texto exato, revoga consentimento ao editar e
   let authorized = 0;
   let payload;
   let current = { ...plan };
+  let historyReads = 0;
+  await page.route('**/api/v1/syllabus?*', route => {
+    historyReads++;
+    return route.fulfill({ json: { items: [current], total: 1 } });
+  });
   await page.route(`**/api/v1/syllabus/${plan.id}`, route => route.fulfill({ json: current }));
   await page.route(`**/api/v1/syllabus/${plan.id}/text`, route => route.fulfill({ json: { pages, provider: 'Google Gemini API', providerAvailable: true } }));
   await page.route(`**/api/v1/syllabus/${plan.id}/extractions`, async route => {
@@ -49,7 +122,7 @@ test('revisão explícita preserva texto exato, revoga consentimento ao editar e
     await route.fulfill({ status: 202, json: current });
   });
   await page.goto(`/plano-de-ensino?plano=${plan.id}`);
-  await expect(page.getByText('Nenhum texto foi enviado ao Gemini.', { exact: false })).toBeVisible();
+  await expect(page.getByText('Na última consulta, o envio ao Gemini ainda aguardava sua autorização.', { exact: false })).toBeVisible();
   const submit = page.getByRole('button', { name: 'Autorizar envio ao Gemini' });
   await expect(submit).toBeDisabled();
   const eligible = page.getByRole('checkbox', { name: 'Revisei e removi conteúdo pessoal, sensível e confidencial.' });
@@ -66,6 +139,8 @@ test('revisão explícita preserva texto exato, revoga consentimento ao editar e
   expect(payload.pages).toEqual([{ pagina: 1, texto: edited }]);
   expect(payload.textHash).toBe(createHash('sha256').update(JSON.stringify(payload.pages)).digest('hex'));
   expect(payload.authorize && payload.contentEligible).toBe(true);
+  await expect(page.locator('.plan-history .plan-badge')).toContainText('Concluído');
+  expect(historyReads).toBeGreaterThanOrEqual(2);
 });
 
 test('texto colado passa por preparação e provedor indisponível oferece caminho manual', async ({ page }) => {
