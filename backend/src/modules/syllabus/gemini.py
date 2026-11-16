@@ -41,6 +41,45 @@ def generation_schema():
     return simplify(ExtractionData.model_json_schema())
 
 
+def _error_reason(response: httpx.Response) -> str:
+    base = f"http_{response.status_code}"
+    try:
+        raw = response.read()[:4096]
+        payload = json.loads(raw)
+    except Exception:
+        return base
+    if isinstance(payload, list) and payload:
+        payload = payload[0]
+    if not isinstance(payload, dict):
+        return base
+    err = payload.get("error")
+    if not isinstance(err, dict):
+        return base
+    for detail in err.get("details") or []:
+        if isinstance(detail, dict) and isinstance(detail.get("reason"), str):
+            tag = re.sub(r"[^a-z0-9_]", "_", detail["reason"].lower()).strip("_")
+            if tag:
+                return f"{base}_{tag}"[:40]
+    msg = str(err.get("message") or "").lower()
+    for needle, label in (
+        ("api key", "api_key"),
+        ("model", "model"),
+        ("schema", "schema"),
+        ("revision", "revision"),
+        ("location", "location"),
+        ("billing", "billing"),
+        ("quota", "quota"),
+        ("response_format", "response_format"),
+    ):
+        if needle in msg:
+            return f"{base}_{label}"[:40]
+    if isinstance(err.get("status"), str):
+        tag = re.sub(r"[^a-z0-9_]", "_", err["status"].lower()).strip("_")
+        if tag:
+            return f"{base}_{tag}"[:40]
+    return base
+
+
 class GeminiProvider:
     def __init__(self, config: ProcessingConfig, *, transport=None):
         self.config = config
@@ -75,7 +114,7 @@ class GeminiProvider:
                             "falha_ia",
                             retryable=response.status_code in (429, 500, 502, 503, 504),
                             rate_limited=(response.status_code == 429),
-                            reason=f"http_{response.status_code}",
+                            reason=_error_reason(response),
                         )
                     chunks = bytearray()
                     for chunk in response.iter_bytes():
