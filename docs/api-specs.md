@@ -2,9 +2,9 @@
 
 ## Referência e limites
 
-Este inventário descreve o backend atual. Para os contratos planejados, consulte [Release 2](atualizacoes.md#contratos-da-release-2).
+Este inventário descreve o backend atual. Para os contratos planejados, consulte [Release 2](/atualizacoes#contratos-da-release-2).
 
-A API possui operações HTTP de aplicação (inventário abaixo), incluindo `/health`. `/docs`, `/redoc` e `/openapi.json` são recursos de documentação gerados pelo FastAPI, não operações de negócio. Consulte também [Arquitetura](arquitetura/visao-geral.md), [Padrões](produto/padroes.md) e [Implantação](implantacao.md).
+A API possui operações HTTP de aplicação (inventário abaixo), incluindo `/health`. `/docs`, `/redoc` e `/openapi.json` são recursos de documentação gerados pelo FastAPI, não operações de negócio. Consulte também [Arquitetura](/arquitetura/visao-geral), [Padrões](/produto/padroes) e [Implantação](/implantacao).
 
 Fontes: `backend/src/main.py`, `modules/events/router.py`, `modules/events/schemas.py`, `modules/google_calendar/router.py`, `middlewares/auth.py` e `database/models.py` (relativos a `backend/src/`). O OpenAPI ajuda a conferir campos e rotas, mas não descreve integralmente os handlers de erro personalizados.
 
@@ -122,7 +122,7 @@ Todas as operações exigem sessão e restringem os dados ao usuário autenticad
 
 Receber 201 não significa aprovação. O item não aparece no catálogo até ser aprovado pela RPC de moderação.
 
-### Eventos salvos — pós-R1
+### Eventos salvos — pós-R1 {#eventos-salvos-pos-r1}
 
 Todas as operações exigem sessão. O vínculo não copia o evento e não constitui inscrição.
 
@@ -264,7 +264,7 @@ Cada item tem `id`, `usuario_id`, `evento_id`, `tipo` (`submissao/aprovacao/recu
 
 ## Verificação e manutenção
 
-Conferir inventário com `app.openapi()` e revisar manualmente handlers, permissões e SQL. Os testes de eventos, sugestões e salvos usam SQLite e substituem dependências de autenticação: não comprovam integração real com Auth nem RLS. Os testes de moderação de banco exigem Supabase local descartável. Ver [Contribuição](processo/contribuindo.md) e o registro de validação em [Arquitetura](arquitetura/visao-geral.md#9-verificacao).
+Conferir inventário com `app.openapi()` e revisar manualmente handlers, permissões e SQL. Os testes de eventos, sugestões e salvos usam SQLite e substituem dependências de autenticação: não comprovam integração real com Auth nem RLS. Os testes de moderação de banco exigem Supabase local descartável. Ver [Contribuição](/processo/contribuindo) e o registro de validação em [Arquitetura](/arquitetura/visao-geral#9-verificacao).
 
 Qualquer alteração de rota, schema, autorização, erro ou RPC deve atualizar este documento no mesmo PR. Inscrições, categorias REST e atualização pública não são contratos disponíveis.
 
@@ -301,14 +301,14 @@ Concluído com contagem zero significa documento sem cronograma identificado.
 `processingDurationMs` mede a última tentativa; `totalDurationMs` mede da criação
 do registro ao término, incluindo fila/retentativas, e é nulo antes de finalizar.
 
-O [worker independente](arquitetura/adrs/adr-014-processamento-assincrono-planos-ia.md) consome a fila. Ele fica
+O [worker independente](/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia) consome a fila. Ele fica
 desativado até a configuração explícita e a validação das políticas S6-D02.
 Upload e worker não criam compromissos. As rotas de listagem, detalhe e confirmação
 S6-B02 já existentes, descritas acima, operam sobre `avaliacoes` legadas; os
 candidatos privados do worker em `candidatos_avaliacao` ainda exigem conciliação
 com esse contrato antes da integração no ambiente da equipe.
 O contrato transacional de banco S6-D02 já está disponível em
-[`revisar_candidatos_plano`](arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos.md).
+[`revisar_candidatos_plano`](/arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos).
 
 
 ## Atualização S7-B01 — preparação e autorização do texto (10/11/2026)
@@ -348,12 +348,12 @@ e cada conta tem uma operação independente sobre a mesma versão compartilhada
 A revisão do tipo fica no item de importação da conta e não altera o candidato
 compartilhado.
 
-[Fluxo, flags e decisões](arquitetura/adrs/adr-014-processamento-assincrono-planos-ia.md) · [Minimização (ADR-003)](arquitetura/adrs/adr-003-minimizar-dados-de-planos.md) · [Versionamento e confirmação (ADR-010)](arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos.md).
+[Fluxo, flags e decisões](/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia) · [Minimização (ADR-003)](/arquitetura/adrs/adr-003-minimizar-dados-de-planos) · [Versionamento e confirmação (ADR-010)](/arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos).
 
 ### Catálogo e seleção real de ofertas (#70/#71)
 
 A integração autenticada, rotas de catálogo/filtros/vínculos e operação estão em
-[Catálogo de turmas](arquitetura/catalogo-de-turmas.md). PDF multipart e texto JSON
+[Catálogo de turmas](/arquitetura/catalogo-de-turmas). PDF multipart e texto JSON
 passam a exigir `offering_id` (UUID da oferta disponível). O servidor deriva
 nome da disciplina, turma e período, ignorando metadados livres para associação.
 Histórico particular aceita `offering_id` opcional; dados privados continuam

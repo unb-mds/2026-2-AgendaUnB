@@ -11,7 +11,7 @@ description: "Documento de visão do produto Agenda UnB, descrevendo propósito,
 
 ### 1.1 Propósito
 
-Este documento descreve a visão do produto Agenda UnB: qual problema ele resolve, para quem, e quais capacidades ele deve ter. Serve de referência comum para a equipe e de base para o backlog. Não detalha os requisitos funcionais e não funcionais, que estão em [requisitos](requisitos.md), nem os padrões de código, dados e API, que estão em [padrões](padroes.md). As decisões técnicas de arquitetura e infraestrutura estão consolidadas em [Architecture](../arquitetura/visao-geral.md). A identidade visual e as especificações de interface e design system estão em [DESIGN.md](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/DESIGN.md), [PRODUCT.md](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/PRODUCT.md) e [especificacao-frontend](../arquitetura/frontend.md). O planejamento ágil por sprint está em [sprints](../sprints/sprint-1.md), as entregas e notas de versão em [release-notes](../processo/release-notes/v0-1-0.md), e o registro de uso de IA em [AI-USAGE](../processo/uso-de-ia.md).
+Este documento descreve a visão do produto Agenda UnB: qual problema ele resolve, para quem, e quais capacidades ele deve ter. Serve de referência comum para a equipe e de base para o backlog. Não detalha os requisitos funcionais e não funcionais, que estão em [requisitos](/produto/requisitos), nem os padrões de código, dados e API, que estão em [padrões](/produto/padroes). As decisões técnicas de arquitetura e infraestrutura estão consolidadas em [Architecture](/arquitetura/visao-geral). A identidade visual e as especificações de interface e design system estão em [DESIGN.md](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/DESIGN.md), [PRODUCT.md](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/PRODUCT.md) e [especificacao-frontend](/arquitetura/frontend). O planejamento ágil por sprint está em [sprints](/sprints/sprint-1), as entregas e notas de versão em [release-notes](/processo/release-notes/v0-1-0), e o registro de uso de IA em [AI-USAGE](/processo/uso-de-ia).
 
 ### 1.2 Escopo
 
@@ -104,7 +104,7 @@ Aplicação web responsiva com catálogo público de eventos e área autenticada
 
 ## 5. Recursos do produto
 
-O detalhamento completo dos 21 requisitos funcionais está em [requisitos](requisitos.md).
+O detalhamento completo dos 21 requisitos funcionais está em [requisitos](/produto/requisitos).
 
 | # | Recurso | Descrição |
 | --- | --- | --- |
@@ -131,7 +131,7 @@ O detalhamento completo dos 21 requisitos funcionais está em [requisitos](requi
 
 **De front-end** — SPA construída em React 19 com Vite 6 e React Router 7. A interface segue estritamente o Design System "The Neon Campus" ([DESIGN.md](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/DESIGN.md) e [PRODUCT.md](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/PRODUCT.md)): uso da cor primária Azul Glow `#008bff`, tipografia Orbitron (display) e Inter (body/labels), iconografia padronizada em Material Symbols, preenchimentos sólidos (flat) ou glassmorphism neutro, e proibição explícita de _linear gradients_ e sombras com opacidade superior a 20%.
 
-**De back-end e API** — API REST desenvolvida em Python com FastAPI, SQLAlchemy 2 para ORM, Pydantic 2 para validação e httpx para comunicação assíncrona. Os endpoints seguem o padrão RESTful com prefixo `/api/v1` documentado em [padrões](padroes.md).
+**De back-end e API** — API REST desenvolvida em Python com FastAPI, SQLAlchemy 2 para ORM, Pydantic 2 para validação e httpx para comunicação assíncrona. Os endpoints seguem o padrão RESTful com prefixo `/api/v1` documentado em [padrões](/produto/padroes).
 
 **De banco de dados e persistência** — PostgreSQL gerenciado via Supabase, migrações SQL versionadas em `supabase/migrations/` e RLS para isolamento dos dados. O plano persiste como texto e avaliações sob acesso autorizado. O PDF original só existe durante a extração local.
 

@@ -25,7 +25,7 @@ flowchart LR
 
 A comunicação tem dois caminhos: eventos, sugestões e agenda usam a API FastAPI; autenticação, RPCs de moderação/administração e notificações usam o SDK Supabase no navegador. As RPCs conferem o papel real no banco. A proteção das páginas React não substitui essa autorização.
 
-## 3. Stack e organização
+## 3. Stack e organização {#3-stack-e-organizacao}
 
 | Camada | Tecnologia e localização |
 | --- | --- |
@@ -39,7 +39,7 @@ A comunicação tem dois caminhos: eventos, sugestões e agenda usam a API FastA
 
 A API é uma aplicação única, sem microsserviços. O módulo de eventos concentra rotas, schemas e regras dos eventos públicos, privados, salvos e sugestões. `database/models.py` mapeia as tabelas usadas pela API; as migrações SQL são a referência para o esquema completo, triggers, funções e políticas.
 
-## 4. Frontend e navegação
+## 4. Frontend e navegação {#4-frontend-e-navegacao}
 
 | Rota | Comportamento |
 | --- | --- |
@@ -59,7 +59,7 @@ Meus Eventos combina compromissos privados com vínculos a eventos públicos sal
 
 As rotas de negócio usam `/api/v1`; a sessão é enviada em `Authorization: Bearer <token>`. O backend valida o token com Supabase Auth e consulta o perfil no banco.
 
-O [inventário da API](../api-specs.md) detalha as rotas disponíveis de catálogo público, compromissos privados, sugestões, vínculos salvos, planos de ensino e saúde. As ações administrativas usam RPCs do Supabase.
+O [inventário da API](/api-specs) detalha as rotas disponíveis de catálogo público, compromissos privados, sugestões, vínculos salvos, planos de ensino e saúde. As ações administrativas usam RPCs do Supabase.
 
 PUT e DELETE dos vínculos salvos são idempotentes. O frontend percorre as páginas do catálogo em lotes de 100. Filtros de turno são aplicados na interface.
 
@@ -102,7 +102,7 @@ Decisões concorrentes de moderação não sobrescrevem uma decisão anterior. M
 
 Triggers registram notificações de submissão, aprovação e recusa na mesma transação do evento. A tabela `notificacoes` guarda título e justificativa; o sino dos estudantes consulta ao enviar sugestão, ao voltar à janela e a cada 30 segundos. A leitura e a marcação como lida são limitadas ao destinatário por RLS e permissões de coluna. Esses avisos não são lembretes de proximidade.
 
-## 7. Persistência, privacidade e migrações
+## 7. Persistência, privacidade e migrações {#7-persistencia-privacidade-e-migracoes}
 
 As tabelas da base R1 são `profiles`, `campus`, `categories`, `eventos`, `eventos_pessoais`, `planos_ensino` e `avaliacoes`. As novas migrações adicionam `eventos_salvos`, `notificacoes`, campos de sugestões/recusa e contador de interessados, funções administrativas e políticas de Storage. A migração `20261029160000` acrescenta procedência aos candidatos e eventos pessoais, restringe a leitura de avaliações e impede confirmar o mesmo candidato mais de uma vez. A criação das estruturas não comprova a existência do parser.
 
@@ -113,7 +113,7 @@ As tabelas da base R1 são `profiles`, `campus`, `categories`, `eventos`, `event
 - O bucket privado `syllabus_files` aceita PDF até 10 MB. A migração `20261107000000` remove permissões de escrita direta que contornavam a API. O navegador lê apenas os próprios arquivos e planos. O backend valida o PDF, aplica a cota de 10 uploads por usuário em 5 dias e grava o arquivo com `SUPABASE_SERVICE_ROLE_KEY`, exclusiva do servidor.
 - HTTPS é requisito de produção; `.env` guarda configurações locais fora do versionamento.
 
-As migrações devem ser aplicadas antes de disponibilizar API/frontend dependentes delas. No Supabase local iniciado, use `npx supabase migration up`. Se a migração `20261029160000` entrou no repositório após o banco já ter versões posteriores, use `npx supabase migration up --include-all` para incluir a versão pendente. `make db-reset` recria o banco com migrações e seed. Veja o [diagrama de dados](modelo-de-dados.md), a [especificação física](banco-de-dados.md), [eventos salvos](../eventos-salvos.md) e as [ADR-001](adrs/adr-001-integracao-fastapi-supabase.md), [ADR-006](adrs/adr-006-autorizacao-em-camadas.md) e [ADR-007](adrs/adr-007-migracoes-sql.md).
+As migrações devem ser aplicadas antes de disponibilizar API/frontend dependentes delas. No Supabase local iniciado, use `npx supabase migration up`. Se a migração `20261029160000` entrou no repositório após o banco já ter versões posteriores, use `npx supabase migration up --include-all` para incluir a versão pendente. `make db-reset` recria o banco com migrações e seed. Veja o [diagrama de dados](/arquitetura/modelo-de-dados), a [especificação física](/arquitetura/banco-de-dados), [eventos salvos](/eventos-salvos) e as [ADR-001](/arquitetura/adrs/adr-001-integracao-fastapi-supabase), [ADR-006](/arquitetura/adrs/adr-006-autorizacao-em-camadas) e [ADR-007](/arquitetura/adrs/adr-007-migracoes-sql).
 
 ## 8. Funcionalidades futuras e implantação
 
@@ -121,13 +121,13 @@ O backend atual recebe uploads de planos, oferece histórico paginado, detalhe c
 
 O fluxo previsto descarta o PDF após a extração local. O usuário revisa o texto minimizado e autoriza o processamento externo. Os candidatos só viram eventos após confirmação. O autor pode compartilhar uma versão revisada para que seguidores da oferta votem e importem avaliações para a própria agenda.
 
-A entrega também prevê coleta da Agenda UnB Notícias, métricas de redirecionamento independentes da agenda, lembretes e exportação Google/ICS. A coleta deve operar separadamente das consultas à agenda para que falhas da fonte preservem os dados já armazenados. [Contratos da Release 2](../atualizacoes.md#contratos-da-release-2) · [Matriz de aceite](../matriz-release-2.md)
+A entrega também prevê coleta da Agenda UnB Notícias, métricas de redirecionamento independentes da agenda, lembretes e exportação Google/ICS. A coleta deve operar separadamente das consultas à agenda para que falhas da fonte preservem os dados já armazenados. [Contratos da Release 2](/atualizacoes#contratos-da-release-2) · [Matriz de aceite](/matriz-release-2)
 
-O GitHub Pages hospeda a documentação. Isso não define hospedagem da SPA ou da API. O arquivo `backend/Dockerfile` está vazio; não constitui uma imagem executável. O desenvolvimento usa Supabase CLI/Docker, FastAPI e Vite. O [plano de implantação](../implantacao.md) propõe Vercel, Render com runtime Python e Supabase separado por ambiente; não há pipeline da aplicação implementado.
+O GitHub Pages hospeda a documentação. Isso não define hospedagem da SPA ou da API. O arquivo `backend/Dockerfile` está vazio; não constitui uma imagem executável. O desenvolvimento usa Supabase CLI/Docker, FastAPI e Vite. O [plano de implantação](/implantacao) propõe Vercel, Render com runtime Python e Supabase separado por ambiente; não há pipeline da aplicação implementado.
 
-## 9. Verificação
+## 9. Verificação {#9-verificacao}
 
-Execute pytest no backend, `npm run build` no frontend e `node --test src/lib/calendar.test.js` na pasta frontend. Os testes de API de eventos salvos usam SQLite e não validam políticas RLS reais. Os testes de moderação no PostgreSQL exigem `TEST_SUPABASE_DB_URL` apontando ao Supabase local; sem essa variável são ignorados. Consulte [Contribuição](../processo/contribuindo.md) para os comandos.
+Execute pytest no backend, `npm run build` no frontend e `node --test src/lib/calendar.test.js` na pasta frontend. Os testes de API de eventos salvos usam SQLite e não validam políticas RLS reais. Os testes de moderação no PostgreSQL exigem `TEST_SUPABASE_DB_URL` apontando ao Supabase local; sem essa variável são ignorados. Consulte [Contribuição](/processo/contribuindo) para os comandos.
 
 ### Registro de validação — 24/10/2026
 
@@ -143,23 +143,23 @@ Execute pytest no backend, `npm run build` no frontend e `node --test src/lib/ca
 
 Não foram executados testes RLS/RPCs em banco remoto, deploy nem homologação hospedada. Os sete testes ignorados permanecem pendentes de Supabase local descartável. O teste isolado do erro de validação usa entrada fictícia e não grava dados.
 
-## 10. Registro de decisões arquiteturais
+## 10. Registro de decisões arquiteturais {#10-registro-de-decisoes-arquiteturais}
 
-O [índice de ADRs](adrs/index.md) reúne as decisões implementadas, as aceitas para a Release 2 e as propostas, com fontes, consequências e orientações de verificação. Consulte-o antes de alterar a arquitetura. Os IDs DA preservam o histórico da consolidação anterior.
+O [índice de ADRs](/arquitetura/adrs/index) reúne as decisões implementadas, as aceitas para a Release 2 e as propostas, com fontes, consequências e orientações de verificação. Consulte-o antes de alterar a arquitetura. Os IDs DA preservam o histórico da consolidação anterior.
 
 | Registro anterior | ADR correspondente |
 | --- | --- |
-| DA-01 — aplicação única | [ADR-004](adrs/adr-004-api-monolitica.md) |
-| DA-02 — integração FastAPI/Supabase | [ADR-001](adrs/adr-001-integracao-fastapi-supabase.md) |
-| DA-03 — sessão e papel | [ADR-005](adrs/adr-005-validacao-de-sessao.md) |
-| DA-04 — autorização | [ADR-006](adrs/adr-006-autorizacao-em-camadas.md) |
-| DA-05 — migrações | [ADR-007](adrs/adr-007-migracoes-sql.md) |
-| DA-06 — eventos salvos | [ADR-008](adrs/adr-008-vinculos-de-eventos-publicos.md) |
-| DA-07 — hospedagem proposta | [ADR-002](adrs/adr-002-separar-hospedagem-e-ambientes.md) |
+| DA-01 — aplicação única | [ADR-004](/arquitetura/adrs/adr-004-api-monolitica) |
+| DA-02 — integração FastAPI/Supabase | [ADR-001](/arquitetura/adrs/adr-001-integracao-fastapi-supabase) |
+| DA-03 — sessão e papel | [ADR-005](/arquitetura/adrs/adr-005-validacao-de-sessao) |
+| DA-04 — autorização | [ADR-006](/arquitetura/adrs/adr-006-autorizacao-em-camadas) |
+| DA-05 — migrações | [ADR-007](/arquitetura/adrs/adr-007-migracoes-sql) |
+| DA-06 — eventos salvos | [ADR-008](/arquitetura/adrs/adr-008-vinculos-de-eventos-publicos) |
+| DA-07 — hospedagem proposta | [ADR-002](/arquitetura/adrs/adr-002-separar-hospedagem-e-ambientes) |
 
 As decisões da R2 estão nas ADRs 003 e 009–013. Seu estado não comprova implementação nem homologação.
 
-## 11. Matriz de regras e evidências
+## 11. Matriz de regras e evidências {#11-matriz-de-regras-e-evidencias}
 
 “Cobertura existente” significa cenário presente na suíte, não certificação de execução, homologação hospedada ou aprovação de negócio. A execução desta consolidação é registrada na seção 9. Arquivos de testes abaixo são relativos a `backend/tests/`.
 
@@ -175,13 +175,13 @@ As decisões da R2 estão nas ADRs 003 e 009–013. Seu estado não comprova imp
 | Cadastro/autopromoção professor exige domínio institucional; admin pode atribuir fora dele | Triggers e migração `20261018000100` | `test_moderation_database.py::test_admin_can_promote_personal_email_but_user_cannot` cobre promoção por admin; apesar do nome, não testa explicitamente todas as negativas de cadastro/autopromoção |
 | Salvar/remover vínculo é idempotente e isolado por usuário | Router, chave composta e cascata | `test_saved_events_api.py`, incluindo duplicata e remoção própria; SQLite não comprova RLS |
 
-Limites conhecidos: `location` pessoal não é persistido; o handler de validação pode falhar ao serializar certos contextos Pydantic; `/health` não verifica dependências. Os detalhes estão nos [contratos](../api-specs.md). Corrigir essas limitações requer tarefas de código separadas desta consolidação.
+Limites conhecidos: `location` pessoal não é persistido; o handler de validação pode falhar ao serializar certos contextos Pydantic; `/health` não verifica dependências. Os detalhes estão nos [contratos](/api-specs). Corrigir essas limitações requer tarefas de código separadas desta consolidação.
 
 ## 12. Manutenção documental
 
-Atualize no mesmo PR os documentos afetados por mudanças em rotas, schemas, autorização, regras de negócio, migrações ou implantação. Consulte a [referência da API](../api-specs.md), o [índice de decisões](#10-registro-de-decisoes-arquiteturais), os [padrões](../produto/padroes.md) e o [plano de implantação](../implantacao.md). Registre evidências de testes e identifique o que ainda está planejado.
+Atualize no mesmo PR os documentos afetados por mudanças em rotas, schemas, autorização, regras de negócio, migrações ou implantação. Consulte a [referência da API](/api-specs), o [índice de decisões](#10-registro-de-decisoes-arquiteturais), os [padrões](/produto/padroes) e o [plano de implantação](/implantacao). Registre evidências de testes e identifique o que ainda está planejado.
 
 
 ## Implementação local da extração S7
 
-Preparação local, autorização específica, fila recuperável e candidatos privados estão descritos nas [ADR-003](adrs/adr-003-minimizar-dados-de-planos.md), [ADR-010](adrs/adr-010-versoes-e-confirmacao-de-planos.md) e [ADR-014](adrs/adr-014-processamento-assincrono-planos-ia.md). O worker opera sobre a tabela oficial `avaliacoes` e as versões de S7-D01.
+Preparação local, autorização específica, fila recuperável e candidatos privados estão descritos nas [ADR-003](/arquitetura/adrs/adr-003-minimizar-dados-de-planos), [ADR-010](/arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos) e [ADR-014](/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia). O worker opera sobre a tabela oficial `avaliacoes` e as versões de S7-D01.

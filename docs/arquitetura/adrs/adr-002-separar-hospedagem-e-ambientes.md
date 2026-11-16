@@ -28,7 +28,7 @@ Hospedar a SPA junto da API via Vercel Services acoplaria o runtime Python aos l
 
 A separação permite escalar e atualizar SPA, API e jobs independentemente sem expor segredos ao navegador. Exige manter `CORS_ORIGINS`, URLs de retorno do Supabase Auth, callbacks OAuth e variáveis `VITE_*` sincronizados entre os provedores, além de coordenar migrações de banco antes de publicar código dependente. O spin-down do plano gratuito da API gera latência inicial na primeira chamada após ociosidade.
 
-[Plano de implantação](../../implantacao.md) · [Modelos de deploy](../../../deploy/README.md) · [ADR-007](adr-007-migracoes-sql.md) · [ADR-014](adr-014-processamento-assincrono-planos-ia.md)
+[Plano de implantação](/implantacao) · [Modelos de deploy](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/deploy/README.md) · [ADR-007](/arquitetura/adrs/adr-007-migracoes-sql) · [ADR-014](/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia)
 
 ## Leitura e manutenção
 

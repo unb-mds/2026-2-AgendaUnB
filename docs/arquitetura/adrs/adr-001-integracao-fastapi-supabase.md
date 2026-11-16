@@ -27,10 +27,10 @@ Uma API única poderia mediar também as operações administrativas. Isso reduz
 
 A equipe mantém dois caminhos de acesso. Cada operação precisa de autorização no ponto que a executa, inclusive quando uma conexão administrativa da API ignora RLS. Os testes de RPC e RLS em PostgreSQL complementam os testes da API e da interface.
 
-[Visão geral e evidências](../visao-geral.md) · [ADR-006](adr-006-autorizacao-em-camadas.md) · [Contratos da API](../../api-specs.md)
+[Visão geral e evidências](/arquitetura/visao-geral) · [ADR-006](/arquitetura/adrs/adr-006-autorizacao-em-camadas) · [Contratos da API](/api-specs)
 
 ## Leitura e manutenção
 
 Data deste registro complementar: **2026-11-08**; não representa a data original de aprovação. Nenhuma ADR é substituída por este registro. O estado acima distingue implementação, proposta e decisão da R2; não constitui evidência de homologação.
 
-Consulte o [índice de ADRs](index.md) para o mapa de decisões e o modelo de novos registros. As alternativas são comparações para revisão, não atas de uma avaliação histórica.
+Consulte o [índice de ADRs](/arquitetura/adrs/index) para o mapa de decisões e o modelo de novos registros. As alternativas são comparações para revisão, não atas de uma avaliação histórica.
