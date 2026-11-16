@@ -80,7 +80,7 @@ class ProcessingConfig:
             raise ValueError("Ao alterar GEMINI_MODEL, configure os dois preços por milhão de tokens.")
         return cls(
             model=model,
-            api_key=os.getenv("GEMINI_API_KEY", "").strip(),
+            api_key=os.getenv("GEMINI_API_KEY", "").strip().strip('"').strip("'"),
             provider_terms_ready=os.getenv("SYLLABUS_PROVIDER_TERMS_READY", "false").lower() == "true",
             timeout_seconds=float(os.getenv("SYLLABUS_AI_TIMEOUT_SECONDS", "12")),
             attempt_timeout_seconds=float(os.getenv("SYLLABUS_ATTEMPT_TIMEOUT_SECONDS", "18")),
