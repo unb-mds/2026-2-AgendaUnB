@@ -369,15 +369,18 @@ Alimentar a agenda pela fonte institucional Agenda UnB Notícias, com origem ver
 
 #### Tasks
 
-- [ ] Implementar coletor periódico da [lista paginada e dos detalhes da Agenda UnB Notícias](https://noticias.unb.br/component/agenda/agendas), observando restrições de acesso e frequência moderada.
-- [ ] Persistir fonte, identificador/URL canônica, hash e última coleta. Fazer upsert por chave única da origem. Conciliar URL idêntica já cadastrada manualmente e enviar similaridade de título/data para revisão.
-- [ ] Normalizar início/fim, dia inteiro, campus, local e link externo. Tratar `00:00` de preenchimento sem inventar horário e distinguir informes de eventos.
-- [ ] Publicar automaticamente os eventos completos e inequívocos da fonte. Enviar casos ambíguos, incompletos e possíveis duplicatas para revisão. Exibir a procedência.
+- [x] Implementar coletor periódico da [lista paginada e dos detalhes da Agenda UnB Notícias](https://noticias.unb.br/component/agenda/agendas), observando restrições de acesso e frequência moderada.
+- [x] Persistir fonte, identificador/URL canônica, hash e última coleta. Fazer upsert por chave única da origem. Conciliar URL idêntica já cadastrada manualmente e enviar similaridade de título/data para revisão.
+- [x] Normalizar início/fim, dia inteiro, campus, local e link externo. Tratar `00:00` de preenchimento sem inventar horário e distinguir informes de eventos.
+- [x] Publicar automaticamente os eventos completos e inequívocos da fonte. Enviar casos ambíguos, incompletos e possíveis duplicatas para revisão. Exibir a procedência.
 
 #### Critérios de aceite
 
-- [ ] Demonstrar execução agendada em homologação, duas execuções sucessivas e concorrentes sem duplicatas e atualização de data no mesmo registro.
-- [ ] Verificar que indisponibilidade da fonte preserva registros, que decisões de moderação e campos editados localmente são respeitados e que a cobertura multicampus reflete os dados disponíveis.
+- [x] Demonstrar execução agendada em homologação, duas execuções sucessivas e concorrentes sem duplicatas e atualização de data no mesmo registro.
+- [x] Verificar que indisponibilidade da fonte preserva registros, que decisões de moderação e campos editados localmente são respeitados e que a cobertura multicampus reflete os dados disponíveis.
+- [x] Verificar que evento completo é publicado automaticamente e que item ambíguo, incompleto ou possivelmente duplicado fica em revisão.
+
+**Evidências consolidadas em 16/11/2026:** [Relatório técnico de validação S7-B05](../s7-b05-validacao.md) e [guia de dados e coleta de eventos](../arquitetura/dados-de-eventos.md). Coletor, deduplicação por chave canônica/URL/similaridade, normalização de datas civis (`ADR-011`), proteção de edições locais e procedência visível validados em 44 testes de backend/coletor, 18 cenários PostgreSQL e 37 testes de frontend.
 
 #### Evidências para fechamento
 
