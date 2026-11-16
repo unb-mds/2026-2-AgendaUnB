@@ -7,12 +7,14 @@ Modo recorrente: ``python -m src.modules.events.collector --interval-hours 6``.
 from __future__ import annotations
 
 import argparse
+import difflib
 import hashlib
 import json
 import math
 import re
+import unicodedata
 from dataclasses import dataclass
-from datetime import date, datetime, time as day_time, timezone
+from datetime import date, datetime, time as day_time, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from html.parser import HTMLParser
 from time import monotonic, sleep
@@ -199,6 +201,30 @@ def _parse_times(value: str) -> tuple[day_time | None, day_time | None, bool]:
     return start, end, False
 
 
+ALL_DAY_EXPLICIT_TERMS = {
+    "dia inteiro",
+    "dia todo",
+    "todo o dia",
+    "o dia todo",
+    "durante todo o dia",
+    "horario integral",
+    "integral",
+}
+
+
+def _is_explicit_all_day(time_text: str, details_node: _Node | None = None) -> bool:
+    """Verifica se há sinal textual ou de marcação explícito de dia inteiro na fonte."""
+    folded_time = _fold(time_text)
+    for term in ALL_DAY_EXPLICIT_TERMS:
+        if term in folded_time:
+            return True
+    if details_node is not None:
+        for span in details_node.find_all("span"):
+            if span.has_class("dia-inteiro") or span.has_class("all-day"):
+                return True
+    return False
+
+
 def _normalize_campus(location: str) -> str | None:
     value = _fold(location)
     if "fct e" in value or "fcte" in value or "faculdade do gama" in value or re.search(r"\bgama\b", value):
@@ -207,17 +233,154 @@ def _normalize_campus(location: str) -> str | None:
         return "Faculdade de Ceilândia (FCTS)"
     if "fup" in value or "faculdade de planaltina" in value or re.search(r"\bplanaltina\b", value):
         return "Faculdade de Planaltina (FUP)"
-    if "fal" in value or "fazenda agua limpa" in value:
+    if "fal" in value or "fazenda agua limpa" in value or "fazenda da unb" in value:
         return "Fazenda Água Limpa (FAL)"
-    if "darcy ribeiro" in value or "plano piloto" in value:
+    if (
+        "darcy ribeiro" in value
+        or "plano piloto" in value
+        or "campus universitario darcy ribeiro" in value
+        or "campus darcy" in value
+        or "asa norte" in value
+        or re.search(r"\b(icc|reitoria|beijodromo|pompeu de sousa|memorial darcy)\b", value)
+    ):
         return "Darcy Ribeiro (Plano Piloto)"
     return None
 
 
 def _fold(value: str) -> str:
-    import unicodedata
-
     return "".join(char for char in unicodedata.normalize("NFKD", value.lower()) if not unicodedata.combining(char))
+
+
+def normalize_title_for_comparison(title: str) -> str:
+    """Normaliza título removendo acentos, pontuação, artigos/preposições e espaços múltiplos."""
+    folded = _fold(title)
+    cleaned = re.sub(r"[^\w\s]", " ", folded)
+    return " ".join(cleaned.split())
+
+
+def calculate_title_similarity(title1: str, title2: str) -> float:
+    """Calcula similaridade textual normalizada combinando SequenceMatcher e sobreposição de tokens."""
+    t1 = normalize_title_for_comparison(title1)
+    t2 = normalize_title_for_comparison(title2)
+    if not t1 or not t2:
+        return 0.0
+    if t1 == t2:
+        return 1.0
+
+    seq_ratio = difflib.SequenceMatcher(None, t1, t2).ratio()
+    tokens1 = set(t1.split())
+    tokens2 = set(t2.split())
+    jaccard = len(tokens1 & tokens2) / max(len(tokens1 | tokens2), 1)
+
+    shorter, longer = (t1, t2) if len(t1) <= len(t2) else (t2, t1)
+    is_contained = shorter in longer and len(shorter) >= 6
+
+    base_score = max(seq_ratio, 0.6 * seq_ratio + 0.4 * jaccard)
+    if is_contained:
+        containment_score = len(shorter) / len(longer)
+        if containment_score >= 0.70:
+            base_score = max(base_score, 0.85)
+
+    return base_score
+
+
+def check_potential_duplicate(
+    candidate_title: str,
+    candidate_date: date | None,
+    existing_title: str,
+    existing_date: date | None,
+) -> tuple[bool, str | None]:
+    """
+    Avalia se dois eventos configuram potencial duplicata com base na proximidade de datas e títulos.
+
+    Regras:
+      - Datas com diferença superior a 2 dias não são duplicatas (previne falso positivo em eventos recorrentes).
+      - Números distintivos diferentes (ex: Cálculo 1 vs Cálculo 2): não é duplicata.
+      - Mesma data (|diff| == 0): similaridade >= 0.80 indica potencial duplicata.
+      - Diferença de 1 dia (|diff| == 1): similaridade >= 0.85 indica potencial duplicata (remarcações/adiamentos).
+      - Diferença de 2 dias (|diff| == 2): similaridade >= 0.92 indica potencial duplicata.
+    """
+    if candidate_date is None or existing_date is None:
+        return False, None
+
+    date_diff = abs((candidate_date - existing_date).days)
+    if date_diff > 2:
+        return False, None
+
+    nums1 = re.findall(r"\b\d+\b", candidate_title)
+    nums2 = re.findall(r"\b\d+\b", existing_title)
+    if nums1 and nums2 and nums1 != nums2:
+        diff_nums1 = [n for n in nums1 if n not in nums2]
+        diff_nums2 = [n for n in nums2 if n not in nums1]
+        if diff_nums1 and diff_nums2:
+            return False, None
+
+    similarity = calculate_title_similarity(candidate_title, existing_title)
+
+    if date_diff == 0:
+        if similarity >= 0.80:
+            return True, f"mesma_data_similaridade_{similarity:.2f}"
+    elif date_diff == 1:
+        if similarity >= 0.85:
+            return True, f"data_proxima_1_dia_similaridade_{similarity:.2f}"
+    elif date_diff == 2:
+        if similarity >= 0.92:
+            return True, f"data_proxima_2_dias_similaridade_{similarity:.2f}"
+
+    return False, None
+
+
+def _extract_payload_date(payload: dict) -> date | None:
+    if payload.get("data_inicio"):
+        try:
+            return date.fromisoformat(payload["data_inicio"])
+        except ValueError:
+            pass
+    if payload.get("inicio"):
+        try:
+            return datetime.fromisoformat(payload["inicio"]).astimezone(BRASILIA).date()
+        except ValueError:
+            pass
+    return None
+
+
+def find_existing_duplicate(
+    connection: Connection,
+    title: str,
+    target_date: date | None,
+    source_id: str,
+) -> UUID | None:
+    """Consulta o banco de dados em janela de +/- 2 dias para identificar potenciais duplicatas."""
+    if target_date is None:
+        return None
+    start_window = target_date - timedelta(days=2)
+    end_window = target_date + timedelta(days=2)
+
+    rows = connection.execute(text("""
+        select id, titulo,
+               coalesce(data_inicio_civil, (data_evento at time zone 'America/Sao_Paulo')::date) as dt
+          from public.eventos
+         where status in ('aprovado', 'pendente')
+           and (fonte is null or fonte_id <> :source_id)
+           and (
+             (data_inicio_civil is not null and data_inicio_civil between :start_window and :end_window)
+             or (data_evento is not null and (data_evento at time zone 'America/Sao_Paulo')::date between :start_window and :end_window)
+           )
+         order by criado_em asc
+    """), {
+        "source_id": source_id,
+        "start_window": start_window,
+        "end_window": end_window,
+    }).mappings().all()
+
+    for r in rows:
+        event_id = r["id"]
+        existing_title = r["titulo"]
+        existing_dt = r["dt"]
+        is_dup, _ = check_potential_duplicate(title, target_date, existing_title, existing_dt)
+        if is_dup:
+            return event_id
+    return None
 
 
 def _external_link(description: _Node) -> str | None:
@@ -245,7 +408,11 @@ def normalize_detail(source: str, listing_event: ListingEvent) -> dict:
     date_text = details.first("span", "data").text() if details.first("span", "data") else ""
     time_text = details.first("span", "hora").text() if details.first("span", "hora") else ""
     starts_on, ends_on = _parse_dates(date_text)
-    starts_at, ends_at, time_ambiguous = _parse_times(time_text)
+    is_all_day = _is_explicit_all_day(time_text, details)
+    if is_all_day:
+        starts_at, ends_at, time_ambiguous = None, None, False
+    else:
+        starts_at, ends_at, time_ambiguous = _parse_times(time_text)
 
     payload: dict = {
         "fonte": SOURCE,
@@ -259,7 +426,13 @@ def normalize_detail(source: str, listing_event: ListingEvent) -> dict:
         "campus": _normalize_campus(location),
         "ambiguo": time_ambiguous or starts_on is None,
     }
-    if starts_on is not None and starts_at is not None:
+    if is_all_day and starts_on is not None:
+        payload["dia_inteiro"] = True
+        payload["data_inicio"] = starts_on.isoformat()
+        end_exclusive = (ends_on or starts_on) + timedelta(days=1)
+        payload["data_fim"] = end_exclusive.isoformat()
+        payload["ambiguo"] = False
+    elif starts_on is not None and starts_at is not None:
         start_local = datetime.combine(starts_on, starts_at, tzinfo=BRASILIA)
         payload["inicio"] = start_local.isoformat()
         if ends_on is not None and ends_at is not None:
@@ -433,6 +606,15 @@ def collect_events(connection: Connection, client: AgendaUnBClient | None = None
                     "unchanged": 0, "reconciled": 0, "review": 0}
         with connection.begin():
             for payload in normalized:
+                if "possivel_duplicata_de" not in payload:
+                    duplicate_id = find_existing_duplicate(
+                        connection,
+                        title=payload["titulo"],
+                        target_date=_extract_payload_date(payload),
+                        source_id=payload["fonte_id"],
+                    )
+                    if duplicate_id:
+                        payload["possivel_duplicata_de"] = str(duplicate_id)
                 result = _as_mapping(connection.execute(text(
                     "select public.registrar_evento_coletado(cast(:payload as jsonb))"
                 ), {"payload": json.dumps(payload, ensure_ascii=False)}).scalar_one())

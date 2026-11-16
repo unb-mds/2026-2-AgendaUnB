@@ -154,3 +154,105 @@ def test_source_dates_need_a_year_and_valid_calendar_day():
     assert _parse_dates("18/11/2026 - 20/11/2026") == (date(2026, 11, 18), date(2026, 11, 20))
     assert _parse_dates("18/11 - 20/11") == (None, None)
     assert _parse_dates("31/02/2026") == (None, None)
+
+
+@pytest.mark.parametrize("time_label, dates, expected_start, expected_end", [
+    ("Dia inteiro", "18/11/2026 - 18/11/2026", "2026-11-18", "2026-11-19"),
+    ("Dia todo", "18/11/2026 - 20/11/2026", "2026-11-18", "2026-11-21"),
+    ("Todo o dia", "01/12/2026 - 01/12/2026", "2026-12-01", "2026-12-02"),
+    ("Horário integral", "10/11/2026 - 10/11/2026", "2026-11-10", "2026-11-11"),
+])
+def test_explicit_all_day_formats_are_detected_with_exclusive_end(time_label, dates, expected_start, expected_end):
+    listing = ListingEvent("50", "https://noticias.unb.br/component/agenda/agenda/50", "Semana Acadêmica", "Eventos")
+    item = normalize_detail(_detail(time=time_label, dates=dates), listing)
+
+    assert item.get("dia_inteiro") is True
+    assert item["data_inicio"] == expected_start
+    assert item["data_fim"] == expected_end
+    assert item["ambiguo"] is False
+    assert "inicio" not in item
+    assert "fim" not in item
+
+
+def test_zero_time_without_explicit_signal_remains_ambiguous_for_review():
+    listing = ListingEvent("51", "https://noticias.unb.br/component/agenda/agenda/51", "Reunião Geral", "Eventos")
+    item = normalize_detail(_detail(time="00:00 - 00:00:00", dates="18/11/2026 - 18/11/2026"), listing)
+
+    assert item.get("dia_inteiro") is None or item.get("dia_inteiro") is False
+    assert "inicio" not in item
+    assert "fim" not in item
+    assert item["ambiguo"] is True
+
+
+def test_duplicate_similarity_detection_positive_and_negative_cases():
+    from src.modules.events.collector import check_potential_duplicate
+
+    d1 = date(2026, 11, 18)
+    d1_next = date(2026, 11, 19)
+    d1_far = date(2026, 12, 18)
+
+    # 1. Mesma data, pequena variação de pontuação e acentuação -> Potencial duplicata
+    is_dup, reason = check_potential_duplicate(
+        "Semana Universitária 2026", d1,
+        "SEMANA universitária — 2026!", d1,
+    )
+    assert is_dup is True
+    assert "mesma_data" in reason
+
+    # 2. Data próxima (1 dia de diferença), títulos muito semelhantes -> Potencial duplicata
+    is_dup, reason = check_potential_duplicate(
+        "Palestra: Inteligência Artificial na Educação", d1,
+        "Palestra Inteligência Artificial na Educação", d1_next,
+    )
+    assert is_dup is True
+    assert "data_proxima_1_dia" in reason
+
+    # 3. Pequena variação com preposição/artigo -> Potencial duplicata
+    is_dup, reason = check_potential_duplicate(
+        "Workshop de Python para Iniciantes", d1,
+        "Workshop de Python Iniciantes", d1,
+    )
+    assert is_dup is True
+
+    # 4. FALSO POSITIVO EVITADO: datas distantes (meses diferentes) mesmo com títulos idênticos
+    is_dup, _ = check_potential_duplicate(
+        "Reunião Ordinária da Congregação", d1,
+        "Reunião Ordinária da Congregação", d1_far,
+    )
+    assert is_dup is False
+
+    # 5. FALSO POSITIVO EVITADO: números distintivos diferentes (ex: matérias ou turmas)
+    is_dup, _ = check_potential_duplicate(
+        "Cálculo 1", d1,
+        "Cálculo 2", d1,
+    )
+    assert is_dup is False
+
+    is_dup, _ = check_potential_duplicate(
+        "Física Experimental 1", d1,
+        "Física Experimental 2", d1_next,
+    )
+    assert is_dup is False
+
+    # 6. FALSO POSITIVO EVITADO: títulos completamente diferentes no mesmo dia
+    is_dup, _ = check_potential_duplicate(
+        "Apresentação de TCC", d1,
+        "Torneio de Xadrez Universitário", d1,
+    )
+    assert is_dup is False
+
+
+@pytest.mark.parametrize("location, expected_campus", [
+    ("Auditório da FCTE, Campus Gama", "Faculdade do Gama (FCTE)"),
+    ("Faculdade de Ceilândia - Sala 12", "Faculdade de Ceilândia (FCTS)"),
+    ("Campus Planaltina (FUP) - Bloco Acadêmico", "Faculdade de Planaltina (FUP)"),
+    ("Fazenda Água Limpa (FAL) - Sede", "Fazenda Água Limpa (FAL)"),
+    ("ICC Sul, Auditório Pompeu de Sousa", "Darcy Ribeiro (Plano Piloto)"),
+    ("Reitoria da UnB, Sala de Reuniões", "Darcy Ribeiro (Plano Piloto)"),
+    ("Beijódromo, Campus Darcy Ribeiro", "Darcy Ribeiro (Plano Piloto)"),
+    ("Praça dos Três Poderes", None),
+])
+def test_multicampus_normalization_coverage(location, expected_campus):
+    from src.modules.events.collector import _normalize_campus
+
+    assert _normalize_campus(location) == expected_campus
