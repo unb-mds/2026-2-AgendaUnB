@@ -47,7 +47,7 @@ Armazena os metadados dos usuários, sincronizada com a tabela nativa de autenti
 ## 3. Tabelas Core: Eventos e Agenda
 
 ### 3.1. Tabela `eventos` (Agenda Pública Institucional - RF14)
-Eventos publicados por professor/admin e sugestões da comunidade sujeitas à moderação. As regras posteriores à R1 estão no [guia de moderação](../painel-administrativo.md).
+Eventos publicados por professor/admin e sugestões da comunidade sujeitas à moderação. As regras posteriores à R1 estão nas [ADR-001](adrs/adr-001-integracao-fastapi-supabase.md) e [ADR-006](adrs/adr-006-autorizacao-em-camadas.md).
 *   **Colunas:**
     *   `id` (UUID, Primary Key): Identificador único.
     *   `autor_id` (UUID): Chave estrangeira para `profiles(id)` (`ON DELETE CASCADE`). Nulo apenas em evento coletado, que é identificado pela fonte (`CHECK (autor_id is not null or fonte is not null)`).
@@ -178,7 +178,7 @@ O uso dessas funções pela API está em [Dados de planos](dados-de-planos.md).
 
 ## 5. Eventos salvos e notificações
 
-`eventos_salvos` vincula um perfil a um evento público com chave composta `(user_id, event_id)`. `notificacoes` referencia o perfil destinatário e pode referenciar o evento que originou o aviso. Consulte as políticas, a implantação e os cenários de verificação nos guias de [eventos salvos](../eventos-salvos.md) e [painel administrativo](../painel-administrativo.md).
+`eventos_salvos` vincula um perfil a um evento público com chave composta `(user_id, event_id)`. `notificacoes` referencia o perfil destinatário e pode referenciar o evento que originou o aviso. Consulte as políticas, a implantação e os cenários de verificação em [eventos salvos](../eventos-salvos.md) e nas [ADR-001](adrs/adr-001-integracao-fastapi-supabase.md) e [ADR-006](adrs/adr-006-autorizacao-em-camadas.md).
 
 ## Evolução de candidatos na R2
 
@@ -191,4 +191,4 @@ Na R2, exigir `Idempotency-Key` por ação de confirmação, vinculada à conta,
 
 ## Worker e autorização do texto
 
-Preparação local, autorização específica, fila recuperável e candidatos privados estão descritos no [protocolo S7](../processamento-planos-s7.md) e no [registro de validação](../s7-b01-validacao.md). O worker foi alinhado à tabela oficial `avaliacoes` e às versões de S7-D01; nenhuma migração foi aplicada na nuvem.
+Preparação local, autorização específica, fila recuperável e candidatos privados estão descritos nas [ADR-003](adrs/adr-003-minimizar-dados-de-planos.md), [ADR-010](adrs/adr-010-versoes-e-confirmacao-de-planos.md) e [ADR-014](adrs/adr-014-processamento-assincrono-planos-ia.md). O worker opera sobre a tabela oficial `avaliacoes` e as versões de S7-D01.

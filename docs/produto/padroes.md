@@ -33,7 +33,7 @@ No worker S6-B01, preservar os nomes portugueses do contrato S6-D01 em candidato
 e metadados de IA; respostas de rastreamento HTTP usam aliases `camelCase`.
 Estados do plano são `pendente`, `processando`, `concluido` e `falha`; estados do
 candidato são `pendente`, `descartado` e `confirmado`. O extrator só grava
-`pendente`, sem confirmar ou converter em evento. [Contrato e regras](../processamento-planos-s7.md).
+`pendente`, sem confirmar ou converter em evento. [ADR-003](../arquitetura/adrs/adr-003-minimizar-dados-de-planos.md) · [ADR-014](../arquitetura/adrs/adr-014-processamento-assincrono-planos-ia.md).
 
 | Elemento | Padrão | Exemplo |
 | :--- | :--- | :--- |
@@ -89,7 +89,7 @@ candidato são `pendente`, `descartado` e `confirmado`. O extrator só grava
 
 O esquema atual guarda metadados do envio e os estados `pendente`, `processando`, `concluido` e `falha`. O [contrato de plano e versão](../atualizacoes.md#contratos-da-release-2) detalha seleção de oferta, descarte do PDF e migração.
 
-O produtor S7 prepara PDF/texto localmente, descarta o original e exige autorização do texto antes da IA. Consulte o [contrato vigente](../processamento-planos-s7.md).
+O produtor S7 prepara PDF/texto localmente, descarta o original e exige autorização do texto antes da IA. Consulte a [ADR-003](../arquitetura/adrs/adr-003-minimizar-dados-de-planos.md) e a [ADR-014](../arquitetura/adrs/adr-014-processamento-assincrono-planos-ia.md).
 
 ### 🏷️ `Category` / `categories` (Categoria)
 * `id`: Identificador da categoria (`UUID`)
