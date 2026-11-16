@@ -66,7 +66,7 @@ def registrar_item(db, item: dict) -> dict:
 | Item novo sem data | `criado` | Revisão, `incompleto` |
 | `ambiguo = true` ou fim antes do início | `criado` | Revisão, `ambiguo` |
 | `tipo = informe` | `criado` | Revisão, `informe` |
-| Título semelhante (>= 72% similaridade) e data próxima (<= 2 dias) | `criado` | Revisão, `possivel_duplicata`, com `possivel_duplicata_de` |
+| Título semelhante ($\ge 80\%$ no mesmo dia, $\ge 85\%$ em 1 dia ou $\ge 92\%$ em 2 dias) | `criado` | Revisão, `possivel_duplicata`, com `possivel_duplicata_de` |
 | Mesma URL de um evento cadastrado na plataforma | `conciliado` | Mantém o evento manual e anexa a procedência; não cria outro |
 | Mesmo `(fonte, fonte_id)` e mesmo hash | `inalterado` | Só renova `coletado_em` |
 | Mesmo `(fonte, fonte_id)`, hash diferente | `atualizado` | Atualiza **o mesmo registro** |
@@ -74,8 +74,8 @@ def registrar_item(db, item: dict) -> dict:
 #### Regra de Detecção de Possíveis Duplicatas
 Para evitar publicação duplicada de eventos com grafias ligeiramente distintas ou datas aproximadas:
 1. **Normalização**: títulos passam por conversão para minúsculas, remoção de acentuação (`NFKD`), eliminação de pontuação e colapso de espaços em branco.
-2. **Cálculo de Similaridade**: combina sobreposição de bigramas/trigramas e distância de caracteres (limiar de similaridade $\ge 0{,}72$).
-3. **Preservação de Dígitos/Edições**: títulos que possuam números distintos (ex.: `"Seminário Módulo 1"` vs `"Seminário Módulo 2"`, ou `"Encontro 2025"` vs `"Encontro 2026"`) **não** são considerados duplicatas, prevenindo falsos positivos.
+2. **Cálculo de Similaridade**: combina razão de sequência (`SequenceMatcher`), sobreposição Jaccard de tokens e contenção de substring (limiares progressivos: $\ge 0{,}80$ para mesma data, $\ge 0{,}85$ para 1 dia de diferença e $\ge 0{,}92$ para 2 dias de diferença).
+3. **Preservação de Dígitos/Edições**: títulos que possuam números distintos (ex.: `"Cálculo 1"` vs `"Cálculo 2"`, ou `"Encontro 2025"` vs `"Encontro 2026"`) **não** são considerados duplicatas, prevenindo falsos positivos.
 4. **Proximidade Temporal**: datas de início devem coincidir no mesmo dia ou diferir em no máximo 2 dias ($\le 2$ dias de afastamento).
 5. **Encaminhamento**: quando uma possível duplicata é detectada, o registro é salvo com `status = 'pendente'`, `motivo_revisao = 'possivel_duplicata'` e `possivel_duplicata_de = <id_candidato>`, permitindo decisão por moderador humano sem falso auto-descarte.
 
@@ -153,7 +153,7 @@ Eventos coletados expõem institucionalmente a sua procedência:
 A suíte automatizada cobre unitariamente o coletor, a similaridade de duplicatas, o tratamento de dia inteiro, multicampus, os contratos da API e a projeção no frontend:
 
 ```bash
-# Testes unitários do coletor (30 testes de unidade e regras)
+# Testes unitários do coletor (34 testes de unidade, orquestração, concorrência e regras)
 cd backend && PYTHONPATH=. venv/bin/pytest tests/test_event_collector.py
 
 # Testes de contrato da API pública de eventos (10 testes cobrindo procedência RF16)
@@ -163,12 +163,14 @@ cd backend && PYTHONPATH=. venv/bin/pytest tests/test_events_api.py
 cd frontend && node --test src/lib/*.test.js
 ```
 
-Para testes de banco de dados contra o Supabase local (quando o container estiver ativo):
+Para testes de banco de dados contra o Supabase local (18 testes cobrindo triggers, RLS, RPCs e idempotência):
 ```bash
 cd backend
 TEST_SUPABASE_DB_URL="postgresql+psycopg://postgres:postgres@127.0.0.1:14322/postgres" \
   venv/bin/pytest tests/test_event_collection_database.py -q
 ```
+
+Consulte o [Relatório técnico de validação S7-B05](../s7-b05-validacao.md) para o detalhamento completo dos cenários de aceite e evidências.
 
 ## 5. Coletor da Agenda UnB Notícias
 

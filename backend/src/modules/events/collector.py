@@ -648,13 +648,32 @@ def collect_events(connection: Connection, client: AgendaUnBClient | None = None
         connection.commit()
 
 
-def _main() -> int:
+DEFAULT_DAEMON_INTERVAL_HOURS = 6.0
+
+
+def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--interval-hours", type=float, default=None,
-                        help="repete a coleta após este intervalo (mínimo: 1 hora)")
-    args = parser.parse_args()
+    parser.add_argument(
+        "--daemon",
+        action="store_true",
+        help="executa continuamente em background (intervalo padrão: 6 horas)",
+    )
+    parser.add_argument(
+        "--interval-hours",
+        type=float,
+        default=None,
+        help="repete a coleta após este intervalo (mínimo: 1 hora)",
+    )
+    args = parser.parse_args(argv)
+    if args.daemon and args.interval_hours is None:
+        args.interval_hours = DEFAULT_DAEMON_INTERVAL_HOURS
     if args.interval_hours is not None and (not math.isfinite(args.interval_hours) or args.interval_hours < 1):
         parser.error("--interval-hours precisa ser um número finito de pelo menos 1")
+    return args
+
+
+def _main(argv: list[str] | None = None) -> int:
+    args = _parse_args(argv)
     from src.database.connection import engine
 
     while True:
