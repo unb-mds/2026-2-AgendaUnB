@@ -1,3 +1,5 @@
+import { classStartOnDate } from './classSchedule.js';
+
 // Local editor model, not an API payload.
 export const BRASILIA_UTC_OFFSET = '-03:00';
 
@@ -38,17 +40,36 @@ export function createReviewDraft(items) {
   });
 }
 
-export function createCandidateReviewDraft(candidates) {
+export function createCandidateReviewDraft(candidates, classSchedule) {
   return createReviewDraft(candidates).map((draft, index) => {
     const candidate = candidates[index];
     const hasExplicitZone = /(?:Z|[+-]\d{2}:\d{2})$/.test(candidate.startsAt || '');
     const brasilia = hasExplicitZone ? formatInBrasilia(candidate.startsAt) : null;
-    return { ...draft, type: draft.type.toLowerCase(),
+    const time = candidate.suggestedTime ?? brasilia?.time ?? '';
+    return withClassTime({ ...draft, type: draft.type.toLowerCase(),
       date: candidate.suggestedDate ?? brasilia?.date ?? '',
-      time: candidate.suggestedTime ?? brasilia?.time ?? '',
+      time,
+      timeSource: time ? 'plan' : null,
+      dateNeedsReview: candidate.ambiguousFields?.some(field => ['data', 'date'].includes(field)),
       status: candidate.status, versionId: candidate.versionId,
-      editable: candidate.status === 'pendente' };
+      editable: candidate.status === 'pendente' }, classSchedule);
   });
+}
+
+function withClassTime(item, classSchedule) {
+  if (item.timeSource === 'plan' || item.timeSource === 'manual') return item;
+  const canSuggest = item.editable === true && item.type === 'prova' && !item.dateNeedsReview;
+  const time = canSuggest ? classStartOnDate(classSchedule, item.date) : '';
+  return { ...item, time, timeSource: time ? 'catalog' : null };
+}
+
+export function updateCandidateReviewItem(item, patch, classSchedule) {
+  const updated = { ...item, ...patch };
+  if (!('timeSource' in item)) return updated;
+  if ('time' in patch) return { ...updated, timeSource: 'manual' };
+  if (updated.date !== item.date) updated.dateNeedsReview = false;
+  if (updated.date !== item.date || updated.type !== item.type) return withClassTime(updated, classSchedule);
+  return updated;
 }
 
 export function selectReviewItems(items, selected) {

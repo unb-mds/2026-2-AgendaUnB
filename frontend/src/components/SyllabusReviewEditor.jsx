@@ -1,10 +1,10 @@
 import { useId, useRef, useState } from 'react';
-import { selectReviewItems, validateReviewItem } from '../lib/syllabusReview';
+import { selectReviewItems, updateCandidateReviewItem, validateReviewItem } from '../lib/syllabusReview';
 import '../styles/syllabus-review.css';
 
 // Controlled local draft: the owner preserves edits and resets on plan/account changes.
 // No persistence, network request or agenda confirmation is performed here.
-export default function SyllabusReviewEditor({ value, onChange, onConfirm, confirmationAllowed = true, busy = false, disabled = false, renderCandidate, emptyMessage = 'Nenhuma avaliação disponível para revisão.' }) {
+export default function SyllabusReviewEditor({ value, onChange, onConfirm, classSchedule, confirmationAllowed = true, busy = false, disabled = false, renderCandidate, emptyMessage = 'Nenhuma avaliação disponível para revisão.' }) {
   const prefix = useId();
   const root = useRef(null);
   const [checked, setChecked] = useState(false);
@@ -16,7 +16,7 @@ export default function SyllabusReviewEditor({ value, onChange, onConfirm, confi
   }
   function update(id, patch) {
     setChecked(false);
-    onChange(value.map(item => item.id === id ? { ...item, ...patch } : item));
+    onChange(value.map(item => item.id === id ? updateCandidateReviewItem(item, patch, classSchedule) : item));
   }
   function check() {
     setChecked(true);
@@ -57,22 +57,26 @@ export default function SyllabusReviewEditor({ value, onChange, onConfirm, confi
             <option value="discarded">Retirar da seleção</option>
           </select>
           <div className="syllabus-review-fields">
-            {fields.map(([name, label, type]) => <div className={`syllabus-review-field field-${name}`} key={name}>
-              <label htmlFor={`${base}-${name}`}>{label}{item.decision === 'selected' ? ' *' : ''}</label>
-              {name === 'type' ? <select id={`${base}-${name}`} value={item.type.toLowerCase()} disabled={item.decision === 'discarded'}
-                aria-invalid={errors.type ? true : undefined} aria-describedby={errors.type ? `${base}-type-error` : undefined}
-                onChange={e => update(item.id, { type: e.target.value })}>
-                <option value="">Selecione o tipo</option>
-                {!['', 'prova', 'trabalho'].includes(item.type.toLowerCase()) && <option value={item.type.toLowerCase()}>{item.type} — corrija o tipo</option>}
-                <option value="prova">Prova</option><option value="trabalho">Trabalho</option>
-              </select> : <input id={`${base}-${name}`} type={type} value={item[name]} step={name === 'time' ? 'any' : undefined}
-                disabled={item.decision === 'discarded'}
-                required={item.decision === 'selected' && name !== 'type'}
-                aria-invalid={errors[name] ? true : undefined}
-                aria-describedby={errors[name] ? `${base}-${name}-error` : undefined}
-                onChange={e => update(item.id, { [name]: e.target.value })} />}
-              {errors[name] && <p className="syllabus-review-error" id={`${base}-${name}-error`}>{errors[name]}</p>}
-            </div>)}
+            {fields.map(([name, label, type]) => {
+              const hint = name === 'time' && item.timeSource === 'catalog';
+              return <div className={`syllabus-review-field field-${name}`} key={name}>
+                <label htmlFor={`${base}-${name}`}>{label}{item.decision === 'selected' ? ' *' : ''}</label>
+                {name === 'type' ? <select id={`${base}-${name}`} value={item.type.toLowerCase()} disabled={item.decision === 'discarded'}
+                  aria-invalid={errors.type ? true : undefined} aria-describedby={errors.type ? `${base}-type-error` : undefined}
+                  onChange={e => update(item.id, { type: e.target.value })}>
+                  <option value="">Selecione o tipo</option>
+                  {!['', 'prova', 'trabalho'].includes(item.type.toLowerCase()) && <option value={item.type.toLowerCase()}>{item.type} — corrija o tipo</option>}
+                  <option value="prova">Prova</option><option value="trabalho">Trabalho</option>
+                </select> : <input id={`${base}-${name}`} type={type} value={item[name]} step={name === 'time' ? 'any' : undefined}
+                  disabled={item.decision === 'discarded'}
+                  required={item.decision === 'selected' && name !== 'type'}
+                  aria-invalid={errors[name] ? true : undefined}
+                  aria-describedby={errors[name] ? `${base}-${name}-error` : hint ? `${base}-class-time` : undefined}
+                  onChange={e => update(item.id, { [name]: e.target.value })} />}
+                {hint && <small id={`${base}-class-time`}>Sugerido pelo horário da turma. Confira antes de confirmar.</small>}
+                {errors[name] && <p className="syllabus-review-error" id={`${base}-${name}-error`}>{errors[name]}</p>}
+              </div>;
+            })}
           </div>
           {item.decision === 'discarded' && <p className="management-muted">Item fora da seleção. Suas edições foram mantidas; você pode selecioná-lo novamente.</p>}
         </fieldset>;
