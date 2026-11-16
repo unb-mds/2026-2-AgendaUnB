@@ -535,3 +535,47 @@ def test_spawn_worker_drain_respects_flags_and_single_active_process(monkeypatch
     assert module.spawn_worker_drain() is True
     assert len(spawned) == 2
     assert "--drain" in spawned[0][0] and "--max-items" in spawned[0][0]
+
+
+def test_evidence_tolerates_unicode_dashes_tables_and_ellipsis_but_blocks_fabrication():
+    source = "| P1 | 10.11.2026 | Conteúdo Cap 1 – Cap 3 |\nProva 2 \u2013 15 / 12 / 2026 \u2014 14:00."
+    pages = [TextPage(None, source)]
+    payload = json.dumps({
+        "candidatos": [
+            {
+                "titulo": "P1",
+                "tipo": "prova",
+                "data_sugerida": "2026-11-10",
+                "hora_sugerida": None,
+                "campos_ambiguos": [],
+                "pagina_origem": None,
+                "trecho_origem": "P1 10.11.2026",
+            },
+            {
+                "titulo": "Prova 2",
+                "tipo": "prova",
+                "data_sugerida": "2026-12-15",
+                "hora_sugerida": "14:00",
+                "campos_ambiguos": [],
+                "pagina_origem": None,
+                "trecho_origem": "Prova 2 - 15/12/2026 - 14:00",
+            },
+        ]
+    })
+    result = validate_candidates(payload, pages)
+    assert len(result.candidates) == 2
+    assert result.candidates[0].data_sugerida.isoformat() == "2026-11-10"
+    assert result.candidates[1].hora_sugerida.strftime("%H:%M") == "14:00"
+
+    # Ano ausente na fonte não pode ser injetado no trecho_origem.
+    no_year = [TextPage(None, "Prova 1 - 10/11.")]
+    with pytest.raises(ProcessingError) as caught:
+        validate_candidates(raw_candidate(pagina_origem=None, trecho_origem="Prova 1 - 10/11/2026"), no_year)
+    assert caught.value.reason == "evidence_mismatch"
+
+    # Rótulos de critérios de avaliação não viram prova.
+    criteria = [TextPage(None, "Critérios de avaliação - 10/11/2026.")]
+    assert validate_candidates(
+        raw_candidate(titulo="Critérios de avaliação", pagina_origem=None, trecho_origem="Critérios de avaliação - 10/11/2026."),
+        criteria,
+    ).candidates == []
