@@ -25,9 +25,13 @@ services:
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-3.5-flash-lite
       - key: SYLLABUS_WORKER_ENABLED
-        value: "false"
+        value: "true"
       - key: SYLLABUS_PRIVACY_READY
-        value: "false"
+        value: "true"
       - key: SYLLABUS_PROVIDER_TERMS_READY
-        value: "false"
+        value: "true"

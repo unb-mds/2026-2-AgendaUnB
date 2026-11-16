@@ -47,7 +47,7 @@ def _child(send, path, storage, provider, config):
                                                   for candidate in result.extraction.candidates]},
                       unsupported_dates=result.extraction.unsupported_dates)
     except ProcessingError as error:
-        output = {"error": error.code, "retryable": error.retryable}
+        output = {"error": error.code, "retryable": error.retryable, "rate_limited": error.rate_limited}
     except Exception:
         output = {"error": "erro_interno", "retryable": True}
     try:
@@ -70,9 +70,10 @@ def run_isolated(path, storage, provider, config: ProcessingConfig) -> DocumentR
             raise ProcessingError("erro_interno", retryable=True)
         if "error" in output:
             code = output.get("error")
-            if code not in ERROR_MESSAGES or type(output.get("retryable")) is not bool:
+            rate_limited = output.get("rate_limited", False)
+            if code not in ERROR_MESSAGES or type(output.get("retryable")) is not bool or type(rate_limited) is not bool:
                 raise ProcessingError("erro_interno", retryable=True)
-            raise ProcessingError(code, retryable=output["retryable"])
+            raise ProcessingError(code, retryable=output["retryable"], rate_limited=rate_limited)
         validated = TaskOutput.model_validate(output)
         return DocumentResult(validated.page_count,
                               ExtractionResult(validated.extraction.candidatos, validated.unsupported_dates))
