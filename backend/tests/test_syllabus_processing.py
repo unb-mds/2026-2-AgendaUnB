@@ -579,3 +579,36 @@ def test_evidence_tolerates_unicode_dashes_tables_and_ellipsis_but_blocks_fabric
         raw_candidate(titulo="Critérios de avaliação", pagina_origem=None, trecho_origem="Critérios de avaliação - 10/11/2026."),
         criteria,
     ).candidates == []
+
+
+def test_extracts_two_digit_years_and_markdown_tables_with_semester_reference():
+    source = (
+        "# Estruturas de Dados\nSemestre: 2026/2\n"
+        "| **15** | 13/10/26 | **Prova 1** | AE1–AE5 | **P1 — avaliação escrita individual** |\n"
+        "| **24** | 12/11/26 | **Prova 2** | AE1–AE6 | **P2 — avaliação escrita individual** |\n"
+        "| **28** | 26/11 | **Prova 3** | AE1–AE6 | **P3 — avaliação escrita individual** |\n"
+        "| **29** | 01/12/26 | **Prova Substitutiva** | Conforme Seção 8.3 | Avaliação escrita |\n"
+    )
+    pages = [TextPage(None, source)]
+    payload = json.dumps({
+        "candidatos": [
+            {"titulo": "Prova 1", "tipo": "prova", "data_sugerida": "2026-10-13", "hora_sugerida": None,
+             "campos_ambiguos": ["hora"], "pagina_origem": None,
+             "trecho_origem": "Prova 1 - 13/10/26"},
+            {"titulo": "Prova 2", "tipo": "prova", "data_sugerida": "2026-11-12", "hora_sugerida": None,
+             "campos_ambiguos": ["hora"], "pagina_origem": None,
+             "trecho_origem": "| **24** | 12/11/26 | **Prova 2** | AE1–AE6 | **P2 — avaliação escrita individual** |"},
+            {"titulo": "Prova 3", "tipo": "prova", "data_sugerida": "2026-11-26", "hora_sugerida": None,
+             "campos_ambiguos": ["hora"], "pagina_origem": None,
+             "trecho_origem": "26/11 **Prova 3**"},
+            {"titulo": "Prova Substitutiva", "tipo": "prova", "data_sugerida": "2026-12-01", "hora_sugerida": None,
+             "campos_ambiguos": ["hora"], "pagina_origem": None,
+             "trecho_origem": "| **29** | 01/12/26 | **Prova Substitutiva** | Conforme Seção 8.3 |"},
+        ]
+    })
+    result = validate_candidates(payload, pages)
+    assert [c.titulo for c in result.candidates] == ["Prova 1", "Prova 2", "Prova 3", "Prova Substitutiva"]
+    assert [c.data_sugerida.isoformat() for c in result.candidates] == [
+        "2026-10-13", "2026-11-12", "2026-11-26", "2026-12-01",
+    ]
+    assert result.unsupported_dates == 0

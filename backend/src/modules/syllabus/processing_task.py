@@ -33,7 +33,7 @@ def process_document(path, storage, provider, config: ProcessingConfig) -> Docum
         # exclusivamente um snapshot de texto aprovado, nunca um caminho de PDF.
         content = storage.download_file(path)
         pages = extract_pages(content, config)
-    result = validate_candidates(provider.extract(pages), pages)
+    result = validate_candidates(provider.extract(pages), pages, default_year=config.reference_year)
     return DocumentResult(len(pages) if pages[0].pagina is not None else None, result)
 
 

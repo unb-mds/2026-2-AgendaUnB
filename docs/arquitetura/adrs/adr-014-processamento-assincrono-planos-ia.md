@@ -37,7 +37,7 @@ A extração de datas de provas e trabalhos por LLM (Google Gemini) é uma opera
 
 4. **Validação estrita e proteção contra prompt injection:**
    - O conteúdo do plano é enviado isolado como dados JSON não confiáveis, separado da instrução de sistema. O servidor valida a resposta com Pydantic rejeitando campos extras, tipos fora de `prova`/`trabalho`, citações ausentes na página indicada e datas sem evidência completa no trecho.
-   - Não se inferem ano, meia-noite, fuso horário ou início de intervalo; datas ausentes ou ambíguas permanecem nulas e marcadas para correção humana. Documentos sem avaliações concluem com zero candidatos sem gerar erro.
+   - Não se inferem meia-noite, fuso horário ou início de intervalo a partir do relógio do servidor. Datas com ano abreviado (`DD/MM/AA`) ou `DD/MM` com ano explícito no plano (ex.: `2026/2`) ou na oferta vinculada resolvem o ano de referência; datas sem referência de ano no documento/oferta ou ambíguas permanecem nulas e marcadas para correção humana. Documentos sem avaliações concluem com zero candidatos sem gerar erro.
 
 5. **Gates operacionais e verificação de pré-requisitos:**
    - A execução do provedor exige três flags explícitas em `true` no runtime do servidor: `SYLLABUS_WORKER_ENABLED`, `SYLLABUS_PRIVACY_READY` e `SYLLABUS_PROVIDER_TERMS_READY`.

@@ -76,7 +76,17 @@ def _tokens(value: str) -> list[str]:
     return _TOKEN_RE.findall(normalize(value))
 
 
-def _evidence_in_source(evidence_raw: str, source_raw: str, *, max_gap: int = 8) -> bool:
+def _tokens_match_same_line(evidence_tokens: list[str], source_raw: str) -> bool:
+    if not evidence_tokens:
+        return False
+    needed = set(evidence_tokens)
+    for line in source_raw.splitlines():
+        if needed <= set(_tokens(line)):
+            return True
+    return False
+
+
+def _evidence_in_source(evidence_raw: str, source_raw: str, *, max_gap: int = 8, allow_same_line: bool = True) -> bool:
     norm_evidence = normalize(evidence_raw)
     norm_source = normalize(source_raw)
     if not norm_evidence:
@@ -89,6 +99,7 @@ def _evidence_in_source(evidence_raw: str, source_raw: str, *, max_gap: int = 8)
     if not seg_tokens or not source_tokens:
         return False
     pos = 0
+    matched_ordered = True
     for toks in seg_tokens:
         n = len(toks)
         found_end = None
@@ -106,9 +117,14 @@ def _evidence_in_source(evidence_raw: str, source_raw: str, *, max_gap: int = 8)
                 found_end = si
                 break
         if found_end is None:
-            return False
+            matched_ordered = False
+            break
         pos = found_end
-    return True
+    if matched_ordered:
+        return True
+    if allow_same_line and len(seg_tokens) == 1:
+        return _tokens_match_same_line(seg_tokens[0], source_raw)
+    return False
 
 
 def extract_pages(content: bytes, config: ProcessingConfig) -> list[TextPage]:
@@ -138,9 +154,22 @@ def extract_pages(content: bytes, config: ProcessingConfig) -> list[TextPage]:
 
 
 MONTHS = "janeiro fevereiro março abril maio junho julho agosto setembro outubro novembro dezembro".split()
+SHORT_MONTHS = "jan fev mar abr mai jun jul ago set out nov dez".split()
 
 
-def dates_in_evidence(value: str) -> set[date]:
+def extract_reference_year(pages: list[TextPage]) -> int | None:
+    for page in pages:
+        match = re.search(r"\b(20\d{2})\s*[/.]\s*[12]\b", page.texto)
+        if match:
+            return int(match[1])
+    for page in pages:
+        match = re.search(r"(?<!\d)(?:\d{1,2})[/-](?:\d{1,2})[/-](20\d{2})(?!\d)", page.texto)
+        if match:
+            return int(match[1])
+    return None
+
+
+def dates_in_evidence(value: str, *, default_year: int | None = None) -> set[date]:
     found = set()
     triples = [(int(y), int(m), int(d)) for d, m, y in
                re.findall(r"(?<!\d)(\d{1,2})[/-](\d{1,2})[/-](\d{4})(?!\d)", value)]
@@ -148,10 +177,24 @@ def dates_in_evidence(value: str) -> set[date]:
                 re.findall(r"(?<!\d)(\d{1,2})\.(\d{1,2})\.(\d{4})(?!\d)", value)]
     triples += [(int(y), int(m), int(d)) for y, m, d in
                 re.findall(r"(?<!\d)(\d{4})-(\d{2})-(\d{2})(?!\d)", value)]
+    triples += [(2000 + int(y), int(m), int(d)) for d, m, y in
+                re.findall(r"(?<!\d)(\d{1,2})[/-](\d{1,2})[/-](\d{2})(?!\d)", value)]
+    triples += [(2000 + int(y), int(m), int(d)) for d, m, y in
+                re.findall(r"(?<!\d)(\d{1,2})\.(\d{1,2})\.(\d{2})(?!\d)", value)]
     for index, month in enumerate(MONTHS, 1):
         month_pattern = "mar[cç]o" if month == "março" else month
         triples += [(int(y), index, int(d)) for d, y in re.findall(
             rf"(?<!\d)(\d{{1,2}})\s+de\s+{month_pattern}\s+de\s+(\d{{4}})(?!\d)", value.casefold())]
+    for index, short_month in enumerate(SHORT_MONTHS, 1):
+        triples += [(int(y), index, int(d)) for d, y in re.findall(
+            rf"(?<!\d)(\d{{1,2}})[/\s-]+(?:de\s+)?{short_month}[/\s-]+(?:de\s+)?(\d{{4}})(?!\d)", value.casefold())]
+    if default_year is not None:
+        triples += [(default_year, int(m), int(d)) for d, m in
+                    re.findall(r"(?<!\d)(\d{1,2})/(\d{1,2})(?![/\d])", value)]
+        for index, month in enumerate(MONTHS, 1):
+            month_pattern = "mar[cç]o" if month == "março" else month
+            triples += [(default_year, index, int(d)) for d in re.findall(
+                rf"(?<!\d)(\d{{1,2}})\s+de\s+{month_pattern}(?!\s+de\s+\d)(?!\d)", value.casefold())]
     for year, month, day in triples:
         try:
             found.add(date(year, month, day))
@@ -170,12 +213,13 @@ def times_in_evidence(value: str) -> set[time]:
     return found
 
 
-def validate_candidates(raw: str, pages: list[TextPage]) -> ExtractionResult:
+def validate_candidates(raw: str, pages: list[TextPage], *, default_year: int | None = None) -> ExtractionResult:
     try:
         output = ExtractionData.model_validate_json(raw)
     except (ValidationError, ValueError):
         raise ProcessingError("falha_ia", reason="schema_invalid") from None
     sources = {page.pagina: page.texto for page in pages}
+    reference_year = default_year or extract_reference_year(pages)
     result = ExtractionResult([])
     seen = set()
     first_failure_reason: str | None = None
@@ -187,7 +231,7 @@ def validate_candidates(raw: str, pages: list[TextPage]) -> ExtractionResult:
         if not _evidence_in_source(item.trecho_origem, sources[item.pagina_origem]):
             first_failure_reason = first_failure_reason or "evidence_mismatch"
             continue
-        if not _evidence_in_source(item.titulo, item.trecho_origem, max_gap=4):
+        if not _evidence_in_source(item.titulo, item.trecho_origem, max_gap=4, allow_same_line=False):
             first_failure_reason = first_failure_reason or "title_mismatch"
             continue
         # Defesa conservadora: rótulos de aula/bibliografia não viram provas.
@@ -198,9 +242,9 @@ def validate_candidates(raw: str, pages: list[TextPage]) -> ExtractionResult:
         if not (re.search(marker, title) or re.search(marker, evidence)):
             continue
         ambiguous = set(item.campos_ambiguos)
-        # Uma data ISO plausível não basta: exigir data completa e inequívoca
-        # no trecho citado. Nunca completar ano, dia ou mês usando o relógio.
-        if item.data_sugerida is not None and dates_in_evidence(evidence) != {item.data_sugerida}:
+        # Aceitar ano completo, abreviado (DD/MM/AA) ou ano de referência explícito no plano/oferta.
+        # Sem referência de ano no documento/oferta, não completar usando o relógio.
+        if item.data_sugerida is not None and dates_in_evidence(evidence, default_year=reference_year) != {item.data_sugerida}:
             item.data_sugerida = None
             result.unsupported_dates += 1
             ambiguous.add("data")
