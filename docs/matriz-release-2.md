@@ -48,6 +48,6 @@ Estado em **07/11/2026**. As issues citadas estavam abertas nas milestones das s
 
 ## Registro de evidências
 
-- **S7-B02 (14/11/2026):** [Validação técnica da infraestrutura gratuita](s7-b02-validacao.md) cobre RNF03 (TLS obrigatório na API e banco), RNF11 (isolamento do Followw com snapshot local), RNF13 (CI com Pytest, Vitest, Playwright e Supabase CLI), RF16 (infraestrutura de jobs desacoplada) e RF21 (escopo mínimo `calendar.app.created` e segurança do Google Calendar).
+- **S7-B02 (14/11/2026):** Decisões e verificações consolidadas nas ADRs de [hospedagem e CI (ADR-002)](arquitetura/adrs/adr-002-separar-hospedagem-e-ambientes.md), [catálogo Followw (ADR-009)](arquitetura/adrs/adr-009-catalogo-publico-de-turmas.md), [Google Calendar (ADR-012)](arquitetura/adrs/adr-012-exportacao-google-idempotente.md) e [worker IA (ADR-014)](arquitetura/adrs/adr-014-processamento-assincrono-planos-ia.md) (cobrindo RF16, RF21, RNF03, RNF11 e RNF13).
 
 Para cada cenário, anexar à issue o PR, versão implantada, ambiente, data da execução e resultado observado. Identificar falhas abertas com issue e responsável. Registrar quem revisou os contratos, permissões e dados afetados. A [homologação #85](https://github.com/unb-mds/2026-2-AgendaUnB/issues/85) consolida as jornadas e a [#86](https://github.com/unb-mds/2026-2-AgendaUnB/issues/86) reúne o pacote final.

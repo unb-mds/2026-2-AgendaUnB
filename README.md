@@ -129,7 +129,7 @@ Funcionalidades atualizadas até o fim da Sprint 05 (18/10)
 
 ### Backend (API)
 
-A API inclui catálogo público, CRUD privado, sugestões, eventos salvos, administração, upload/consulta de planos e saúde. Consulte os [contratos](docs/api-specs.md) e o [guia do worker Gemini](docs/processamento-planos.md). A extração salva candidatos para revisão, sem criar compromissos; permanece desativada por padrão até validar as políticas S6-D02.
+A API inclui catálogo público, CRUD privado, sugestões, eventos salvos, administração, upload/consulta de planos e saúde. Consulte os [contratos](docs/api-specs.md), a [ADR-003 (minimização e privacidade de planos)](docs/arquitetura/adrs/adr-003-minimizar-dados-de-planos.md) e a [ADR-014 (processamento assíncrono com IA)](docs/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia.md). A extração salva candidatos para revisão, sem criar compromissos, e permanece condicionada às flags operacionais e travas de privacidade.
 
 ### Banco de Dados
 
@@ -143,7 +143,7 @@ Destaques de segurança:
 - Sugestões estudantis nascem pendentes; decisões de moderação são atômicas e recusas exigem justificativa.
 - Somente admins alteram cargos de terceiros; não podem remover o próprio acesso administrativo.
 
-Antes de disponibilizar API e frontend atualizados, aplique as migrações pendentes. No ambiente local já inicializado, execute `npx supabase migration up --local`. Consulte os guias de [eventos salvos](docs/eventos-salvos.md) e [moderação](docs/painel-administrativo.md).
+Antes de disponibilizar API e frontend atualizados, aplique as migrações pendentes. No ambiente local já inicializado, execute `npx supabase migration up --local`. Consulte os guias de [eventos salvos](docs/eventos-salvos.md), [integração e rotas](docs/arquitetura/adrs/adr-001-integracao-fastapi-supabase.md) e [autorização e moderação](docs/arquitetura/adrs/adr-006-autorizacao-em-camadas.md).
 
 ---
 
