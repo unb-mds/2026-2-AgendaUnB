@@ -66,7 +66,6 @@ async function openCheckedReview(page, path = `/plano-de-ensino?plano=${plan.id}
   await first.getByLabel('Tipo').selectOption('trabalho');
   await first.getByLabel('Data', { exact: false }).fill('2026-12-01');
   await first.getByLabel('Horário').fill('14:30');
-  await first.getByLabel('Fuso UTC').fill('-03:00');
   const confirm = page.getByRole('button', { name: 'Confirmar e importar' });
   await expect(confirm).toBeDisabled();
   await page.getByRole('button', { name: 'Conferir selecionados' }).click();
@@ -127,7 +126,7 @@ for (const [width, theme] of [[360, 'light'], [1365, 'dark']]) {
     await expect(agenda).toBeVisible();
     await expect(first.getByLabel('Decisão')).toBeDisabled();
     await expect(page.getByRole('group', { name: 'Avaliação 2', exact: true }).getByLabel('Decisão')).toBeEnabled();
-    expect(posts).toEqual([{ candidates: [{ candidateId: candidate.id, title: 'Trabalho corrigido',
+    expect(posts).toEqual([{ candidates: [{ candidateId: candidate.id, title: 'Trabalho corrigido', type: 'trabalho',
       startsAt: '2026-12-01T14:30-03:00', category: 'Acadêmico', description: `Tipo de avaliação: Trabalho\n\n${candidate.sourceExcerpt}` }] }]);
     await feedback.evaluate(element => element.scrollIntoView({ block: 'center', behavior: 'instant' }));
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -180,7 +179,9 @@ for (const mode of ['resposta perdida', 'conflito']) {
     const posts = [];
     await page.route(`**/api/v1/syllabus/${plan.id}/confirm`, route => {
       posts.push(route.request().postDataJSON());
-      if (posts.length > 1) return route.fulfill({ json: { syllabusId: plan.id, events: [] } });
+      if (posts.length > 1) return route.fulfill({ json: {
+        syllabusId: plan.id, events: [], items: [{ candidateId: candidate.id, removed: true }],
+      } });
       return mode === 'conflito' ? route.fulfill({ status: 409, json: { detail: 'Confirmação concorrente.' } }) : route.abort();
     });
     const { first, confirm } = await openCheckedReview(page);
@@ -218,7 +219,7 @@ test('revisão real permite corrigir e selecionar em lote sem gravar eventos', a
   await page.goto(`/plano-de-ensino?plano=${plan.id}`);
   const first = page.getByRole('group', { name: 'Avaliação 1', exact: true });
   const second = page.getByRole('group', { name: 'Avaliação 2', exact: true });
-  await expect(first.getByLabel('Fuso UTC')).toHaveValue('');
+  await expect(first.getByLabel('Horário')).toHaveValue('');
   await second.getByLabel('Decisão').selectOption('discarded');
   await page.getByRole('button', { name: 'Selecionar pendentes' }).click();
   await expect(first.getByLabel('Decisão')).toHaveValue('selected');
@@ -230,7 +231,6 @@ test('revisão real permite corrigir e selecionar em lote sem gravar eventos', a
   await first.getByLabel('Tipo', { exact: false }).selectOption('trabalho');
   await first.getByLabel('Data', { exact: false }).fill('2026-12-01');
   await first.getByLabel('Horário').fill('14:30');
-  await first.getByLabel('Fuso UTC').fill('-03:00');
   await page.getByRole('button', { name: 'Conferir selecionados' }).click();
   await expect(page.getByText('Campos conferidos. Nenhum evento foi salvo na agenda.')).toBeVisible();
   await first.getByLabel('Título').fill('ab');
@@ -329,6 +329,61 @@ async function setup(page, { guest = false, items = [], total = items.length, de
 async function fillUpload(page) {
   await page.getByLabel('Selecionar PDF', { exact: true }).setInputFiles(pdf);
 }
+
+for (const [width, theme] of [[360, 'light'], [1365, 'dark']]) {
+  test(`Revisar datas sugere o horário da oferta e confirma a edição em ${width}px`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width, height: 1000 });
+    const exam = { ...candidate, suggestedDate: '2026-11-10', ambiguousFields: ['hora'], sourceExcerpt: 'Prova em 10/11/2026.' };
+    await setup(page, { detail: { ...plan, status: 'concluido', candidates: [exam] } });
+    await page.route(`**/api/v1/class-offerings/${plan.offeringId}`, route => route.fulfill({
+      json: { id: plan.offeringId, available: true, schedule: '3T23 5M12' },
+    }));
+    const confirmations = [];
+    await page.route(`**/api/v1/syllabus/${plan.id}/confirm`, route => {
+      const payload = route.request().postDataJSON();
+      confirmations.push(payload);
+      return route.fulfill({ json: { syllabusId: plan.id, events: [{
+        id: 'calendar-exam', title: exam.title, starts_at: payload.candidates[0].startsAt,
+        origin: { syllabusId: plan.id, candidateId: exam.id },
+      }] } });
+    });
+    await page.goto(`/plano-de-ensino?oferta=${plan.offeringId}&plano=${plan.id}&etapa=3`);
+    if (theme === 'light') await page.getByRole('button', { name: /tema/i }).click();
+    const examFields = page.getByRole('group', { name: 'Avaliação 1' });
+    const time = examFields.getByLabel('Horário');
+    await expect(time).toHaveValue('14:00');
+    await expect(time).toHaveAccessibleDescription('Sugerido pelo horário da turma. Confira antes de confirmar.');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await examFields.screenshot({ path: testInfo.outputPath('class-time.png') });
+
+    await examFields.getByLabel('Data', { exact: true }).fill('2026-11-12');
+    await expect(time).toHaveValue('08:00');
+    await time.fill('09:30');
+    await expect(page.getByText('Sugerido pelo horário da turma.', { exact: false })).toHaveCount(0);
+    await examFields.getByLabel('Decisão').selectOption('selected');
+    await page.getByRole('button', { name: 'Conferir selecionados' }).click();
+    const confirm = page.getByRole('button', { name: 'Confirmar e importar' });
+    await expect(confirm).toBeDisabled();
+    expect(confirmations).toEqual([]);
+    await page.getByRole('checkbox', { name: 'Conferi as avaliações e a turma de destino.' }).check();
+    await confirm.click();
+    await expect(page).toHaveURL(/etapa=4/);
+    expect(confirmations).toHaveLength(1);
+    expect(confirmations[0].candidates[0].startsAt).toBe('2026-11-12T09:30-03:00');
+  });
+}
+
+test('plano aberto pelo histórico continua editável se o catálogo estiver indisponível', async ({ page }) => {
+  await setup(page, { detail: { ...plan, status: 'concluido', candidates: [
+    { ...candidate, suggestedDate: '2026-11-10', ambiguousFields: ['hora'] },
+  ] } });
+  await page.route(`**/api/v1/class-offerings/${plan.offeringId}`, route => route.fulfill({ status: 503 }));
+  await page.goto(`/plano-de-ensino?plano=${plan.id}`);
+  const time = page.getByRole('group', { name: 'Avaliação 1' }).getByLabel('Horário');
+  await expect(time).toHaveValue('');
+  await time.fill('14:30');
+  await expect(time).toHaveValue('14:30');
+});
 
 test('envio multipart autenticado, clique duplicado, recarga e estado final sem polling', async ({ page }) => {
   await setup(page);

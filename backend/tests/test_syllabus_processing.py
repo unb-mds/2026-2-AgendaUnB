@@ -13,7 +13,7 @@ from src.database.models import AssessmentCandidate, PersonalEvent, Profile, Syl
 from src.modules.syllabus.extraction import TextPage, extract_pages, validate_candidates
 from src.modules.syllabus.gemini import GeminiProvider
 from src.modules.syllabus.processing_config import ProcessingConfig, ProcessingError
-from src.modules.syllabus.processing_task import process_document
+from src.modules.syllabus.processing_task import process_document, run_isolated
 from src.modules.syllabus.worker import SyllabusWorker
 from syllabus_samples import approved_source, cases, make_pdf
 
@@ -401,3 +401,137 @@ def test_ready_flags_do_not_bypass_database_verification(job, monkeypatch, capsy
     assert "PRIVATE_CONNECTION_DETAIL" not in output and "test-secret" not in output
     with sessions() as db:
         assert db.get(Syllabus,sid).status == "pendente"
+
+
+def test_identical_approved_hash_reuses_candidates_without_calling_provider(job):
+    worker, sessions, first_sid = job
+    other_user = uuid4()
+    second_sid = uuid4()
+    with sessions() as db:
+        db.add(Profile(id=other_user, papel="student"))
+        db.add(Syllabus(id=second_sid, user_id=other_user, file_name="copia.pdf",
+                        file_path=None, status="pendente",
+                        **approved_source("Prova 1 - 10/11/2026 - 14:00.")))
+        db.commit()
+
+    assert worker.run_once()
+    assert worker.provider.calls == 1
+    assert worker.run_once()
+    assert worker.provider.calls == 1
+    assert not worker.run_once()
+
+    with sessions() as db:
+        first_plan = db.get(Syllabus, first_sid)
+        second_plan = db.get(Syllabus, second_sid)
+        assert first_plan.status == "concluido" and first_plan.cost_reserved_usd > 0
+        assert second_plan.status == "concluido" and second_plan.cost_reserved_usd == Decimal("0")
+        assert second_plan.extracted_events_count == 1
+        assert second_plan.approved_version_id != first_plan.approved_version_id
+        cloned = db.scalars(select(AssessmentCandidate).where(AssessmentCandidate.plano_id == second_sid)).all()
+        assert len(cloned) == 1
+        assert cloned[0].title == "Prova 1"
+        assert cloned[0].data_sugerida.isoformat() == "2026-11-10"
+        assert cloned[0].hora_sugerida.strftime("%H:%M") == "14:00"
+        assert cloned[0].status == "pendente"
+        assert cloned[0].version_id == second_plan.approved_version_id
+
+
+class _RateLimitedProvider:
+    def extract(self, pages):
+        raise ProcessingError("falha_ia", retryable=True, rate_limited=True)
+
+
+def test_rate_limit_429_schedules_extended_backoff_across_subprocess(job):
+    worker, sessions, sid = job
+    worker.config = replace(worker.config, retry_delay_seconds=2, rate_limit_delay_seconds=65)
+    transport = httpx.MockTransport(lambda request: httpx.Response(429, text="quota exceeded"))
+    with pytest.raises(ProcessingError) as caught:
+        GeminiProvider(replace(worker.config, api_key="secret", provider_terms_ready=True), transport=transport).extract([TextPage(1, "doc")])
+    assert caught.value.retryable is True and caught.value.rate_limited is True
+
+    worker.provider = _RateLimitedProvider()
+    worker.runner = run_isolated
+
+    before = datetime.now(timezone.utc)
+    assert worker.run_once()
+    with sessions() as db:
+        plan = db.get(Syllabus, sid)
+        assert plan.status == "pendente"
+        next_at = plan.next_attempt_at.replace(tzinfo=timezone.utc) if plan.next_attempt_at.tzinfo is None else plan.next_attempt_at
+        assert next_at >= before + timedelta(seconds=60)
+
+
+def test_pacing_waits_only_between_external_provider_calls(job):
+    worker, sessions, first_sid = job
+    second_sid = uuid4()
+    third_sid = uuid4()
+    sleeps = []
+    clock_now = [100.0]
+
+    def fake_sleep(seconds):
+        sleeps.append(seconds)
+        clock_now[0] += seconds
+
+    with sessions() as db:
+        first = db.get(Syllabus, first_sid)
+        db.add(Syllabus(id=second_sid, user_id=first.user_id, file_name="igual.pdf",
+                        file_path=None, status="pendente",
+                        **approved_source("Prova 1 - 10/11/2026 - 14:00.")))
+        db.add(Syllabus(id=third_sid, user_id=first.user_id, file_name="diferente.pdf",
+                        file_path=None, status="pendente",
+                        **approved_source("Prova 2 - 15/11/2026 - 10:00.")))
+        db.commit()
+
+    def multi_extract(pages):
+        worker.provider.calls += 1
+        if "Prova 2" in pages[0].texto:
+            return raw_candidate(titulo="Prova 2", data_sugerida="2026-11-15", hora_sugerida="10:00",
+                                 trecho_origem="Prova 2 - 15/11/2026 - 10:00.")
+        return raw_candidate()
+
+    worker.provider.extract = multi_extract
+    paced_worker = SyllabusWorker(
+        sessions, None, worker.provider, replace(worker.config, min_interval_seconds=4.0),
+        runner=process_document, pace=True, sleep=fake_sleep, clock=lambda: clock_now[0],
+    )
+    assert paced_worker.run_once()  # 1st external call -> no sleep
+    assert paced_worker.run_once()  # 2nd item (cache hit) -> no sleep
+    assert paced_worker.run_once()  # 3rd item (external call) -> sleeps 4.0s
+    assert sleeps == [4.0]
+    assert worker.provider.calls == 2
+
+
+def test_spawn_worker_drain_respects_flags_and_single_active_process(monkeypatch):
+    import src.modules.syllabus.worker as module
+
+    monkeypatch.setattr(module, "_ACTIVE_WORKER", None)
+    for key in ("SYLLABUS_WORKER_ENABLED", "SYLLABUS_PRIVACY_READY", "SYLLABUS_PROVIDER_TERMS_READY", "GEMINI_API_KEY"):
+        monkeypatch.delenv(key, raising=False)
+    assert module.spawn_worker_drain() is False
+
+    monkeypatch.setenv("SYLLABUS_WORKER_ENABLED", "true")
+    monkeypatch.setenv("SYLLABUS_PRIVACY_READY", "true")
+    monkeypatch.setenv("SYLLABUS_PROVIDER_TERMS_READY", "true")
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+
+    spawned = []
+
+    class FakeProc:
+        def __init__(self):
+            self.alive = True
+
+        def poll(self):
+            return None if self.alive else 0
+
+    def fake_popen(cmd, **kwargs):
+        proc = FakeProc()
+        spawned.append((cmd, proc))
+        return proc
+
+    monkeypatch.setattr(module.subprocess, "Popen", fake_popen)
+    assert module.spawn_worker_drain() is True
+    assert module.spawn_worker_drain() is False  # Já há processo ativo.
+    spawned[0][1].alive = False
+    assert module.spawn_worker_drain() is True
+    assert len(spawned) == 2
+    assert "--drain" in spawned[0][0] and "--max-items" in spawned[0][0]

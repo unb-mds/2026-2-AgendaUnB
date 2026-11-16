@@ -70,7 +70,11 @@ class GeminiProvider:
                                             "Content-Type": "application/json", "Api-Revision": "2026-05-20"},
                                    content=encoded) as response:
                     if response.status_code != 200:
-                        raise ProcessingError("falha_ia", retryable=response.status_code in (429, 500, 502, 503, 504))
+                        raise ProcessingError(
+                            "falha_ia",
+                            retryable=response.status_code in (429, 500, 502, 503, 504),
+                            rate_limited=(response.status_code == 429),
+                        )
                     chunks = bytearray()
                     for chunk in response.iter_bytes():
                         chunks.extend(chunk)

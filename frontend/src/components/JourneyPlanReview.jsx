@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import SyllabusReviewPanel from './SyllabusReviewPanel';
 
-export default function JourneyPlanReview({ plan, onConfirmed }) {
+export default function JourneyPlanReview({ plan, classSchedule, onConfirmed }) {
   const [acknowledged, setAcknowledged] = useState(false);
   return <div>
     <h2>A IA sugere. Você confere.</h2>
@@ -9,6 +9,6 @@ export default function JourneyPlanReview({ plan, onConfirmed }) {
       <input type="checkbox" checked={acknowledged} onChange={event => setAcknowledged(event.target.checked)} />
       Conferi as avaliações e a turma de destino.
     </label>
-    <SyllabusReviewPanel selected plan={plan} confirmationAllowed={acknowledged} onConfirmed={onConfirmed} onEdited={() => setAcknowledged(false)} />
+    <SyllabusReviewPanel selected plan={plan} classSchedule={classSchedule} confirmationAllowed={acknowledged} onConfirmed={onConfirmed} onEdited={() => setAcknowledged(false)} />
   </div>;
 }
