@@ -58,9 +58,12 @@ export default function SyllabusReviewEditor({ value, onChange, onConfirm, class
           </select>
           <div className="syllabus-review-fields">
             {fields.map(([name, label, type]) => {
+              const isAssignment = item.type.toLowerCase() === 'trabalho';
+              const optionalTime = name === 'time' && isAssignment;
               const hint = name === 'time' && item.timeSource === 'catalog';
+              const assignmentHint = optionalTime && !item.time;
               return <div className={`syllabus-review-field field-${name}`} key={name}>
-                <label htmlFor={`${base}-${name}`}>{label}{item.decision === 'selected' ? ' *' : ''}</label>
+                <label htmlFor={`${base}-${name}`}>{label}{item.decision === 'selected' && !optionalTime ? ' *' : ''}</label>
                 {name === 'type' ? <select id={`${base}-${name}`} value={item.type.toLowerCase()} disabled={item.decision === 'discarded'}
                   aria-invalid={errors.type ? true : undefined} aria-describedby={errors.type ? `${base}-type-error` : undefined}
                   onChange={e => update(item.id, { type: e.target.value })}>
@@ -69,11 +72,12 @@ export default function SyllabusReviewEditor({ value, onChange, onConfirm, class
                   <option value="prova">Prova</option><option value="trabalho">Trabalho</option>
                 </select> : <input id={`${base}-${name}`} type={type} value={item[name]} step={name === 'time' ? 'any' : undefined}
                   disabled={item.decision === 'discarded'}
-                  required={item.decision === 'selected' && name !== 'type'}
+                  required={item.decision === 'selected' && name !== 'type' && !optionalTime}
                   aria-invalid={errors[name] ? true : undefined}
-                  aria-describedby={errors[name] ? `${base}-${name}-error` : hint ? `${base}-class-time` : undefined}
+                  aria-describedby={errors[name] ? `${base}-${name}-error` : hint ? `${base}-class-time` : assignmentHint ? `${base}-assignment-time` : undefined}
                   onChange={e => update(item.id, { [name]: e.target.value })} />}
                 {hint && <small id={`${base}-class-time`}>Sugerido pelo horário da turma. Confira antes de confirmar.</small>}
+                {assignmentHint && <small id={`${base}-assignment-time`}>Não encontrado no plano (opcional — salvo como dia inteiro).</small>}
                 {errors[name] && <p className="syllabus-review-error" id={`${base}-${name}-error`}>{errors[name]}</p>}
               </div>;
             })}

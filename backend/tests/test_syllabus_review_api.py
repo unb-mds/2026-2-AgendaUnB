@@ -329,3 +329,25 @@ def test_idempotency_key_is_required(api):
     )
 
     assert response.status_code == 422
+
+
+def test_confirmation_accepts_all_day_assignment_without_time(api):
+    client, sessions, auth, _ = api
+    syllabus_id, _, assignment_id = _create_syllabus(sessions, auth["value"].id)
+
+    response = _confirm(client, syllabus_id, {"candidates": [{
+        "candidateId": str(assignment_id),
+        "title": "Trabalho final",
+        "type": "trabalho",
+        "all_day": True,
+        "start_date": "2026-12-01",
+        "end_date": "2026-12-02",
+    }]}, "all-day-assignment-001")
+
+    assert response.status_code == 200, response.text
+    with sessions() as db:
+        event = db.scalar(select(PersonalEvent).where(PersonalEvent.origin_candidate_id == assignment_id))
+        assert event is not None
+        assert event.all_day is True
+        assert event.start_date.isoformat() == "2026-12-01"
+        assert event.end_date.isoformat() == "2026-12-02"
