@@ -10,6 +10,16 @@ function minutes(time) {
   return hours * 60 + mins;
 }
 
+function blockStart(classes) {
+  const slots = [...classes.entries()].sort(([a], [b]) => a.localeCompare(b));
+  if (!slots.length) return '';
+  // A grade da UnB tem intervalos de até 10 min entre períodos consecutivos.
+  for (let index = 1; index < slots.length; index++) {
+    if (minutes(slots[index][0]) - minutes(slots[index - 1][1]) > 10) return '';
+  }
+  return slots[0][0];
+}
+
 export function classStartOnDate(schedule, date) {
   if (typeof schedule !== 'string' || !schedule.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return '';
   const day = new Date(`${date}T00:00:00Z`);
@@ -28,11 +38,37 @@ export function classStartOnDate(schedule, date) {
     }
   }
 
-  const slots = [...classes.entries()].sort(([a], [b]) => a.localeCompare(b));
-  if (!slots.length) return '';
-  // A grade da UnB tem intervalos de até 10 min entre períodos consecutivos.
-  for (let index = 1; index < slots.length; index++) {
-    if (minutes(slots[index][0]) - minutes(slots[index - 1][1]) > 10) return '';
+  return blockStart(classes);
+}
+
+export function defaultClassStart(schedule) {
+  if (typeof schedule !== 'string' || !schedule.trim()) return '';
+  const byDay = new Map();
+
+  for (const code of schedule.trim().toUpperCase().split(/[\s,;]+/)) {
+    const match = /^([2-7]+)([MTN])([1-6]+)$/.exec(code);
+    if (!match) return '';
+    const [, days, shift, hours] = match;
+    for (const day of days) {
+      let classes = byDay.get(day);
+      if (!classes) {
+        classes = new Map();
+        byDay.set(day, classes);
+      }
+      for (const hour of hours) {
+        const period = periods[shift][Number(hour) - 1];
+        if (!period) return '';
+        classes.set(period[0], period[1]);
+      }
+    }
   }
-  return slots[0][0];
+
+  if (!byDay.size) return '';
+  const starts = new Set();
+  for (const classes of byDay.values()) {
+    const start = blockStart(classes);
+    if (!start) return '';
+    starts.add(start);
+  }
+  return starts.size === 1 ? [...starts][0] : '';
 }
