@@ -122,14 +122,18 @@ def validate_candidates(raw: str, pages: list[TextPage]) -> ExtractionResult:
     try:
         output = ExtractionData.model_validate_json(raw)
     except (ValidationError, ValueError):
-        raise ProcessingError("falha_ia") from None
+        raise ProcessingError("falha_ia", reason="schema_invalid") from None
     sources = {page.pagina: normalize(page.texto) for page in pages}
     result = ExtractionResult([])
     seen = set()
     for item in output.candidatos:
         evidence = normalize(item.trecho_origem)
-        if evidence not in sources.get(item.pagina_origem, "") or normalize(item.titulo) not in evidence:
-            raise ProcessingError("falha_ia")
+        if item.pagina_origem not in sources:
+            raise ProcessingError("falha_ia", reason="page_mismatch")
+        if evidence not in sources[item.pagina_origem]:
+            raise ProcessingError("falha_ia", reason="evidence_mismatch")
+        if normalize(item.titulo) not in evidence:
+            raise ProcessingError("falha_ia", reason="title_mismatch")
         # Defesa conservadora: rótulos de aula/bibliografia não viram provas.
         title = normalize(item.titulo)
         if re.match(r"^(aula|bibliografia|refer[eê]ncias?|leitura|feriado)\b", title):
