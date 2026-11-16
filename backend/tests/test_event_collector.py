@@ -256,3 +256,202 @@ def test_multicampus_normalization_coverage(location, expected_campus):
     from src.modules.events.collector import _normalize_campus
 
     assert _normalize_campus(location) == expected_campus
+
+
+class _FakeResult:
+    def __init__(self, scalar_val=None, rows=None):
+        self._scalar = scalar_val
+        self._rows = rows or []
+
+    def scalar_one(self):
+        return self._scalar
+
+    def mappings(self):
+        return self
+
+    def all(self):
+        return self._rows
+
+
+class _FakeTransaction:
+    def __init__(self, conn):
+        self._conn = conn
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type is not None:
+            self._conn.rollback()
+        else:
+            self._conn.commit()
+        return False
+
+
+class _FakeConnection:
+    """Simula a interação SQL do orquestrador collect_events para validação unitária."""
+
+    def __init__(self, *, lock_acquired=True, existing_events=None):
+        self.lock_acquired = lock_acquired
+        self.unlocked = False
+        self.commits = 0
+        self.rollbacks = 0
+        self.runs = {}
+        self.stored_events = {}
+        self.existing_events = existing_events or []
+        self._run_seq = 0
+
+    def scalar(self, statement, params=None):
+        sql = str(statement)
+        if "pg_try_advisory_lock" in sql:
+            return self.lock_acquired
+        return None
+
+    def begin(self):
+        return _FakeTransaction(self)
+
+    def commit(self):
+        self.commits += 1
+
+    def rollback(self):
+        self.rollbacks += 1
+
+    def execute(self, statement, params=None):
+        import json as _json
+
+        sql = str(statement)
+        if "insert into public.coletas_eventos" in sql:
+            self._run_seq += 1
+            run_id = f"00000000-0000-4000-8000-{self._run_seq:012d}"
+            self.runs[run_id] = {"status": "executando", "erro_codigo": None}
+            return _FakeResult(scalar_val=run_id)
+        if "from public.eventos" in sql and "between :start_window and :end_window" in sql:
+            return _FakeResult(rows=self.existing_events)
+        if "registrar_evento_coletado" in sql:
+            payload = _json.loads(params["payload"])
+            key = (payload["fonte"], payload["fonte_id"])
+            prev = self.stored_events.get(key)
+            status = "pendente" if (payload.get("ambiguo") or payload.get("tipo") == "informe" or payload.get("possivel_duplicata_de")) else "aprovado"
+            if prev is None:
+                action = "criado"
+                self.stored_events[key] = {"hash": payload["hash"], "status": status, "payload": payload}
+            elif prev["hash"] == payload["hash"]:
+                action = "inalterado"
+                status = prev["status"]
+            else:
+                action = "atualizado"
+                self.stored_events[key] = {"hash": payload["hash"], "status": status, "payload": payload}
+            return _FakeResult(scalar_val={"id": f"ev-{payload['fonte_id']}", "acao": action, "status": status})
+        if "update public.coletas_eventos" in sql:
+            run_id = str(params["id"])
+            self.runs[run_id] = {
+                "status": params["status"],
+                "erro_codigo": params["error_code"],
+                "read": params["read"],
+                "created": params["created"],
+                "updated": params["updated"],
+                "unchanged": params["unchanged"],
+                "reconciled": params["reconciled"],
+                "review": params["review"],
+            }
+            return _FakeResult()
+        if "pg_advisory_unlock" in sql:
+            self.unlocked = True
+            return _FakeResult(scalar_val=True)
+        return _FakeResult()
+
+
+def test_collect_events_rejects_concurrent_execution_when_advisory_lock_is_held():
+    from src.modules.events.collector import collect_events
+
+    conn = _FakeConnection(lock_acquired=False)
+    result = collect_events(conn)
+
+    assert result == {"status": "ignorada", "erro": "coleta_em_andamento"}
+    assert conn.runs == {}
+
+
+def test_collect_events_successive_runs_and_date_update_on_same_record():
+    from src.modules.events.collector import collect_events
+
+    current_dates = {"value": "18/11/2026 - 18/11/2026"}
+
+    def handler(request):
+        if request.url.path == "/robots.txt":
+            return httpx.Response(200, text=_robots(), headers={"content-type": "text/plain"})
+        if request.url.path == "/component/agenda/agendas":
+            return httpx.Response(200, text=_listing(offset=None), headers={"content-type": "text/html"})
+        return httpx.Response(
+            200,
+            text=_detail(dates=current_dates["value"]),
+            headers={"content-type": "text/html"},
+        )
+
+    conn = _FakeConnection()
+    client1 = AgendaUnBClient(transport=httpx.MockTransport(handler), sleep_fn=lambda _: None, clock=lambda: 1)
+    first = collect_events(conn, client=client1)
+    assert first["status"] == "concluida"
+    assert (first["read"], first["created"], first["unchanged"], first["updated"]) == (1, 1, 0, 0)
+    assert conn.unlocked is True
+
+    # 2ª execução sucessiva com mesmos dados -> inalterado, sem duplicata
+    client2 = AgendaUnBClient(transport=httpx.MockTransport(handler), sleep_fn=lambda _: None, clock=lambda: 1)
+    second = collect_events(conn, client=client2)
+    assert second["status"] == "concluida"
+    assert (second["read"], second["created"], second["unchanged"], second["updated"]) == (1, 0, 1, 0)
+    assert len(conn.stored_events) == 1
+
+    # 3ª execução com data atualizada na origem -> atualizado no mesmo registro
+    current_dates["value"] = "19/11/2026 - 19/11/2026"
+    client3 = AgendaUnBClient(transport=httpx.MockTransport(handler), sleep_fn=lambda _: None, clock=lambda: 1)
+    third = collect_events(conn, client=client3)
+    assert third["status"] == "concluida"
+    assert (third["read"], third["created"], third["unchanged"], third["updated"]) == (1, 0, 0, 1)
+    assert len(conn.stored_events) == 1
+    assert conn.stored_events[("agenda_unb_noticias", "42")]["payload"]["inicio"] == "2026-11-19T14:00:00-03:00"
+
+
+def test_collect_events_preserves_existing_records_when_source_is_unavailable():
+    from src.modules.events.collector import collect_events
+
+    conn = _FakeConnection()
+    conn.stored_events[("agenda_unb_noticias", "42")] = {
+        "hash": "hash-existente",
+        "status": "aprovado",
+        "payload": {"titulo": "Evento preservado"},
+    }
+
+    def failing_handler(request):
+        if request.url.path == "/robots.txt":
+            return httpx.Response(200, text=_robots(), headers={"content-type": "text/plain"})
+        return httpx.Response(503, text="Service Unavailable")
+
+    client = AgendaUnBClient(transport=httpx.MockTransport(failing_handler), sleep_fn=lambda _: None, clock=lambda: 1)
+    result = collect_events(conn, client=client)
+
+    assert result["status"] == "falha"
+    assert result["erro"] == "http_503"
+    assert conn.runs[result["id"]]["status"] == "falha"
+    assert conn.runs[result["id"]]["erro_codigo"] == "http_503"
+    # Registro anterior permanece intacto
+    assert conn.stored_events[("agenda_unb_noticias", "42")]["payload"]["titulo"] == "Evento preservado"
+    assert conn.unlocked is True
+
+
+def test_cli_arguments_support_single_run_interval_and_daemon_flag():
+    from src.modules.events.collector import DEFAULT_DAEMON_INTERVAL_HOURS, _parse_args
+
+    single = _parse_args([])
+    assert single.daemon is False
+    assert single.interval_hours is None
+
+    daemon = _parse_args(["--daemon"])
+    assert daemon.daemon is True
+    assert daemon.interval_hours == DEFAULT_DAEMON_INTERVAL_HOURS
+
+    custom_daemon = _parse_args(["--daemon", "--interval-hours", "2"])
+    assert custom_daemon.interval_hours == 2.0
+
+    with pytest.raises(SystemExit):
+        _parse_args(["--interval-hours", "0.5"])
+

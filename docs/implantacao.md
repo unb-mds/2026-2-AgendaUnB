@@ -228,13 +228,15 @@ O coletor é um processo desacoplado da API, que utiliza `DATABASE_URL` do ambie
    - `python -m src.modules.events.collector --interval-hours <h>`: execução recorrente com intervalo mínimo de 1 hora.
 
 #### Status de Validação e Evidências
-| Cenário / Requisito | Validação Realizada (Local) | Evidência Pendente na Hospedagem |
+Consulte o [Relatório técnico de validação S7-B05](s7-b05-validacao.md) para a rastreabilidade completa dos critérios de aceite.
+
+| Cenário / Requisito | Validação Realizada (Local / CI) | Acompanhamento na Hospedagem |
 | --- | --- | --- |
-| Deduplicação por similaridade de título e data | 30 testes unitários em `test_event_collector.py` cobrindo limiar $\ge 0{,}72$, intervalo $\le 2$ dias, acentos/pontuação e prevenção de falsos positivos com números/edições. | Homologação com dados reais de produção e moderação humana via RPC `moderar_sugestao`. |
+| Deduplicação por similaridade de título e data | 34 testes em `test_event_collector.py` e 18 em `test_event_collection_database.py` cobrindo limiares ($\ge 0{,}80$ / $0{,}85$ / $0{,}92$), janela $\le 2$ dias, acentos/pontuação e prevenção de falsos positivos com números/edições. | Homologação com dados reais de produção e integração visual da fila de revisão em S8-F02 ([#80](https://github.com/unb-mds/2026-2-AgendaUnB/issues/80)). |
 | Marcação de dia inteiro vs `00:00` | Termos explícitos reconhecidos gerando datas civis (`dia_inteiro: True`); horários `00:00` sem indicativo mantidos em revisão (`ambiguo: True`). | Verificação amostral nos eventos extraídos diretamente de `noticias.unb.br`. |
 | Procedência visível (RF16) | Contratos públicos em `EventRead` (`source`, `source_url`), API (`test_events_api.py`), cache frontend (`publicEventsCache.test.js`) e UI (`PaginaDeEvento.jsx`, `SecondPage.jsx`). | Inspeção visual no deploy da Vercel após publicação em `main`. |
 | Cobertura multicampus | Mapeamento e normalização dos 5 campi da UnB (Darcy Ribeiro, FCTE, FCTS, FUP, FAL). | Conferência dos nomes de campus gravados no banco remoto. |
-| Execuções concorrentes e falha da fonte | Advisory lock implementado e testado; rollback de transação e preservação de dados existentes em caso de erro HTTP/timeout. | Execução simultânea de dois runners no GitHub Actions e simulação de indisponibilidade da fonte em homologação. |
+| Execuções concorrentes e falha da fonte | Advisory lock (`pg_try_advisory_lock(708073)` e lock por item) validado; rollback de transação e preservação de dados existentes em caso de erro HTTP/timeout (`status = 'falha'`). | Ativação de `PRODUCTION_EVENT_COLLECTION_ENABLED=true` no environment `production-jobs` após merge em `main`. |
 
 | Ambiente | Aplicação e dados | Uso e publicação |
 | --- | --- | --- |
