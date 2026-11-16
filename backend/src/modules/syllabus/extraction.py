@@ -1,6 +1,7 @@
 """Texto e sugestões não confiáveis: validar procedência antes de persistir."""
 import io
 import re
+import unicodedata
 from dataclasses import dataclass
 from datetime import date, time
 from typing import Literal
@@ -58,8 +59,56 @@ class ExtractionResult:
     unsupported_dates: int = 0
 
 
+_INVISIBLE_RE = re.compile(r"[\u00ad\u200b-\u200d\ufeff]")
+_DASH_RE = re.compile(r"[\u2010-\u2015\u2212]")
+_TOKEN_RE = re.compile(r"[^\W_]+(?:[/:.][^\W_]+)*")
+
+
 def normalize(value: str) -> str:
-    return " ".join(value.split()).casefold()
+    cleaned = unicodedata.normalize("NFKC", value)
+    cleaned = _INVISIBLE_RE.sub("", cleaned)
+    cleaned = _DASH_RE.sub("-", cleaned)
+    cleaned = re.sub(r"(\d)\s*/\s*(\d)", r"\1/\2", cleaned)
+    return " ".join(cleaned.split()).casefold()
+
+
+def _tokens(value: str) -> list[str]:
+    return _TOKEN_RE.findall(normalize(value))
+
+
+def _evidence_in_source(evidence_raw: str, source_raw: str, *, max_gap: int = 8) -> bool:
+    norm_evidence = normalize(evidence_raw)
+    norm_source = normalize(source_raw)
+    if not norm_evidence:
+        return False
+    if norm_evidence in norm_source:
+        return True
+    segments = [seg.strip() for seg in re.split(r"\.{3,}|…", evidence_raw) if seg.strip()]
+    seg_tokens = [toks for seg in segments if (toks := _tokens(seg))]
+    source_tokens = _tokens(source_raw)
+    if not seg_tokens or not source_tokens:
+        return False
+    pos = 0
+    for toks in seg_tokens:
+        n = len(toks)
+        found_end = None
+        for start in range(pos, len(source_tokens)):
+            if source_tokens[start] != toks[0]:
+                continue
+            si = start + 1
+            ti = 1
+            max_end = min(len(source_tokens), start + n + max_gap)
+            while ti < n and si < max_end:
+                if source_tokens[si] == toks[ti]:
+                    ti += 1
+                si += 1
+            if ti == n:
+                found_end = si
+                break
+        if found_end is None:
+            return False
+        pos = found_end
+    return True
 
 
 def extract_pages(content: bytes, config: ProcessingConfig) -> list[TextPage]:
@@ -95,11 +144,14 @@ def dates_in_evidence(value: str) -> set[date]:
     found = set()
     triples = [(int(y), int(m), int(d)) for d, m, y in
                re.findall(r"(?<!\d)(\d{1,2})[/-](\d{1,2})[/-](\d{4})(?!\d)", value)]
+    triples += [(int(y), int(m), int(d)) for d, m, y in
+                re.findall(r"(?<!\d)(\d{1,2})\.(\d{1,2})\.(\d{4})(?!\d)", value)]
     triples += [(int(y), int(m), int(d)) for y, m, d in
                 re.findall(r"(?<!\d)(\d{4})-(\d{2})-(\d{2})(?!\d)", value)]
     for index, month in enumerate(MONTHS, 1):
+        month_pattern = "mar[cç]o" if month == "março" else month
         triples += [(int(y), index, int(d)) for d, y in re.findall(
-            rf"(?<!\d)(\d{{1,2}})\s+de\s+{month}\s+de\s+(\d{{4}})(?!\d)", value.casefold())]
+            rf"(?<!\d)(\d{{1,2}})\s+de\s+{month_pattern}\s+de\s+(\d{{4}})(?!\d)", value.casefold())]
     for year, month, day in triples:
         try:
             found.add(date(year, month, day))
@@ -123,23 +175,27 @@ def validate_candidates(raw: str, pages: list[TextPage]) -> ExtractionResult:
         output = ExtractionData.model_validate_json(raw)
     except (ValidationError, ValueError):
         raise ProcessingError("falha_ia", reason="schema_invalid") from None
-    sources = {page.pagina: normalize(page.texto) for page in pages}
+    sources = {page.pagina: page.texto for page in pages}
     result = ExtractionResult([])
     seen = set()
+    first_failure_reason: str | None = None
     for item in output.candidatos:
         evidence = normalize(item.trecho_origem)
         if item.pagina_origem not in sources:
-            raise ProcessingError("falha_ia", reason="page_mismatch")
-        if evidence not in sources[item.pagina_origem]:
-            raise ProcessingError("falha_ia", reason="evidence_mismatch")
-        if normalize(item.titulo) not in evidence:
-            raise ProcessingError("falha_ia", reason="title_mismatch")
+            first_failure_reason = first_failure_reason or "page_mismatch"
+            continue
+        if not _evidence_in_source(item.trecho_origem, sources[item.pagina_origem]):
+            first_failure_reason = first_failure_reason or "evidence_mismatch"
+            continue
+        if not _evidence_in_source(item.titulo, item.trecho_origem, max_gap=4):
+            first_failure_reason = first_failure_reason or "title_mismatch"
+            continue
         # Defesa conservadora: rótulos de aula/bibliografia não viram provas.
         title = normalize(item.titulo)
-        if re.match(r"^(aula|bibliografia|refer[eê]ncias?|leitura|feriado)\b", title):
+        if re.match(r"^(aula|bibliografia|refer[eê]ncias?|leitura|feriado|crit[eé]rios?|sistema|m[eé]todo)\b", title):
             continue
-        marker = r"\b(prova|exame)\b" if item.tipo == "prova" else r"\btrabalho(?:s)?\b"
-        if not re.search(marker, title):
+        marker = r"\b(provas?|exames?|p[1-9]|pf|avalia(?:ç|c)[ãa]o)\b" if item.tipo == "prova" else r"\btrabalhos?\b"
+        if not (re.search(marker, title) or re.search(marker, evidence)):
             continue
         ambiguous = set(item.campos_ambiguos)
         # Uma data ISO plausível não basta: exigir data completa e inequívoca
@@ -162,4 +218,6 @@ def validate_candidates(raw: str, pages: list[TextPage]) -> ExtractionResult:
         if identity not in seen:
             seen.add(identity)
             result.candidates.append(item)
+    if output.candidatos and not result.candidates and first_failure_reason is not None:
+        raise ProcessingError("falha_ia", reason=first_failure_reason)
     return result
