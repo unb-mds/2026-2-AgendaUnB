@@ -215,8 +215,8 @@ class SyllabusWorker:
             ))
             db.commit()
         total = elapsed_ms(lease.created_at, utcnow())
-        logger.info("syllabus_attempt execution=%d code=%s retry=%s duration_ms=%d total_duration_ms=%d over_target=%s",
-                    lease.execution, error.code, retry, duration_ms, total, total >= 20000)
+        logger.info("syllabus_attempt execution=%d code=%s reason=%s retry=%s duration_ms=%d total_duration_ms=%d over_target=%s",
+                    lease.execution, error.code, error.reason or "none", retry, duration_ms, total, total >= 20000)
 
     def run_once(self) -> bool:
         lease = self.claim()
