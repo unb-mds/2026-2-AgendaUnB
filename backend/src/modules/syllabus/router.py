@@ -1,6 +1,7 @@
 import time
 import hashlib
 import json
+from datetime import timezone
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, Response, UploadFile, status
@@ -39,6 +40,7 @@ from src.modules.syllabus.preparation import (
     owned_plan, preview, authorize,
 )
 from src.modules.syllabus.services import UPLOAD_VALIDATION_TIMEOUT_SECONDS
+from src.modules.syllabus.worker import spawn_worker_drain, utcnow
 
 router = APIRouter(prefix="/syllabus", tags=["syllabus"])
 
@@ -348,6 +350,7 @@ def authorize_syllabus_text(syllabus_id: UUID, payload: ExtractionAuthorization,
     plan = owned_plan(db, current_user.id, syllabus_id, lock=True)
     try:
         plan = authorize(db, plan, payload, ProcessingConfig.from_env())
+        spawn_worker_drain()
         response = SyllabusUploadResponse.model_validate(plan)
         response.message = "Autorização registrada. Consulte o andamento do plano."
         return response
@@ -419,6 +422,12 @@ def get_syllabus_status(
                     )
                 ).all()
             )
+    if is_owner and syllabus.status == "pendente" and syllabus.authorized_at is not None:
+        next_at = syllabus.next_attempt_at
+        if next_at is not None and next_at.tzinfo is None:
+            next_at = next_at.replace(tzinfo=timezone.utc)
+        if next_at is None or next_at <= utcnow():
+            spawn_worker_drain()
 
     return SyllabusDetailResponse(
         id=syllabus.id,
