@@ -212,19 +212,29 @@ para conferir o banco local antes de ativar o processo.
 
 ### Coleta da Agenda UnB Notícias (S7-B05)
 
-O coletor é um processo separado da API, com `DATABASE_URL` do ambiente:
+O coletor é um processo desacoplado da API, que utiliza `DATABASE_URL` do ambiente e advisory locks (`pg_advisory_xact_lock`) no PostgreSQL para garantir idempotência e impedir concorrência.
 
-```sh
-cd backend
-python -m src.modules.events.collector --interval-hours 6
-```
+#### Formas de Execução e Ativação em Background
+1. **GitHub Actions (Ambiente Hospedado):**
+   - Configurado no workflow `.github/workflows/production-jobs.yml` através do job `collector`.
+   - Execução programada diariamente às 07h27 BRT (`cron: '27 10 * * *'`) e manual via `workflow_dispatch` com input `job: collector`.
+   - **Ativação:** requer definir a variável `PRODUCTION_EVENT_COLLECTION_ENABLED = 'true'` no environment `production-jobs` e vincular o secret `DATABASE_URL` com TLS.
+2. **Automação Local via Makefile:**
+   - `make events-collect`: executa uma única passagem de coleta localmente.
+   - `make events-collect-daemon`: executa o coletor em modo daemon com intervalo padrão.
+3. **CLI Direto no Backend:**
+   - `python -m src.modules.events.collector`: execução única.
+   - `python -m src.modules.events.collector --daemon`: execução contínua em background.
+   - `python -m src.modules.events.collector --interval-hours <h>`: execução recorrente com intervalo mínimo de 1 hora.
 
-O intervalo de seis horas é apenas um exemplo operacional, não uma frequência
-homologada. A opção recorrente exige pelo menos uma hora e usa advisory lock no
-PostgreSQL para impedir execuções concorrentes. Antes de habilitar o serviço em
-homologação, medir uma varredura completa e confirmar cobertura, duração e
-tratamento de falha da fonte. Nenhum serviço hospedado está configurado por este
-documento; o comando também pode ser invocado por um cron gerenciado pelo ambiente.
+#### Status de Validação e Evidências
+| Cenário / Requisito | Validação Realizada (Local) | Evidência Pendente na Hospedagem |
+| --- | --- | --- |
+| Deduplicação por similaridade de título e data | 30 testes unitários em `test_event_collector.py` cobrindo limiar $\ge 0{,}72$, intervalo $\le 2$ dias, acentos/pontuação e prevenção de falsos positivos com números/edições. | Homologação com dados reais de produção e moderação humana via RPC `moderar_sugestao`. |
+| Marcação de dia inteiro vs `00:00` | Termos explícitos reconhecidos gerando datas civis (`dia_inteiro: True`); horários `00:00` sem indicativo mantidos em revisão (`ambiguo: True`). | Verificação amostral nos eventos extraídos diretamente de `noticias.unb.br`. |
+| Procedência visível (RF16) | Contratos públicos em `EventRead` (`source`, `source_url`), API (`test_events_api.py`), cache frontend (`publicEventsCache.test.js`) e UI (`PaginaDeEvento.jsx`, `SecondPage.jsx`). | Inspeção visual no deploy da Vercel após publicação em `main`. |
+| Cobertura multicampus | Mapeamento e normalização dos 5 campi da UnB (Darcy Ribeiro, FCTE, FCTS, FUP, FAL). | Conferência dos nomes de campus gravados no banco remoto. |
+| Execuções concorrentes e falha da fonte | Advisory lock implementado e testado; rollback de transação e preservação de dados existentes em caso de erro HTTP/timeout. | Execução simultânea de dois runners no GitHub Actions e simulação de indisponibilidade da fonte em homologação. |
 
 | Ambiente | Aplicação e dados | Uso e publicação |
 | --- | --- | --- |
