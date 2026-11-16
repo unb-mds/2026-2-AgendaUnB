@@ -2,6 +2,7 @@
 import json
 import logging
 import multiprocessing
+import re
 from dataclasses import dataclass
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
@@ -47,7 +48,8 @@ def _child(send, path, storage, provider, config):
                                                   for candidate in result.extraction.candidates]},
                       unsupported_dates=result.extraction.unsupported_dates)
     except ProcessingError as error:
-        output = {"error": error.code, "retryable": error.retryable, "rate_limited": error.rate_limited}
+        reason = error.reason if re.fullmatch(r"[a-z0-9_]{1,40}", error.reason or "") else ""
+        output = {"error": error.code, "retryable": error.retryable, "rate_limited": error.rate_limited, "reason": reason}
     except Exception:
         output = {"error": "erro_interno", "retryable": True}
     try:
@@ -71,9 +73,12 @@ def run_isolated(path, storage, provider, config: ProcessingConfig) -> DocumentR
         if "error" in output:
             code = output.get("error")
             rate_limited = output.get("rate_limited", False)
-            if code not in ERROR_MESSAGES or type(output.get("retryable")) is not bool or type(rate_limited) is not bool:
+            reason = output.get("reason", "")
+            if (code not in ERROR_MESSAGES or type(output.get("retryable")) is not bool
+                    or type(rate_limited) is not bool or not isinstance(reason, str)
+                    or (reason and not re.fullmatch(r"[a-z0-9_]{1,40}", reason))):
                 raise ProcessingError("erro_interno", retryable=True)
-            raise ProcessingError(code, retryable=output["retryable"], rate_limited=rate_limited)
+            raise ProcessingError(code, retryable=output["retryable"], rate_limited=rate_limited, reason=reason)
         validated = TaskOutput.model_validate(output)
         return DocumentResult(validated.page_count,
                               ExtractionResult(validated.extraction.candidatos, validated.unsupported_dates))
