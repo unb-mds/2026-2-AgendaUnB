@@ -1,6 +1,35 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildReviewConfirmation, createCandidateReviewDraft, selectReviewItems, createReviewDraft, validReviewDate, validUtcOffset, validateReviewItem } from './syllabusReview.js';
+import { buildReviewConfirmation, createCandidateReviewDraft, selectReviewItems, createReviewDraft, updateCandidateReviewItem, validReviewDate, validUtcOffset, validateReviewItem } from './syllabusReview.js';
+
+test('o catálogo só preenche provas pendentes sem hora explícita e com data confiável', () => {
+  const exam = { id: 'a', type: 'prova', status: 'pendente', suggestedDate: '2026-11-10' };
+  const drafts = createCandidateReviewDraft([
+    exam,
+    { ...exam, id: 'b', suggestedTime: '16:30' },
+    { ...exam, id: 'c', type: 'trabalho' },
+    { ...exam, id: 'd', ambiguousFields: ['data'] },
+    { ...exam, id: 'e', status: 'confirmado' },
+  ], '3T23');
+  assert.deepEqual(drafts.map(({ time }) => time), ['14:00', '16:30', '', '', '']);
+  assert.deepEqual(drafts.map(({ timeSource }) => timeSource), ['catalog', 'plan', null, null, null]);
+  assert.ok(drafts.every(({ decision }) => decision === 'pending'));
+});
+
+test('mudar a data atualiza a sugestão da turma e preserva o horário digitado', () => {
+  const schedule = '3T23 5M12';
+  const [exam] = createCandidateReviewDraft([
+    { id: 'a', type: 'prova', status: 'pendente', suggestedDate: '2026-11-10' },
+  ], schedule);
+  const thursday = updateCandidateReviewItem(exam, { date: '2026-11-12' }, schedule);
+  assert.equal(thursday.time, '08:00');
+  assert.equal(updateCandidateReviewItem(thursday, { date: '2026-11-11' }, schedule).time, '');
+  for (const time of ['09:30', '']) {
+    const manual = updateCandidateReviewItem(thursday, { time }, schedule);
+    assert.equal(updateCandidateReviewItem(manual, { date: '2026-11-10' }, schedule).time, time);
+    assert.equal(manual.timeSource, 'manual');
+  }
+});
 
 test('candidatos usam sugestões civis e convertem startsAt explícito para Brasília', () => {
   const candidates = [

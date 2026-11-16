@@ -33,6 +33,15 @@ O campo **verificado** é o mais importante. Sem ele, a entrada declara o uso ma
 
 ## Entradas
 
+### 15/11/2026 — Sugestão de horário de prova na revisão de datas
+
+- **Quem:** Heitor Gomes Monteiro (solicitante).
+- **Ferramenta:** Codex (OpenAI), Impeccable e Playwright.
+- **O que foi pedido:** Usar o horário da oferta da turma para preencher a hora da prova na aba **Revisar datas**, com edição antes da confirmação.
+- **O que entrou no repositório:** Conversão dos códigos SIGAA retornados pela API de turmas, sugestão no editor com indicação de origem, testes de regressão e documentação da sugestão na revisão de datas. Commits `53085ee`, `cf9afbd` e `b15c30c` na branch `feat/gemini-api` (regra consolidada na `ADR-010` após atualização com `dev`).
+- **O que foi verificado:** A conversão foi conferida com a [grade SIGAA da UnB](https://design.unb.br/codigos-aulas-sigaa/) e exemplos do catálogo. Passaram 42 testes de lógica, o build do frontend e os cenários Playwright de sugestão, edição, confirmação e entrada manual com o catálogo indisponível. Os testes de navegador usaram respostas controladas da API.
+- **O que foi rejeitado ou corrigido:** A sugestão só usa o início de um bloco único no dia da prova. Horários do plano e edições manuais são preservados. Os testes de revisão foram alinhados ao fuso fixo de Brasília e ao contrato atual de confirmação. Uma divergência na mensagem de erro do envio de texto bruto também foi reproduzida na branch base e fica fora deste ajuste.
+
 ### 13/11/2026 — Roteiro de homologação S7-B02 (#68)
 
 - **Quem:** Heitor Gomes Monteiro, com assistência do Codex.
