@@ -6,7 +6,7 @@ import subprocess
 import sys
 import threading
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
@@ -29,6 +29,7 @@ from src.modules.syllabus.timing import duration_ms as elapsed_ms
 logger = logging.getLogger("agenda_unb.syllabus.worker")
 _SPAWN_LOCK = threading.Lock()
 _ACTIVE_WORKER: subprocess.Popen | None = None
+_CACHE_CUTOFF = datetime(2026, 11, 16, 4, 7, 0, tzinfo=timezone.utc)
 
 
 def utcnow():
@@ -83,6 +84,7 @@ class Lease:
     approved_pages: list[dict] | None = None
     approved_hash: str | None = None
     version_id: UUID | None = None
+    year: int | None = None
 
 
 class SyllabusWorker:
@@ -112,6 +114,7 @@ class SyllabusWorker:
                     Syllabus.versao_processamento == VERSION,
                     Syllabus.provedor_ia == "google",
                     Syllabus.approved_version_id.is_not(None),
+                    Syllabus.processado_em >= _CACHE_CUTOFF,
                 )
                 .order_by(Syllabus.processado_em.asc(), Syllabus.id.asc())
                 .limit(1)
@@ -185,7 +188,7 @@ class SyllabusWorker:
                               cost_reserved_usd=job.cost_reserved_usd + self.config.attempt_reservation)
             lease = Lease(job.id, token, attempt, job.user_id, job.file_path, job.queued_at or job.created_at, terminal=exhausted,
                           approved_pages=job.approved_pages, approved_hash=job.approved_hash,
-                          version_id=version.id if version else None)
+                          version_id=version.id if version else None, year=job.ano)
             changed = db.execute(update(Syllabus).where(*condition).values(**values),
                                  execution_options={"synchronize_session": False}).rowcount
             db.commit()
@@ -241,7 +244,8 @@ class SyllabusWorker:
                     if wait > 0:
                         self.sleep(wait)
                 self._last_provider_call_at = self.clock()
-                document = self.runner(pages, None, self.provider, self.config)
+                run_config = replace(self.config, reference_year=lease.year) if lease.year is not None else self.config
+                document = self.runner(pages, None, self.provider, run_config)
                 model_name = self.config.model
             result = document.extraction
             with self.sessions() as db:
