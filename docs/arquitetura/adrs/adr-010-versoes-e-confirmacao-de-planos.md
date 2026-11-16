@@ -7,24 +7,29 @@ description: "Decisão, consequências e critérios de verificação: versionar 
 
 | Campo | Valor |
 | --- | --- |
-| Estado | Aceita para a Release 2 |
-| Data do registro | 2026-11-08 |
+| Estado | Implementada |
+| Data do registro | 2026-11-15 |
 | Rastreabilidade | RF06, RF07; RNF02, RNF04 |
 | Substitui | Nenhuma ADR |
 
-Registro de decisão já descrita nos contratos da R2; não comprova implementação ou homologação.
+Decisão implementada nas migrações `20261109120000`, `20261110120000` e `20261111141000`, em `backend/src/modules/syllabus/` e na jornada `/plano-de-ensino` (`frontend/src/pages/TeachingPlanPage.jsx`).
 
 ## Contexto
 
-A extração pode produzir datas incertas. Uma versão compartilhada atende várias contas, cada uma com sua agenda e decisão de importação.
+A extração pode produzir datas incertas. Uma versão compartilhada atende várias contas, cada uma com sua agenda e decisão de importação, enquanto o acompanhamento pela interface precisa refletir estados persistidos sem criar compromissos automáticos.
 
 ## Decisão
 
-Iniciar versões privadas e compartilhar conteúdo revisado por decisão do autor. Professor/admin podem publicar diretamente suas revisões de conteúdo já compartilhado, sem aprovação adicional do autor original; essa permissão não alcança conteúdo privado alheio. Edições criam revisões separadas, preservando versões anteriores e cópias importadas. Seguidores autenticados votam por candidato e versão; votos não alteram datas. Confirmar candidatos em transação, com unicidade por (user_id, version_id, candidate_id), procedência e validação de acesso e datas.
-
-Toda data extraída começa como candidata. Somente a confirmação explícita do usuário a transforma em avaliação efetiva na sua agenda; em versões compartilhadas, essa decisão pertence a cada conta. A revisão deve ser breve: mostrar candidatos em uma lista, permitir selecionar vários e confirmar o lote em uma única ação, destacar apenas campos ambíguos que exigem correção e preservar as escolhas durante ajustes. Não exigir uma sequência de confirmações por item nem importar automaticamente. Avaliar a fluidez na homologação com o tempo e as dificuldades observadas, sem inventar um limite numérico ainda não acordado.
-
-Na R2, exigir `Idempotency-Key` por ação de confirmação, vinculada à conta, à operação e ao conteúdo do lote. Repetições da mesma ação usam a mesma chave; payload diferente com a mesma chave retorna 409. Persistir a operação e seus itens na mesma transação da confirmação e serializar requisições concorrentes. A exclusão do evento preserva o registro da importação e da operação: repetir a chave antiga não recria o evento nem reativa o vínculo. Reimportar exige o comando explícito “Adicionar novamente”, uma nova chave e nova verificação de acesso, versão e datas. Manter no máximo um evento ativo por `(user_id, version_id, candidate_id)`, mesmo com chaves diferentes; novas ações após exclusão não apagam o histórico das anteriores. O resultado de retry informa quando o evento anteriormente criado já foi removido. A transição dos clientes legados deve ser documentada antes de tornar a chave obrigatória; não inventar uma chave nova a cada retry.
+1. **Versionamento, tabela oficial e controle de leitura:**
+   - Candidatos extraídos e revisados são gravados na tabela oficial `avaliacoes` com `versao_id` e `ordem` (`AssessmentCandidate` é apenas alias ORM de compatibilidade), preservando `data_sugerida`/`hora_sugerida` civis sem inferir `data_avaliacao` (`suggestedDate`, `suggestedTime`, `ambiguousFields`, `versionId`).
+   - Iniciar versões como `privada` e permitir compartilhamento voluntário pelo autor. A função `ator_pode_ler_versao` (e a RLS via `pode_ler_versao`) garante leitura apenas ao autor da versão ou a seguidores da oferta quando `visibilidade = 'compartilhada'`; o papel `professor`/`admin` nunca libera acesso a rascunhos privados alheios.
+   - Professor/admin podem publicar diretamente suas revisões de conteúdo já compartilhado (mantendo rastreabilidade de versão de origem, autor e papel; herança de procedência institucional ocorre apenas se a versão de origem já a possuía). Edições criam revisões separadas e retirar o compartilhamento preserva revisões derivadas e cópias já importadas na agenda.
+2. **Revisão e confirmação idempotente em transação:**
+   - Toda data extraída começa como candidata e só vira evento pessoal (`eventos_pessoais`, categoria `Acadêmico`, fuso padrão `-03:00` quando confirmado) mediante ação explícita em lote via `POST /api/v1/syllabus/{id}/confirm` (até 100 itens).
+   - A confirmação exige `Idempotency-Key` persistida em `operacoes_importacao` e `itens_importacao` na mesma transação dos eventos. Repetir a mesma chave com o mesmo conteúdo retorna o resultado anterior sem recriar eventos apagados pelo usuário; reusar a chave com conteúdo diferente retorna `409` (`AG409`); mantém-se no máximo um evento ativo por `(user_id, versao_id, avaliacao_id)`; reimportar após exclusão exige nova chave. A RPC legada `revisar_candidatos_plano` permanece restrita ao dono para compatibilidade.
+3. **Jornada de acompanhamento na interface (`/plano-de-ensino`):**
+   - Visitantes veem apenas demonstração local identificada como tal; usuários autenticados consultam oferta seguida (`GET /class-offerings/{id}`, `GET /me/class-offerings`), histórico (`GET /syllabus?limit=10&offset=0`) e detalhe (`GET /syllabus/{id}`).
+   - Os estados de plano são `pendente`, `processando`, `concluido` e `falha`, com `authorizationRequired` e `preparedTextAvailable` distinguindo espera por autorização humana da fila pronta. O polling de progresso não se sobrepõe (5s para detalhe e 15s para histórico, espaçamento até 30s), pausa em abas ocultas ou erro e encerra em estado final. A seleção em lote valida títulos (3–200 caracteres), tipo (`Prova`/`Trabalho`) e datas antes do envio, preservando escolhas durante ajustes.
 
 ## Alternativas para comparação
 
@@ -46,4 +51,4 @@ Verificar publicação de revisão por professor/admin sem aprovação adicional
 
 ## Fontes e relações
 
-[Plano, versão e candidatos](../../atualizacoes.md#plano-versao-e-candidatos) · [ADR-003](adr-003-minimizar-dados-de-planos.md) · [Requisitos](../../produto/requisitos.md) · [Índice de ADRs](index.md)
+[Plano, versão e candidatos](../../atualizacoes.md#plano-versao-e-candidatos) · [Dados de planos](../dados-de-planos.md) · [ADR-003](adr-003-minimizar-dados-de-planos.md) · [ADR-014](adr-014-processamento-assincrono-planos-ia.md) · [Requisitos](../../produto/requisitos.md) · [Índice de ADRs](index.md)

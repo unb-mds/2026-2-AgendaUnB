@@ -113,7 +113,7 @@ As tabelas da base R1 são `profiles`, `campus`, `categories`, `eventos`, `event
 - O bucket privado `syllabus_files` aceita PDF até 10 MB. A migração `20261107000000` remove permissões de escrita direta que contornavam a API. O navegador lê apenas os próprios arquivos e planos. O backend valida o PDF, aplica a cota de 10 uploads por usuário em 5 dias e grava o arquivo com `SUPABASE_SERVICE_ROLE_KEY`, exclusiva do servidor.
 - HTTPS é requisito de produção; `.env` guarda configurações locais fora do versionamento.
 
-As migrações devem ser aplicadas antes de disponibilizar API/frontend dependentes delas. No Supabase local iniciado, use `npx supabase migration up`. Se a migração `20261029160000` entrou no repositório após o banco já ter versões posteriores, use `npx supabase migration up --include-all` para incluir a versão pendente. `make db-reset` recria o banco com migrações e seed. Veja o [diagrama de dados](modelo-de-dados.md), a [especificação física](banco-de-dados.md) e os guias de [eventos salvos](../eventos-salvos.md) e [painel](../painel-administrativo.md).
+As migrações devem ser aplicadas antes de disponibilizar API/frontend dependentes delas. No Supabase local iniciado, use `npx supabase migration up`. Se a migração `20261029160000` entrou no repositório após o banco já ter versões posteriores, use `npx supabase migration up --include-all` para incluir a versão pendente. `make db-reset` recria o banco com migrações e seed. Veja o [diagrama de dados](modelo-de-dados.md), a [especificação física](banco-de-dados.md), [eventos salvos](../eventos-salvos.md) e as [ADR-001](adrs/adr-001-integracao-fastapi-supabase.md), [ADR-006](adrs/adr-006-autorizacao-em-camadas.md) e [ADR-007](adrs/adr-007-migracoes-sql.md).
 
 ## 8. Funcionalidades futuras e implantação
 
@@ -184,4 +184,4 @@ Atualize no mesmo PR os documentos afetados por mudanças em rotas, schemas, aut
 
 ## Implementação local da extração S7
 
-Preparação local, autorização específica, fila recuperável e candidatos privados estão descritos no [protocolo S7](../processamento-planos-s7.md) e no [registro de validação](../s7-b01-validacao.md). O worker foi alinhado à tabela oficial `avaliacoes` e às versões de S7-D01; nenhuma migração foi aplicada na nuvem.
+Preparação local, autorização específica, fila recuperável e candidatos privados estão descritos nas [ADR-003](adrs/adr-003-minimizar-dados-de-planos.md), [ADR-010](adrs/adr-010-versoes-e-confirmacao-de-planos.md) e [ADR-014](adrs/adr-014-processamento-assincrono-planos-ia.md). O worker opera sobre a tabela oficial `avaliacoes` e as versões de S7-D01.

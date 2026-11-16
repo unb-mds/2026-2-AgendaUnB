@@ -21,18 +21,19 @@ A data do registro não é a data da decisão. Referências DA preservam os iden
 | ADR | Decisão | Estado | Rastreabilidade |
 | --- | --- | --- | --- |
 | [ADR-001](adr-001-integracao-fastapi-supabase.md) | Integração FastAPI e Supabase | Implementada | DA-02 |
-| [ADR-002](adr-002-separar-hospedagem-e-ambientes.md) | Hospedagem e ambientes | Proposta | DA-07 |
-| [ADR-003](adr-003-minimizar-dados-de-planos.md) | Minimização de dados de planos | Aceita para a Release 2 | RF06; RNF02 |
+| [ADR-002](adr-002-separar-hospedagem-e-ambientes.md) | Hospedagem e ambientes em orçamento zero | Implementada | DA-07; RNF03, RNF13 |
+| [ADR-003](adr-003-minimizar-dados-de-planos.md) | Minimização de dados de planos | Implementada | RF06; RNF02 |
 | [ADR-004](adr-004-api-monolitica.md) | Manter a API em uma aplicação FastAPI única | Implementada | DA-01; RNF13 |
 | [ADR-005](adr-005-validacao-de-sessao.md) | Validar a sessão no Supabase Auth e consultar o papel no banco | Implementada | DA-03; RF01, RF03, RF04 |
 | [ADR-006](adr-006-autorizacao-em-camadas.md) | Aplicar autorização na API, nas RPCs e nas políticas RLS | Implementada | DA-04; RF04, RF09, RF11; RNF02, RNF04 |
 | [ADR-007](adr-007-migracoes-sql.md) | Usar migrações SQL como referência do esquema completo | Implementada | DA-05; RNF13 |
 | [ADR-008](adr-008-vinculos-de-eventos-publicos.md) | Salvar vínculos aos eventos públicos na agenda pessoal | Implementada | DA-06; RF08, RF12, RF13, RF18 |
-| [ADR-009](adr-009-catalogo-publico-de-turmas.md) | Integrar o catálogo público de turmas com identidade local e cache | Aceita para a Release 2 | RF05; RNF11 |
-| [ADR-010](adr-010-versoes-e-confirmacao-de-planos.md) | Versionar planos e exigir confirmação individual para importar candidatos | Aceita para a Release 2 | RF06, RF07; RNF02, RNF04 |
+| [ADR-009](adr-009-catalogo-publico-de-turmas.md) | Integrar o catálogo público de turmas com identidade local e cache | Implementada | RF05; RNF11 |
+| [ADR-010](adr-010-versoes-e-confirmacao-de-planos.md) | Versionar planos e exigir confirmação individual para importar candidatos | Implementada | RF06, RF07; RNF02, RNF04 |
 | [ADR-011](adr-011-datas-civis-e-instantes.md) | Distinguir datas civis de instantes e usar fim exclusivo | Aceita para a Release 2 | RF06, RF08, RF17, RF21 |
-| [ADR-012](adr-012-exportacao-google-idempotente.md) | Exportar por ação explícita para uma agenda Google secundária | Aceita para a Release 2 | RF21; RNF02 |
+| [ADR-012](adr-012-exportacao-google-idempotente.md) | Exportar por ação explícita para uma agenda Google secundária | Implementada | RF21; RNF02 |
 | [ADR-013](adr-013-lembretes-persistentes.md) | Persistir lembretes com agendamento idempotente e revalidação | Aceita para a Release 2 | RF13, RF17 |
+| [ADR-014](adr-014-processamento-assincrono-planos-ia.md) | Processamento assíncrono resiliente de planos com fila persistida, lease e orçamento | Implementada | RF06; RNF02, RNF06, RNF10, RNF13 |
 
 ## Roteiro para pessoas e agentes de IA
 

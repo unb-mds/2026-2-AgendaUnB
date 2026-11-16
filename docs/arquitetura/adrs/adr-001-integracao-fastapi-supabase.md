@@ -8,11 +8,16 @@ title: "ADR-001 · Integração entre FastAPI e Supabase"
 
 ## Contexto
 
-O frontend usa Supabase Auth para a sessão e a FastAPI para operações de eventos e agenda. Moderação e gestão de papéis dependem do papel real do usuário, do estado do registro e de verificações que precisam valer também para chamadas diretas. O registro original descreve a solução observada. A motivação histórica e as alternativas avaliadas na época não estão documentadas.
+O frontend usa Supabase Auth para a sessão e a FastAPI para operações de eventos, agenda e planos de ensino. Moderação de sugestões e gestão de papéis dependem do papel real do usuário, do estado do registro e de verificações que precisam valer também para chamadas diretas. O registro original descreve a solução observada; a motivação histórica e as alternativas avaliadas na época não estão documentadas.
 
 ## Decisão
 
-O frontend usa a FastAPI para os recursos de negócio e o SDK do Supabase para autenticação, perfis, notificações e RPCs administrativas. As RPCs verificam o papel no banco ao moderar sugestões ou alterar papéis. As políticas RLS controlam o acesso aos dados expostos pelo SDK. A FastAPI verifica sessão, papel ou propriedade conforme o recurso.
+O frontend usa a FastAPI para os recursos de negócio e o SDK do Supabase para autenticação, perfis, notificações e RPCs administrativas:
+
+- **Negócio via FastAPI:** leitura/escrita de eventos públicos e pessoais, envio de sugestões de estudantes (`POST /api/v1/suggestions`), catálogo de turmas, planos de ensino e conexão/exportação com o Google Calendar.
+- **Moderação e administração exclusivamente via RPCs Supabase:** o frontend (`frontend/src/lib/moderation.js`) chama diretamente `listar_sugestoes` e `moderar_sugestao` (para professores e administradores) e `admin_buscar_usuarios` e `admin_definir_papel` (apenas para administradores). Não existem rotas `/api/v1/admin` duplicadas na FastAPI.
+- **Notificações transacionais:** envio, aprovação e recusa de sugestões persistem notificações em `notificacoes` por trigger na mesma transação do evento, com leitura e marcação de leitura restritas ao destinatário via RLS.
+- **Navegação da interface:** `/eventos` reúne eventos públicos e agenda pessoal (`/segunda-pagina` redireciona preservando parâmetros); `/plano-de-ensino` atende o fluxo de planos; `/sugestoes` atende professores e administradores; `/admin` é restrita a administradores; o sino de notificações é exibido para estudantes.
 
 ## Alternativas para uma revisão futura
 
@@ -22,7 +27,7 @@ Uma API única poderia mediar também as operações administrativas. Isso reduz
 
 A equipe mantém dois caminhos de acesso. Cada operação precisa de autorização no ponto que a executa, inclusive quando uma conexão administrativa da API ignora RLS. Os testes de RPC e RLS em PostgreSQL complementam os testes da API e da interface.
 
-[Visão geral e evidências](../visao-geral.md) · [Guia do painel administrativo](../../painel-administrativo.md) · [Contratos da API](../../api-specs.md)
+[Visão geral e evidências](../visao-geral.md) · [ADR-006](adr-006-autorizacao-em-camadas.md) · [Contratos da API](../../api-specs.md)
 
 ## Leitura e manutenção
 

@@ -45,7 +45,7 @@ A primeira página tem como finalidade apresentar o AgendaUnB aos visitantes, di
 - Google: possibilita a autenticação por meio de uma conta Google (ideal para o fluxo de estudantes).
 - Convidado: pode consultar o catálogo público. A agenda privada exige uma conta.
 
-O cadastro e a autopromoção para professor exigem e-mail institucional. A atribuição de papéis pela administração segue as permissões do servidor. [Painel administrativo](../painel-administrativo.md)
+O cadastro e a autopromoção para professor exigem e-mail institucional. A atribuição de papéis pela administração segue as permissões do servidor ([ADR-006](adrs/adr-006-autorizacao-em-camadas.md)).
 
 A página também disponibiliza o controle de alternância entre os temas claro e escuro, permitindo modificar a aparência visual de toda a aplicação.
 
@@ -60,7 +60,7 @@ A segunda página concentra as principais funcionalidades do AgendaUnB, relacion
 
 ### 2.3. Extração de Planos de Ensino (Core Feature pós-R1)
 
-A página de planos oferece envio e histórico. O estado da revisão e as limitações da interface estão no [guia de planos de ensino](../planos-de-ensino-frontend.md). A jornada planejada inclui seleção de oferta, revisão do texto antes da extração e confirmação das avaliações antes de adicioná-las à agenda. [Contratos da Release 2](../atualizacoes.md#contratos-da-release-2)
+A página de planos oferece seleção de oferta, revisão e autorização do texto antes da extração, acompanhamento de progresso e confirmação das avaliações antes de adicioná-las à agenda ([ADR-003](adrs/adr-003-minimizar-dados-de-planos.md) · [ADR-010](adrs/adr-010-versoes-e-confirmacao-de-planos.md) · [Contratos da Release 2](../atualizacoes.md#contratos-da-release-2)).
 
 ### 2.4. Navegação entre páginas
 
