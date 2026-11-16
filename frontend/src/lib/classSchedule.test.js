@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { classStartOnDate } from './classSchedule.js';
+import { classStartOnDate, defaultClassStart } from './classSchedule.js';
 
 test('usa o início do bloco da turma no dia civil da prova', () => {
   const schedule = '3M34 5T23 7N34';
@@ -23,4 +23,12 @@ test('agenda com mais de um bloco ou sem dados confiáveis deixa o horário em b
   for (const date of ['2026-02-30', '2026-11', '2026-11-15', '']) {
     assert.equal(classStartOnDate('3M12', date), '', date);
   }
+});
+
+test('defaultClassStart infere horario padrao apenas quando todos os dias tem o mesmo inicio', () => {
+  assert.equal(defaultClassStart('35M5 35T1'), '12:00');
+  assert.equal(defaultClassStart('35M34'), '10:00');
+  assert.equal(defaultClassStart('3M34 5T23'), '');
+  assert.equal(defaultClassStart('3T24'), '');
+  assert.equal(defaultClassStart(''), '');
 });

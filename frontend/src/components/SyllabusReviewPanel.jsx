@@ -130,11 +130,12 @@ function CandidateReview({ planId, initialCandidates, classSchedule, onConfirmed
         <dl>
           <div><dt>Tipo</dt><dd>{candidate.type || 'Não informado'}</dd></div>
           <div><dt>Data sugerida</dt><dd>{candidate.suggestedDate || 'Não informada'}</dd></div>
-          <div><dt>Horário no plano</dt><dd>{candidate.suggestedTime || 'Não informado'}</dd></div>
+          <div><dt>Horário no plano</dt><dd>{candidate.suggestedTime || (candidate.type === 'trabalho' ? 'Não encontrado' : 'Não informado')}</dd></div>
           {candidate.startsAt && <div><dt>Data e horário registrados</dt><dd>{candidate.startsAt}</dd></div>}
         </dl>
         {(candidate.ambiguous || candidate.ambiguousFields.length > 0) && <p className="syllabus-review-error">Requer conferência{candidate.ambiguousFields.length ? `: ${candidate.ambiguousFields.map(field => fields[field] || field).join(', ')}` : ': informações incertas no documento'}.</p>}
-        {(!item.date || !item.time) && !candidate.startsAt && <p>Data ou horário incompletos. Será necessário informá-los antes da confirmação (horário de Brasília).</p>}
+        {!item.date && !candidate.startsAt && <p>Data incompleta. Será necessário informá-la antes da confirmação (horário de Brasília).</p>}
+        {item.date && !item.time && item.type !== 'trabalho' && !candidate.startsAt && <p>Horário incompleto. Será necessário informá-lo antes da confirmação (horário de Brasília).</p>}
         <p><strong>Origem:</strong> {candidate.sourcePage === null ? 'Sem referência de página' : `Página ${candidate.sourcePage}`}</p>
         {candidate.sourceExcerpt ? <blockquote>{candidate.sourceExcerpt}</blockquote> : <p>Trecho de origem não informado.</p>}
     </div>;
