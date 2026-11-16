@@ -35,6 +35,8 @@ async function setup(page, { guest = false, items = [], total = items.length, de
 const offer = { id: '70000000-0000-4000-8000-000000000071', subject_name: 'Computação', subject_code: 'FGA0108', class_number: '01', year: 2026, semester: 2, unit: '673', teacher: 'Docente', schedule: '24T12', available: true };
 async function catalogSetup(page, { guest = false, failed = false } = {}) {
   await setup(page, { guest });
+  await page.route(`**/api/v1/class-offerings/${offer.id}`, route => route.fulfill({ json: offer }));
+  await page.route(`**/api/v1/class-offerings/${offer.id}/shared-plans?*`, route => route.fulfill({ json: { items: [], total: 0 } }));
   let following = false;
   await page.route('**/api/v1/class-offerings/filters', route => route.fulfill({ status: failed ? 503 : 200, json: { units: [{ id: 673, code: 'FCTE', name: 'Gama' }], periods: ['2026.2', '2027.1'], stale: true, source_updated_at: '2026-11-09T12:00:00Z' } }));
   await page.route('**/api/v1/class-offerings?*', route => {
@@ -66,6 +68,7 @@ for (const width of [360, 1365]) {
     await page.keyboard.press('Enter');
     await expect(page.getByText('21 turmas encontradas.')).toBeVisible();
     await expect(page.getByText('Catálogo desatualizado', { exact: true })).toBeVisible();
+    await page.locator('summary').filter({ hasText: 'Computação' }).click();
     await page.getByRole('button', { name: 'Seguir turma', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Ver planos' })).toBeVisible();
     await page.reload();

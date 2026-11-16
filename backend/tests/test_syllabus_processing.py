@@ -13,7 +13,7 @@ from src.database.models import AssessmentCandidate, PersonalEvent, Profile, Syl
 from src.modules.syllabus.extraction import TextPage, extract_pages, validate_candidates
 from src.modules.syllabus.gemini import GeminiProvider
 from src.modules.syllabus.processing_config import ProcessingConfig, ProcessingError
-from src.modules.syllabus.processing_task import process_document
+from src.modules.syllabus.processing_task import process_document, run_isolated
 from src.modules.syllabus.worker import SyllabusWorker
 from syllabus_samples import approved_source, cases, make_pdf
 
@@ -401,3 +401,214 @@ def test_ready_flags_do_not_bypass_database_verification(job, monkeypatch, capsy
     assert "PRIVATE_CONNECTION_DETAIL" not in output and "test-secret" not in output
     with sessions() as db:
         assert db.get(Syllabus,sid).status == "pendente"
+
+
+def test_identical_approved_hash_reuses_candidates_without_calling_provider(job):
+    worker, sessions, first_sid = job
+    other_user = uuid4()
+    second_sid = uuid4()
+    with sessions() as db:
+        db.add(Profile(id=other_user, papel="student"))
+        db.add(Syllabus(id=second_sid, user_id=other_user, file_name="copia.pdf",
+                        file_path=None, status="pendente",
+                        **approved_source("Prova 1 - 10/11/2026 - 14:00.")))
+        db.commit()
+
+    assert worker.run_once()
+    assert worker.provider.calls == 1
+    assert worker.run_once()
+    assert worker.provider.calls == 1
+    assert not worker.run_once()
+
+    with sessions() as db:
+        first_plan = db.get(Syllabus, first_sid)
+        second_plan = db.get(Syllabus, second_sid)
+        assert first_plan.status == "concluido" and first_plan.cost_reserved_usd > 0
+        assert second_plan.status == "concluido" and second_plan.cost_reserved_usd == Decimal("0")
+        assert second_plan.extracted_events_count == 1
+        assert second_plan.approved_version_id != first_plan.approved_version_id
+        cloned = db.scalars(select(AssessmentCandidate).where(AssessmentCandidate.plano_id == second_sid)).all()
+        assert len(cloned) == 1
+        assert cloned[0].title == "Prova 1"
+        assert cloned[0].data_sugerida.isoformat() == "2026-11-10"
+        assert cloned[0].hora_sugerida.strftime("%H:%M") == "14:00"
+        assert cloned[0].status == "pendente"
+        assert cloned[0].version_id == second_plan.approved_version_id
+
+
+class _RateLimitedProvider:
+    def extract(self, pages):
+        raise ProcessingError("falha_ia", retryable=True, rate_limited=True)
+
+
+def test_rate_limit_429_schedules_extended_backoff_across_subprocess(job):
+    worker, sessions, sid = job
+    worker.config = replace(worker.config, retry_delay_seconds=2, rate_limit_delay_seconds=65)
+    transport = httpx.MockTransport(lambda request: httpx.Response(429, text="quota exceeded"))
+    with pytest.raises(ProcessingError) as caught:
+        GeminiProvider(replace(worker.config, api_key="secret", provider_terms_ready=True), transport=transport).extract([TextPage(1, "doc")])
+    assert caught.value.retryable is True and caught.value.rate_limited is True
+
+    worker.provider = _RateLimitedProvider()
+    worker.runner = run_isolated
+
+    before = datetime.now(timezone.utc)
+    assert worker.run_once()
+    with sessions() as db:
+        plan = db.get(Syllabus, sid)
+        assert plan.status == "pendente"
+        next_at = plan.next_attempt_at.replace(tzinfo=timezone.utc) if plan.next_attempt_at.tzinfo is None else plan.next_attempt_at
+        assert next_at >= before + timedelta(seconds=60)
+
+
+def test_pacing_waits_only_between_external_provider_calls(job):
+    worker, sessions, first_sid = job
+    second_sid = uuid4()
+    third_sid = uuid4()
+    sleeps = []
+    clock_now = [100.0]
+
+    def fake_sleep(seconds):
+        sleeps.append(seconds)
+        clock_now[0] += seconds
+
+    with sessions() as db:
+        first = db.get(Syllabus, first_sid)
+        db.add(Syllabus(id=second_sid, user_id=first.user_id, file_name="igual.pdf",
+                        file_path=None, status="pendente",
+                        **approved_source("Prova 1 - 10/11/2026 - 14:00.")))
+        db.add(Syllabus(id=third_sid, user_id=first.user_id, file_name="diferente.pdf",
+                        file_path=None, status="pendente",
+                        **approved_source("Prova 2 - 15/11/2026 - 10:00.")))
+        db.commit()
+
+    def multi_extract(pages):
+        worker.provider.calls += 1
+        if "Prova 2" in pages[0].texto:
+            return raw_candidate(titulo="Prova 2", data_sugerida="2026-11-15", hora_sugerida="10:00",
+                                 trecho_origem="Prova 2 - 15/11/2026 - 10:00.")
+        return raw_candidate()
+
+    worker.provider.extract = multi_extract
+    paced_worker = SyllabusWorker(
+        sessions, None, worker.provider, replace(worker.config, min_interval_seconds=4.0),
+        runner=process_document, pace=True, sleep=fake_sleep, clock=lambda: clock_now[0],
+    )
+    assert paced_worker.run_once()  # 1st external call -> no sleep
+    assert paced_worker.run_once()  # 2nd item (cache hit) -> no sleep
+    assert paced_worker.run_once()  # 3rd item (external call) -> sleeps 4.0s
+    assert sleeps == [4.0]
+    assert worker.provider.calls == 2
+
+
+def test_spawn_worker_drain_respects_flags_and_single_active_process(monkeypatch):
+    import src.modules.syllabus.worker as module
+
+    monkeypatch.setattr(module, "_ACTIVE_WORKER", None)
+    for key in ("SYLLABUS_WORKER_ENABLED", "SYLLABUS_PRIVACY_READY", "SYLLABUS_PROVIDER_TERMS_READY", "GEMINI_API_KEY"):
+        monkeypatch.delenv(key, raising=False)
+    assert module.spawn_worker_drain() is False
+
+    monkeypatch.setenv("SYLLABUS_WORKER_ENABLED", "true")
+    monkeypatch.setenv("SYLLABUS_PRIVACY_READY", "true")
+    monkeypatch.setenv("SYLLABUS_PROVIDER_TERMS_READY", "true")
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+
+    spawned = []
+
+    class FakeProc:
+        def __init__(self):
+            self.alive = True
+
+        def poll(self):
+            return None if self.alive else 0
+
+    def fake_popen(cmd, **kwargs):
+        proc = FakeProc()
+        spawned.append((cmd, proc))
+        return proc
+
+    monkeypatch.setattr(module.subprocess, "Popen", fake_popen)
+    assert module.spawn_worker_drain() is True
+    assert module.spawn_worker_drain() is False  # Já há processo ativo.
+    spawned[0][1].alive = False
+    assert module.spawn_worker_drain() is True
+    assert len(spawned) == 2
+    assert "--drain" in spawned[0][0] and "--max-items" in spawned[0][0]
+
+
+def test_evidence_tolerates_unicode_dashes_tables_and_ellipsis_but_blocks_fabrication():
+    source = "| P1 | 10.11.2026 | Conteúdo Cap 1 – Cap 3 |\nProva 2 \u2013 15 / 12 / 2026 \u2014 14:00."
+    pages = [TextPage(None, source)]
+    payload = json.dumps({
+        "candidatos": [
+            {
+                "titulo": "P1",
+                "tipo": "prova",
+                "data_sugerida": "2026-11-10",
+                "hora_sugerida": None,
+                "campos_ambiguos": [],
+                "pagina_origem": None,
+                "trecho_origem": "P1 10.11.2026",
+            },
+            {
+                "titulo": "Prova 2",
+                "tipo": "prova",
+                "data_sugerida": "2026-12-15",
+                "hora_sugerida": "14:00",
+                "campos_ambiguos": [],
+                "pagina_origem": None,
+                "trecho_origem": "Prova 2 - 15/12/2026 - 14:00",
+            },
+        ]
+    })
+    result = validate_candidates(payload, pages)
+    assert len(result.candidates) == 2
+    assert result.candidates[0].data_sugerida.isoformat() == "2026-11-10"
+    assert result.candidates[1].hora_sugerida.strftime("%H:%M") == "14:00"
+
+    # Ano ausente na fonte não pode ser injetado no trecho_origem.
+    no_year = [TextPage(None, "Prova 1 - 10/11.")]
+    with pytest.raises(ProcessingError) as caught:
+        validate_candidates(raw_candidate(pagina_origem=None, trecho_origem="Prova 1 - 10/11/2026"), no_year)
+    assert caught.value.reason == "evidence_mismatch"
+
+    # Rótulos de critérios de avaliação não viram prova.
+    criteria = [TextPage(None, "Critérios de avaliação - 10/11/2026.")]
+    assert validate_candidates(
+        raw_candidate(titulo="Critérios de avaliação", pagina_origem=None, trecho_origem="Critérios de avaliação - 10/11/2026."),
+        criteria,
+    ).candidates == []
+
+
+def test_extracts_two_digit_years_and_markdown_tables_with_semester_reference():
+    source = (
+        "# Estruturas de Dados\nSemestre: 2026/2\n"
+        "| **15** | 13/10/26 | **Prova 1** | AE1–AE5 | **P1 — avaliação escrita individual** |\n"
+        "| **24** | 12/11/26 | **Prova 2** | AE1–AE6 | **P2 — avaliação escrita individual** |\n"
+        "| **28** | 26/11 | **Prova 3** | AE1–AE6 | **P3 — avaliação escrita individual** |\n"
+        "| **29** | 01/12/26 | **Prova Substitutiva** | Conforme Seção 8.3 | Avaliação escrita |\n"
+    )
+    pages = [TextPage(None, source)]
+    payload = json.dumps({
+        "candidatos": [
+            {"titulo": "Prova 1", "tipo": "prova", "data_sugerida": "2026-10-13", "hora_sugerida": None,
+             "campos_ambiguos": ["hora"], "pagina_origem": None,
+             "trecho_origem": "Prova 1 - 13/10/26"},
+            {"titulo": "Prova 2", "tipo": "prova", "data_sugerida": "2026-11-12", "hora_sugerida": None,
+             "campos_ambiguos": ["hora"], "pagina_origem": None,
+             "trecho_origem": "| **24** | 12/11/26 | **Prova 2** | AE1–AE6 | **P2 — avaliação escrita individual** |"},
+            {"titulo": "Prova 3", "tipo": "prova", "data_sugerida": "2026-11-26", "hora_sugerida": None,
+             "campos_ambiguos": ["hora"], "pagina_origem": None,
+             "trecho_origem": "26/11 **Prova 3**"},
+            {"titulo": "Prova Substitutiva", "tipo": "prova", "data_sugerida": "2026-12-01", "hora_sugerida": None,
+             "campos_ambiguos": ["hora"], "pagina_origem": None,
+             "trecho_origem": "| **29** | 01/12/26 | **Prova Substitutiva** | Conforme Seção 8.3 |"},
+        ]
+    })
+    result = validate_candidates(payload, pages)
+    assert [c.titulo for c in result.candidates] == ["Prova 1", "Prova 2", "Prova 3", "Prova Substitutiva"]
+    assert [c.data_sugerida.isoformat() for c in result.candidates] == [
+        "2026-10-13", "2026-11-12", "2026-11-26", "2026-12-01",
+    ]
+    assert result.unsupported_dates == 0
