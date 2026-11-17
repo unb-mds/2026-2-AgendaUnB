@@ -330,7 +330,7 @@ def test_plan_candidates_are_private_and_read_only(database):
 
 
 # ---------------------------------------------------------------------------
-# Endurecimento (20261111130000): menor privilégio e validação no banco
+# Endurecimento (20261117130000): menor privilégio e validação no banco
 # ---------------------------------------------------------------------------
 
 def signup(conn, email, role=None, confirmed=False):

@@ -48,7 +48,7 @@ Armazena os metadados dos usuários, sincronizada com a tabela nativa de autenti
 Registra toda mudança de papel, por qualquer caminho (RPC do painel, autopromoção, confirmação de e-mail, back-end ou SQL): `usuario_id`, `ator_id` (nulo quando não havia sessão de usuário), `papel_anterior`, `papel_novo` e `criado_em`. Somente admins leem; ninguém altera pela API.
 
 ### 2.3. Privilégios e funções
-Desde `20261111130000`, o `GRANT` acompanha as políticas: visitantes só leem o catálogo público (`eventos` aprovados, `campus`, `categories`, `disciplinas`, `ofertas_turma`), `TRUNCATE` não é concedido à API e funções novas não são executáveis via `/rpc` sem `GRANT EXECUTE` explícito. As regras para novas migrações estão em [Verificação de segurança](../processo/seguranca.md#regras-para-novas-migracoes).
+Desde `20261117130000`, o `GRANT` acompanha as políticas: visitantes só leem o catálogo público (`eventos` aprovados, `campus`, `categories`, `disciplinas`, `ofertas_turma`), `TRUNCATE` não é concedido à API e funções novas não são executáveis via `/rpc` sem `GRANT EXECUTE` explícito. As regras para novas migrações estão em [Verificação de segurança](../processo/seguranca.md#regras-para-novas-migracoes).
 
 ---
 
