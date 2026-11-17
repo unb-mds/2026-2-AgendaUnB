@@ -132,6 +132,9 @@ class ConfirmCandidateInput(BaseModel):
 
 
 class ConfirmSyllabusRequest(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    version_id: UUID | None = Field(default=None, alias="versionId")
     candidates: list[ConfirmCandidateInput] = Field(min_length=1, max_length=100)
 
     @model_validator(mode="after")
@@ -140,6 +143,62 @@ class ConfirmSyllabusRequest(BaseModel):
         if len(ids) != len(set(ids)):
             raise ValueError("Não repita o mesmo candidato na confirmação")
         return self
+
+
+class RevisionCandidateInput(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, str_strip_whitespace=True)
+
+    candidate_id: UUID | None = Field(default=None, alias="candidateId")
+    title: str = Field(min_length=3, max_length=200)
+    kind: str | None = Field(default=None, min_length=2, max_length=80, alias="type")
+    starts_at: datetime | None = Field(default=None, alias="startsAt")
+    suggested_date: date | None = Field(default=None, alias="suggestedDate")
+    suggested_time: time | None = Field(default=None, alias="suggestedTime")
+    source_page: int | None = Field(default=None, ge=1, alias="sourcePage")
+    source_excerpt: str | None = Field(default=None, max_length=5000, alias="sourceExcerpt")
+    ambiguous: bool = False
+    ambiguous_fields: list[str] = Field(default_factory=list, alias="ambiguousFields")
+
+    @field_validator("kind", "source_excerpt", mode="before")
+    @classmethod
+    def empty_revision_strings_to_none(cls, value):
+        if isinstance(value, str) and not value.strip():
+            return None
+        return value
+
+
+class CreateRevisionRequest(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    source_version_id: UUID = Field(alias="sourceVersionId")
+    candidates: list[RevisionCandidateInput] = Field(min_length=1, max_length=100)
+
+
+class VoteVersionRequest(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    value: str = Field(pattern="^(confirm|contest)$")
+    candidate_id: UUID | None = Field(default=None, alias="candidateId")
+
+
+class VoteVersionResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    version_id: UUID = Field(alias="versionId")
+    confirm_count: int = Field(alias="confirmCount")
+    contest_count: int = Field(alias="contestCount")
+    my_vote: str = Field(alias="myVote")
+
+
+class VersionStatusResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: UUID
+    syllabus_id: UUID = Field(alias="syllabusId")
+    number: int
+    visibility: str
+    shared_at: datetime | None = Field(default=None, alias="sharedAt")
+    withdrawn_at: datetime | None = Field(default=None, alias="withdrawnAt")
 
 
 class ConfirmItemResult(BaseModel):

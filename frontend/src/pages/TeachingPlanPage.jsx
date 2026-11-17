@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Feedback, Icon, ManagementShell } from '../components/ManagementUI';
 import CustomSelect from '../components/CustomSelect';
 import SemesterCatalog from '../components/SemesterCatalog';
 import SemesterReview from '../components/SemesterReview';
 import SemesterTextReview, { TextCapacity } from '../components/SemesterTextReview';
 import SharedClassPlans from '../components/SharedClassPlans';
-import TeachingPlanJourney from '../components/TeachingPlanJourney';
 import { useAuth } from '../contexts/AuthContext';
 import { useSemesterPlans } from '../contexts/SemesterPlansContext';
 import { useSyllabusResource } from '../hooks/useSyllabusResource';
@@ -15,7 +14,6 @@ import { catalogApi } from '../lib/classCatalogApi';
 import { isProcessing, PLAN_STATES, syllabusError, SYLLABUS_PAGE_SIZE } from '../lib/syllabus';
 import { syllabusApi } from '../lib/syllabusApi';
 import { mergeReview } from '../lib/semesterReview';
-import '../styles/teaching-plan.css';
 import '../styles/semester-plans.css';
 
 const periodOf = value => {
@@ -289,6 +287,12 @@ function SemesterPanel({ userId }) {
     followed.retry();
   };
 
+  const libraryOffers = followedOffers.filter(offer => !period || periodOf(offer) === period);
+  const libraryPool = libraryOffers.length ? libraryOffers : followedOffers;
+  const libraryOfferId = (openOfferId && followedOffers.some(offer => offer.id === openOfferId))
+    ? openOfferId
+    : (libraryPool[0]?.id || null);
+
   return <div className="semester-panel">
     <div className="semester-toolbar">
       <button className={`manage-button${catalogOpen ? '' : ' primary'}`} aria-expanded={catalogOpen} aria-controls="semester-catalog"
@@ -330,17 +334,42 @@ function SemesterPanel({ userId }) {
           selectedId ? <div className="semester-section">{workspace.planErrors[selectedId] ?
             <Feedback error={workspace.planErrors[selectedId]} onRetry={() => loadPlan(selectedId, true)} /> : <p role="status">Consultando plano…</p>}</div> : null}
         {selectedPlan && !selectedPlan.authorizationRequired && pendingAuth && <button className="manage-button" onClick={() => selectPlan(pendingAuth.id)}>Revisar próximo texto <Icon>arrow_forward</Icon></button>}
-        <SemesterReview plans={allowedPlans} rows={rows} offers={offers} onPlan={selectPlan} />
-        {openOfferId && followedOffers.some(offer => offer.id === openOfferId) && !wrongOffer &&
-          <details className="semester-shared"><summary>Planos compartilhados da turma</summary><SharedClassPlans key={openOfferId} offeringId={openOfferId} /></details>}
+        <SemesterReview plans={allowedPlans} allPlans={scoped} rows={rows} offers={offers} onPlan={selectPlan} onOpenCatalog={showCatalog} />
+        {libraryOfferId && !wrongOffer && (
+          <SharedClassPlans
+            key={libraryOfferId}
+            offeringId={libraryOfferId}
+            offer={offers[libraryOfferId]}
+            offers={libraryPool}
+            onSelectOffer={selectOffer}
+            onImported={() => { if (selectedId) loadPlan(selectedId, true); }}
+          />
+        )}
       </div>
     </div>
   </div>;
 }
 
+function GuestTeachingPlanNotice() {
+  return <div className="semester-panel">
+    <section className="semester-section semester-guest" aria-labelledby="semester-guest-title">
+      <Icon>lock</Icon>
+      <h2 id="semester-guest-title">Entre na sua conta para acessar planos de ensino</h2>
+      <p>
+        Faça login para seguir turmas do catálogo, consultar versões compartilhadas, enviar planos de ensino
+        e importar avaliações para sua agenda pessoal.
+      </p>
+      <div className="semester-guest-actions">
+        <Link className="manage-button primary" to="/?auth=login">Entrar na conta<Icon>arrow_forward</Icon></Link>
+        <Link className="manage-button" to="/?auth=signup">Criar conta</Link>
+      </div>
+    </section>
+  </div>;
+}
+
 export default function TeachingPlanPage() {
   const { user } = useAuth();
-  return <ManagementShell title="Planos de ensino" description={user ? 'Organize as datas das suas disciplinas.' : 'Conheça a jornada de um plano de ensino.'}>
-    {user ? <SemesterPanel key={user.id} userId={user.id} /> : <TeachingPlanJourney />}
+  return <ManagementShell title="Planos de ensino" description="Organize as datas das suas disciplinas.">
+    {user ? <SemesterPanel key={user.id} userId={user.id} /> : <GuestTeachingPlanNotice />}
   </ManagementShell>;
 }

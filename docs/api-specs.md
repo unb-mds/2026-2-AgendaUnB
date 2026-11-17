@@ -372,3 +372,15 @@ continua retornando 409; catálogo sem publicação retorna 503.
 A interface consulta a oferta e `GET /me/class-offerings` antes de habilitar
 PDF/texto. Falhas ou respostas inválidas bloqueiam o envio e oferecem nova consulta.
 Histórico e planos particulares continuam acessíveis ao dono após deixar de seguir.
+
+### Biblioteca compartilhada, versões, revisões e votos — S8-B01 / S8-F01 (#77 / #78)
+
+| Operação | Entrada | Resultado |
+| --- | --- | --- |
+| `GET /api/v1/class-offerings/{id}/shared-plans` | Seguidor da oferta (`limit`, `offset`) | Lista versões compartilhadas ordenadas por `confirm_count DESC` e atualização mais recente no empate, com `is_default`, `author_name`, `author_role`, `source_version_number`, `institutional_provenance`, `updated_at`, votos e `has_imported_update` |
+| `PUT /api/v1/syllabus/{id}/versions/{vid}/sharing` | Autor da versão | Publica versão para seguidores da oferta |
+| `DELETE /api/v1/syllabus/{id}/versions/{vid}/sharing` | Autor ou admin | Retira versão da turma, preservando revisões independentes e eventos pessoais já importados |
+| `POST /api/v1/syllabus/{id}/versions` | `sourceVersionId` e `candidates` | Cria e publica nova versão revisada por seguidor autenticado, professor ou admin, com histórico de autoria e data |
+| `PUT /api/v1/syllabus/{id}/versions/{vid}/vote` | `{"value":"confirm" \| "contest"}` | Registra/atualiza voto único da conta na versão e retorna contagens |
+| `DELETE /api/v1/syllabus/{id}/versions/{vid}/candidates/{cid}` | Autor da versão ou admin | Retira evento específico da versão compartilhada (204), preservando cópias pessoais importadas |
+| `POST /api/v1/syllabus/{id}/confirm` | `versionId` opcional e `candidates` | Permite importar avaliações de versão compartilhada sem reenviar PDF; ao reimportar de revisão mais nova, atualiza o evento pessoal correspondente sem duplicar |

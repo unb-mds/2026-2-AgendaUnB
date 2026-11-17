@@ -44,13 +44,13 @@ Todas as rotas abaixo exigem a autenticação Supabase existente:
 | `GET /api/v1/me/class-offerings` | Vínculos da sessão, inclusive ofertas retiradas |
 | `PUT /api/v1/me/class-offerings/{id}` | Seguir oferta disponível, idempotente, 204 |
 | `DELETE /api/v1/me/class-offerings/{id}` | Remover somente o vínculo da sessão, idempotente, 204 |
-| `GET /api/v1/class-offerings/{id}/shared-plans` | Versões compartilhadas para seguidores, paginação 20/100, 403 para não seguidores; não expõe texto privado |
+| `GET /api/v1/class-offerings/{id}/shared-plans` | Versões compartilhadas para seguidores com autoria, origem, votos, indicador de versão padrão e alterações pós-importação; ordenadas por votos positivos e data mais recente no empate; paginação 20/100, 403 para não seguidores; não expõe texto privado |
 | `GET /api/v1/syllabus?offering_id={id}` | Histórico particular filtrado pela oferta; sem filtro mantém o histórico legado |
 | `POST /api/v1/syllabus/upload` e `/text` | `offering_id` obrigatório; 409 se oferta retirada, 503 sem publicação; disciplina/turma/período derivados do catálogo |
 
 A busca devolve `items`, `total`, `limit`, `offset`, `source_updated_at` e `stale`, com ordenação estável por código, unidade, período, turma e UUID. Cada item contém UUID, nome/código da disciplina, turma, ano/semestre, unidade, nível, professor, horário e disponibilidade. Erros seguem `detail` da API existente; filtros inválidos retornam 422.
 
-A rota `/plano-de-ensino?modo=catalogo` exige login. “Minhas turmas” persiste no servidor e abre `?modo=catalogo&oferta={UUID}`. A jornada mostra histórico particular, convite para envio e versões compartilhadas; estas são de consulta nesta entrega. Publicação, votação e importação de versões compartilhadas permanecem nas entregas específicas da R2. A revisão e confirmação de candidatos particulares reutilizam o fluxo existente. A demonstração mantém fixtures e ações locais em modo separado.
+A rota `/plano-de-ensino` exige login; visitantes sem sessão recebem orientação para autenticação sem acesso a upload ou vínculo de turmas. “Minhas turmas” persiste no servidor e alimenta o painel e a biblioteca compartilhada da turma (`PUT/DELETE .../sharing`, `POST .../versions`, `PUT .../vote` e `DELETE .../versions/{vid}/candidates/{cid}`). A revisão e confirmação de candidatos utilizam `POST /api/v1/syllabus/{id}/confirm` com `Idempotency-Key` e `versionId` opcional.
 
 “Tentar novamente” repete a leitura local; nunca dispara sincronização do Followw. Em 503 há acesso ao cadastro manual. Deixar de seguir preserva os eventos particulares já importados.
 

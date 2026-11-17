@@ -246,14 +246,19 @@ def test_revision_creates_a_new_version_and_keeps_the_previous_one(database):
     share(conn, users['ana'], version_id)
     confirm(conn, users['bruno'], 'chave-bruno-1', version_id, [{'candidato_id': candidates[0]}])
 
-    # estudante que não é o autor não revisa; papel não revisa conteúdo privado
-    refused(conn, '42501', 'select public.criar_revisao(:a, :v)', {'a': users['bruno'], 'v': version_id})
+    # quem não segue a turma não revisa; papel não revisa conteúdo privado
+    refused(conn, '42501', 'select public.criar_revisao(:a, :v)', {'a': users['carla'], 'v': version_id})
     _, private_version, _ = plan(conn, users['carla'], turma)
     for role in ('professor', 'admin'):
         refused(conn, '42501', 'select public.criar_revisao(:a, :v)', {'a': users[role], 'v': private_version})
 
+    student_revision = revise(conn, users['bruno'], version_id)
+    assert (student_revision['numero'], student_revision['autor_papel'], student_revision['visibilidade']) == (2, 'student', 'privada')
+    assert str(student_revision['versao_origem_id']) == version_id
+    assert student_revision['procedencia_institucional'] is False
+
     revision = revise(conn, users['professor'], version_id)
-    assert (revision['numero'], revision['autor_papel'], revision['visibilidade']) == (2, 'professor', 'privada')
+    assert (revision['numero'], revision['autor_papel'], revision['visibilidade']) == (3, 'professor', 'privada')
     assert str(revision['versao_origem_id']) == version_id
     # papel de professor não cria procedência institucional
     assert revision['procedencia_institucional'] is False

@@ -22,7 +22,7 @@ test('vínculo persiste na recarga, abre a biblioteca e pode ser removido', asyn
   await catalog(page).getByText('Minhas turmas (1)').click();
   await page.getByRole('link', { name: 'Ver planos da turma' }).click();
   await expect(page).toHaveURL(/oferta=class-1/);
-  await page.getByText('Planos compartilhados da turma', { exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Planos compartilhados da turma' })).toBeVisible();
   await expect(page.getByText(/Ainda não há plano compartilhado nesta oferta/)).toBeVisible();
   await page.getByRole('button', { name: 'Deixar de seguir' }).click();
   await expect(catalog(page).getByText('Minhas turmas (0)')).toBeVisible();
@@ -67,14 +67,17 @@ test('primeira carga 503 recupera automaticamente; busca vazia informa o resulta
   await expect(catalog(page).getByText('0 turmas encontradas')).toBeVisible();
 });
 
-test('visitante mantém demonstração interativa sem consultar planos privados', async ({ page }) => {
+test('visitante recebe convite de login sem demonstração nem acesso a planos', async ({ page }) => {
   await setupSemester(page, { guest: true });
   const calls = [];
   page.on('request', r => { if (/api\/v1\/(class-offerings|syllabus)|api.followw.app/.test(r.url())) calls.push(r.url()); });
   await page.goto('/plano-de-ensino');
-  await expect(page.getByRole('button', { name: '1 Selecionar turmas' })).toBeVisible();
-  await expect(page.getByText('Catálogo de demonstração', { exact: true })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Entrar para usar meus planos' })).toHaveAttribute('href', '/?auth=login');
+  await expect(page.getByRole('heading', { name: 'Entre na sua conta para acessar planos de ensino' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Entrar na conta' })).toHaveAttribute('href', '/?auth=login');
+  await expect(page.getByRole('link', { name: 'Criar conta' })).toHaveAttribute('href', '/?auth=signup');
+  await expect(page.getByText(/demonstração/i)).toHaveCount(0);
+  await expect(page.locator('input[type="file"]')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Buscar turmas' })).toHaveCount(0);
   expect(calls).toEqual([]);
 });
 
