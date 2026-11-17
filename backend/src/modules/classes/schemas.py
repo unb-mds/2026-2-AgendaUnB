@@ -2,6 +2,8 @@ from datetime import date, datetime, time
 from uuid import UUID
 from pydantic import BaseModel, Field
 
+from src.modules.syllabus.versions import SHARED_CONTENT_NOTICE
+
 
 class OfferingRead(BaseModel):
     id: UUID
@@ -62,15 +64,16 @@ class SharedCandidateRead(BaseModel):
     modified_since_import: bool = False
     confirm_count: int = 0
     contest_count: int = 0
+    divergent: bool = False
     my_vote: str | None = None
 
 
 class SharedPlanRead(BaseModel):
     id: UUID
-    syllabus_id: UUID
+    syllabus_id: UUID | None = None
     offering_id: UUID | None = None
     number: int
-    author_id: UUID
+    author_id: UUID | None = None
     author_name: str | None = None
     author_role: str
     source_version_id: UUID | None = None
@@ -82,16 +85,19 @@ class SharedPlanRead(BaseModel):
     updated_at: datetime | None = None
     confirm_count: int = 0
     contest_count: int = 0
+    divergent: bool = False
     my_vote: str | None = None
     is_default: bool = False
     can_withdraw: bool = False
-    can_edit: bool = True
+    can_edit: bool = False
     has_imported_update: bool = False
     imported_from_version_number: int | None = None
     candidates: list[SharedCandidateRead]
 
 
 class SharedPlanList(BaseModel):
+    membership_type: str = "autodeclarado"
+    shared_content_notice: str = SHARED_CONTENT_NOTICE
     items: list[SharedPlanRead]
     total: int
     limit: int

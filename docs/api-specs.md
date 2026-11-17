@@ -373,14 +373,17 @@ A interface consulta a oferta e `GET /me/class-offerings` antes de habilitar
 PDF/texto. Falhas ou respostas inválidas bloqueiam o envio e oferecem nova consulta.
 Histórico e planos particulares continuam acessíveis ao dono após deixar de seguir.
 
-### Biblioteca compartilhada, versões, revisões e votos — S8-B01 / S8-F01 (#77 / #78)
+### Compartilhamento, versões, procedência e votos — S8-B01 (#77)
 
-| Operação | Entrada | Resultado |
+| Operação | Entrada / Autorização | Resultado |
 | --- | --- | --- |
-| `GET /api/v1/class-offerings/{id}/shared-plans` | Seguidor da oferta (`limit`, `offset`) | Lista versões compartilhadas ordenadas por `confirm_count DESC` e atualização mais recente no empate, com `is_default`, `author_name`, `author_role`, `source_version_number`, `institutional_provenance`, `updated_at`, votos e `has_imported_update` |
-| `PUT /api/v1/syllabus/{id}/versions/{vid}/sharing` | Autor da versão | Publica versão para seguidores da oferta |
-| `DELETE /api/v1/syllabus/{id}/versions/{vid}/sharing` | Autor ou admin | Retira versão da turma, preservando revisões independentes e eventos pessoais já importados |
-| `POST /api/v1/syllabus/{id}/versions` | `sourceVersionId` e `candidates` | Cria e publica nova versão revisada por seguidor autenticado, professor ou admin, com histórico de autoria e data |
-| `PUT /api/v1/syllabus/{id}/versions/{vid}/vote` | `{"value":"confirm" \| "contest"}` | Registra/atualiza voto único da conta na versão e retorna contagens |
-| `DELETE /api/v1/syllabus/{id}/versions/{vid}/candidates/{cid}` | Autor da versão ou admin | Retira evento específico da versão compartilhada (204), preservando cópias pessoais importadas |
-| `POST /api/v1/syllabus/{id}/confirm` | `versionId` opcional e `candidates` | Permite importar avaliações de versão compartilhada sem reenviar PDF; ao reimportar de revisão mais nova, atualiza o evento pessoal correspondente sem duplicar |
+| `GET /api/v1/class-offerings/{id}/shared-plans` | Seguidor autenticado da oferta (`limit`, `offset`) | Lista versões compartilhadas com `membership_type: "autodeclarado"`, `shared_content_notice`, autoria (`author_role`, `author_name`), `institutional_provenance`, contagens de votos, `divergent` e candidatos, sem expor PDF ou texto bruto privado |
+| `GET /api/v1/syllabus/{id}/versions` e `.../versions/{vid}` | Autor da versão ou seguidor da oferta quando `compartilhada` | Lista ou detalha versões legíveis pelo ator (`ator_pode_ler_versao`); papel de professor/admin não abre rascunhos privados alheios |
+| `PUT /api/v1/syllabus/{id}/versions/{vid}/sharing` | Somente o autor da versão | Publica voluntariamente a versão para seguidores da oferta (`200`, idempotente; `409` se sem turma ou não concluído) |
+| `DELETE /api/v1/syllabus/{id}/versions/{vid}/sharing` | Autor da versão ou `admin` | Retira o compartilhamento (`visibilidade: "privada"`, `withdrawnAt`), bloqueando novos acessos/votos/importações e preservando revisões derivadas e eventos pessoais já importados |
+| `POST /api/v1/syllabus/{id}/versions` | Autor (em versão própria) ou `professor`/`admin` (somente em versão `compartilhada`) | Cria nova versão (`numero + 1`, `sourceVersionId`, `authorRole`) mantendo a versão anterior e agendas pessoais; herda `institutionalProvenance` apenas para `professor`/`admin` |
+| `PUT /api/v1/syllabus/{id}/versions/{vid}` | Somente o autor da versão, enquanto `privada` | Atualiza os candidatos do rascunho privado antes do compartilhamento (`409` se já `compartilhada`) |
+| `PUT /api/v1/syllabus/{id}/versions/{vid}/provenance` | Somente `admin`, com `institutionalSourceUrl` pública `http(s)` | Registra evidência oficial de procedência institucional em versão compartilhada |
+| `PUT /api/v1/syllabus/{id}/versions/{vid}/candidates/{cid}/vote` e `PUT .../versions/{vid}/vote` | Seguidor autenticado da oferta (`{"value": "confirm" \| "contest"}`) | Registra ou altera o voto único ativo por `(user_id, candidate_id)` e devolve `confirmCount`, `contestCount`, `divergent` e `myVote`, sem alterar datas automaticamente |
+| `GET /api/v1/syllabus/{id}/versions/{vid}/votes` | Quem pode ler a versão | Retorna o resumo agregado de votos e divergências por candidato (`resumo_votos_versao`), mantendo votos individuais de terceiros privados |
+| `POST /api/v1/syllabus/{id}/confirm` | `Idempotency-Key`, `versionId` opcional e `candidates` | Permite que seguidores importem candidatos de uma versão compartilhada para suas agendas privadas independentes, deduplicados por `(user_id, candidate_id)` |

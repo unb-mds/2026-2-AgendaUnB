@@ -1,3 +1,4 @@
+import re
 import time
 import hashlib
 import json
@@ -5,7 +6,7 @@ from datetime import datetime, time as dt_time, timedelta, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, Response, UploadFile, status
-from sqlalchemy import func, select, text
+from sqlalchemy import delete, func, select, text
 from sqlalchemy.exc import DBAPIError, IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session, joinedload
 from starlette.concurrency import run_in_threadpool
@@ -26,16 +27,22 @@ from src.middlewares.auth import CurrentUser, get_current_user
 from src.modules.events.router import _category_id, _personal_read
 from src.modules.classes.services import followed_available_offering
 from src.modules.syllabus.schemas import (
+    CandidateVoteSummaryRead,
     ConfirmSyllabusRequest,
     ConfirmSyllabusResponse,
     ConfirmItemResult,
     CreateRevisionRequest,
+    RevisionCandidateInput,
     SyllabusCandidateRead,
     SyllabusDetailResponse,
     SyllabusListItem,
     SyllabusListResponse,
     SyllabusUploadResponse,
+    SyllabusVersionListResponse,
+    UpdateVersionRequest,
+    ValidateProvenanceRequest,
     VersionStatusResponse,
+    VersionVotesResponse,
     VoteVersionRequest,
     VoteVersionResponse,
 )
@@ -47,7 +54,7 @@ from src.modules.syllabus.preparation import (
     owned_plan, preview, authorize,
 )
 from src.modules.syllabus.services import UPLOAD_VALIDATION_TIMEOUT_SECONDS
-from src.modules.syllabus.versions import summarize_version_votes
+from src.modules.syllabus.versions import SHARED_CONTENT_NOTICE, summarize_version_votes
 from src.modules.syllabus.worker import spawn_worker_drain, utcnow
 
 router = APIRouter(prefix="/syllabus", tags=["syllabus"])
@@ -134,10 +141,8 @@ def _can_read_version(db: Session, user_id: UUID, syllabus: Syllabus, version: S
         except DBAPIError as error:
             db.rollback()
             raise HTTPException(status_code=503, detail="Não foi possível verificar o acesso ao plano.") from error
-    if syllabus.user_id == user_id:
-        return True
     if version is None:
-        return False
+        return syllabus.user_id == user_id
     if version.author_id == user_id:
         return True
     return (
@@ -145,29 +150,6 @@ def _can_read_version(db: Session, user_id: UUID, syllabus: Syllabus, version: S
         and syllabus.offering_id is not None
         and db.get(ClassFollow, (user_id, syllabus.offering_id)) is not None
     )
-
-
-def _auto_share_version_if_eligible(
-    db: Session,
-    syllabus: Syllabus,
-    version: SyllabusVersion | None,
-    *,
-    candidates_count: int = 1,
-    initial_only: bool = False,
-) -> bool:
-    if (
-        version is None
-        or syllabus.offering_id is None
-        or syllabus.status not in {"completed", "concluido"}
-        or version.visibility != "privada"
-        or version.withdrawn_at is not None
-        or candidates_count <= 0
-        or (initial_only and version.number != 1)
-    ):
-        return False
-    version.visibility = "compartilhada"
-    version.shared_at = version.shared_at or utcnow()
-    return True
 
 
 def _rebind_events_for_revision(
@@ -304,7 +286,26 @@ def _confirm_sqlite(syllabus_id: UUID, payload: ConfirmSyllabusRequest, user_id:
         else:
             start_date = None
             end_date = None
-            starts_at = reviewed.starts_at or candidate.starts_at
+            if reviewed.starts_at is not None:
+                starts_at = reviewed.starts_at
+            elif not candidate.ambiguous and candidate.starts_at is not None:
+                starts_at = (
+                    candidate.starts_at.replace(tzinfo=timezone.utc)
+                    if candidate.starts_at.tzinfo is None
+                    else candidate.starts_at
+                )
+            elif (
+                not candidate.ambiguous
+                and candidate.data_sugerida is not None
+                and candidate.hora_sugerida is not None
+            ):
+                starts_at = datetime.combine(
+                    candidate.data_sugerida,
+                    candidate.hora_sugerida,
+                    tzinfo=timezone(timedelta(hours=-3)),
+                )
+            else:
+                starts_at = None
             if starts_at is None or starts_at.tzinfo is None or starts_at.utcoffset() is None:
                 raise HTTPException(status_code=422, detail="Corrija a data ambígua antes de confirmar o candidato.")
         prepared.append((reviewed, candidate, title, starts_at, reviewed.all_day, start_date, end_date))
@@ -336,7 +337,7 @@ def _confirm_sqlite(syllabus_id: UUID, payload: ConfirmSyllabusRequest, user_id:
                 category_id=_category_id(db, reviewed.category),
                 origin_syllabus_id=syllabus.id,
                 origin_candidate_id=candidate.id,
-                origin_version_id=candidate.version_id,
+                origin_version_id=candidate.version_id or version_id,
                 origin_page=candidate.source_page,
                 origin_excerpt=candidate.source_excerpt,
             )
@@ -373,8 +374,6 @@ def _confirm_sqlite(syllabus_id: UUID, payload: ConfirmSyllabusRequest, user_id:
             "removido": False,
             "tipo_revisado": reviewed.kind,
         })
-    if syllabus.user_id == user_id:
-        _auto_share_version_if_eligible(db, syllabus, version, candidates_count=len(prepared), initial_only=False)
     db.commit()
     return _confirmation_response(db, syllabus_id, user_id, operation.id, rows, payload.candidates, repeated=False)
 
@@ -384,6 +383,9 @@ def _candidate_read(
     *,
     status_override: str | None = None,
     kind_override: str | None = None,
+    confirm_count: int = 0,
+    contest_count: int = 0,
+    my_vote: str | None = None,
 ) -> SyllabusCandidateRead:
     return SyllabusCandidateRead(
         id=candidate.id,
@@ -398,6 +400,10 @@ def _candidate_read(
         suggestedTime=candidate.hora_sugerida,
         ambiguousFields=candidate.campos_ambiguos or [],
         versionId=candidate.version_id,
+        confirmCount=confirm_count,
+        contestCount=contest_count,
+        divergent=contest_count > 0,
+        myVote=my_vote,
     )
 
 
@@ -535,10 +541,6 @@ def get_syllabus_status(
     candidates = db.scalars(
         candidate_query.order_by(SyllabusCandidate.source_page.asc(), SyllabusCandidate.id.asc())
     ).all()
-    if is_owner and _auto_share_version_if_eligible(
-        db, syllabus, version, candidates_count=len(candidates), initial_only=True
-    ):
-        db.commit()
     own_imports: dict[UUID, tuple[str, UUID | None, str | None]] = {}
     active_owner_events: set[UUID] = set()
     if not is_owner and candidates:
@@ -681,10 +683,6 @@ def confirm_syllabus_candidates(
         ).scalar_one()
         result = result if isinstance(result, dict) else json.loads(result)
         operation_id = UUID(str(result["operacao_id"]))
-        if syllabus.user_id == current_user.id:
-            _auto_share_version_if_eligible(
-                db, syllabus, version, candidates_count=len(payload.candidates), initial_only=False
-            )
         db.commit()
     except DBAPIError as error:
         db.rollback()
@@ -708,7 +706,7 @@ def confirm_syllabus_candidates(
 @router.delete(
     "/{syllabus_id}/candidates/{candidate_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Descarta um candidato de um plano",
+    summary="Descarta um candidato de um plano privado",
 )
 def discard_syllabus_candidate(
     syllabus_id: UUID,
@@ -717,13 +715,19 @@ def discard_syllabus_candidate(
     db: Session = Depends(get_db),
 ) -> Response:
     syllabus = db.scalar(
-        select(Syllabus).where(Syllabus.id == syllabus_id).with_for_update()
+        select(Syllabus).where(Syllabus.id == syllabus_id, Syllabus.user_id == current_user.id).with_for_update()
     )
-    if syllabus is None or (syllabus.user_id != current_user.id and current_user.role != "admin"):
+    if syllabus is None:
         raise HTTPException(status_code=404, detail="Plano de ensino não encontrado.")
     if syllabus.status not in {"completed", "concluido"}:
         raise HTTPException(status_code=409, detail="Só é possível descartar candidatos de um plano concluído.")
     version_id = syllabus.approved_version_id
+    version = db.get(SyllabusVersion, version_id) if version_id else None
+    if version is not None and version.visibility != "privada":
+        raise HTTPException(
+            status_code=409,
+            detail="O descarte individual de candidatos compartilhados exige criar uma revisão.",
+        )
     candidate_query = select(SyllabusCandidate).where(
         SyllabusCandidate.id == candidate_id,
         SyllabusCandidate.syllabus_id == syllabus_id,
@@ -754,153 +758,86 @@ def _get_syllabus_version(db: Session, syllabus_id: UUID, version_id: UUID) -> t
     return syllabus, version
 
 
-@router.put(
-    "/{syllabus_id}/versions/{version_id}/sharing",
-    response_model=VersionStatusResponse,
-    summary="Compartilha uma versão do plano com os seguidores da turma",
-)
-def share_syllabus_version(
-    syllabus_id: UUID,
-    version_id: UUID,
-    current_user: CurrentUser = Depends(get_current_user),
-    db: Session = Depends(get_db),
+def _build_version_response(
+    db: Session,
+    syllabus: Syllabus,
+    version: SyllabusVersion,
+    current_user_id: UUID,
 ) -> VersionStatusResponse:
-    syllabus, version = _get_syllabus_version(db, syllabus_id, version_id)
-    if version.author_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Apenas o autor compartilha esta versão.")
-    if syllabus.offering_id is None:
-        raise HTTPException(status_code=409, detail="Associe o plano a uma turma antes de compartilhar.")
-    if syllabus.status not in {"completed", "concluido"}:
-        raise HTTPException(status_code=409, detail="O plano ainda não terminou de ser processado.")
-
-    if db.bind.dialect.name == "postgresql":
-        try:
-            db.execute(
-                text("select (public.compartilhar_versao(:actor_id, :version_id)).id"),
-                {"actor_id": current_user.id, "version_id": version_id},
-            )
-            db.commit()
-            db.refresh(version)
-        except DBAPIError as error:
-            db.rollback()
-            raise _confirmation_error(error) from error
-    else:
-        if version.visibility != "compartilhada":
-            version.visibility = "compartilhada"
-            version.shared_at = utcnow()
-            db.commit()
-            db.refresh(version)
-    return VersionStatusResponse(
-        id=version.id,
-        syllabusId=version.syllabus_id,
-        number=version.number,
-        visibility=version.visibility,
-        sharedAt=version.shared_at,
-        withdrawnAt=version.withdrawn_at,
+    candidates = db.scalars(
+        select(SyllabusCandidate)
+        .where(
+            SyllabusCandidate.version_id == version.id,
+            SyllabusCandidate.status != "descartado",
+        )
+        .order_by(
+            SyllabusCandidate.order.asc().nulls_last(),
+            SyllabusCandidate.source_page.asc().nulls_last(),
+            SyllabusCandidate.id.asc(),
+        )
+    ).all()
+    candidate_ids = [c.id for c in candidates]
+    votes = (
+        db.scalars(select(CandidateVote).where(CandidateVote.candidate_id.in_(candidate_ids))).all()
+        if candidate_ids else []
     )
+    votes_by_candidate: dict[UUID, list[CandidateVote]] = {}
+    for vote in votes:
+        votes_by_candidate.setdefault(vote.candidate_id, []).append(vote)
 
-
-@router.delete(
-    "/{syllabus_id}/versions/{version_id}/sharing",
-    response_model=VersionStatusResponse,
-    summary="Retira o compartilhamento de uma versão",
-)
-def withdraw_syllabus_version(
-    syllabus_id: UUID,
-    version_id: UUID,
-    current_user: CurrentUser = Depends(get_current_user),
-    db: Session = Depends(get_db),
-) -> VersionStatusResponse:
-    _, version = _get_syllabus_version(db, syllabus_id, version_id)
-    if version.author_id != current_user.id and current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Apenas o autor ou um administrador retira esta versão.")
-
-    if db.bind.dialect.name == "postgresql":
-        try:
-            db.execute(
-                text("select (public.retirar_compartilhamento(:actor_id, :version_id)).id"),
-                {"actor_id": current_user.id, "version_id": version_id},
-            )
-            db.commit()
-            db.refresh(version)
-        except DBAPIError as error:
-            db.rollback()
-            raise _confirmation_error(error) from error
-    else:
-        if version.visibility != "privada":
-            version.visibility = "privada"
-            version.shared_at = None
-            version.withdrawn_at = utcnow()
-            version.withdrawn_by = current_user.id
-            db.commit()
-            db.refresh(version)
-    return VersionStatusResponse(
-        id=version.id,
-        syllabusId=version.syllabus_id,
-        number=version.number,
-        visibility=version.visibility,
-        sharedAt=version.shared_at,
-        withdrawnAt=version.withdrawn_at,
-    )
-
-
-@router.post(
-    "/{syllabus_id}/versions",
-    response_model=VersionStatusResponse,
-    status_code=status.HTTP_201_CREATED,
-    summary="Cria e publica uma nova versão revisada do plano",
-)
-def create_syllabus_revision(
-    syllabus_id: UUID,
-    payload: CreateRevisionRequest,
-    current_user: CurrentUser = Depends(get_current_user),
-    db: Session = Depends(get_db),
-) -> VersionStatusResponse:
-    syllabus, origin = _get_syllabus_version(db, syllabus_id, payload.source_version_id)
-    if origin.author_id != current_user.id and origin.visibility != "compartilhada":
-        raise HTTPException(status_code=404, detail="Versão do plano não encontrada.")
-    if origin.author_id != current_user.id and not (
-        origin.visibility == "compartilhada"
-        and (
-            current_user.role in ("professor", "admin")
-            or (
-                syllabus.offering_id is not None
-                and db.get(ClassFollow, (current_user.id, syllabus.offering_id)) is not None
+    candidate_reads = []
+    for candidate in candidates:
+        c_votes = votes_by_candidate.get(candidate.id, [])
+        c_confirm = sum(1 for v in c_votes if v.value == "confirma")
+        c_contest = sum(1 for v in c_votes if v.value == "contesta")
+        c_my_vote = next((v.value for v in c_votes if v.user_id == current_user_id), None)
+        candidate_reads.append(
+            _candidate_read(
+                candidate,
+                confirm_count=c_confirm,
+                contest_count=c_contest,
+                my_vote=c_my_vote,
             )
         )
-    ):
-        raise HTTPException(status_code=403, detail="Siga a turma para revisar esta versão.")
-    if syllabus.status not in {"completed", "concluido"}:
-        raise HTTPException(status_code=409, detail="O plano ainda não terminou de ser processado.")
 
-    next_number = (db.scalar(
-        select(func.max(SyllabusVersion.number)).where(SyllabusVersion.syllabus_id == syllabus_id)
-    ) or 0) + 1
-    author_role = db.scalar(select(Profile.papel).where(Profile.id == current_user.id)) or current_user.role or "student"
-    inherits_provenance = bool(origin.institutional_provenance and author_role in ("professor", "admin"))
+    return VersionStatusResponse(
+        id=version.id,
+        syllabusId=version.syllabus_id,
+        offeringId=syllabus.offering_id,
+        number=version.number,
+        visibility=version.visibility,
+        authorId=version.author_id,
+        authorRole=version.author_role,
+        sourceVersionId=version.source_version_id,
+        institutionalProvenance=version.institutional_provenance,
+        institutionalSourceUrl=version.institutional_source_url,
+        sharedAt=version.shared_at,
+        withdrawnAt=version.withdrawn_at,
+        createdAt=version.created_at,
+        membershipType="autodeclarado",
+        sharedContentNotice=SHARED_CONTENT_NOTICE,
+        candidates=candidate_reads,
+    )
 
+
+def _populate_revision_candidates(
+    db: Session,
+    *,
+    syllabus_id: UUID,
+    new_version_id: UUID,
+    origin_id: UUID,
+    candidate_inputs: list[RevisionCandidateInput],
+) -> None:
     origin_candidates = {
         c.id: c
-        for c in db.scalars(select(SyllabusCandidate).where(SyllabusCandidate.version_id == origin.id)).all()
+        for c in db.scalars(select(SyllabusCandidate).where(SyllabusCandidate.version_id == origin_id)).all()
     }
-    new_version = SyllabusVersion(
-        syllabus_id=syllabus_id,
-        number=next_number,
-        author_id=current_user.id,
-        author_role=author_role,
-        source_version_id=origin.id,
-        visibility="privada",
-        institutional_provenance=inherits_provenance,
-        institutional_source_url=origin.institutional_source_url if inherits_provenance else None,
-        provenance_validated_by=origin.provenance_validated_by if inherits_provenance else None,
-        provenance_validated_at=origin.provenance_validated_at if inherits_provenance else None,
-    )
-    db.add(new_version)
+    db.execute(delete(SyllabusCandidate).where(SyllabusCandidate.version_id == new_version_id))
     db.flush()
 
     brasilia_tz = timezone(timedelta(hours=-3))
     used_orders: set[int] = set()
-    for idx, item in enumerate(payload.candidates):
+    for idx, item in enumerate(candidate_inputs):
         orig = origin_candidates.get(item.candidate_id) if item.candidate_id else None
         order = orig.order if orig is not None and orig.order is not None and orig.order not in used_orders else None
         if order is None:
@@ -932,7 +869,7 @@ def create_syllabus_revision(
         db.add(
             SyllabusCandidate(
                 syllabus_id=syllabus_id,
-                version_id=new_version.id,
+                version_id=new_version_id,
                 order=order,
                 title=item.title,
                 kind=item.kind or (orig.kind if orig else None),
@@ -950,23 +887,428 @@ def create_syllabus_revision(
                 provider=orig.provider if orig else None,
             )
         )
-    # Inserir candidatos enquanto privada respeita a trigger de imutabilidade no PostgreSQL.
     db.flush()
 
-    if syllabus.offering_id is not None:
-        new_version.visibility = "compartilhada"
-        new_version.shared_at = utcnow()
-    if syllabus.user_id == current_user.id and origin.id == syllabus.approved_version_id:
-        syllabus.approved_version_id = new_version.id
+
+@router.get(
+    "/{syllabus_id}/versions",
+    response_model=SyllabusVersionListResponse,
+    summary="Lista versões autorizadas de um plano de ensino",
+)
+def list_syllabus_versions(
+    syllabus_id: UUID,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> SyllabusVersionListResponse:
+    syllabus = db.get(Syllabus, syllabus_id)
+    if syllabus is None:
+        raise HTTPException(status_code=404, detail="Plano de ensino não encontrado.")
+    all_versions = db.scalars(
+        select(SyllabusVersion)
+        .where(SyllabusVersion.syllabus_id == syllabus_id)
+        .order_by(SyllabusVersion.number.desc(), SyllabusVersion.id.asc())
+    ).all()
+    readable = [v for v in all_versions if _can_read_version(db, current_user.id, syllabus, v)]
+    if not readable and syllabus.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Plano de ensino não encontrado.")
+    return SyllabusVersionListResponse(
+        syllabusId=syllabus.id,
+        offeringId=syllabus.offering_id,
+        membershipType="autodeclarado",
+        sharedContentNotice=SHARED_CONTENT_NOTICE,
+        items=[_build_version_response(db, syllabus, v, current_user.id) for v in readable],
+        total=len(readable),
+    )
+
+
+@router.get(
+    "/{syllabus_id}/versions/{version_id}",
+    response_model=VersionStatusResponse,
+    summary="Consulta os detalhes e avaliações de uma versão autorizada",
+)
+def get_syllabus_version(
+    syllabus_id: UUID,
+    version_id: UUID,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> VersionStatusResponse:
+    syllabus, version = _get_syllabus_version(db, syllabus_id, version_id)
+    if not _can_read_version(db, current_user.id, syllabus, version):
+        raise HTTPException(status_code=404, detail="Versão do plano não encontrada.")
+    return _build_version_response(db, syllabus, version, current_user.id)
+
+
+@router.put(
+    "/{syllabus_id}/versions/{version_id}/sharing",
+    response_model=VersionStatusResponse,
+    summary="Compartilha voluntariamente uma versão do plano com os seguidores da turma",
+)
+def share_syllabus_version(
+    syllabus_id: UUID,
+    version_id: UUID,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> VersionStatusResponse:
+    syllabus, version = _get_syllabus_version(db, syllabus_id, version_id)
+    if version.author_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Apenas o autor compartilha a versão.")
+    if syllabus.offering_id is None:
+        raise HTTPException(status_code=409, detail="Associe o plano a uma turma antes de compartilhar.")
+    if syllabus.status not in {"completed", "concluido"}:
+        raise HTTPException(status_code=409, detail="O plano ainda não terminou de ser processado.")
+
+    if db.bind.dialect.name == "postgresql":
+        try:
+            db.execute(
+                text("select (public.compartilhar_versao(:actor_id, :version_id)).id"),
+                {"actor_id": current_user.id, "version_id": version_id},
+            )
+            db.commit()
+            db.refresh(version)
+        except DBAPIError as error:
+            db.rollback()
+            raise _confirmation_error(error) from error
+    else:
+        if version.visibility != "compartilhada":
+            version.visibility = "compartilhada"
+            version.shared_at = utcnow()
+            db.commit()
+            db.refresh(version)
+    return _build_version_response(db, syllabus, version, current_user.id)
+
+
+@router.delete(
+    "/{syllabus_id}/versions/{version_id}/sharing",
+    response_model=VersionStatusResponse,
+    summary="Retira o compartilhamento de uma versão",
+)
+def withdraw_syllabus_version(
+    syllabus_id: UUID,
+    version_id: UUID,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> VersionStatusResponse:
+    syllabus, version = _get_syllabus_version(db, syllabus_id, version_id)
+    if version.author_id != current_user.id and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Apenas o autor ou um administrador retira o compartilhamento.")
+
+    if db.bind.dialect.name == "postgresql":
+        try:
+            db.execute(
+                text("select (public.retirar_compartilhamento(:actor_id, :version_id)).id"),
+                {"actor_id": current_user.id, "version_id": version_id},
+            )
+            db.commit()
+            db.refresh(version)
+        except DBAPIError as error:
+            db.rollback()
+            raise _confirmation_error(error) from error
+    else:
+        if version.visibility != "privada":
+            version.visibility = "privada"
+            version.shared_at = None
+            version.withdrawn_at = utcnow()
+            version.withdrawn_by = current_user.id
+            db.commit()
+            db.refresh(version)
+    return _build_version_response(db, syllabus, version, current_user.id)
+
+
+@router.post(
+    "/{syllabus_id}/versions",
+    response_model=VersionStatusResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Cria uma nova versão revisada do plano",
+)
+def create_syllabus_revision(
+    syllabus_id: UUID,
+    payload: CreateRevisionRequest,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> VersionStatusResponse:
+    syllabus = db.get(Syllabus, syllabus_id)
+    if syllabus is None:
+        raise HTTPException(status_code=404, detail="Plano de ensino não encontrado.")
+    source_id = payload.source_version_id or syllabus.approved_version_id
+    if source_id is None:
+        raise HTTPException(status_code=404, detail="Versão de origem não encontrada.")
+    _, origin = _get_syllabus_version(db, syllabus_id, source_id)
+
+    # Papel de professor ou admin nunca dá acesso a versões privadas de outra conta.
+    if origin.author_id != current_user.id and origin.visibility != "compartilhada":
+        raise HTTPException(status_code=404, detail="Versão do plano não encontrada.")
+
+    author_role = db.scalar(select(Profile.papel).where(Profile.id == current_user.id)) or current_user.role or "student"
+    if origin.author_id != current_user.id and author_role not in ("professor", "admin"):
+        raise HTTPException(status_code=403, detail="Sem permissão para revisar esta versão.")
+
+    if syllabus.status not in {"completed", "concluido"}:
+        raise HTTPException(status_code=409, detail="O plano ainda não terminou de ser processado.")
+
+    if db.bind.dialect.name == "postgresql":
+        try:
+            new_id = db.scalar(
+                text("select (public.criar_revisao(:actor_id, :source_id)).id"),
+                {"actor_id": current_user.id, "source_id": origin.id},
+            )
+            new_version = db.get(SyllabusVersion, new_id)
+            if payload.candidates is not None:
+                _populate_revision_candidates(
+                    db,
+                    syllabus_id=syllabus_id,
+                    new_version_id=new_version.id,
+                    origin_id=origin.id,
+                    candidate_inputs=payload.candidates,
+                )
+            if payload.share:
+                db.execute(
+                    text("select (public.compartilhar_versao(:actor_id, :version_id)).id"),
+                    {"actor_id": current_user.id, "version_id": new_version.id},
+                )
+            if syllabus.user_id == current_user.id and origin.id == syllabus.approved_version_id:
+                syllabus.approved_version_id = new_version.id
+            db.commit()
+            db.refresh(new_version)
+        except DBAPIError as error:
+            db.rollback()
+            raise _confirmation_error(error) from error
+    else:
+        next_number = (db.scalar(
+            select(func.max(SyllabusVersion.number)).where(SyllabusVersion.syllabus_id == syllabus_id)
+        ) or 0) + 1
+        inherits_provenance = bool(origin.institutional_provenance and author_role in ("professor", "admin"))
+        new_version = SyllabusVersion(
+            syllabus_id=syllabus_id,
+            number=next_number,
+            author_id=current_user.id,
+            author_role=author_role,
+            source_version_id=origin.id,
+            visibility="privada",
+            institutional_provenance=inherits_provenance,
+            institutional_source_url=origin.institutional_source_url if inherits_provenance else None,
+            provenance_validated_by=origin.provenance_validated_by if inherits_provenance else None,
+            provenance_validated_at=origin.provenance_validated_at if inherits_provenance else None,
+        )
+        db.add(new_version)
+        db.flush()
+
+        if payload.candidates is not None:
+            _populate_revision_candidates(
+                db,
+                syllabus_id=syllabus_id,
+                new_version_id=new_version.id,
+                origin_id=origin.id,
+                candidate_inputs=payload.candidates,
+            )
+        else:
+            origin_candidates = db.scalars(
+                select(SyllabusCandidate)
+                .where(
+                    SyllabusCandidate.version_id == origin.id,
+                    SyllabusCandidate.status != "descartado",
+                )
+                .order_by(SyllabusCandidate.order.asc().nulls_last(), SyllabusCandidate.id.asc())
+            ).all()
+            for orig in origin_candidates:
+                db.add(
+                    SyllabusCandidate(
+                        syllabus_id=syllabus_id,
+                        version_id=new_version.id,
+                        order=orig.order,
+                        title=orig.title,
+                        kind=orig.kind,
+                        starts_at=orig.starts_at,
+                        data_sugerida=orig.data_sugerida,
+                        hora_sugerida=orig.hora_sugerida,
+                        ambiguous=orig.ambiguous,
+                        campos_ambiguos=list(orig.campos_ambiguos or []),
+                        source_page=orig.source_page,
+                        source_excerpt=orig.source_excerpt,
+                        status="pendente",
+                        processing_version=orig.processing_version,
+                        provider=orig.provider,
+                    )
+                )
+            db.flush()
+
+        if payload.share:
+            if syllabus.offering_id is None:
+                db.rollback()
+                raise HTTPException(status_code=409, detail="Associe o plano a uma turma antes de compartilhar.")
+            new_version.visibility = "compartilhada"
+            new_version.shared_at = utcnow()
+        if syllabus.user_id == current_user.id and origin.id == syllabus.approved_version_id:
+            syllabus.approved_version_id = new_version.id
+        db.commit()
+        db.refresh(new_version)
+
+    return _build_version_response(db, syllabus, new_version, current_user.id)
+
+
+@router.put(
+    "/{syllabus_id}/versions/{version_id}",
+    response_model=VersionStatusResponse,
+    summary="Edita os candidatos de uma versão privada antes do compartilhamento",
+)
+def update_private_version(
+    syllabus_id: UUID,
+    version_id: UUID,
+    payload: UpdateVersionRequest,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> VersionStatusResponse:
+    syllabus, version = _get_syllabus_version(db, syllabus_id, version_id)
+    if version.author_id != current_user.id:
+        if version.visibility != "compartilhada":
+            raise HTTPException(status_code=404, detail="Versão do plano não encontrada.")
+        raise HTTPException(status_code=403, detail="Apenas o autor pode editar um rascunho de versão.")
+    if version.visibility == "compartilhada":
+        raise HTTPException(
+            status_code=409,
+            detail="Conteúdo compartilhado não é editado diretamente: crie uma revisão.",
+        )
+
+    _populate_revision_candidates(
+        db,
+        syllabus_id=syllabus_id,
+        new_version_id=version.id,
+        origin_id=version.source_version_id or version.id,
+        candidate_inputs=payload.candidates,
+    )
     db.commit()
-    db.refresh(new_version)
-    return VersionStatusResponse(
-        id=new_version.id,
-        syllabusId=new_version.syllabus_id,
-        number=new_version.number,
-        visibility=new_version.visibility,
-        sharedAt=new_version.shared_at,
-        withdrawnAt=new_version.withdrawn_at,
+    db.refresh(version)
+    return _build_version_response(db, syllabus, version, current_user.id)
+
+
+@router.put(
+    "/{syllabus_id}/versions/{version_id}/provenance",
+    response_model=VersionStatusResponse,
+    summary="Valida a procedência institucional de uma versão compartilhada",
+)
+def validate_version_institutional_provenance(
+    syllabus_id: UUID,
+    version_id: UUID,
+    payload: ValidateProvenanceRequest,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> VersionStatusResponse:
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Apenas administradores validam a origem institucional.")
+    url = payload.institutional_source_url.strip()
+    if len(url) > 2048 or not re.match(r"^https?://[^\s<>\"]+$", url, flags=re.IGNORECASE):
+        raise HTTPException(status_code=422, detail="Informe a URL pública oficial da evidência.")
+
+    syllabus, version = _get_syllabus_version(db, syllabus_id, version_id)
+    if version.visibility != "compartilhada":
+        raise HTTPException(status_code=404, detail="Versão compartilhada não encontrada.")
+
+    if db.bind.dialect.name == "postgresql":
+        try:
+            db.execute(
+                text("select (public.validar_procedencia_institucional(:actor_id, :version_id, :url)).id"),
+                {"actor_id": current_user.id, "version_id": version_id, "url": url},
+            )
+            db.commit()
+            db.refresh(version)
+        except DBAPIError as error:
+            db.rollback()
+            raise _confirmation_error(error) from error
+    else:
+        version.institutional_provenance = True
+        version.institutional_source_url = url
+        version.provenance_validated_by = current_user.id
+        version.provenance_validated_at = utcnow()
+        db.commit()
+        db.refresh(version)
+    return _build_version_response(db, syllabus, version, current_user.id)
+
+
+def _normalize_vote_value(raw: str) -> str:
+    return {"confirm": "confirma", "confirma": "confirma", "contest": "contesta", "contesta": "contesta"}[raw]
+
+
+def _cast_votes(
+    db: Session,
+    *,
+    syllabus: Syllabus,
+    version: SyllabusVersion,
+    targets: list[SyllabusCandidate],
+    current_user_id: UUID,
+    vote_value: str,
+) -> None:
+    if db.bind.dialect.name == "postgresql":
+        try:
+            for target in targets:
+                db.execute(
+                    text("select public.votar_avaliacao(:actor_id, :candidate_id, :val)"),
+                    {"actor_id": current_user_id, "candidate_id": target.id, "val": vote_value},
+                )
+            db.commit()
+        except DBAPIError as error:
+            db.rollback()
+            raise _confirmation_error(error) from error
+    else:
+        now = utcnow()
+        for target in targets:
+            existing = db.get(CandidateVote, (current_user_id, target.id))
+            if existing is None:
+                db.add(CandidateVote(user_id=current_user_id, candidate_id=target.id, value=vote_value, updated_at=now))
+            elif existing.value != vote_value:
+                existing.value = vote_value
+                existing.updated_at = now
+        db.commit()
+
+
+@router.put(
+    "/{syllabus_id}/versions/{version_id}/candidates/{candidate_id}/vote",
+    response_model=CandidateVoteSummaryRead,
+    summary="Registra ou atualiza o voto único do usuário sobre um candidato compartilhado",
+)
+def vote_syllabus_candidate(
+    syllabus_id: UUID,
+    version_id: UUID,
+    candidate_id: UUID,
+    payload: VoteVersionRequest,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> CandidateVoteSummaryRead:
+    syllabus, version = _get_syllabus_version(db, syllabus_id, version_id)
+    if version.visibility != "compartilhada":
+        raise HTTPException(status_code=404, detail="Candidato não disponível para voto.")
+    if not _can_read_version(db, current_user.id, syllabus, version):
+        raise HTTPException(status_code=403, detail="Siga a turma para votar.")
+
+    candidate = db.scalar(
+        select(SyllabusCandidate).where(
+            SyllabusCandidate.id == candidate_id,
+            SyllabusCandidate.syllabus_id == syllabus_id,
+            SyllabusCandidate.version_id == version_id,
+            SyllabusCandidate.status != "descartado",
+        )
+    )
+    if candidate is None:
+        raise HTTPException(status_code=404, detail="Candidato não disponível para voto.")
+
+    vote_value = _normalize_vote_value(payload.value)
+    _cast_votes(
+        db,
+        syllabus=syllabus,
+        version=version,
+        targets=[candidate],
+        current_user_id=current_user.id,
+        vote_value=vote_value,
+    )
+
+    votes = db.scalars(select(CandidateVote).where(CandidateVote.candidate_id == candidate_id)).all()
+    confirm_count = sum(1 for v in votes if v.value == "confirma")
+    contest_count = sum(1 for v in votes if v.value == "contesta")
+    return CandidateVoteSummaryRead(
+        candidateId=candidate_id,
+        versionId=version_id,
+        confirmCount=confirm_count,
+        contestCount=contest_count,
+        divergent=contest_count > 0,
+        myVote=vote_value,
     )
 
 
@@ -1002,28 +1344,15 @@ def vote_syllabus_version(
     if not targets:
         raise HTTPException(status_code=422, detail="Esta versão não possui avaliações para votar.")
 
-    vote_value = {"confirm": "confirma", "contest": "contesta"}[payload.value]
-    if db.bind.dialect.name == "postgresql":
-        try:
-            for target in targets:
-                db.execute(
-                    text("select public.votar_avaliacao(:actor_id, :candidate_id, :val)"),
-                    {"actor_id": current_user.id, "candidate_id": target.id, "val": vote_value},
-                )
-            db.commit()
-        except DBAPIError as error:
-            db.rollback()
-            raise _confirmation_error(error) from error
-    else:
-        now = utcnow()
-        for target in targets:
-            existing = db.get(CandidateVote, (current_user.id, target.id))
-            if existing is None:
-                db.add(CandidateVote(user_id=current_user.id, candidate_id=target.id, value=vote_value, updated_at=now))
-            elif existing.value != vote_value:
-                existing.value = vote_value
-                existing.updated_at = now
-        db.commit()
+    vote_value = _normalize_vote_value(payload.value)
+    _cast_votes(
+        db,
+        syllabus=syllabus,
+        version=version,
+        targets=targets,
+        current_user_id=current_user.id,
+        vote_value=vote_value,
+    )
 
     all_ids = [c.id for c in active_candidates]
     votes = db.scalars(select(CandidateVote).where(CandidateVote.candidate_id.in_(all_ids))).all()
@@ -1033,16 +1362,103 @@ def vote_syllabus_version(
     confirm_count, contest_count, my_vote = summarize_version_votes(all_ids, votes_by_candidate, current_user.id)
     return VoteVersionResponse(
         versionId=version_id,
+        candidateId=payload.candidate_id,
         confirmCount=confirm_count,
         contestCount=contest_count,
+        divergent=contest_count > 0,
         myVote=my_vote or vote_value,
+    )
+
+
+@router.get(
+    "/{syllabus_id}/versions/{version_id}/votes",
+    response_model=VersionVotesResponse,
+    summary="Consulta o resumo de votos e divergências de uma versão",
+)
+def get_syllabus_version_votes(
+    syllabus_id: UUID,
+    version_id: UUID,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> VersionVotesResponse:
+    syllabus, version = _get_syllabus_version(db, syllabus_id, version_id)
+    if not _can_read_version(db, current_user.id, syllabus, version):
+        raise HTTPException(status_code=403, detail="Sem acesso a esta versão.")
+
+    if db.bind.dialect.name == "postgresql":
+        try:
+            rows = db.execute(
+                text("select * from public.resumo_votos_versao(:actor_id, :version_id)"),
+                {"actor_id": current_user.id, "version_id": version_id},
+            ).mappings().all()
+        except DBAPIError as error:
+            db.rollback()
+            raise _confirmation_error(error) from error
+        items = [
+            CandidateVoteSummaryRead(
+                candidateId=r["avaliacao_id"],
+                versionId=version_id,
+                confirmCount=int(r["confirmam"] or 0),
+                contestCount=int(r["contestam"] or 0),
+                divergent=int(r["contestam"] or 0) > 0,
+                myVote=r["meu_voto"],
+            )
+            for r in rows
+        ]
+        confirm_count = sum(item.confirm_count for item in items)
+        contest_count = sum(item.contest_count for item in items)
+        my_vote = next((item.my_vote for item in items if item.my_vote is not None), None)
+        return VersionVotesResponse(
+            versionId=version_id,
+            confirmCount=confirm_count,
+            contestCount=contest_count,
+            divergent=contest_count > 0,
+            myVote=my_vote,
+            items=items,
+        )
+
+    candidates = db.scalars(
+        select(SyllabusCandidate)
+        .where(SyllabusCandidate.version_id == version_id, SyllabusCandidate.status != "descartado")
+        .order_by(SyllabusCandidate.order.asc().nulls_last(), SyllabusCandidate.id.asc())
+    ).all()
+    all_ids = [c.id for c in candidates]
+    votes = db.scalars(select(CandidateVote).where(CandidateVote.candidate_id.in_(all_ids))).all() if all_ids else []
+    votes_by_candidate: dict[UUID, list[CandidateVote]] = {}
+    for vote in votes:
+        votes_by_candidate.setdefault(vote.candidate_id, []).append(vote)
+
+    items = []
+    for candidate in candidates:
+        c_votes = votes_by_candidate.get(candidate.id, [])
+        c_confirm = sum(1 for v in c_votes if v.value == "confirma")
+        c_contest = sum(1 for v in c_votes if v.value == "contesta")
+        c_my_vote = next((v.value for v in c_votes if v.user_id == current_user.id), None)
+        items.append(
+            CandidateVoteSummaryRead(
+                candidateId=candidate.id,
+                versionId=version_id,
+                confirmCount=c_confirm,
+                contestCount=c_contest,
+                divergent=c_contest > 0,
+                myVote=c_my_vote,
+            )
+        )
+    confirm_count, contest_count, my_vote = summarize_version_votes(all_ids, votes_by_candidate, current_user.id)
+    return VersionVotesResponse(
+        versionId=version_id,
+        confirmCount=confirm_count,
+        contestCount=contest_count,
+        divergent=contest_count > 0,
+        myVote=my_vote,
+        items=items,
     )
 
 
 @router.delete(
     "/{syllabus_id}/versions/{version_id}/candidates/{candidate_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Retira um evento/candidato de uma versão do plano",
+    summary="Descarta um candidato de uma versão privada",
 )
 def withdraw_version_candidate(
     syllabus_id: UUID,
@@ -1053,7 +1469,12 @@ def withdraw_version_candidate(
 ) -> Response:
     _, version = _get_syllabus_version(db, syllabus_id, version_id)
     if version.author_id != current_user.id and current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Apenas o autor ou um administrador pode retirar este evento.")
+        raise HTTPException(status_code=403, detail="Apenas o autor ou um administrador pode descartar este candidato.")
+    if version.visibility == "compartilhada":
+        raise HTTPException(
+            status_code=409,
+            detail="Candidato de versão compartilhada não pode ser excluído; retire o compartilhamento ou crie uma revisão.",
+        )
     candidate = db.scalar(
         select(SyllabusCandidate).where(
             SyllabusCandidate.id == candidate_id,
@@ -1067,4 +1488,5 @@ def withdraw_version_candidate(
     candidate.revisado_em = utcnow()
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
 

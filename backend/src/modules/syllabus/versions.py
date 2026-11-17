@@ -6,6 +6,13 @@ from sqlalchemy import select
 
 from src.database.models import CandidateVote, Profile, SyllabusCandidate, SyllabusVersion
 
+SHARED_CONTENT_NOTICE = (
+    "Vínculo autodeclarado com a turma. Apenas avaliações revisadas e compartilhadas "
+    "voluntariamente ficam visíveis aos seguidores; o PDF original é descartado após a "
+    "extração local e a votação indica concordância ou divergência sem alterar datas "
+    "automaticamente nem servir como prova oficial."
+)
+
 
 def utc_timestamp(value: datetime | None) -> float:
     if value is None:
@@ -13,6 +20,14 @@ def utc_timestamp(value: datetime | None) -> float:
     if value.tzinfo is None:
         return value.replace(tzinfo=timezone.utc).timestamp()
     return value.astimezone(timezone.utc).timestamp()
+
+
+def to_public_vote_label(db_value: str | None) -> str | None:
+    if db_value in {"confirma", "confirm"}:
+        return "confirm"
+    if db_value in {"contesta", "contest"}:
+        return "contest"
+    return None
 
 
 def summarize_version_votes(
@@ -33,6 +48,7 @@ def summarize_version_votes(
     contest_count = sum(1 for vote in latest_by_user.values() if vote.value == "contesta")
     my_vote_row = latest_by_user.get(current_user_id)
     return confirm_count, contest_count, (my_vote_row.value if my_vote_row else None)
+
 
 
 def private_version(db, plan, *, new_analysis=False):

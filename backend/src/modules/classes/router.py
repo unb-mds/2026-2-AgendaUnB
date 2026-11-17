@@ -22,7 +22,7 @@ from src.database.models import (
 from src.middlewares.auth import CurrentUser, get_current_user
 from src.modules.classes.schemas import CatalogFilters, OfferingList, OfferingRead, FollowedList, SharedPlanList
 from src.modules.classes.services import available_offering, metadata, offering_read, publication
-from src.modules.syllabus.versions import summarize_version_votes, utc_timestamp
+from src.modules.syllabus.versions import SHARED_CONTENT_NOTICE, summarize_version_votes, utc_timestamp
 
 def private_response(response: Response):
     response.headers["Cache-Control"] = "no-store"
@@ -160,7 +160,14 @@ def shared_plans(offering_id: UUID, limit: int = Query(20, ge=1, le=100), offset
     ).all()
     total = len(versions)
     if not versions:
-        return {"items": [], "total": 0, "limit": limit, "offset": offset}
+        return {
+            "membership_type": "autodeclarado",
+            "shared_content_notice": SHARED_CONTENT_NOTICE,
+            "items": [],
+            "total": 0,
+            "limit": limit,
+            "offset": offset,
+        }
 
     version_ids = [v.id for v in versions]
     syllabus_ids = list({v.syllabus_id for v in versions})
@@ -274,6 +281,7 @@ def shared_plans(offering_id: UUID, limit: int = Query(20, ge=1, le=100), offset
                 "modified_since_import": modified_since_import,
                 "confirm_count": c_confirm,
                 "contest_count": c_contest,
+                "divergent": c_contest > 0,
                 "my_vote": c_my_vote,
             })
 
@@ -308,10 +316,11 @@ def shared_plans(offering_id: UUID, limit: int = Query(20, ge=1, le=100), offset
             "updated_at": updated_at,
             "confirm_count": confirm_count,
             "contest_count": contest_count,
+            "divergent": contest_count > 0,
             "my_vote": my_vote,
             "is_default": False,
             "can_withdraw": version.author_id == user.id or user.role == "admin",
-            "can_edit": True,
+            "can_edit": version.author_id == user.id or user.role in ("professor", "admin"),
             "has_imported_update": has_imported_update,
             "imported_from_version_number": imported_from_version_number if has_imported_update else None,
             "candidates": candidate_reads,
@@ -328,4 +337,11 @@ def shared_plans(offering_id: UUID, limit: int = Query(20, ge=1, le=100), offset
     if built:
         built[0]["is_default"] = True
 
-    return {"items": built[offset : offset + limit], "total": total, "limit": limit, "offset": offset}
+    return {
+        "membership_type": "autodeclarado",
+        "shared_content_notice": SHARED_CONTENT_NOTICE,
+        "items": built[offset : offset + limit],
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+    }
