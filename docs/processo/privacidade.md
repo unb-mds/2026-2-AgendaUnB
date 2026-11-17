@@ -39,7 +39,7 @@ Base legal: referência aos incisos do art. 7º da LGPD. O projeto tem finalidad
 | Votos | `votos_avaliacao` | Validação colaborativa | Execução do serviço (V) | Enquanto a conta existir | Cascata |
 | Operações de importação | `operacoes_importacao`, `itens_importacao` | Evitar duplicar eventos em retries | Execução do serviço (V) | Enquanto a conta existir | Cascata |
 | Aceites e consentimentos | `aceites_termos`, `consentimentos` | Comprovar ciência e autorização | Cumprimento de obrigação e exercício de direitos (II, VI) | Enquanto a conta existir | Cascata |
-| Tokens do Google Agenda | A definir na [#82](https://github.com/unb-mds/2026-2-AgendaUnB/issues/82) | Exportação | **Consentimento** (I) | Até desconectar | Desconexão e exclusão da conta |
+| Conexão com o Google Agenda | `google_calendar_connections` (conta Google, agenda criada, escopo; tokens cifrados) e `google_calendar_oauth_states` (S7-F04) | Exportação ([#82](https://github.com/unb-mds/2026-2-AgendaUnB/issues/82)) | **Consentimento** (I) | Até desconectar | Desconexão e exclusão da conta (cascata); a exportação de dados traz a conta e a agenda, nunca os tokens |
 | Endereço IP e rota acessada | Logs dos provedores; memória do limitador de taxa | Segurança e diagnóstico | Legítimo interesse (IX) | Ver D4 | Expiração |
 
 **Sem dado pessoal:** `cliques_evento` (identificador aleatório do clique), `coletas_eventos`, `sincronizacoes_catalogo`, `exclusoes_conta` (só contagens), `campus`, `categories`, `disciplinas` e `ofertas_turma`. Eventos coletados podem citar nomes de palestrantes já divulgados pela fonte institucional.

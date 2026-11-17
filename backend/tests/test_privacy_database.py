@@ -213,6 +213,19 @@ def test_export_contains_the_account_data_and_nobody_elses(database):
     assert users['bruno'] not in raw and 'contesta' not in raw
     assert data['path'] not in raw and 'a' * 64 not in raw
 
+    assert export['conexao_google_agenda'] is None
+
+    # Conexão com o Google Agenda (S7-F04): sai a conta e a agenda, nunca os tokens.
+    conn.execute(text("""insert into public.google_calendar_connections
+        (user_id, google_sub, google_email, calendar_id, encrypted_access_token,
+         encrypted_refresh_token, granted_scope)
+        values (:u, :sub, 'ana@gmail.com', 'agenda-unb-ana', 'cifrado-acesso', 'cifrado-renovacao',
+                'https://www.googleapis.com/auth/calendar.app.created')"""),
+                 {'u': users['ana'], 'sub': str(uuid4())})
+    google = scalar(conn, 'select public.exportar_dados_da_conta(:u)', {'u': users['ana']})['conexao_google_agenda']
+    assert google['conta_google'] == 'ana@gmail.com' and google['agenda_id'] == 'agenda-unb-ana'
+    assert 'cifrado' not in json.dumps(google)
+
     bruno = scalar(conn, 'select public.exportar_dados_da_conta(:u)', {'u': users['bruno']})
     assert 'Consulta médica' not in json.dumps(bruno) and bruno['versoes_de_planos'] == []
     refused(conn, 'P0002', 'select public.exportar_dados_da_conta(:u)', {'u': str(uuid4())})
@@ -227,6 +240,7 @@ LEFTOVERS = {
     'notificacoes': 'usuario_id', 'lembretes': 'user_id', 'vinculos_turma': 'user_id', 'planos_ensino': 'user_id',
     'versoes_plano': 'autor_id', 'votos_avaliacao': 'user_id', 'operacoes_importacao': 'user_id',
     'aceites_termos': 'user_id', 'consentimentos': 'user_id',
+    'google_calendar_connections': 'user_id', 'google_calendar_oauth_states': 'user_id',
 }
 
 
