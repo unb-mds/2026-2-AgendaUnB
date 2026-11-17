@@ -9,7 +9,7 @@ Planejamento aprovado para 16–23/11/2026. Entrega final em 25/11/2026. As tare
 
 ## Decisões da entrega
 
-Consulte os [contratos](../atualizacoes.md#contratos-da-release-2) e a [matriz de aceite](../matriz-release-2.md) para os critérios vigentes.
+Consulte os [contratos](/atualizacoes#contratos-da-release-2) e a [matriz de aceite](/matriz-release-2) para os critérios vigentes.
 
 - Seleção manual de turmas pelo catálogo público Followw, com vínculo autodeclarado.
 - Planos privados por padrão, com edição conforme papel e visibilidade. Compartilhamento voluntário de conteúdo revisado. O PDF original é descartado após a extração local.
@@ -390,4 +390,4 @@ Retirar o compartilhamento da versão original não retira nem exclui suas revis
 
 Uma revisão feita por professor ou admin mantém a procedência institucional já validada da versão de origem. Registrar a versão de origem, a evidência institucional herdada, o autor da revisão e seu papel no momento da alteração. A interface distingue documento institucional de origem e alterações posteriores da comunidade. Papel professor/admin não cria procedência institucional quando a origem não a possuía; revisões estudantis não recebem essa herança automaticamente.
 
-A confirmação e reimportação devem seguir a chave por ação descrita nos [contratos da R2](../atualizacoes.md#confirmacao-rapida-e-reimportacao). Professor/admin publicam diretamente suas revisões de conteúdo já compartilhado.
+A confirmação e reimportação devem seguir a chave por ação descrita nos [contratos da R2](/atualizacoes#confirmacao-rapida-e-reimportacao). Professor/admin publicam diretamente suas revisões de conteúdo já compartilhado.

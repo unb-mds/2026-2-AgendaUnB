@@ -43,4 +43,4 @@ Verificar e-mail divergente, retry sem duplicação, falha parcial, resposta per
 
 ## Fontes e relações
 
-[Google Agenda e ICS](../../atualizacoes.md#google-agenda-e-ics) · [Matriz de aceite](../../matriz-release-2.md) · [Requisitos](../../produto/requisitos.md) · [Índice de ADRs](index.md)
+[Google Agenda e ICS](/atualizacoes#google-agenda-e-ics) · [Matriz de aceite](/matriz-release-2) · [Requisitos](/produto/requisitos) · [Índice de ADRs](/arquitetura/adrs/index)

@@ -201,7 +201,7 @@ Os contratos de código, migração e testes unitários locais estão completos.
 
 ## 6. Validação e Revisão Técnica — S7-B05 (#75)
 
-Consolidado em **16/11/2026** para a issue [#75](https://github.com/unb-mds/2026-2-AgendaUnB/issues/75) (RF14, RF15, RF16, RNF02, RNF11, RNF13 e [ADR-011](adrs/adr-011-datas-civis-e-instantes.md)). Responsável principal: `@pontesluis`. Corresponsável: `@marrathomaz`. Apoio em migrações: `@felipecduque7`.
+Consolidado em **16/11/2026** para a issue [#75](https://github.com/unb-mds/2026-2-AgendaUnB/issues/75) (RF14, RF15, RF16, RNF02, RNF11, RNF13 e [ADR-011](/arquitetura/adrs/adr-011-datas-civis-e-instantes)). Responsável principal: `@pontesluis`. Corresponsável: `@marrathomaz`. Apoio em migrações: `@felipecduque7`.
 
 | Critério de Aceite / Cenário | Evidência Técnica e Testes | Resultado |
 | --- | --- | --- |

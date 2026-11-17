@@ -3,7 +3,7 @@ title: "Especificação do banco de dados"
 description: "Documento que descreve a estrutura física DDL e as políticas de segurança RLS do banco de dados da Agenda UnB no Supabase."
 ---
 
-Este documento descreve a estrutura física (DDL) atualizada do banco de dados do projeto **Agenda UnB**, com as tabelas e as regras de acesso no Supabase. Consulte o [diagrama de relacionamentos](modelo-de-dados.md) e as migrações em `supabase/migrations/`.
+Este documento descreve a estrutura física (DDL) atualizada do banco de dados do projeto **Agenda UnB**, com as tabelas e as regras de acesso no Supabase. Consulte o [diagrama de relacionamentos](/arquitetura/modelo-de-dados) e as migrações em `supabase/migrations/`.
 
 ---
 
@@ -47,7 +47,7 @@ Armazena os metadados dos usuários, sincronizada com a tabela nativa de autenti
 ## 3. Tabelas Core: Eventos e Agenda
 
 ### 3.1. Tabela `eventos` (Agenda Pública Institucional - RF14)
-Eventos publicados por professor/admin e sugestões da comunidade sujeitas à moderação. As regras posteriores à R1 estão nas [ADR-001](adrs/adr-001-integracao-fastapi-supabase.md) e [ADR-006](adrs/adr-006-autorizacao-em-camadas.md).
+Eventos publicados por professor/admin e sugestões da comunidade sujeitas à moderação. As regras posteriores à R1 estão nas [ADR-001](/arquitetura/adrs/adr-001-integracao-fastapi-supabase) e [ADR-006](/arquitetura/adrs/adr-006-autorizacao-em-camadas).
 *   **Colunas:**
     *   `id` (UUID, Primary Key): Identificador único.
     *   `autor_id` (UUID): Chave estrangeira para `profiles(id)` (`ON DELETE CASCADE`). Nulo apenas em evento coletado, que é identificado pela fonte (`CHECK (autor_id is not null or fonte is not null)`).
@@ -85,14 +85,14 @@ Agenda estritamente privada, gerenciada e visualizada unicamente por cada estuda
     *   **Edição (UPDATE):** Política *"utilizadores podem atualizar os seus proprios eventos"* (`USING (auth.uid() = user_id)` e `WITH CHECK`).
     *   **Exclusão (DELETE):** Política *"utilizadores podem deletar os seus proprios eventos"* (`USING (auth.uid() = user_id)`).
 
-### 3.3. Datas e intervalos (ADR-011)
+### 3.3. Datas e intervalos (ADR-011) {#33-datas-e-intervalos-adr-011}
 Instantes ficam em `data_evento`/`data_hora` e `data_fim` (`TIMESTAMPTZ`). Dia inteiro usa datas civis em `data_inicio_civil` e `data_fim_civil` (`DATE`), com `dia_inteiro = true`. O fim é sempre **exclusivo**: 18 a 20/11 inclusive é início 18 e fim 21.
 *   **Triggers** `eventos_normaliza_datas` e `eventos_pessoais_normaliza_datas`: em dia inteiro, preenchem o início e o fim como a meia-noite de `America/Sao_Paulo` dos dias civis, para que ordenação, filtros e lembretes tratem os dois tipos da mesma forma.
 *   **Validações:** dia inteiro exige as duas datas civis e fim posterior ao início; evento com horário não tem data civil; `data_fim`, quando existe, é posterior ao início.
 *   **Índices:** `idx_eventos_aprovados_data` (parcial, `status = 'aprovado'`) e `idx_eventos_pessoais_usuario_data (user_id, data_hora)`.
 *   Registros anteriores não foram reclassificados: `00:00` em um evento legado não prova dia inteiro.
 
-### 3.4. Coleta de eventos (S7-B05)
+### 3.4. Coleta de eventos (S7-B05) {#34-coleta-de-eventos-s7-b05}
 Eventos coletados da Agenda UnB Notícias ficam na própria tabela `eventos`, identificados pela procedência.
 *   **Chave da origem:** índice único parcial `uq_eventos_fonte (fonte, fonte_id)`. Coletas sucessivas ou concorrentes atualizam o mesmo registro.
 *   **Função** `registrar_evento_coletado(jsonb)`: uma chamada por item, atômica. Publica itens completos e inequívocos; envia à revisão (`motivo_revisao` em `incompleto`, `ambiguo`, `possivel_duplicata`, `informe`); concilia URL idêntica à de um evento cadastrado na plataforma; nunca desfaz edição local nem decisão de moderação.
@@ -100,7 +100,7 @@ Eventos coletados da Agenda UnB Notícias ficam na própria tabela `eventos`, id
 *   **Tabela `coletas_eventos`:** uma linha por execução do coletor (`status`, horários, contadores e `erro_codigo` curto). Sem conteúdo da fonte.
 *   **Revisão:** `listar_revisoes_coleta(status, offset)` para professor e admin; a decisão usa `moderar_sugestao`, que registra `moderado_por` e `moderado_em` e recusa publicar item sem data.
 
-O uso dessas estruturas pela API e pelo coletor está em [Dados de eventos](dados-de-eventos.md).
+O uso dessas estruturas pela API e pelo coletor está em [Dados de eventos](/arquitetura/dados-de-eventos).
 
 ---
 
@@ -111,7 +111,7 @@ Migrações de referência: `20261026120000_upload_planos_ensino.sql` (#40), `20
 Fluxo: o upload (#40) cria o plano como `pendente`; o processamento (S6-B01) passa para `processando`, grava candidatos e termina em `concluido` ou `falha`; a revisão (S6-B02) marca cada candidato como `confirmado` ou `descartado`. Nenhum evento pessoal é criado sem confirmação do estudante.
 
 ### 4.1. Tabela `planos_ensino`
-Esquema atual de uploads de plano de ensino. O campo `tipo` admite os valores legados `particular` e `oficial`. As colunas de arquivo e rastreamento vêm da #40 (`20261026120000`). Tipo, estados, erro sanitizado, período e dados da IA vêm da S6-D01 (`20261027120000`). A Release 2 separa autoria, procedência e visibilidade e prevê descarte do PDF. [Plano de migração](../atualizacoes.md#contratos-da-release-2)
+Esquema atual de uploads de plano de ensino. O campo `tipo` admite os valores legados `particular` e `oficial`. As colunas de arquivo e rastreamento vêm da #40 (`20261026120000`). Tipo, estados, erro sanitizado, período e dados da IA vêm da S6-D01 (`20261027120000`). A Release 2 separa autoria, procedência e visibilidade e prevê descarte do PDF. [Plano de migração](/atualizacoes#contratos-da-release-2)
 *   **Dono e tipo:**
     *   `id` (UUID, Primary Key).
     *   `user_id` (UUID, Not Null): dono, quem enviou. FK para `profiles(id)` (`ON DELETE CASCADE`).
@@ -174,11 +174,11 @@ Catálogo de turmas (ADR-009) e turmas que o usuário segue. A disciplina abstra
 *   **Índice:** `(user_id, origem_versao_id)`.
 *   **Confirmação idempotente (S7-B04):** `confirmar_importacao(ator, chave, versao, itens)` grava a operação (`operacoes_importacao`, única por `(user_id, chave)`), os itens (`itens_importacao`) e os eventos na mesma transação. Repetir a chave devolve o resultado anterior e não recria evento apagado; a mesma chave com outro conteúdo é recusada. O item mantém o registro quando o evento é excluído (`evento_pessoal_id` fica nulo).
 
-O uso dessas funções pela API está em [Dados de planos](dados-de-planos.md).
+O uso dessas funções pela API está em [Dados de planos](/arquitetura/dados-de-planos).
 
 ## 5. Eventos salvos e notificações
 
-`eventos_salvos` vincula um perfil a um evento público com chave composta `(user_id, event_id)`. `notificacoes` referencia o perfil destinatário e pode referenciar o evento que originou o aviso. Consulte as políticas, a implantação e os cenários de verificação em [eventos salvos](../eventos-salvos.md) e nas [ADR-001](adrs/adr-001-integracao-fastapi-supabase.md) e [ADR-006](adrs/adr-006-autorizacao-em-camadas.md).
+`eventos_salvos` vincula um perfil a um evento público com chave composta `(user_id, event_id)`. `notificacoes` referencia o perfil destinatário e pode referenciar o evento que originou o aviso. Consulte as políticas, a implantação e os cenários de verificação em [eventos salvos](/eventos-salvos) e nas [ADR-001](/arquitetura/adrs/adr-001-integracao-fastapi-supabase) e [ADR-006](/arquitetura/adrs/adr-006-autorizacao-em-camadas).
 
 ## Evolução de candidatos na R2
 
@@ -191,4 +191,4 @@ Na R2, exigir `Idempotency-Key` por ação de confirmação, vinculada à conta,
 
 ## Worker e autorização do texto
 
-Preparação local, autorização específica, fila recuperável e candidatos privados estão descritos nas [ADR-003](adrs/adr-003-minimizar-dados-de-planos.md), [ADR-010](adrs/adr-010-versoes-e-confirmacao-de-planos.md) e [ADR-014](adrs/adr-014-processamento-assincrono-planos-ia.md). O worker opera sobre a tabela oficial `avaliacoes` e as versões de S7-D01.
+Preparação local, autorização específica, fila recuperável e candidatos privados estão descritos nas [ADR-003](/arquitetura/adrs/adr-003-minimizar-dados-de-planos), [ADR-010](/arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos) e [ADR-014](/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia). O worker opera sobre a tabela oficial `avaliacoes` e as versões de S7-D01.
