@@ -188,7 +188,7 @@ O uso dessas funções pela API está em [Dados de planos](/arquitetura/dados-de
 
 Eventos públicos são gravados somente pela API e pelas RPCs de moderação: o `INSERT` direto pelo navegador foi removido em `20261117130000`. O banco valida, em qualquer caminho, que `link_externo` usa `http(s)` e que título, descrição e local respeitam os limites da API.
 
-`eventos_salvos` vincula um perfil a um evento público com chave composta `(user_id, event_id)`. `notificacoes` referencia o perfil destinatário e pode referenciar o evento que originou o aviso. Consulte as políticas, a implantação e os cenários de verificação nos guias de [eventos salvos](../eventos-salvos.md) e [painel administrativo](../painel-administrativo.md).
+`eventos_salvos` vincula um perfil a um evento público com chave composta `(user_id, event_id)`. `notificacoes` referencia o perfil destinatário e pode referenciar o evento que originou o aviso. Consulte as políticas, a implantação e os cenários de verificação em [eventos salvos](/eventos-salvos) e nas [ADR-001](/arquitetura/adrs/adr-001-integracao-fastapi-supabase) e [ADR-006](/arquitetura/adrs/adr-006-autorizacao-em-camadas).
 
 ## Evolução de candidatos na R2
 
