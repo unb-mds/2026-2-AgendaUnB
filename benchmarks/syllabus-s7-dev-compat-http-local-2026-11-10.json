@@ -1,0 +1,36 @@
+{
+  "executed_at": "2026-11-10T04:29:01.295456+00:00",
+  "local_project": "agendaunb-s6d02-tests",
+  "transport": "isolated_container_network",
+  "gemini_live": false,
+  "results": [
+    {
+      "case": "upload_processing_review",
+      "provider": "reference",
+      "flow_total_seconds": 7.017,
+      "upload_duration_ms": 3093,
+      "upload_to_candidates_ms": 6552,
+      "upload_to_candidates_under_20s": true,
+      "processing_total_ms": 3039,
+      "last_attempt_ms": 3004,
+      "processing_under_20s": true,
+      "candidates": 2,
+      "events_before_review": 0,
+      "events_after_review": 1,
+      "pdf_persisted": false,
+      "cross_user_text_denied": true,
+      "processing_wall_ms": 3562,
+      "human_review_seconds": 0,
+      "cleanup_completed": true
+    },
+    {
+      "case": "storage_constraints",
+      "foreign_folder_upload_denied": true,
+      "nested_folder_upload_denied": true,
+      "own_pdf_retention_denied": true,
+      "invalid_mime_denied": true,
+      "cleanup_completed": true
+    }
+  ],
+  "pytest_exit_code": 0
+}

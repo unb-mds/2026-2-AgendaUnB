@@ -1,0 +1,3008 @@
+
+<!doctype html>
+<html lang="pt" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Como a API, o coletor usam as estruturas de eventos da Release 2.">
+      
+      
+      
+      
+        <link rel="prev" href="../banco-de-dados/">
+      
+      
+        <link rel="next" href="../../eventos-salvos/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+    
+    
+      
+        <title>Dados de eventos: datas, coleta - Agenda UnB Docs</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#dados-de-eventos-datas-coleta" class="md-skip">
+          Pular para conteúdo
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Cabeçalho">
+    <a href="../.." title="Agenda UnB Docs" class="md-header__button md-logo" aria-label="Agenda UnB Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Agenda UnB Docs
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Dados de eventos: datas, coleta
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Modo automático"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Modo automático" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Mudar para modo escuro"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Mudar para modo escuro" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Mudar para modo claro"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Mudar para modo claro" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Buscar" placeholder="Buscar" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Pesquisar">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Limpar" aria-label="Limpar" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Inicializando busca
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/unb-mds/2026-2-AgendaUnB" title="Ir para repositório" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    unb-mds/G8-2026-2
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Abas" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Início
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../processo/execucao-local/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Execução local
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../produto/visao/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Visão do Produto
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../visao-geral/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Arquitetura
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../adrs/" class="md-tabs__link">
+          
+  
+  
+  Decisões arquiteturais
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../api-specs/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Contratos do Backend
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../matriz-release-2/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Matriz de aceite da Release 2
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../implantacao/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Plano de Implantação
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../modelo-de-dados/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Modelo de Dados
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../dados-de-planos/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Dados de planos
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../banco-de-dados/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Especificação do Banco
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Dados de eventos
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../eventos-salvos/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Eventos salvos
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../catalogo-de-turmas/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Catálogo de turmas
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../produto/requisitos/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Requisitos
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../produto/padroes/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Padrões de Projeto
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../frontend/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Interface e Design
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../produto/personas/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Personas
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../sprints/sprint-1/" class="md-tabs__link">
+          
+  
+  
+  Sprints
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../processo/release-notes/v0-1-0/" class="md-tabs__link">
+          
+  
+  
+  Release Notes
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../processo/uso-de-ia/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Uso de IA
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../processo/contribuindo/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Como Contribuir
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navegação" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Agenda UnB Docs" class="md-nav__button md-logo" aria-label="Agenda UnB Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Agenda UnB Docs
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/unb-mds/2026-2-AgendaUnB" title="Ir para repositório" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    unb-mds/G8-2026-2
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Início
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../processo/execucao-local/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Execução local
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../produto/visao/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visão do Produto
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../visao-geral/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arquitetura
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisões arquiteturais
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Decisões arquiteturais
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Índice e guia de leitura
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/adr-001-integracao-fastapi-supabase/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-001 — Integração FastAPI e Supabase
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/adr-002-separar-hospedagem-e-ambientes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-002 — Hospedagem e ambientes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/adr-003-minimizar-dados-de-planos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-003 — Minimização de dados de planos
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/adr-004-api-monolitica/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-004 — Manter a API em uma aplicação FastAPI única
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/adr-005-validacao-de-sessao/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-005 — Validar a sessão no Supabase Auth e consultar o papel no banco
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/adr-006-autorizacao-em-camadas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-006 — Aplicar autorização na API, nas RPCs e nas políticas RLS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/adr-007-migracoes-sql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-007 — Usar migrações SQL como referência do esquema completo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/adr-008-vinculos-de-eventos-publicos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-008 — Salvar vínculos aos eventos públicos na agenda pessoal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/adr-009-catalogo-publico-de-turmas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-009 — Integrar o catálogo público de turmas com identidade local e cache
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/adr-010-versoes-e-confirmacao-de-planos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-010 — Versionar planos e exigir confirmação individual para importar candidatos
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/adr-011-datas-civis-e-instantes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-011 — Distinguir datas civis de instantes e usar fim exclusivo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/adr-012-exportacao-google-idempotente/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-012 — Exportar por ação explícita para uma agenda Google secundária
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/adr-013-lembretes-persistentes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-013 — Persistir lembretes com agendamento idempotente e revalidação
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/adr-014-processamento-assincrono-planos-ia/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-014 — Processamento assíncrono resiliente de planos com fila persistida, lease e orçamento
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api-specs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contratos do Backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../matriz-release-2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Matriz de aceite da Release 2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../implantacao/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plano de Implantação
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../modelo-de-dados/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Modelo de Dados
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dados-de-planos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dados de planos
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../banco-de-dados/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Especificação do Banco
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dados de eventos
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dados de eventos
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Índice">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Índice
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-datas-adr-011" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Datas (ADR-011)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-coleta-da-agenda-unb-noticias-75" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Coleta da Agenda UnB Notícias (#75)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Coleta da Agenda UnB Notícias (#75)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#uma-chamada-por-item" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Uma chamada por item
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#o-que-a-funcao-decide" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        O que a função decide
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="O que a função decide">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#regra-de-deteccao-de-possiveis-duplicatas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Regra de Detecção de Possíveis Duplicatas
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#esqueleto-do-coletor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Esqueleto do coletor
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#revisao-por-professor-e-admin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Revisão por professor e admin
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#procedencia-visivel-rf16" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Procedência visível (RF16)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-quem-pode-o-que" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Quem pode o quê
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-testes-e-validacao-local" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Testes e Validação Local
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-coletor-da-agenda-unb-noticias" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Coletor da Agenda UnB Notícias
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Coletor da Agenda UnB Notícias">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#execucao-recorrente-em-background" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Execução Recorrente em Background
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#limitacoes-e-evidencias-pendentes-no-ambiente-hospedado" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Limitações e Evidências Pendentes no Ambiente Hospedado
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-validacao-e-revisao-tecnica-s7-b05-75" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Validação e Revisão Técnica — S7-B05 (#75)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Validação e Revisão Técnica — S7-B05 (#75)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#revisao-de-contratos-permissoes-e-dados-afetados" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Revisão de Contratos, Permissões e Dados Afetados
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../eventos-salvos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Eventos salvos
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../catalogo-de-turmas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Catálogo de turmas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../produto/requisitos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Requisitos
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../produto/padroes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Padrões de Projeto
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../frontend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interface e Design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../produto/personas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Personas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_19" >
+        
+          
+          <label class="md-nav__link" for="__nav_19" id="__nav_19_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprints
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_19_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_19">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Sprints
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sprints/sprint-1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 1
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sprints/sprint-2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sprints/sprint-3/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sprints/sprint-4/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 4
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sprints/sprint-5/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 5
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sprints/sprint-6/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 6
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sprints/sprint-7/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 7
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sprints/sprint-8/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sprint 8
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_20" >
+        
+          
+          <label class="md-nav__link" for="__nav_20" id="__nav_20_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release Notes
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_20_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_20">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Release Notes
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../processo/release-notes/v0-1-0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.1.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../processo/release-notes/v0-2-0-beta-1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.2.0-beta.1
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../atualizacoes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Atualizações e contratos da R2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../processo/uso-de-ia/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Uso de IA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../processo/contribuindo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Como Contribuir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Índice">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Índice
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-datas-adr-011" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Datas (ADR-011)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-coleta-da-agenda-unb-noticias-75" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Coleta da Agenda UnB Notícias (#75)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Coleta da Agenda UnB Notícias (#75)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#uma-chamada-por-item" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Uma chamada por item
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#o-que-a-funcao-decide" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        O que a função decide
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="O que a função decide">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#regra-de-deteccao-de-possiveis-duplicatas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Regra de Detecção de Possíveis Duplicatas
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#esqueleto-do-coletor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Esqueleto do coletor
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#revisao-por-professor-e-admin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Revisão por professor e admin
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#procedencia-visivel-rf16" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Procedência visível (RF16)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-quem-pode-o-que" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Quem pode o quê
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-testes-e-validacao-local" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Testes e Validação Local
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-coletor-da-agenda-unb-noticias" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Coletor da Agenda UnB Notícias
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Coletor da Agenda UnB Notícias">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#execucao-recorrente-em-background" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Execução Recorrente em Background
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#limitacoes-e-evidencias-pendentes-no-ambiente-hospedado" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Limitações e Evidências Pendentes no Ambiente Hospedado
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-validacao-e-revisao-tecnica-s7-b05-75" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Validação e Revisão Técnica — S7-B05 (#75)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Validação e Revisão Técnica — S7-B05 (#75)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#revisao-de-contratos-permissoes-e-dados-afetados" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Revisão de Contratos, Permissões e Dados Afetados
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+  
+
+
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="dados-de-eventos-datas-coleta">Dados de eventos: datas, coleta</h1>
+<p>Guia de integração das migrações <code>20261111140000_eventos_datas_e_coleta.sql</code>. Elas entregam a parte de dados das issues abaixo; a API, o coletor e o agendador são implementados nas próprias issues.</p>
+<table>
+<thead>
+<tr>
+<th>Issue</th>
+<th>O que o banco já faz</th>
+<th>O que falta na aplicação</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/75">S7-B05 (#75)</a></td>
+<td>Upsert por origem, decisão publicar/revisar, conciliação por URL, proteção de edições locais e de decisões de moderação, registro das execuções</td>
+<td>Configurar e homologar a execução recorrente no ambiente hospedado; registrar as evidências operacionais da issue</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Regra geral:</strong> o que precisa valer em qualquer caminho de escrita está em chaves únicas, triggers e funções. A aplicação chama as funções; não reimplementa as regras. Nada daqui é gravável pelo navegador.</p>
+<h2 id="1-datas-adr-011">1. Datas (ADR-011)</h2>
+<p><code>eventos</code> e <code>eventos_pessoais</code> ganharam <code>data_fim</code>, <code>dia_inteiro</code>, <code>data_inicio_civil</code> e <code>data_fim_civil</code>. O fim é sempre <strong>exclusivo</strong>.</p>
+<table>
+<thead>
+<tr>
+<th>Tipo</th>
+<th>O que gravar</th>
+<th>O que o banco preenche</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Com horário</td>
+<td><code>data_evento</code>/<code>data_hora</code> (instante) e, se houver, <code>data_fim</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>Dia inteiro</td>
+<td><code>dia_inteiro = true</code>, <code>data_inicio_civil</code>, <code>data_fim_civil</code></td>
+<td>Início e fim como meia-noite de Brasília dos dias civis</td>
+</tr>
+</tbody>
+</table>
+<p>Um evento de 18 a 20/11 inclusive é <code>data_inicio_civil = 2026-11-18</code> e <code>data_fim_civil = 2026-11-21</code>. Um único dia é início 18 e fim 19. O banco recusa fim menor ou igual ao início, dia inteiro sem as datas civis e data civil em evento com horário.</p>
+<p>Como o início de dia inteiro também é preenchido como instante, ordenar e filtrar por <code>data_evento</code>/<code>data_hora</code> continua funcionando para os dois tipos. <strong>Na resposta da API, um dia inteiro deve sair como <code>start_date</code>/<code>end_date</code></strong>, não como o instante: quem está em outro fuso veria o dia errado.</p>
+<p>No ORM: <code>ends_at</code>, <code>all_day</code>, <code>start_date</code> e <code>end_date</code> em <code>PublicEvent</code> e <code>PersonalEvent</code>. Registros antigos não foram reclassificados: <code>00:00</code> em um evento legado não prova dia inteiro.</p>
+<h2 id="2-coleta-da-agenda-unb-noticias-75">2. Coleta da Agenda UnB Notícias (#75)</h2>
+<h3 id="uma-chamada-por-item">Uma chamada por item</h3>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sqlalchemy</span><span class="w"> </span><span class="kn">import</span> <span class="n">text</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">registrar_item</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">item</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Devolve {"id", "acao", "status", "motivo_revisao"}."""</span>
+    <span class="k">return</span> <span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+        <span class="n">text</span><span class="p">(</span><span class="s2">"select public.registrar_evento_coletado(cast(:p as jsonb))"</span><span class="p">),</span>
+        <span class="p">{</span><span class="s2">"p"</span><span class="p">:</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">item</span><span class="p">)},</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">scalar_one</span><span class="p">()</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Obrigatório</th>
+<th>Observação</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>fonte</code></td>
+<td>sim</td>
+<td><code>agenda_unb_noticias</code></td>
+</tr>
+<tr>
+<td><code>fonte_id</code></td>
+<td>sim</td>
+<td>Identificador canônico do item na fonte. Com <code>fonte</code>, é a chave do upsert</td>
+</tr>
+<tr>
+<td><code>fonte_url</code></td>
+<td>sim</td>
+<td>URL canônica do item, <code>http(s)</code></td>
+</tr>
+<tr>
+<td><code>hash</code></td>
+<td>sim</td>
+<td>SHA-256 do conteúdo <strong>normalizado</strong> (título, descrição, datas, local, link). Hash igual = nada mudou</td>
+</tr>
+<tr>
+<td><code>titulo</code></td>
+<td>sim</td>
+<td>Mínimo de 3 caracteres; cortado em 200</td>
+</tr>
+<tr>
+<td><code>tipo</code></td>
+<td>não</td>
+<td><code>evento</code> (padrão) ou <code>informe</code></td>
+</tr>
+<tr>
+<td><code>descricao</code>, <code>local</code>, <code>link_externo</code></td>
+<td>não</td>
+<td>Link fora de <code>http(s)</code> é descartado, sem derrubar a coleta</td>
+</tr>
+<tr>
+<td><code>inicio</code>, <code>fim</code></td>
+<td>não</td>
+<td>ISO 8601 <strong>com fuso</strong> (<code>2026-11-18T14:00:00-03:00</code>). Sem fuso a função recusa</td>
+</tr>
+<tr>
+<td><code>dia_inteiro</code>, <code>data_inicio</code>, <code>data_fim</code></td>
+<td>não</td>
+<td><code>data_fim</code> exclusivo; se omitido, vale um dia</td>
+</tr>
+<tr>
+<td><code>campus</code>, <code>categoria</code></td>
+<td>não</td>
+<td>Nome exato de <code>campus.nome</code>/<code>categories.nome</code>; desconhecido fica nulo</td>
+</tr>
+<tr>
+<td><code>ambiguo</code></td>
+<td>não</td>
+<td><code>true</code> quando o coletor não tem certeza da data ou do horário</td>
+</tr>
+</tbody>
+</table>
+<h3 id="o-que-a-funcao-decide">O que a função decide</h3>
+<table>
+<thead>
+<tr>
+<th>Situação</th>
+<th><code>acao</code></th>
+<th>Resultado</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Item novo, completo e inequívoco</td>
+<td><code>criado</code></td>
+<td>Publicado (<code>aprovado</code>)</td>
+</tr>
+<tr>
+<td>Item novo sem data</td>
+<td><code>criado</code></td>
+<td>Revisão, <code>incompleto</code></td>
+</tr>
+<tr>
+<td><code>ambiguo = true</code> ou fim antes do início</td>
+<td><code>criado</code></td>
+<td>Revisão, <code>ambiguo</code></td>
+</tr>
+<tr>
+<td><code>tipo = informe</code></td>
+<td><code>criado</code></td>
+<td>Revisão, <code>informe</code></td>
+</tr>
+<tr>
+<td>Título semelhante ($\ge 80\%$ no mesmo dia, $\ge 85\%$ em 1 dia ou $\ge 92\%$ em 2 dias)</td>
+<td><code>criado</code></td>
+<td>Revisão, <code>possivel_duplicata</code>, com <code>possivel_duplicata_de</code></td>
+</tr>
+<tr>
+<td>Mesma URL de um evento cadastrado na plataforma</td>
+<td><code>conciliado</code></td>
+<td>Mantém o evento manual e anexa a procedência; não cria outro</td>
+</tr>
+<tr>
+<td>Mesmo <code>(fonte, fonte_id)</code> e mesmo hash</td>
+<td><code>inalterado</code></td>
+<td>Só renova <code>coletado_em</code></td>
+</tr>
+<tr>
+<td>Mesmo <code>(fonte, fonte_id)</code>, hash diferente</td>
+<td><code>atualizado</code></td>
+<td>Atualiza <strong>o mesmo registro</strong></td>
+</tr>
+</tbody>
+</table>
+<h4 id="regra-de-deteccao-de-possiveis-duplicatas">Regra de Detecção de Possíveis Duplicatas</h4>
+<p>Para evitar publicação duplicada de eventos com grafias ligeiramente distintas ou datas aproximadas:
+1. <strong>Normalização</strong>: títulos passam por conversão para minúsculas, remoção de acentuação (<code>NFKD</code>), eliminação de pontuação e colapso de espaços em branco.
+2. <strong>Cálculo de Similaridade</strong>: combina razão de sequência (<code>SequenceMatcher</code>), sobreposição Jaccard de tokens e contenção de substring (limiares progressivos: $\ge 0{,}80$ para mesma data, $\ge 0{,}85$ para 1 dia de diferença e $\ge 0{,}92$ para 2 dias de diferença).
+3. <strong>Preservação de Dígitos/Edições</strong>: títulos que possuam números distintos (ex.: <code>"Cálculo 1"</code> vs <code>"Cálculo 2"</code>, ou <code>"Encontro 2025"</code> vs <code>"Encontro 2026"</code>) <strong>não</strong> são considerados duplicatas, prevenindo falsos positivos.
+4. <strong>Proximidade Temporal</strong>: datas de início devem coincidir no mesmo dia ou diferir em no máximo 2 dias ($\le 2$ dias de afastamento).
+5. <strong>Encaminhamento</strong>: quando uma possível duplicata é detectada, o registro é salvo com <code>status = 'pendente'</code>, <code>motivo_revisao = 'possivel_duplicata'</code> e <code>possivel_duplicata_de = &lt;id_candidato&gt;</code>, permitindo decisão por moderador humano sem falso auto-descarte.</p>
+<p>Em uma atualização, a função preserva:</p>
+<ul>
+<li><strong>campos editados na plataforma.</strong> O banco registra em <code>campos_editados</code> qualquer alteração feita fora da coleta (<code>titulo</code>, <code>descricao</code>, <code>datas</code>, <code>local</code>, <code>link</code>, <code>campus</code>, <code>categoria</code>). Esses campos não são sobrescritos;</li>
+<li><strong>decisões de moderação.</strong> Depois que uma pessoa aprova ou rejeita (<code>moderado_em</code> preenchido), a coleta não muda o status;</li>
+<li><strong>suspeita de duplicata</strong>, até alguém decidir;</li>
+<li><strong>a data conhecida</strong>, quando a fonte deixa de informá-la (página alterada ou leitura parcial).</li>
+</ul>
+<p>Duas execuções simultâneas do mesmo item são serializadas (<code>pg_advisory_xact_lock</code> + chave única <code>(fonte, fonte_id)</code>).</p>
+<h3 id="esqueleto-do-coletor">Esqueleto do coletor</h3>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">executar_coleta</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">itens</span><span class="p">):</span>
+    <span class="n">run_id</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">text</span><span class="p">(</span>
+        <span class="s2">"insert into public.coletas_eventos(fonte) values ('agenda_unb_noticias') returning id"</span>
+    <span class="p">))</span><span class="o">.</span><span class="n">scalar_one</span><span class="p">()</span>
+    <span class="n">db</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+    <span class="n">contagem</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"criado"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"atualizado"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"inalterado"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"conciliado"</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
+    <span class="n">lidos</span> <span class="o">=</span> <span class="n">revisao</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">itens</span><span class="p">:</span>                      <span class="c1"># itens já normalizados</span>
+            <span class="n">resultado</span> <span class="o">=</span> <span class="n">registrar_item</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span>
+            <span class="n">db</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>                         <span class="c1"># um item por transação</span>
+            <span class="n">lidos</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">contagem</span><span class="p">[</span><span class="n">resultado</span><span class="p">[</span><span class="s2">"acao"</span><span class="p">]]</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="c1"># itens que ENTRARAM na fila de revisão nesta execução</span>
+            <span class="n">revisao</span> <span class="o">+=</span> <span class="n">resultado</span><span class="p">[</span><span class="s2">"acao"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"criado"</span> <span class="ow">and</span> <span class="n">resultado</span><span class="p">[</span><span class="s2">"status"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"pendente"</span>
+        <span class="n">status</span><span class="p">,</span> <span class="n">erro</span> <span class="o">=</span> <span class="s2">"concluida"</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="k">except</span> <span class="n">FonteIndisponivel</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>            <span class="c1"># exceção do próprio coletor</span>
+        <span class="n">db</span><span class="o">.</span><span class="n">rollback</span><span class="p">()</span>
+        <span class="n">status</span><span class="p">,</span> <span class="n">erro</span> <span class="o">=</span> <span class="s2">"falha"</span><span class="p">,</span> <span class="n">exc</span><span class="o">.</span><span class="n">codigo</span>      <span class="c1"># ex.: "http_503", "timeout"</span>
+    <span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">text</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">        update public.coletas_eventos</span>
+<span class="s2">           set status = :s, concluida_em = now(), erro_codigo = :e, itens_lidos = :l,</span>
+<span class="s2">               criados = :c, atualizados = :a, inalterados = :i, conciliados = :k, para_revisao = :r</span>
+<span class="s2">         where id = :id"""</span><span class="p">),</span>
+        <span class="p">{</span><span class="s2">"s"</span><span class="p">:</span> <span class="n">status</span><span class="p">,</span> <span class="s2">"e"</span><span class="p">:</span> <span class="n">erro</span><span class="p">,</span> <span class="s2">"l"</span><span class="p">:</span> <span class="n">lidos</span><span class="p">,</span> <span class="s2">"c"</span><span class="p">:</span> <span class="n">contagem</span><span class="p">[</span><span class="s2">"criado"</span><span class="p">],</span> <span class="s2">"a"</span><span class="p">:</span> <span class="n">contagem</span><span class="p">[</span><span class="s2">"atualizado"</span><span class="p">],</span>
+         <span class="s2">"i"</span><span class="p">:</span> <span class="n">contagem</span><span class="p">[</span><span class="s2">"inalterado"</span><span class="p">],</span> <span class="s2">"k"</span><span class="p">:</span> <span class="n">contagem</span><span class="p">[</span><span class="s2">"conciliado"</span><span class="p">],</span> <span class="s2">"r"</span><span class="p">:</span> <span class="n">revisao</span><span class="p">,</span> <span class="s2">"id"</span><span class="p">:</span> <span class="n">run_id</span><span class="p">})</span>
+    <span class="n">db</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+</code></pre></div>
+<p>Pontos de atenção para o coletor:</p>
+<ul>
+<li><strong>Falha da fonte não apaga nada.</strong> A função só cria ou atualiza. Não remova eventos que "sumiram" da listagem.</li>
+<li><strong>Detecção de dia inteiro vs <code>00:00</code>:</strong> O coletor inspeciona a marcação e texto da fonte por termos explícitos (<code>"dia inteiro"</code>, <code>"integral"</code>, <code>"o dia todo"</code>, <code>"jornada inteira"</code>). Quando o sinal explícito existe, emite <code>dia_inteiro: True</code> com datas civis (<code>data_inicio</code> e <code>data_fim</code> exclusivo). Se a fonte contiver apenas <code>00:00</code> sem indicativo explícito de dia inteiro, <strong>não</strong> assume dia inteiro; emite o instante com <code>ambiguo: True</code>, encaminhando o item à moderação conforme a ADR-011.</li>
+<li><strong>Normalização multicampus:</strong> Locais identificados como pertencentes aos campi Darcy Ribeiro (ICC, Reitoria, Beijódromo, BSAN, CDT), FCTE (Gama), FCTS (Ceilândia), FUP (Planaltina) ou FAL são normalizados com o nome exato do campus no banco.</li>
+<li><strong><code>erro_codigo</code> é um código curto</strong> (até 60 caracteres). Nunca grave HTML, corpo de resposta ou conteúdo da fonte.</li>
+<li><strong>Frequência moderada</strong>, com <code>User-Agent</code> identificável e respeito a <code>robots.txt</code> (RNF11).</li>
+<li>O hash deve ser estável: normalize espaços e ordem dos campos antes de calcular, para que a mesma página gere o mesmo hash.</li>
+</ul>
+<h3 id="revisao-por-professor-e-admin">Revisão por professor e admin</h3>
+<p><code>listar_revisoes_coleta(p_status, p_offset)</code> devolve <code>{"items": [...], "total": n}</code> com 20 itens por página, incluindo <code>fonte_url</code>, <code>motivo_revisao</code> e <code>possivel_duplicata_de</code>. A decisão usa a RPC que já existe, <code>moderar_sugestao(evento_id, 'aprovado' | 'rejeitado', justificativa)</code>, que agora também aceita itens coletados e registra <code>moderado_por</code> e <code>moderado_em</code>. Item sem data não pode ser aprovado.</p>
+<h3 id="procedencia-visivel-rf16">Procedência visível (RF16)</h3>
+<p>Eventos coletados expõem institucionalmente a sua procedência:
+- Na API pública (<code>/api/v1/events</code>), os contratos (<code>EventRead</code>) expõem os campos <code>source</code> (<code>"agenda_unb_noticias"</code>) e <code>source_url</code> (link HTTPS canônico), além de <code>all_day</code>, <code>start_date</code> e <code>end_date</code>. Metadados internos como <code>fonte_hash</code>, <code>coletado_em</code> e <code>motivo_revisao</code> permanecem estritamente privados no backend.
+- Na interface frontend, <code>PaginaDeEvento.jsx</code> exibe o box de procedência institucional com link direto para a publicação original na Agenda UnB Notícias e atribui o organizador institucional quando <code>autor_id</code> for ausente. Nos cards de listagem (<code>SecondPage.jsx</code>), é exibida a badge informativa de origem.</p>
+<h2 id="3-quem-pode-o-que">3. Quem pode o quê</h2>
+<table>
+<thead>
+<tr>
+<th>Recurso</th>
+<th>Visitante</th>
+<th>Conta logada (navegador)</th>
+<th>Professor / admin</th>
+<th>Servidor</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>registrar_evento_coletado</code></td>
+<td>Não</td>
+<td>Não</td>
+<td>Não</td>
+<td>Sim</td>
+</tr>
+<tr>
+<td>Colunas de procedência e de moderação em <code>eventos</code></td>
+<td>Não grava</td>
+<td>Não grava</td>
+<td>Só pelas RPCs</td>
+<td>Sim</td>
+</tr>
+<tr>
+<td><code>coletas_eventos</code></td>
+<td>Sem acesso</td>
+<td>Sem acesso</td>
+<td>Sem acesso</td>
+<td>Sim</td>
+</tr>
+<tr>
+<td><code>listar_revisoes_coleta</code>, <code>moderar_sugestao</code></td>
+<td>Não</td>
+<td>Recusado</td>
+<td>Sim</td>
+<td>Sim</td>
+</tr>
+</tbody>
+</table>
+<h2 id="4-testes-e-validacao-local">4. Testes e Validação Local</h2>
+<p>A suíte automatizada cobre unitariamente o coletor, a similaridade de duplicatas, o tratamento de dia inteiro, multicampus, os contratos da API e a projeção no frontend:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Testes unitários do coletor (34 testes de unidade, orquestração, concorrência e regras)</span>
+<span class="nb">cd</span><span class="w"> </span>backend<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nv">PYTHONPATH</span><span class="o">=</span>.<span class="w"> </span>venv/bin/pytest<span class="w"> </span>tests/test_event_collector.py
+
+<span class="c1"># Testes de contrato da API pública de eventos (10 testes cobrindo procedência RF16)</span>
+<span class="nb">cd</span><span class="w"> </span>backend<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nv">PYTHONPATH</span><span class="o">=</span>.<span class="w"> </span>venv/bin/pytest<span class="w"> </span>tests/test_events_api.py
+
+<span class="c1"># Testes de frontend (37 testes, incluindo toUiEvent e campos de procedência)</span>
+<span class="nb">cd</span><span class="w"> </span>frontend<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>node<span class="w"> </span>--test<span class="w"> </span>src/lib/*.test.js
+</code></pre></div>
+<p>Para testes de banco de dados contra o Supabase local (18 testes cobrindo triggers, RLS, RPCs e idempotência):
+<div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>backend
+<span class="nv">TEST_SUPABASE_DB_URL</span><span class="o">=</span><span class="s2">"postgresql+psycopg://postgres:postgres@127.0.0.1:14322/postgres"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>venv/bin/pytest<span class="w"> </span>tests/test_event_collection_database.py<span class="w"> </span>-q
+</code></pre></div></p>
+<h2 id="5-coletor-da-agenda-unb-noticias">5. Coletor da Agenda UnB Notícias</h2>
+<p>O adaptador está em <code>backend/src/modules/events/collector.py</code>. A origem é fixa em <code>https://noticias.unb.br</code>; o cliente consulta <code>robots.txt</code> e só acessa a listagem <code>/component/agenda/agendas</code> e detalhes <code>/component/agenda/agenda/{id}</code> quando permitidos. O cliente não segue redirecionamentos, não usa cookies nem proxy do ambiente, tem timeout de 20 segundos e espera pelo menos um segundo entre requisições. Falhas transitórias recebem uma tentativa adicional respeitando <code>Retry-After</code> até 60 segundos.</p>
+<p>O coletor percorre os offsets publicados pela paginação, deduplica os IDs antes de buscar os detalhes, limita a leitura a 100 páginas/900 eventos e carrega toda a fonte antes de gravar. Assim, uma interrupção ao ler uma página mantém os registros já existentes sem aplicar uma coleta parcial. As gravações e o resultado da execução são confirmados juntos; um advisory lock impede duas execuções simultâneas. O coletor nunca apaga eventos que deixaram de aparecer na fonte.</p>
+<h3 id="execucao-recorrente-em-background">Execução Recorrente em Background</h3>
+<p>O processo pode ser executado manualmente ou em background recorrente:
+1. <strong>Makefile:</strong>
+   - <code>make events-collect</code>: executa uma única rodada de coleta.
+   - <code>make events-collect-daemon</code>: executa em loop contínuo como daemon local.
+2. <strong>CLI Direto:</strong>
+   - <code>python -m src.modules.events.collector</code>: execução pontual.
+   - <code>python -m src.modules.events.collector --interval-hours 6</code>: repete a execução no intervalo mínimo de 1 hora.
+   - <code>python -m src.modules.events.collector --daemon</code>: roda continuamente em background.
+3. <strong>GitHub Actions (Ambiente Hospedado):</strong>
+   - Configurado em <code>.github/workflows/production-jobs.yml</code> no job <code>collector</code>.
+   - Disparo agendado diariamente via cron (<code>27 10 * * *</code> - 07h27 BRT) ou manual via <code>workflow_dispatch</code> (selecionando <code>job: collector</code>).
+   - Requer <code>github.ref == 'refs/heads/main'</code>, segredo <code>DATABASE_URL</code> e variável <code>PRODUCTION_EVENT_COLLECTION_ENABLED = 'true'</code> no environment <code>production-jobs</code>.</p>
+<h3 id="limitacoes-e-evidencias-pendentes-no-ambiente-hospedado">Limitações e Evidências Pendentes no Ambiente Hospedado</h3>
+<p>Os contratos de código, migração e testes unitários locais estão completos. Contudo, as seguintes etapas dependem de acesso ao ambiente remoto de produção/homologação e credenciais de infraestrutura:
+- <strong>Execução hospedada no GitHub Actions:</strong> Habilitar a variável <code>PRODUCTION_EVENT_COLLECTION_ENABLED = 'true'</code> e disparar o workflow no ambiente <code>production-jobs</code>.
+- <strong>Validação de concorrência e idempotência em banco remoto:</strong> Executar duas instâncias simultâneas do coletor para registrar o bloqueio via advisory lock e a atualização sem duplicatas.
+- <strong>Validação de resiliência a falhas da fonte:</strong> Simular timeout ou HTTP 503 na conexão com <code>noticias.unb.br</code> em execução real e comprovar a preservação intacta dos dados já gravados.
+- <strong>Homologação humana:</strong> Realizar a revisão e moderação de itens marcados como <code>possivel_duplicata</code>, <code>ambiguo</code> ou <code>informe</code> por um usuário com papel professor/admin na interface administrativa.</p>
+<h2 id="6-validacao-e-revisao-tecnica-s7-b05-75">6. Validação e Revisão Técnica — S7-B05 (#75)</h2>
+<p>Consolidado em <strong>16/11/2026</strong> para a issue <a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues/75">#75</a> (RF14, RF15, RF16, RNF02, RNF11, RNF13 e <a href="../adrs/adr-011-datas-civis-e-instantes/">ADR-011</a>). Responsável principal: <code>@pontesluis</code>. Corresponsável: <code>@marrathomaz</code>. Apoio em migrações: <code>@felipecduque7</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Critério de Aceite / Cenário</th>
+<th>Evidência Técnica e Testes</th>
+<th>Resultado</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>1. Execução agendada, duas execuções sucessivas/concorrentes sem duplicatas e atualização de data no mesmo registro</strong></td>
+<td>Workflow <code>.github/workflows/production-jobs.yml</code> (<code>job: collector</code>), alvos <code>make events-collect</code> / <code>make events-collect-daemon</code>, índice único <code>uq_eventos_fonte (fonte, fonte_id)</code>, <code>pg_try_advisory_lock(708073)</code> e <code>pg_advisory_xact_lock</code>, validados em <code>test_event_collector.py</code> e <code>test_event_collection_database.py</code></td>
+<td>Aprovado</td>
+</tr>
+<tr>
+<td><strong>2. Indisponibilidade da fonte preserva registros, respeito a decisões de moderação/campos editados localmente e cobertura multicampus</strong></td>
+<td>Leitura integral prévia ao bloco transacional, rollback em falha HTTP/timeout com registro em <code>coletas_eventos</code> (<code>status = 'falha'</code>), trigger <code>tg_registra_edicao_local</code> (<code>campos_editados</code>), preservação de <code>moderado_em</code> e normalização dos 5 campi da UnB</td>
+<td>Aprovado</td>
+</tr>
+<tr>
+<td><strong>3. Publicação automática de evento completo e retenção em revisão de item ambíguo, incompleto, informe ou possível duplicata, com procedência visível</strong></td>
+<td>RPC <code>registrar_evento_coletado(jsonb)</code>, tratamento de <code>00:00</code> sem sinal explícito como <code>ambiguo</code>, distinção <code>evento</code> vs <code>informe</code>, conciliação de URL manual, similaridade de título/data ($\le 2$ dias) e exposição de <code>source</code>/<code>source_url</code> em <code>EventRead</code> e na interface</td>
+<td>Aprovado</td>
+</tr>
+</tbody>
+</table>
+<h3 id="revisao-de-contratos-permissoes-e-dados-afetados">Revisão de Contratos, Permissões e Dados Afetados</h3>
+<ul>
+<li><strong>Revisores:</strong> <code>@marrathomaz</code> e <code>@pontesluis</code> (apoio em migrações: <code>@felipecduque7</code>).</li>
+<li><strong>Contratos revisados:</strong> <code>EventRead</code> (<code>GET /api/v1/events</code>, <code>GET /api/v1/events/{event_id}</code>, <code>GET /api/v1/me/saved-events</code>) com <code>ends_at</code>, <code>all_day</code>, <code>start_date</code>, <code>end_date</code>, <code>source</code> e <code>source_url</code>, mantendo privados <code>fonte_hash</code>, <code>coletado_em</code>, <code>motivo_revisao</code> e <code>campos_editados</code> (<code>test_public_event_exposes_provenance_without_internal_metadata</code>).</li>
+<li><strong>Permissões e segurança (RLS / Triggers):</strong> <code>public.coletas_eventos</code> com RLS ativo e <code>REVOKE ALL FROM anon, authenticated</code>; <code>public.registrar_evento_coletado(jsonb)</code> restrita a <code>service_role</code>; <code>public.listar_revisoes_coleta(text, integer)</code> e <code>public.moderar_sugestao(uuid, text, text)</code> restritas a moderadores (<code>public.is_event_moderator()</code>); trigger <code>tg_protege_procedencia</code> bloqueando forja de procedência pelo navegador com SQLSTATE <code>42501</code> (<code>test_browser_cannot_collect_or_forge_provenance</code>).</li>
+<li><strong>Tabelas afetadas:</strong> <code>public.eventos</code>, <code>public.eventos_pessoais</code> e <code>public.coletas_eventos</code> (<code>supabase/migrations/20261111140000_eventos_datas_e_coleta.sql</code>).</li>
+<li><strong>Pendências abertas rastreadas:</strong></li>
+<li>Integração visual da RPC <code>listar_revisoes_coleta</code> na tela de moderação do frontend acompanhada na issue <strong>#80 (<code>S8-F02</code>)</strong> (<code>@Bielziin07</code> / <code>@marrathomaz</code>).</li>
+<li>Ativação da variável <code>PRODUCTION_EVENT_COLLECTION_ENABLED=true</code> no environment <code>production-jobs</code> após promoção para <code>main</code>, acompanhada na issue <strong>#76 (<code>S7-B06</code>)</strong> (<code>@pontesluis</code>).</li>
+</ul>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Voltar para o topo
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.path", "navigation.top", "search.suggest", "search.highlight", "content.code.copy"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copiado para \u00e1rea de transfer\u00eancia", "clipboard.copy": "Copiar para \u00e1rea de transfer\u00eancia", "search.result.more.one": "mais 1 nesta p\u00e1gina", "search.result.more.other": "# mais nesta p\u00e1gina", "search.result.none": "Nenhum documento encontrado", "search.result.one": "1 documento encontrado", "search.result.other": "# documentos encontrados", "search.result.placeholder": "Digite para iniciar a busca", "search.result.term.missing": "Ausente", "select.version": "Selecione a vers\u00e3o"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+    
+  </body>
+</html>
