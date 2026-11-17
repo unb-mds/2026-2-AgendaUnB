@@ -320,7 +320,7 @@ def shared_plans(offering_id: UUID, limit: int = Query(20, ge=1, le=100), offset
             "my_vote": my_vote,
             "is_default": False,
             "can_withdraw": version.author_id == user.id or user.role == "admin",
-            "can_edit": version.author_id == user.id or user.role in ("professor", "admin"),
+            "can_edit": True,
             "has_imported_update": has_imported_update,
             "imported_from_version_number": imported_from_version_number if has_imported_update else None,
             "candidates": candidate_reads,

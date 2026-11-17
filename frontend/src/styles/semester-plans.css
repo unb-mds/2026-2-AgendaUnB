@@ -680,6 +680,57 @@ body.light .pixel-cat-eye-glow {
   border-color: #82d9b5;
   color: #82d9b5;
 }
+.shared-badge.is-divergent {
+  border-color: var(--semester-warn);
+  color: var(--semester-warn);
+}
+.shared-notice,
+.shared-publish-box {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--semester-line);
+  border-radius: 10px;
+  background: var(--semester-field);
+}
+.shared-notice p,
+.shared-publish-box p,
+.shared-divergence-note {
+  margin: 0;
+  font-size: .85rem;
+  color: var(--semester-muted);
+  flex: 1 1 240px;
+}
+.shared-divergence-note {
+  color: var(--semester-warn);
+}
+.shared-empty-actions,
+.shared-plan-details-sharing {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+}
+.shared-plan-details-sharing {
+  justify-items: stretch;
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--semester-line);
+}
+.shared-plan-details-sharing h3 {
+  font-size: .95rem;
+}
+.shared-candidate-votes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.shared-candidate-votes button.is-contested {
+  border-color: var(--semester-error);
+  color: var(--semester-error);
+}
 body.light .shared-badge.is-role-professor,
 body.light .shared-badge.is-verified {
   border-color: #176b4a;

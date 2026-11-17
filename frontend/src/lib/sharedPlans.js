@@ -53,6 +53,10 @@ export function normalizeSharedCandidate(candidate, versionId) {
     versionId: versionId ?? candidate.version_id ?? null,
     imported: Boolean(candidate.imported),
     modifiedSinceImport: Boolean(candidate.modified_since_import),
+    confirmCount: candidate.confirm_count ?? 0,
+    contestCount: candidate.contest_count ?? 0,
+    divergent: Boolean(candidate.divergent ?? (candidate.contest_count ?? 0) > 0),
+    myVote: candidate.my_vote ?? null,
   };
 }
 

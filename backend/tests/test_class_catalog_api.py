@@ -323,7 +323,7 @@ def test_extracted_plan_auto_shares_and_follower_imports_votes_revises_and_withd
         db.commit()
         pid, v1_id, c1_id = str(plan.id), str(v1.id), str(c1.id)
 
-    # Ao consultar o plano concluído, a versão inicial é compartilhada como padrão da turma.
+    # Ao consultar o plano concluído, a versão inicial (v1) é compartilhada automaticamente para a turma (ADR-010).
     detail = client.get(f'/api/v1/syllabus/{pid}')
     assert detail.status_code == 200
 
@@ -332,12 +332,14 @@ def test_extracted_plan_auto_shares_and_follower_imports_votes_revises_and_withd
     assert client.put(f'/api/v1/me/class-offerings/{oid}').status_code == 204
     shared = client.get(f'/api/v1/class-offerings/{oid}/shared-plans')
     assert shared.status_code == 200
+    assert shared.json()['membership_type'] == 'autodeclarado'
     items = shared.json()['items']
     assert len(items) == 1
     assert items[0]['id'] == v1_id
     assert items[0]['is_default'] is True
     assert items[0]['author_name'] == 'Maria Autora'
     assert items[0]['author_role'] == 'student'
+    assert items[0]['can_edit'] is True
     assert items[0]['has_imported_update'] is False
 
     imported = client.post(
@@ -356,7 +358,7 @@ def test_extracted_plan_auto_shares_and_follower_imports_votes_revises_and_withd
     assert client.put(f'/api/v1/syllabus/{pid}/versions/{v1_id}/vote', json={'value': 'confirm'}).status_code == 403
     assert client.post(
         f'/api/v1/syllabus/{pid}/versions',
-        json={'sourceVersionId': v1_id, 'candidates': [{'title': 'Prova X', 'type': 'prova', 'suggestedDate': '2026-11-21'}]},
+        json={'sourceVersionId': v1_id, 'share': True, 'candidates': [{'title': 'Prova X', 'type': 'prova', 'suggestedDate': '2026-11-21'}]},
     ).status_code == 403
 
     # Professor segue e cria uma revisão (v2), e o seguidor cria v3 com data atualizada.
@@ -366,6 +368,7 @@ def test_extracted_plan_auto_shares_and_follower_imports_votes_revises_and_withd
         f'/api/v1/syllabus/{pid}/versions',
         json={
             'sourceVersionId': v1_id,
+            'share': True,
             'candidates': [
                 {'candidateId': c1_id, 'title': 'Prova 1', 'type': 'prova', 'suggestedDate': '2026-11-20', 'suggestedTime': '14:00:00'},
             ],
@@ -379,6 +382,7 @@ def test_extracted_plan_auto_shares_and_follower_imports_votes_revises_and_withd
         f'/api/v1/syllabus/{pid}/versions',
         json={
             'sourceVersionId': v1_id,
+            'share': True,
             'candidates': [
                 {'candidateId': c1_id, 'title': 'Prova 1 Adiada', 'type': 'prova', 'suggestedDate': '2026-11-27', 'suggestedTime': '16:00:00'},
             ],
@@ -388,6 +392,7 @@ def test_extracted_plan_auto_shares_and_follower_imports_votes_revises_and_withd
     v3_id = rev_student.json()['id']
 
     # Evento pessoal já importado por João continua preservado e com data original!
+    user['value'] = CurrentUser(id=follower_id, role='student')
     agenda = client.get('/api/v1/me/events').json()
     assert len(agenda) == 1
     assert agenda[0]['id'] == original_event_id
@@ -444,7 +449,13 @@ def test_extracted_plan_auto_shares_and_follower_imports_votes_revises_and_withd
     with sessions() as db:
         assert db.scalar(select(PersonalEvent).where(PersonalEvent.user_id == follower_id)) is not None
 
-    # Admin também pode retirar a versão de outro autor.
+    # Admin também pode retirar a versão de outro autor; após retirada, v1 não é recompartilhada automaticamente ao consultar o plano.
     admin_id = uuid4()
     user['value'] = CurrentUser(id=admin_id, role='admin')
     assert client.delete(f'/api/v1/syllabus/{pid}/versions/{v2_id}/sharing').status_code == 200
+    assert client.delete(f'/api/v1/syllabus/{pid}/versions/{v1_id}/sharing').status_code == 200
+
+    user['value'] = CurrentUser(id=author_id, role='student')
+    assert client.get(f'/api/v1/syllabus/{pid}').status_code == 200
+    user['value'] = CurrentUser(id=follower_id, role='student')
+    assert client.get(f'/api/v1/class-offerings/{oid}/shared-plans').json()['items'] == []
