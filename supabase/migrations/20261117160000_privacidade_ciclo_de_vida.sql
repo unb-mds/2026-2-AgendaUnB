@@ -325,7 +325,14 @@ begin
       select jsonb_agg(jsonb_build_object('finalidade', c.finalidade, 'referencia_id', c.referencia_id,
                                           'concedido_em', c.concedido_em, 'revogado_em', c.revogado_em)
                        order by c.concedido_em)
-        from public.consentimentos c where c.user_id = p_ator), '[]'::jsonb)
+        from public.consentimentos c where c.user_id = p_ator), '[]'::jsonb),
+    -- Conexão com o Google Agenda (S7-F04): só dados descritivos. Os tokens
+    -- cifrados não são dado útil ao titular e nunca saem do servidor.
+    'conexao_google_agenda', (
+      select jsonb_build_object('conta_google', g.google_email, 'agenda_id', g.calendar_id,
+                                'escopo_autorizado', g.granted_scope,
+                                'conectada_em', g.criado_em, 'atualizada_em', g.atualizado_em)
+        from public.google_calendar_connections g where g.user_id = p_ator)
   ) into v_resultado;
 
   return v_resultado;
