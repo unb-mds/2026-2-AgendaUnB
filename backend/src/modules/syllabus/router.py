@@ -1,6 +1,7 @@
 import time
 import hashlib
 import json
+from datetime import datetime, time as dt_time, timedelta, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, Response, UploadFile, status
@@ -39,6 +40,7 @@ from src.modules.syllabus.preparation import (
     owned_plan, preview, authorize,
 )
 from src.modules.syllabus.services import UPLOAD_VALIDATION_TIMEOUT_SECONDS
+from src.modules.syllabus.worker import spawn_worker_drain, utcnow
 
 router = APIRouter(prefix="/syllabus", tags=["syllabus"])
 
@@ -71,7 +73,12 @@ def _confirmation_payload(payload: ConfirmSyllabusRequest) -> list[dict]:
             item["descricao"] = candidate.description
         if candidate.kind is not None:
             item["tipo"] = candidate.kind
-        if candidate.starts_at is not None:
+        if candidate.all_day:
+            item["dia_inteiro"] = True
+            item["data_inicio"] = candidate.start_date.isoformat()
+            if candidate.end_date is not None:
+                item["data_fim"] = candidate.end_date.isoformat()
+        elif candidate.starts_at is not None:
             item["inicio"] = candidate.starts_at.isoformat()
         if candidate.category is not None:
             item["categoria"] = candidate.category
@@ -161,12 +168,19 @@ def _confirm_sqlite(syllabus_id: UUID, payload: ConfirmSyllabusRequest, user_id:
         if candidate.status == "descartado":
             raise HTTPException(status_code=422, detail="Um candidato descartado não pode ser confirmado.")
         title = (reviewed.title or candidate.title).strip()
-        starts_at = reviewed.starts_at or candidate.starts_at
         if len(title) < 3:
             raise HTTPException(status_code=422, detail="O título revisado deve ter ao menos 3 caracteres.")
-        if starts_at is None or starts_at.tzinfo is None or starts_at.utcoffset() is None:
-            raise HTTPException(status_code=422, detail="Corrija a data ambígua antes de confirmar o candidato.")
-        prepared.append((reviewed, candidate, title, starts_at))
+        if reviewed.all_day:
+            start_date = reviewed.start_date
+            end_date = reviewed.end_date or (start_date + timedelta(days=1))
+            starts_at = datetime.combine(start_date, dt_time.min, tzinfo=timezone(timedelta(hours=-3)))
+        else:
+            start_date = None
+            end_date = None
+            starts_at = reviewed.starts_at or candidate.starts_at
+            if starts_at is None or starts_at.tzinfo is None or starts_at.utcoffset() is None:
+                raise HTTPException(status_code=422, detail="Corrija a data ambígua antes de confirmar o candidato.")
+        prepared.append((reviewed, candidate, title, starts_at, reviewed.all_day, start_date, end_date))
 
     operation = ImportOperation(
         user_id=user_id,
@@ -177,7 +191,7 @@ def _confirm_sqlite(syllabus_id: UUID, payload: ConfirmSyllabusRequest, user_id:
     db.add(operation)
     db.flush()
     rows = []
-    for reviewed, candidate, title, starts_at in prepared:
+    for reviewed, candidate, title, starts_at, all_day, start_date, end_date in prepared:
         event = db.scalar(select(PersonalEvent).where(
             PersonalEvent.user_id == user_id,
             PersonalEvent.origin_candidate_id == candidate.id,
@@ -189,6 +203,9 @@ def _confirm_sqlite(syllabus_id: UUID, payload: ConfirmSyllabusRequest, user_id:
                 title=title,
                 description=reviewed.description or candidate.source_excerpt,
                 starts_at=starts_at,
+                all_day=all_day,
+                start_date=start_date,
+                end_date=end_date,
                 category_id=_category_id(db, reviewed.category),
                 origin_syllabus_id=syllabus.id,
                 origin_candidate_id=candidate.id,
@@ -201,8 +218,11 @@ def _confirm_sqlite(syllabus_id: UUID, payload: ConfirmSyllabusRequest, user_id:
         else:
             if reviewed.title is not None:
                 event.title = title
-            if reviewed.starts_at is not None:
+            if reviewed.starts_at is not None or reviewed.all_day:
                 event.starts_at = starts_at
+                event.all_day = all_day
+                event.start_date = start_date
+                event.end_date = end_date
             if reviewed.description is not None:
                 event.description = reviewed.description
             if reviewed.category is not None:
@@ -348,6 +368,7 @@ def authorize_syllabus_text(syllabus_id: UUID, payload: ExtractionAuthorization,
     plan = owned_plan(db, current_user.id, syllabus_id, lock=True)
     try:
         plan = authorize(db, plan, payload, ProcessingConfig.from_env())
+        spawn_worker_drain()
         response = SyllabusUploadResponse.model_validate(plan)
         response.message = "Autorização registrada. Consulte o andamento do plano."
         return response
@@ -419,6 +440,12 @@ def get_syllabus_status(
                     )
                 ).all()
             )
+    if is_owner and syllabus.status == "pendente" and syllabus.authorized_at is not None:
+        next_at = syllabus.next_attempt_at
+        if next_at is not None and next_at.tzinfo is None:
+            next_at = next_at.replace(tzinfo=timezone.utc)
+        if next_at is None or next_at <= utcnow():
+            spawn_worker_drain()
 
     return SyllabusDetailResponse(
         id=syllabus.id,

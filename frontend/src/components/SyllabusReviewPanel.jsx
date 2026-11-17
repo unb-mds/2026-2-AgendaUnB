@@ -11,7 +11,7 @@ const fields = { title: 'título', titulo: 'título', type: 'tipo', tipo: 'tipo'
 
 // Uses candidate details from the existing private-plan API contract.
 // Do not turn extractedEventsCount into synthetic candidates or assume a future payload.
-export default function SyllabusReviewPanel({ selected = false, plan, loading = false, error, onConfirmed, onEdited, confirmationAllowed = true }) {
+export default function SyllabusReviewPanel({ selected = false, plan, classSchedule, loading = false, error, onConfirmed, onEdited, confirmationAllowed = true }) {
   const candidates = selected && !error && !loading && plan?.status === 'concluido' && !plan.authorizationRequired ? plan.candidates : null;
   let message = 'Abra um plano em “Seus planos enviados” para consultar a disponibilidade das avaliações. Se ainda não enviou um plano, comece pelo formulário acima.';
   if (selected) {
@@ -25,7 +25,7 @@ export default function SyllabusReviewPanel({ selected = false, plan, loading = 
     else message = 'Não foi possível identificar o estado da análise. Consulte novamente pelo acompanhamento.';
   }
   return <div className="plan-review-panel">
-    {candidates?.length ? <CandidateReview key={JSON.stringify([plan.id, candidates])} planId={plan.id} initialCandidates={candidates} onConfirmed={onConfirmed} onEdited={onEdited} confirmationAllowed={confirmationAllowed} /> : <SyllabusReviewEditor value={[]} disabled emptyMessage={candidates?.length === 0 ? 'A análise terminou sem avaliações. Você pode cadastrar os prazos manualmente em Meus Eventos.' : message} />}
+    {candidates?.length ? <CandidateReview key={JSON.stringify([plan.id, candidates])} planId={plan.id} initialCandidates={candidates} classSchedule={classSchedule} onConfirmed={onConfirmed} onEdited={onEdited} confirmationAllowed={confirmationAllowed} /> : <SyllabusReviewEditor value={[]} disabled emptyMessage={candidates?.length === 0 ? 'A análise terminou sem avaliações. Você pode cadastrar os prazos manualmente em Meus Eventos.' : message} />}
     <details className="plan-file-help">
       <summary>O que poderei revisar?</summary>
       <p>Você pode corrigir título, tipo, data e horário. Somente as avaliações selecionadas entram na agenda quando você confirma a importação.</p>
@@ -33,9 +33,9 @@ export default function SyllabusReviewPanel({ selected = false, plan, loading = 
   </div>;
 }
 
-function CandidateReview({ planId, initialCandidates, onConfirmed, onEdited, confirmationAllowed }) {
+function CandidateReview({ planId, initialCandidates, classSchedule, onConfirmed, onEdited, confirmationAllowed }) {
   const [candidates, setCandidates] = useState(initialCandidates);
-  const [draft, setDraft] = useState(() => createCandidateReviewDraft(initialCandidates));
+  const [draft, setDraft] = useState(() => createCandidateReviewDraft(initialCandidates, classSchedule));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -102,7 +102,7 @@ function CandidateReview({ planId, initialCandidates, onConfirmed, onEdited, con
         return;
       }
       const previous = new Map(draft.map(item => [item.id, item]));
-      const reconciled = createCandidateReviewDraft(latest.candidates).map(item => {
+      const reconciled = createCandidateReviewDraft(latest.candidates, classSchedule).map(item => {
         const prior = previous.get(item.id);
         return item.editable && prior?.editable && item.versionId === prior.versionId ? prior : item;
       });
@@ -122,7 +122,7 @@ function CandidateReview({ planId, initialCandidates, onConfirmed, onEdited, con
 
   return <>
     <SyllabusReviewEditor value={draft} onChange={items => { idempotencyKeyRef.current = null; setDraft(items); onEdited?.(); }} onConfirm={confirm}
-      confirmationAllowed={confirmationAllowed} busy={busy} disabled={busy || Boolean(unverifiedIds)} renderCandidate={(_, index) => {
+      classSchedule={classSchedule} confirmationAllowed={confirmationAllowed} busy={busy} disabled={busy || Boolean(unverifiedIds)} renderCandidate={(item, index) => {
     const candidate = candidates[index];
     return <div className="syllabus-candidate">
         <h3>{candidate.title}</h3>
@@ -130,11 +130,12 @@ function CandidateReview({ planId, initialCandidates, onConfirmed, onEdited, con
         <dl>
           <div><dt>Tipo</dt><dd>{candidate.type || 'Não informado'}</dd></div>
           <div><dt>Data sugerida</dt><dd>{candidate.suggestedDate || 'Não informada'}</dd></div>
-          <div><dt>Horário sugerido</dt><dd>{candidate.suggestedTime || 'Não informado'}</dd></div>
+          <div><dt>Horário no plano</dt><dd>{candidate.suggestedTime || (candidate.type === 'trabalho' ? 'Não encontrado' : 'Não informado')}</dd></div>
           {candidate.startsAt && <div><dt>Data e horário registrados</dt><dd>{candidate.startsAt}</dd></div>}
         </dl>
         {(candidate.ambiguous || candidate.ambiguousFields.length > 0) && <p className="syllabus-review-error">Requer conferência{candidate.ambiguousFields.length ? `: ${candidate.ambiguousFields.map(field => fields[field] || field).join(', ')}` : ': informações incertas no documento'}.</p>}
-        {(!candidate.suggestedDate || !candidate.suggestedTime) && !candidate.startsAt && <p>Data ou horário incompletos. Será necessário informá-los antes da confirmação (horário de Brasília).</p>}
+        {!item.date && !candidate.startsAt && <p>Data incompleta. Será necessário informá-la antes da confirmação (horário de Brasília).</p>}
+        {item.date && !item.time && item.type !== 'trabalho' && !candidate.startsAt && <p>Horário incompleto. Será necessário informá-lo antes da confirmação (horário de Brasília).</p>}
         <p><strong>Origem:</strong> {candidate.sourcePage === null ? 'Sem referência de página' : `Página ${candidate.sourcePage}`}</p>
         {candidate.sourceExcerpt ? <blockquote>{candidate.sourceExcerpt}</blockquote> : <p>Trecho de origem não informado.</p>}
     </div>;
