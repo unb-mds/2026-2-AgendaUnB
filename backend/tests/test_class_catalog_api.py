@@ -63,11 +63,58 @@ def test_first_publication_and_required_offer(api):
 def test_plan_is_bound_to_exact_offer(api, catalog):
     client = api[0]
     oid, _ = catalog
+    client.put(f'/api/v1/me/class-offerings/{oid}')
     response = client.post('/api/v1/syllabus/text', json={'text': 'Prova em 20/11/2026', 'offering_id': str(oid), 'disciplina': 'Nome incorreto'})
     assert response.status_code == 202, response.text
     detail = client.get('/api/v1/syllabus/' + response.json()['id']).json()
     assert detail['offeringId'] == str(oid) and detail['disciplina'] == 'Computação'
     assert client.get(f'/api/v1/syllabus?offering_id={uuid4()}').json()['total'] == 0
+
+
+@pytest.mark.parametrize('source', ['pdf', 'text'])
+def test_plan_requires_own_current_follow(api, catalog, source):
+    from sqlalchemy import func, select
+    from src.database.models import Syllabus
+    from src.middlewares.auth import CurrentUser
+    client, sessions, auth, _ = api
+    oid, _ = catalog
+
+    def send():
+        if source == 'text':
+            return client.post('/api/v1/syllabus/text', json={'offering_id': str(oid), 'text': 'Prova em 20/11/2026'})
+        return client.post('/api/v1/syllabus/upload', data={'offering_id': str(oid)},
+                           files={'file': ('plano.pdf', b'not parsed without permission', 'application/pdf')})
+
+    assert send().status_code == 403
+    assert client.put(f'/api/v1/me/class-offerings/{oid}').status_code == 204
+    owner = auth['value']
+    auth['value'] = CurrentUser(id=uuid4(), role='student')
+    assert send().status_code == 403  # Another user's follow grants no permission.
+    auth['value'] = owner
+    assert client.delete(f'/api/v1/me/class-offerings/{oid}').status_code == 204
+    assert send().status_code == 403
+    with sessions() as db:
+        assert db.scalar(select(func.count()).select_from(Syllabus)) == 0
+
+
+def test_follow_removed_during_pdf_extraction_blocks_persistence(api, published_offering, monkeypatch):
+    from sqlalchemy import delete, select, func
+    from src.database.models import Syllabus
+    from syllabus_samples import make_pdf
+    client, sessions, auth, _ = api
+
+    def extract(*args):
+        with sessions() as db:
+            db.execute(delete(ClassFollow).where(ClassFollow.user_id == auth['value'].id))
+            db.commit()
+        return [{'pagina': 1, 'texto': 'Prova em 20/11/2026'}]
+
+    monkeypatch.setattr('src.modules.syllabus.router.extract_pdf_isolated', extract)
+    response = client.post('/api/v1/syllabus/upload', data={'offering_id': published_offering},
+                           files={'file': ('plano.pdf', make_pdf(['Prova em 20/11/2026']), 'application/pdf')})
+    assert response.status_code == 403
+    with sessions() as db:
+        assert db.scalar(select(func.count()).select_from(Syllabus)) == 0
 
 
 def test_allowlist_filters_no_credentials_and_retry():

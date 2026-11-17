@@ -38,4 +38,4 @@ Verificar duplicatas, isolamento entre contas, alteração do original, retirada
 
 ## Fontes e relações
 
-[Eventos salvos](../../eventos-salvos.md) · [Agenda na R2](../../atualizacoes.md#agenda-redirecionamento-e-lembretes) · [Requisitos](../../produto/requisitos.md) · [Índice de ADRs](index.md)
+[Eventos salvos](/eventos-salvos) · [Agenda na R2](/atualizacoes#agenda-redirecionamento-e-lembretes) · [Requisitos](/produto/requisitos) · [Índice de ADRs](/arquitetura/adrs/index)

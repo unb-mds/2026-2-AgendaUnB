@@ -7,7 +7,7 @@ description: "Rastreabilidade dos 34 requisitos da Release 2."
 
 Estado em **07/11/2026**. As issues citadas estavam abertas nas milestones das sprints 7 e 8. **Pendente** indica ausência de evidência de homologação da Release 2 nesta matriz. Parte dos fluxos já existe no produto. Os nomes após cada issue identificam o responsável principal descrito na própria issue.
 
-[Requisitos do produto](produto/requisitos.md) · [Contratos da Release 2](atualizacoes.md#contratos-da-release-2) · [Issue de consolidação](https://github.com/unb-mds/2026-2-AgendaUnB/issues/67)
+[Requisitos do produto](/produto/requisitos) · [Contratos da Release 2](/atualizacoes#contratos-da-release-2) · [Issue de consolidação](https://github.com/unb-mds/2026-2-AgendaUnB/issues/67)
 
 | Requisito | Issues e responsáveis principais | Critério verificável | Aceite R2 |
 | --- | --- | --- | --- |
@@ -47,5 +47,7 @@ Estado em **07/11/2026**. As issues citadas estavam abertas nas milestones das s
 | RNF13 — padrões/testes | [#67](https://github.com/unb-mds/2026-2-AgendaUnB/issues/67) @Thomas4ugust0, [#68](https://github.com/unb-mds/2026-2-AgendaUnB/issues/68) @pontesluis, [#76](https://github.com/unb-mds/2026-2-AgendaUnB/issues/76) @pontesluis, [#85](https://github.com/unb-mds/2026-2-AgendaUnB/issues/85) @Bielziin07, [#86](https://github.com/unb-mds/2026-2-AgendaUnB/issues/86) @Thomas4ugust0 | CI, deploy reproduzível, testes essenciais e docs coerentes | Pendente |
 
 ## Registro de evidências
+
+- **S7-B02 (14/11/2026):** Decisões e verificações consolidadas nas ADRs de [hospedagem e CI (ADR-002)](/arquitetura/adrs/adr-002-separar-hospedagem-e-ambientes), [catálogo Followw (ADR-009)](/arquitetura/adrs/adr-009-catalogo-publico-de-turmas), [Google Calendar (ADR-012)](/arquitetura/adrs/adr-012-exportacao-google-idempotente) e [worker IA (ADR-014)](/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia) (cobrindo RF16, RF21, RNF03, RNF11 e RNF13).
 
 Para cada cenário, anexar à issue o PR, versão implantada, ambiente, data da execução e resultado observado. Identificar falhas abertas com issue e responsável. Registrar quem revisou os contratos, permissões e dados afetados. A [homologação #85](https://github.com/unb-mds/2026-2-AgendaUnB/issues/85) consolida as jornadas e a [#86](https://github.com/unb-mds/2026-2-AgendaUnB/issues/86) reúne o pacote final.
