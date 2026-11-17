@@ -47,8 +47,11 @@ def test_every_response_carries_protection_headers(api):
 def test_private_responses_are_never_cached_and_hsts_follows_https(api):
     client, _, _, _ = api
     assert client.get("/api/v1/me/events").headers["cache-control"] == "no-store"
-    assert client.get("/api/v1/events", headers={"Authorization": "Bearer x"}).headers["cache-control"] == "no-store"
-    assert "cache-control" not in client.get("/api/v1/events").headers
+    assert client.get("/api/v1/me/events", headers={"Authorization": "Bearer x"}).headers["cache-control"] == "no-store"
+    # A agenda pública não depende de quem pede e declara a própria política de
+    # cache (20261114190000); o middleware não a sobrescreve.
+    public = client.get("/api/v1/events", headers={"Authorization": "Bearer x"}).headers["cache-control"]
+    assert public.startswith("public,")
 
     assert "strict-transport-security" not in client.get("/health").headers
     behind_tls_proxy = client.get("/health", headers={"X-Forwarded-Proto": "https"})
@@ -238,7 +241,7 @@ def test_api_refuses_accounts_with_unconfirmed_email(monkeypatch):
         with pytest.raises(HTTPException) as error:
             auth_with(monkeypatch, account)
         assert error.value.status_code == 403
-    assert str(auth_with(monkeypatch, {"id": uid, "email_confirmed_at": "2026-11-01T12:00:00Z"}).id) == uid
+    assert str(auth_with(monkeypatch, {"id": uid, "email": "aluna@example.edu", "email_confirmed_at": "2026-11-01T12:00:00Z"}).id) == uid
 
 
 def test_security_headers_survive_unhandled_errors():

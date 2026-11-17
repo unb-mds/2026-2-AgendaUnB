@@ -377,7 +377,8 @@ def test_no_function_is_callable_by_visitors_and_rpcs_are_hardened(database):
         join pg_namespace n on n.oid = p.pronamespace
         where n.nspname = 'public' and has_function_privilege('anon', p.oid, 'execute')
         order by 1""")).scalars().all()
-    assert for_visitors == [], f'Funções chamáveis sem login: {for_visitors}'
+    # Única exceção: a agenda pública, que só devolve eventos aprovados (20261114190000).
+    assert for_visitors == ['listar_eventos_publicos()'], f'Funções chamáveis sem login: {for_visitors}'
 
     # O que a conta logada chama via /rpc precisa de search_path fixo.
     loose = conn.execute(text("""select p.oid::regprocedure::text from pg_proc p
@@ -463,7 +464,10 @@ def test_professor_role_requires_confirmed_institutional_email(database):
     pending = signup(conn, f'docente-{uuid4()}@unb.br', role='professor')
     assert role_of(conn, pending) == 'student'
     assume(conn, pending)
-    denied(conn, "update public.profiles set papel='professor' where id=:u", {'u': pending})
+    # Conta não confirmada não enxerga o próprio perfil para escrita (S7-F04):
+    # a tentativa não afeta linha nenhuma.
+    assert conn.execute(text("update public.profiles set papel='professor' where id=:u"),
+                        {'u': pending}).rowcount == 0
     assert scalar(conn, 'select public.is_event_moderator()') is False
 
     # Ao confirmar, o papel pedido no cadastro é concedido automaticamente.

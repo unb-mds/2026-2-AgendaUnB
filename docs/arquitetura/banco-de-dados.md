@@ -39,7 +39,7 @@ Armazena os metadados dos usuários, sincronizada com a tabela nativa de autenti
 *   **Colunas:**
     *   `id` (UUID, Primary Key): Referência em cascata para `auth.users(id)`.
     *   `nome_completo` (até 200 caracteres), `email` (imutável), `papel` (`student`, `professor`, `admin`), `avatar_url` (somente `https`), `criado_em`, `atualizado_em`.
-*   **Criação:** o trigger `on_auth_user_created` cria o perfil no cadastro. O papel `professor` exige e-mail `@unb.br` **confirmado**: cadastro ainda não confirmado nasce `student` e é promovido pelo trigger `on_auth_user_email_confirmed` quando o endereço é confirmado. `admin` nunca vem do cadastro.
+*   **Criação:** o trigger `on_auth_user_created` cria o perfil no cadastro. O papel `professor` exige e-mail `@unb.br` **confirmado**: cadastro ainda não confirmado nasce `student` e é promovido pelo trigger `on_auth_user_confirmed_professor_request` (S7-F04) quando o endereço é confirmado. `admin` nunca vem do cadastro.
 *   **Políticas RLS:**
     *   **Leitura (SELECT):** o próprio usuário lê o seu perfil; admins leem todos. Visitantes não têm acesso.
     *   **Atualização (UPDATE):** o próprio usuário, apenas em `nome_completo`, `avatar_url` e `papel`. A mudança de papel pelo navegador só aceita `student → professor` com e-mail institucional confirmado; as demais passam pelas RPCs administrativas.
