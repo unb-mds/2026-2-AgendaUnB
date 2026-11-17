@@ -152,6 +152,30 @@ def _can_read_version(db: Session, user_id: UUID, syllabus: Syllabus, version: S
     )
 
 
+def _auto_share_version_if_eligible(
+    db: Session,
+    syllabus: Syllabus,
+    version: SyllabusVersion | None,
+    *,
+    candidates_count: int = 1,
+    initial_only: bool = False,
+) -> bool:
+    """Compartilha automaticamente v1 vinculada a oferta concluída, salvo se retirada anteriormente (ADR-010)."""
+    if (
+        version is None
+        or syllabus.offering_id is None
+        or syllabus.status not in {"completed", "concluido"}
+        or version.visibility != "privada"
+        or version.withdrawn_at is not None
+        or candidates_count <= 0
+        or (initial_only and version.number != 1)
+    ):
+        return False
+    version.visibility = "compartilhada"
+    version.shared_at = version.shared_at or utcnow()
+    return True
+
+
 def _rebind_events_for_revision(
     db: Session,
     *,
@@ -374,6 +398,8 @@ def _confirm_sqlite(syllabus_id: UUID, payload: ConfirmSyllabusRequest, user_id:
             "removido": False,
             "tipo_revisado": reviewed.kind,
         })
+    if syllabus.user_id == user_id:
+        _auto_share_version_if_eligible(db, syllabus, version, candidates_count=len(prepared), initial_only=True)
     db.commit()
     return _confirmation_response(db, syllabus_id, user_id, operation.id, rows, payload.candidates, repeated=False)
 
@@ -541,6 +567,10 @@ def get_syllabus_status(
     candidates = db.scalars(
         candidate_query.order_by(SyllabusCandidate.source_page.asc(), SyllabusCandidate.id.asc())
     ).all()
+    if is_owner and _auto_share_version_if_eligible(
+        db, syllabus, version, candidates_count=len(candidates), initial_only=True
+    ):
+        db.commit()
     own_imports: dict[UUID, tuple[str, UUID | None, str | None]] = {}
     active_owner_events: set[UUID] = set()
     if not is_owner and candidates:
@@ -683,6 +713,10 @@ def confirm_syllabus_candidates(
         ).scalar_one()
         result = result if isinstance(result, dict) else json.loads(result)
         operation_id = UUID(str(result["operacao_id"]))
+        if syllabus.user_id == current_user.id:
+            _auto_share_version_if_eligible(
+                db, syllabus, version, candidates_count=len(payload.candidates), initial_only=True
+            )
         db.commit()
     except DBAPIError as error:
         db.rollback()
@@ -1039,11 +1073,22 @@ def create_syllabus_revision(
         raise HTTPException(status_code=404, detail="Versão do plano não encontrada.")
 
     author_role = db.scalar(select(Profile.papel).where(Profile.id == current_user.id)) or current_user.role or "student"
-    if origin.author_id != current_user.id and author_role not in ("professor", "admin"):
-        raise HTTPException(status_code=403, detail="Sem permissão para revisar esta versão.")
+    if origin.author_id != current_user.id and not (
+        origin.visibility == "compartilhada"
+        and (
+            author_role in ("professor", "admin")
+            or (
+                syllabus.offering_id is not None
+                and db.get(ClassFollow, (current_user.id, syllabus.offering_id)) is not None
+            )
+        )
+    ):
+        raise HTTPException(status_code=403, detail="Siga a turma para revisar esta versão.")
 
     if syllabus.status not in {"completed", "concluido"}:
         raise HTTPException(status_code=409, detail="O plano ainda não terminou de ser processado.")
+
+    should_share = payload.share or (payload.candidates is not None and syllabus.offering_id is not None)
 
     if db.bind.dialect.name == "postgresql":
         try:
@@ -1060,7 +1105,7 @@ def create_syllabus_revision(
                     origin_id=origin.id,
                     candidate_inputs=payload.candidates,
                 )
-            if payload.share:
+            if should_share:
                 db.execute(
                     text("select (public.compartilhar_versao(:actor_id, :version_id)).id"),
                     {"actor_id": current_user.id, "version_id": new_version.id},
@@ -1131,7 +1176,7 @@ def create_syllabus_revision(
                 )
             db.flush()
 
-        if payload.share:
+        if should_share:
             if syllabus.offering_id is None:
                 db.rollback()
                 raise HTTPException(status_code=409, detail="Associe o plano a uma turma antes de compartilhar.")
@@ -1458,7 +1503,7 @@ def get_syllabus_version_votes(
 @router.delete(
     "/{syllabus_id}/versions/{version_id}/candidates/{candidate_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Descarta um candidato de uma versão privada",
+    summary="Retira um evento/candidato de uma versão do plano",
 )
 def withdraw_version_candidate(
     syllabus_id: UUID,
@@ -1469,12 +1514,7 @@ def withdraw_version_candidate(
 ) -> Response:
     _, version = _get_syllabus_version(db, syllabus_id, version_id)
     if version.author_id != current_user.id and current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Apenas o autor ou um administrador pode descartar este candidato.")
-    if version.visibility == "compartilhada":
-        raise HTTPException(
-            status_code=409,
-            detail="Candidato de versão compartilhada não pode ser excluído; retire o compartilhamento ou crie uma revisão.",
-        )
+        raise HTTPException(status_code=403, detail="Apenas o autor ou um administrador pode retirar este evento.")
     candidate = db.scalar(
         select(SyllabusCandidate).where(
             SyllabusCandidate.id == candidate_id,
