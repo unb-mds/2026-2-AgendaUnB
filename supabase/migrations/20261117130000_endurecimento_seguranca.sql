@@ -157,8 +157,17 @@ grant execute on function
   public.pode_ler_versao(uuid),
   -- Revisão de candidatos pelo dono (S7-B01, 20261110120000). A própria
   -- função confere auth.uid() e o dono do plano.
-  public.revisar_candidatos_plano(uuid, jsonb)
+  public.revisar_candidatos_plano(uuid, jsonb),
+  -- Revisão da coleta de eventos (S7-B05, 20261111140000).
+  public.listar_revisoes_coleta(text, integer),
+  -- Conferências de e-mail usadas pelas políticas da S7-F04 (20261111150000).
+  public.current_account_has_confirmed_email(),
+  public.current_account_is_confirmed_unb()
   to authenticated;
+
+-- Agenda pública (20261114190000): o front-end lê os eventos por esta RPC,
+-- inclusive sem login.
+grant execute on function public.listar_eventos_publicos() to anon, authenticated;
 
 alter default privileges revoke execute on functions from public;
 alter default privileges in schema public revoke execute on functions from anon, authenticated;
