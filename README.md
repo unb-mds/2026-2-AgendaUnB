@@ -18,7 +18,7 @@
     <img src="https://img.shields.io/github/issues/unb-mds/2026-2-AgendaUnB?color=003366&label=Issues%20Abertas" alt="Issues Abertas">
   </a>
   <a href="LICENSE">
-    <img src="https://img.shields.io/badge/Licen%C3%A7a-[NOME_DA_LICENCA]-008744" alt="Licença">
+    <img src="https://img.shields.io/badge/Licen%C3%A7a-MIT-008744" alt="Licença MIT">
   </a>
   <a href="https://www.unb.br/">
     <img src="https://img.shields.io/badge/UnB-MDS%202026%2F2%20%7C%20Grupo%20G8-003366" alt="UnB - MDS 2026/2">
@@ -89,13 +89,47 @@ O AgendaUnb funciona em qualquer ambiente de desenvolvimento (com suporte nativo
 
 O AgendaUnb é um projeto totalmente de código aberto desenvolvido na disciplina de **Métodos de Desenvolvimento de Software (MDS)** da UnB, e damos as boas-vindas a novas contribuições. Informações sobre como começar podem ser encontradas no nosso [guia de contribuição](CONTRIBUTING.md) ou abrindo uma [issue no GitHub](https://github.com/unb-mds/2026-2-AgendaUnB/issues).
 
-## Equipe
+## Criadores
 
-| Nome | Papel | GitHub |
-| :--- | :--- | :--- |
-| Thomas Augusto Amorim de Araujo | Frontend | [@thomas4ugust0](https://github.com/thomas4ugust0) |
-| Gabriel Escramin Lourenço | Frontend | [@Bielziin07](https://github.com/Bielziin07) |
-| Heitor Gomes Monteiro | Backend | [@heitormontt](https://github.com/heitormontt) |
-| Thomaz Marra Martins | Backend | [@marrathomaz](https://github.com/marrathomaz) |
-| Felipe Couto Duque | Banco de Dados | [@felipecduque7](https://github.com/felipecduque7) |
-| Luis Davi Pontes da Silva | Banco de Dados | [@pontesluis](https://github.com/pontesluis) |
+<table>
+  <tr>
+    <td align="center">
+      <a href="https://github.com/thomas4ugust0">
+        <img src="https://github.com/thomas4ugust0.png" width="115px;" alt="Foto de Thomas Augusto"/><br />
+        <sub><b>Thomas Augusto</b></sub>
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://github.com/Bielziin07">
+        <img src="https://github.com/Bielziin07.png" width="115px;" alt="Foto de Gabriel Lourenço"/><br />
+        <sub><b>Gabriel</b></sub>
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://github.com/heitormontt">
+        <img src="https://github.com/heitormontt.png" width="115px;" alt="Foto de Heitor Monteiro"/><br />
+        <sub><b>Heitor</b></sub>
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://github.com/marrathomaz">
+        <img src="https://github.com/marrathomaz.png" width="115px;" alt="Foto de Thomaz Marra"/><br />
+        <sub><b>Thomaz</b></sub>
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <a href="https://github.com/felipecduque7">
+        <img src="https://github.com/felipecduque7.png" width="115px;" alt="Foto de Felipe Duque"/><br />
+        <sub><b>Felipe</b></sub>
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://github.com/pontesluis">
+        <img src="https://github.com/pontesluis.png" width="115px;" alt="Foto de Luis Davi"/><br />
+        <sub><b>Luis Davi</b></sub>
+      </a>
+    </td>
+  </tr>
+</table>
