@@ -189,3 +189,30 @@ def test_personal_event_validation_error_returns_clean_message(api):
     data = response.json()
     assert "Título: deve ter pelo menos 3 caracteres" in data["detail"]
 
+
+def test_public_event_exposes_provenance_without_internal_metadata(api):
+    client, session_factory, _, ids = api
+    with session_factory() as db:
+        event = make_public_event(
+            ids,
+            title="Evento Coletado da Notícias",
+            source="agenda_unb_noticias",
+            source_url="https://noticias.unb.br/component/agenda/agenda/999",
+            source_hash="sha256-secreto-interno-123456",
+        )
+        db.add(event)
+        db.commit()
+        event_id = event.id
+
+    detail = client.get(f"/api/v1/events/{event_id}")
+    assert detail.status_code == 200
+    data = detail.json()
+    assert data["source"] == "agenda_unb_noticias"
+    assert data["source_url"] == "https://noticias.unb.br/component/agenda/agenda/999"
+    # Campos internos não devem ser vazados pela API pública
+    assert "source_hash" not in data
+    assert "fonte_hash" not in data
+    assert "coletado_em" not in data
+    assert "motivo_revisao" not in data
+    assert "campos_editados" not in data
+

@@ -210,6 +210,34 @@ O worker também verifica pré-requisitos nos catálogos do banco e recusa confi
 incompleta, mesmo com as flags ativas. Consultar as [ADR-003](/arquitetura/adrs/adr-003-minimizar-dados-de-planos) e [ADR-014](/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia)
 para conferir o banco local antes de ativar o processo.
 
+### Coleta da Agenda UnB Notícias (S7-B05)
+
+O coletor é um processo desacoplado da API, que utiliza `DATABASE_URL` do ambiente e advisory locks (`pg_advisory_xact_lock`) no PostgreSQL para garantir idempotência e impedir concorrência.
+
+#### Formas de Execução e Ativação em Background
+1. **GitHub Actions (Ambiente Hospedado):**
+   - Configurado no workflow `.github/workflows/production-jobs.yml` através do job `collector`.
+   - Execução programada diariamente às 07h27 BRT (`cron: '27 10 * * *'`) e manual via `workflow_dispatch` com input `job: collector`.
+   - **Ativação:** requer definir a variável `PRODUCTION_EVENT_COLLECTION_ENABLED = 'true'` no environment `production-jobs` e vincular o secret `DATABASE_URL` com TLS.
+2. **Automação Local via Makefile:**
+   - `make events-collect`: executa uma única passagem de coleta localmente.
+   - `make events-collect-daemon`: executa o coletor em modo daemon com intervalo padrão.
+3. **CLI Direto no Backend:**
+   - `python -m src.modules.events.collector`: execução única.
+   - `python -m src.modules.events.collector --daemon`: execução contínua em background.
+   - `python -m src.modules.events.collector --interval-hours <h>`: execução recorrente com intervalo mínimo de 1 hora.
+
+#### Status de Validação e Evidências
+Consulte [Dados de eventos: datas e coleta](/arquitetura/dados-de-eventos) e a [ADR-011](/arquitetura/adrs/adr-011-datas-civis-e-instantes) para a rastreabilidade completa dos critérios de aceite.
+
+| Cenário / Requisito | Validação Realizada (Local / CI) | Acompanhamento na Hospedagem |
+| --- | --- | --- |
+| Deduplicação por similaridade de título e data | 34 testes em `test_event_collector.py` e 18 em `test_event_collection_database.py` cobrindo limiares ($\ge 0{,}80$ / $0{,}85$ / $0{,}92$), janela $\le 2$ dias, acentos/pontuação e prevenção de falsos positivos com números/edições. | Homologação com dados reais de produção e integração visual da fila de revisão em S8-F02 ([#80](https://github.com/unb-mds/2026-2-AgendaUnB/issues/80)). |
+| Marcação de dia inteiro vs `00:00` | Termos explícitos reconhecidos gerando datas civis (`dia_inteiro: True`); horários `00:00` sem indicativo mantidos em revisão (`ambiguo: True`). | Verificação amostral nos eventos extraídos diretamente de `noticias.unb.br`. |
+| Procedência visível (RF16) | Contratos públicos em `EventRead` (`source`, `source_url`), API (`test_events_api.py`), cache frontend (`publicEventsCache.test.js`) e UI (`PaginaDeEvento.jsx`, `SecondPage.jsx`). | Inspeção visual no deploy da Vercel após publicação em `main`. |
+| Cobertura multicampus | Mapeamento e normalização dos 5 campi da UnB (Darcy Ribeiro, FCTE, FCTS, FUP, FAL). | Conferência dos nomes de campus gravados no banco remoto. |
+| Execuções concorrentes e falha da fonte | Advisory lock (`pg_try_advisory_lock(708073)` e lock por item) validado; rollback de transação e preservação de dados existentes em caso de erro HTTP/timeout (`status = 'falha'`). | Ativação de `PRODUCTION_EVENT_COLLECTION_ENABLED=true` no environment `production-jobs` após merge em `main`. |
+
 | Ambiente | Aplicação e dados | Uso e publicação |
 | --- | --- | --- |
 | Local | Vite/FastAPI + Supabase CLI/Docker | Desenvolvimento e testes; dados descartáveis |

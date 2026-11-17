@@ -89,12 +89,17 @@ export function clearPublicCache(storage = defaultStorage()) {
 export function toUiEvent(event, isPersonal = false) {
   const startsAt = new Date(event.starts_at);
   const pad = (value) => String(value).padStart(2, '0');
+  const isAllDay = Boolean(event.all_day);
   return {
     id: event.id,
     titulo: event.title,
     startsAt: event.starts_at,
-    data: `${startsAt.getFullYear()}-${pad(startsAt.getMonth() + 1)}-${pad(startsAt.getDate())}`,
-    horario: `${pad(startsAt.getHours())}:${pad(startsAt.getMinutes())}`,
+    endsAt: event.ends_at || null,
+    diaInteiro: isAllDay,
+    startDate: event.start_date || null,
+    endDate: event.end_date || null,
+    data: event.start_date || `${startsAt.getFullYear()}-${pad(startsAt.getMonth() + 1)}-${pad(startsAt.getDate())}`,
+    horario: isAllDay ? 'Dia inteiro' : `${pad(startsAt.getHours())}:${pad(startsAt.getMinutes())}`,
     campus: event.campus || '',
     local: event.location || '',
     area: event.category || 'Acadêmico',
@@ -102,6 +107,8 @@ export function toUiEvent(event, isPersonal = false) {
     linkExterno: event.external_url || '',
     organizadorNome: event.organizer_name || '',
     organizadorFoto: event.organizer_avatar || null,
+    fonte: event.source || '',
+    fonteUrl: event.source_url || '',
     visibilidade: isPersonal ? 'Privado' : 'Público',
     criadoPorMim: isPersonal,
   };
