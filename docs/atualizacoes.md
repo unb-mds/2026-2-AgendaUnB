@@ -36,9 +36,9 @@ Após as cinco migrações da base R1, o repositório inclui:
 
 Aplique as migrações pendentes em ordem antes de disponibilizar o código atualizado. No ambiente local já iniciado: `npx supabase migration up --local`. Os detalhes estão em [eventos salvos](/eventos-salvos) e nas [ADR-001](/arquitetura/adrs/adr-001-integracao-fastapi-supabase) e [ADR-006](/arquitetura/adrs/adr-006-autorizacao-em-camadas).
 
-## Ainda em preparação
+## Estado de referência no início da R2
 
-`/plano-de-ensino` continua informativo e oferece organização manual da agenda.
+No início da R2, `/plano-de-ensino` oferecia informações e acesso à organização manual da agenda.
 No backend, #40/S6-B01 disponibilizam upload autenticado e worker separado para
 candidatos privados com procedência, recuperação e limite de custo. O worker fica
 desativado por padrão. As políticas e a revisão transacional S6-D02 foram validadas
@@ -48,6 +48,10 @@ Ver [ADR-003](/arquitetura/adrs/adr-003-minimizar-dados-de-planos), [ADR-010](/a
 Upload de atestados e validação colaborativa continuam planejados, assim como
 inscrições, histórico de participação, lembretes de proximidade, exportação `.ics`
 e coleta externa.
+
+## Painel do semestre para planos de ensino
+
+Em `/plano-de-ensino`, a área autenticada reúne vínculo com turmas, envio de vários planos, autorização de texto por documento e revisão consolidada das avaliações. O usuário pode continuar enviando ou revisando outros planos durante a extração. A confirmação em lote informa o resultado de cada plano e encaminha para **Meus Eventos**. Veja o [fluxo e o roteiro de homologação](/arquitetura/frontend#painel-do-semestre).
 
 ## Verificação disponível
 

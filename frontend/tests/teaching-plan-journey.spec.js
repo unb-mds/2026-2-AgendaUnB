@@ -1,16 +1,9 @@
 import { test, expect } from '@playwright/test';
+import { setupSemester } from './fixtures/semester.js';
 
-async function open(page, { account = () => null } = {}) {
+async function open(page) {
   await page.clock.setFixedTime(new Date('2026-11-10T18:00:00Z'));
-  await page.route('**/src/lib/supabase.js*', route => route.fulfill({ contentType: 'application/javascript', body: `
-    const id = ${JSON.stringify(account())};
-    const session = id ? { user: { id, email: 'demo@example.test' }, access_token: 'test-token' } : null;
-    export const supabase = { auth: {
-      async getSession() { return { data: { session } }; },
-      onAuthStateChange(cb) { queueMicrotask(() => cb('INITIAL_SESSION', session)); return { data: { subscription: { unsubscribe() {} } } }; }
-    }, from() { return { select() { return this; }, eq() { return this; }, async single() { return { data: null }; } }; } };
-  ` }));
-  await page.route('**/api/v1/me/**', route => route.fulfill({ json: [] }));
+  await setupSemester(page, { guest: true });
   await page.goto('/plano-de-ensino');
   await expect(page.getByRole('heading', { name: 'Catálogo de turmas' })).toBeVisible();
 }
@@ -42,9 +35,11 @@ test('jornada completa: seleção de turmas, revisão parcial, edição, confirm
   await page.getByRole('button', { name: 'Simular extração' }).dblclick();
   await expect(page.getByRole('heading', { name: 'A IA sugere. Você confere.' })).toBeVisible();
   await page.getByRole('checkbox', { name: 'Incluir Prova 1', exact: true }).check();
+  const time = page.getByRole('group', { name: 'Avaliação 1' }).getByLabel('Horário');
+  await time.fill('');
   await page.getByRole('button', { name: 'Confirmar e vincular plano' }).click();
-  await expect(page.getByLabel('Fuso UTC').first()).toBeFocused();
-  await page.getByLabel('Fuso UTC').first().fill('-03:00');
+  await expect(time).toBeFocused();
+  await time.fill('14:00');
   await page.getByLabel('Título').first().fill('Prova revisada');
   await page.getByRole('button', { name: '1 Selecionar turmas' }).click();
   await mine(page).getByRole('button', { name: /Ver plano: Métodos/ }).click();

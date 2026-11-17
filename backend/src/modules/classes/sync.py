@@ -162,6 +162,8 @@ def synchronize(connection, periods, client=None):
 
                 db.commit()
 
+                if isinstance(error, CatalogError):
+                    raise
                 raise CatalogError(run.error_code) from None
 
     finally:
@@ -184,9 +186,19 @@ def main():
 
     args = parser.parse_args()
 
-    with engine.connect() as connection:
+    try:
 
-        print(json.dumps(synchronize(connection, args.period or ["2026.2"]), ensure_ascii=False))
+        with engine.connect() as connection:
+
+            result = synchronize(connection, args.period or ["2026.2"])
+
+    except CatalogError as error:
+
+        path = f" em {error.path}" if error.path else ""
+        status = f" (HTTP {error.status})" if error.status else ""
+        parser.exit(1, f"[catalogo] Falha na sincronização: {error}{path}{status}.\n")
+
+    print(json.dumps(result, ensure_ascii=False))
 
 
 
