@@ -11,26 +11,18 @@ Métodos de Desenvolvimento de Software - 2026/2 - Grupo G8
 
 <br/>
 
-[Documentação](https://unb-mds.github.io/2026-2-AgendaUnB/) · [Figma](https://www.figma.com/board/RlZe9FgO3Bz3gPkxevs8UJ/AGENDA-UNB?node-id=1-217&t=USKjIQh4OXxQVwsG-1) · [Miro](https://miro.com/welcomeonboard/b0lMYXFqaEFMTnNpejdUOE1tLy8rOGNHdk5QVndFOUN0ZTFtc1kvWC9UUWdCbUJXVkpFU2JKRXhqUHpRZEYxekt6NUNFZXNzOXkxVDRxRmk0TjI1akdVY0Q5QW0vUENuMVpvYWRaZzdVNFdQUDB4eFNqVTdGOHAxd2lDUnhTUTBBS2NFMDFkcUNFSnM0d3FEN050ekl3PT0hdjE=?share_link_id=540201941184)
+[Acesse o Agenda UnB](https://agendaunb.com.br/) · [Documentação](https://agendaunb.com.br/docs) · [Figma](https://www.figma.com/board/RlZe9FgO3Bz3gPkxevs8UJ/AGENDA-UNB?node-id=1-217&t=USKjIQh4OXxQVwsG-1) · [Miro](https://miro.com/welcomeonboard/b0lMYXFqaEFMTnNpejdUOE1tLy8rOGNHdk5QVndFOUN0ZTFtc1kvWC9UUWdCbUJXVkpFU2JKRXhqUHpRZEYxekt6NUNFZXNzOXkxVDRxRmk0TjI1akdVY0Q5QW0vUENuMVpvYWRaZzdVNFdQUDB4eFNqVTdGOHAxd2lDUnhTUTBBS2NFMDFkcUNFSnM0d3FEN050ekl3PT0hdjE=?share_link_id=540201941184)
 
 </div>
 
 ---
 
-## 📋 Sumário
+## Sumário
 
 - [Sobre o Projeto](#sobre-o-projeto)
 - [Stack Tecnológica](#stack-tecnologica)
 - [Como Executar](#como-executar)
-    - [Pré-requisitos](#pre-requisitos)
-    - [Execução Rápida via Makefile (Recomendado)](#execucao-rapida-via-makefile-recomendado)
-    - [Execução Manual Passo a Passo](#execucao-manual-passo-a-passo)
-        - [1. Configuração Inicial e .env](#1-configuracao-inicial-e-env)
-        - [2. Banco de Dados (Supabase)](#2-banco-de-dados-supabase)
-        - [3. Backend (FastAPI)](#3-backend-fastapi)
-        - [4. Frontend (React)](#4-frontend-react)
-        - [5. Documentação Local (MkDocs)](#5-documentacao-local-mkdocs)
-        - [6. Testes Automatizados](#6-testes-automatizados)
+    - [Execução rápida](#execucao-rapida-via-makefile-recomendado)
 - [Funcionalidades Atuais](#funcionalidades)
 - [Equipe](#equipe)
 - [Documentação Oficial](#documentacao)
@@ -38,19 +30,19 @@ Métodos de Desenvolvimento de Software - 2026/2 - Grupo G8
 ---
 
 <a id="sobre-o-projeto"></a>
-## 🚀 Sobre o Projeto
+## Sobre o Projeto
 
 A informação que organiza a rotina de um estudante da UnB está fragmentada: a grade está no SIGAA, as datas de prova estão em PDFs de planos de ensino e os eventos circulam por Instagram, cartazes e grupos de WhatsApp. Não existe um lugar único onde o estudante veja o que vai acontecer nas próximas semanas.
 
 O **Agenda UnB** resolve esse problema reunindo dois eixos em uma única aplicação web:
 
 - **Agenda do Campus** — Catálogo público de eventos acadêmicos, culturais e esportivos de todos os campi (Darcy Ribeiro, FCTE, FCTS, FUP e FAL), com filtros por área, campus e turno.
-- **Organizador Acadêmico** — Agenda pessoal com compromissos privados e eventos públicos adicionados. A Release 2 prevê seleção de turmas no catálogo público Followw e extração de avaliações de planos com revisão humana. [Contratos da Release 2](docs/atualizacoes.md#contratos-da-release-2)
+- **Organizador Acadêmico** — Agenda pessoal com compromissos privados e eventos públicos adicionados. A Release 2 prevê seleção de turmas no catálogo público Followw e extração de avaliações de planos com revisão humana. [Contratos da Release 2](https://agendaunb.com.br/docs/atualizacoes#contratos-da-release-2)
 
 ---
 
 <a id="stack-tecnologica"></a>
-## 🛠️ Stack Tecnológica
+## Stack Tecnológica
 
 | Camada | Tecnologia | Finalidade |
 |--------|-----------|------------|
@@ -60,7 +52,7 @@ O **Agenda UnB** resolve esse problema reunindo dois eixos em uma única aplica�
 | Autenticação | Supabase Auth | Google OAuth, login com e-mail/senha, JWT |
 | Migrações | Supabase Migrations (SQL) | Versionamento de migrações |
 | Ambiente Local | Supabase CLI + Docker | PostgreSQL, Auth e Studio locais |
-| Documentação | MkDocs Material | Site publicado no GitHub Pages |
+| Documentação | Mintlify | Documentação publicada em `agendaunb.com.br/docs` |
 | Tipografia | Orbitron + Inter (Google Fonts) | Display sci-fi + body legível |
 | Iconografia | Material Symbols | Ícones consistentes em toda a UI |
 
@@ -69,36 +61,28 @@ O **Agenda UnB** resolve esse problema reunindo dois eixos em uma única aplica�
 <a id="como-executar"></a>
 ## ⚙️ Como Executar
 
-<a id="pre-requisitos"></a>
-### Pré-requisitos
-
-Instale Git, Node.js, Python e Docker. Use GNU Make para executar o projeto com os comandos abaixo. As instruções por sistema estão no [guia de contribuição](docs/processo/contribuindo.md#setup-requisitos).
+Instale Git, Node.js 22 ou superior, Python 3.11, Docker e GNU Make. Clone a branch `dev` e abra a raiz do repositório.
 
 <a id="execucao-rapida-via-makefile-recomendado"></a>
+
 ### Execução rápida
 
-Com o Docker em execução, rode na raiz do repositório:
+Com o Docker em execução, instale as dependências e suba o Supabase local:
 
 ```bash
 make setup
+npx supabase status -o env
+```
+
+Preencha o `.env` conforme o [guia de execução local](docs/processo/execucao-local.md), que também cobre a instalação manual. Depois, inicie a aplicação:
+
+```bash
 make dev
 ```
 
-Abra a [aplicação local](http://localhost:5173). Para encerrar, pressione `Ctrl+C` e execute `make stop` para parar os containers do Supabase.
+Abra a [aplicação local](http://localhost:5173). Para encerrar, pressione `Ctrl+C` e execute `make stop`.
 
-<a id="execucao-manual-passo-a-passo"></a>
-### Execução manual e testes
-
-O [guia de contribuição](docs/processo/contribuindo.md) reúne as instruções de execução manual, a lista de comandos Make e as verificações do projeto.
-
-| Etapa | Guia |
-| --- | --- |
-| <a id="1-configuracao-inicial-e-env"></a>Configuração inicial | [Variáveis de ambiente](docs/processo/contribuindo.md#setup-ambiente) |
-| <a id="2-banco-de-dados-supabase"></a>Banco de dados | [Supabase local](docs/processo/contribuindo.md#setup-supabase) |
-| <a id="3-backend-fastapi"></a>Backend | [FastAPI](docs/processo/contribuindo.md#setup-backend) |
-| <a id="4-frontend-react"></a>Frontend | [React e Vite](docs/processo/contribuindo.md#setup-frontend) |
-| <a id="5-documentacao-local-mkdocs"></a>Documentação | [MkDocs local](docs/processo/contribuindo.md#setup-mkdocs) |
-| <a id="6-testes-automatizados"></a>Testes | [Verificações automatizadas](docs/processo/contribuindo.md#setup-verificacoes) |
+O [guia de contribuição](https://agendaunb.com.br/docs/processo/contribuindo) descreve as verificações do projeto.
 
 ---
 
@@ -129,7 +113,7 @@ Funcionalidades atualizadas até o fim da Sprint 05 (18/10)
 
 ### Backend (API)
 
-A API inclui catálogo público, CRUD privado, sugestões, eventos salvos, administração, upload/consulta de planos e saúde. Consulte os [contratos](docs/api-specs.md) e o [guia do worker Gemini](docs/processamento-planos.md). A extração salva candidatos para revisão, sem criar compromissos; permanece desativada por padrão até validar as políticas S6-D02.
+A API inclui catálogo público, CRUD privado, sugestões, eventos salvos, administração, upload/consulta de planos e saúde. Consulte os [contratos](https://agendaunb.com.br/docs/api-specs), a [ADR-003 (minimização e privacidade de planos)](https://agendaunb.com.br/docs/arquitetura/adrs/adr-003-minimizar-dados-de-planos) e a [ADR-014 (processamento assíncrono com IA)](https://agendaunb.com.br/docs/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia). A extração salva candidatos para revisão, sem criar compromissos, e permanece condicionada às flags operacionais e travas de privacidade.
 
 ### Banco de Dados
 
@@ -143,12 +127,12 @@ Destaques de segurança:
 - Sugestões estudantis nascem pendentes; decisões de moderação são atômicas e recusas exigem justificativa.
 - Somente admins alteram cargos de terceiros; não podem remover o próprio acesso administrativo.
 
-Antes de disponibilizar API e frontend atualizados, aplique as migrações pendentes. No ambiente local já inicializado, execute `npx supabase migration up --local`. Consulte os guias de [eventos salvos](docs/eventos-salvos.md) e [moderação](docs/painel-administrativo.md).
+Antes de disponibilizar API e frontend atualizados, aplique as migrações pendentes. No ambiente local já inicializado, execute `npx supabase migration up --local`. Consulte os guias de [eventos salvos](https://agendaunb.com.br/docs/eventos-salvos), [integração e rotas](https://agendaunb.com.br/docs/arquitetura/adrs/adr-001-integracao-fastapi-supabase) e [autorização e moderação](https://agendaunb.com.br/docs/arquitetura/adrs/adr-006-autorizacao-em-camadas).
 
 ---
 
 <a id="equipe"></a>
-## 👥 Equipe
+## Equipe
 
 | Nome | Papel | GitHub |
 |------|:-----:|--------|
@@ -162,21 +146,19 @@ Antes de disponibilizar API e frontend atualizados, aplique as migrações pende
 ---
 
 <a id="documentacao"></a>
-## 📚 Documentação
+## Documentação
 
-Toda a documentação do projeto está publicada no GitHub Pages:
-
-**[unb-mds.github.io/2026-2-AgendaUnB](https://unb-mds.github.io/2026-2-AgendaUnB/)**
+A [documentação do Agenda UnB no Mintlify](https://agendaunb.com.br/docs) reúne os guias do projeto.
 
 | Documento | Descrição |
 |-----------|-----------|
-| [Arquitetura](https://unb-mds.github.io/2026-2-AgendaUnB/arquitetura/visao-geral/) | Visão arquitetural, stack e modelos de dados |
-| [Requisitos](https://unb-mds.github.io/2026-2-AgendaUnB/produto/requisitos/) | 21 RFs e 13 RNFs especificados |
-| [Padrões](https://unb-mds.github.io/2026-2-AgendaUnB/produto/padroes/) | Glossário, naming conventions e rotas da API |
-| [Contratos do backend](docs/api-specs.md) | API atual e operações originadas na R1 |
-| [Plano de implantação](docs/implantacao.md) | Proposta de hospedagem, CI/CD e homologação; ainda não implantada |
-| [Atualizações pós-R1](docs/atualizacoes.md) | Calendário, eventos salvos, sugestões, moderação e administração |
-| [Release v0.1.0](https://unb-mds.github.io/2026-2-AgendaUnB/processo/release-notes/v0-1-0/) | Release note da primeira entrega |
-| [Sprints](https://unb-mds.github.io/2026-2-AgendaUnB/sprints/sprint-1/) | Acompanhamento ágil por ciclo |
+| [Arquitetura](https://agendaunb.com.br/docs/arquitetura/visao-geral) | Visão arquitetural, stack e modelos de dados |
+| [Requisitos](https://agendaunb.com.br/docs/produto/requisitos) | 21 RFs e 13 RNFs especificados |
+| [Padrões](https://agendaunb.com.br/docs/produto/padroes) | Glossário, naming conventions e rotas da API |
+| [Contratos do backend](https://agendaunb.com.br/docs/api-specs) | API atual e operações originadas na R1 |
+| [Plano de implantação](https://agendaunb.com.br/docs/implantacao) | Hospedagem, CI/CD e homologação |
+| [Atualizações pós-R1](https://agendaunb.com.br/docs/atualizacoes) | Calendário, eventos salvos, sugestões, moderação e administração |
+| [Release v0.1.0](https://agendaunb.com.br/docs/processo/release-notes/v0-1-0) | Release note da primeira entrega |
+| [Sprints](https://agendaunb.com.br/docs/sprints/sprint-1) | Acompanhamento ágil por ciclo |
 
 ---

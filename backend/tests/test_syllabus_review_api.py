@@ -115,6 +115,9 @@ def test_confirmation_hides_processing_state_of_another_users_private_plan(api):
 def test_confirmation_creates_only_selected_events_and_is_idempotent(api):
     client, TestSession, authenticated_user, _ = api
     syllabus_id, candidate_id, unselected_id = _create_syllabus(TestSession, authenticated_user["value"].id)
+    before = client.get("/api/v1/me/events")
+    assert before.status_code == 200
+    assert before.json() == []
     payload = {
         "candidates": [
             {
@@ -137,6 +140,7 @@ def test_confirmation_creates_only_selected_events_and_is_idempotent(api):
     assert first.json()["items"][0]["candidateId"] == str(candidate_id)
     assert first.json()["items"][0]["type"] == "prova escrita"
     assert agenda.status_code == 200
+    assert len(agenda.json()) == 1
     assert agenda.json()[0]["origin"]["candidateId"] == str(candidate_id)
     assert first.json()["events"][0]["id"] == second.json()["events"][0]["id"]
     event = first.json()["events"][0]
@@ -268,6 +272,10 @@ def test_retry_does_not_recreate_deleted_confirmed_event(api):
     retry = _confirm(client, sid, payload, "delete-retry-001")
     assert retry.status_code == 200 and retry.json()["events"] == []
     assert retry.json()["items"][0]["removed"] is True
+    detail = client.get(f"/api/v1/syllabus/{sid}")
+    assert detail.status_code == 200
+    reopened = next(row for row in detail.json()["candidates"] if row["id"] == str(cid))
+    assert reopened["status"] == "pendente"
     explicit_reimport = _confirm(client, sid, payload, "delete-reimport-001")
     assert explicit_reimport.status_code == 200
     assert explicit_reimport.json()["items"][0]["removed"] is False
@@ -321,3 +329,25 @@ def test_idempotency_key_is_required(api):
     )
 
     assert response.status_code == 422
+
+
+def test_confirmation_accepts_all_day_assignment_without_time(api):
+    client, sessions, auth, _ = api
+    syllabus_id, _, assignment_id = _create_syllabus(sessions, auth["value"].id)
+
+    response = _confirm(client, syllabus_id, {"candidates": [{
+        "candidateId": str(assignment_id),
+        "title": "Trabalho final",
+        "type": "trabalho",
+        "all_day": True,
+        "start_date": "2026-12-01",
+        "end_date": "2026-12-02",
+    }]}, "all-day-assignment-001")
+
+    assert response.status_code == 200, response.text
+    with sessions() as db:
+        event = db.scalar(select(PersonalEvent).where(PersonalEvent.origin_candidate_id == assignment_id))
+        assert event is not None
+        assert event.all_day is True
+        assert event.start_date.isoformat() == "2026-12-01"
+        assert event.end_date.isoformat() == "2026-12-02"

@@ -31,7 +31,7 @@ Este documento reúne os **Requisitos Funcionais (RF)** e **Requisitos Não Func
 | **RF18** | **Histórico da agenda pessoal** | O sistema deve exibir separadamente eventos públicos passados ainda adicionados à agenda e compromissos privados passados do próprio usuário. Redirecionamentos à fonte são uma métrica agregada e ficam fora do histórico pessoal. Inscrição externa e presença dependem do organizador. |
 | **RF19** | **Filtros e Busca de Eventos** | O sistema deve permitir filtrar e classificar eventos por categoria (prova, trabalho, palestra, cultural), campus/instituto e intervalo de datas. |
 | **RF20** | **Alternância de Tema (Dark / Light)** | O sistema deve disponibilizar alternância de tema visual entre modo escuro (_Dark Mode_) e modo claro (_Light Mode_). |
-| **RF21** | **Exportação de calendário** | O usuário deve poder selecionar período e eventos da própria agenda e exportá-los diretamente para uma agenda secundária Agenda UnB pela Google Calendar API. A autorização OAuth é adicional e o e-mail Google verificado deve corresponder ao e-mail verificado da conta Agenda UnB. O sistema deve permitir reexportação explícita e idempotente, recuperação por item após falha parcial e desconexão. ICS complementa a compatibilidade com Apple Calendar e Outlook. Sincronização automática fica fora da Release 2. |
+| **RF21** | **Exportação de calendário** | O usuário deve poder selecionar período e eventos da própria agenda e exportá-los diretamente para uma agenda secundária Agenda UnB pela Google Calendar API. A exportação direta exige consentimento adicional do Calendar e conta Google com e-mail verificado correspondente ao e-mail confirmado da Agenda UnB. A conexão também está disponível para quem entrou com e-mail e senha. |
 
 ---
 
@@ -65,4 +65,4 @@ Os requisitos não funcionais estão divididos de acordo com a norma **ISO/IEC 2
 ### 2.5 Compatibilidade e Manutenibilidade (Compatibility & Maintainability)
 
 - **RNF12 — Compatibilidade entre Navegadores:** A aplicação deve ser homologada e funcional nas versões atuais dos principais navegadores web do mercado (Google Chrome, Mozilla Firefox, Microsoft Edge e Safari).
-- **RNF13 — Qualidade de Código e Padrões:** O desenvolvimento deve seguir rigorosamente as regras estipuladas em [padrões](padroes.md) e manter cobertura de testes automatizados unitários e de integração nas funcionalidades de negócio essenciais.
+- **RNF13 — Qualidade de Código e Padrões:** O desenvolvimento deve seguir rigorosamente as regras estipuladas em [padrões](/produto/padroes) e manter cobertura de testes automatizados unitários e de integração nas funcionalidades de negócio essenciais.
