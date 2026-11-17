@@ -432,16 +432,27 @@ begin
         'status', (select status from public.eventos where id = v_id), 'motivo_revisao', null);
     end if;
 
-    -- Título igual no mesmo dia: provável duplicata, decide uma pessoa.
+    -- Título igual ou similar em datas próximas (até 1 dia de diferença): provável duplicata, decide uma pessoa.
     if v_motivo is null and v_duplicata is null then
-      v_dia := (v_inicio at time zone 'America/Sao_Paulo')::date;
-      select id into v_duplicata from public.eventos e
-       where e.status in ('aprovado', 'pendente')
-         and e.data_evento is not null
-         and (e.data_evento at time zone 'America/Sao_Paulo')::date = v_dia
-         and public.normaliza_titulo(e.titulo) = public.normaliza_titulo(v_titulo)
-       order by e.criado_em
-       limit 1;
+      v_dia := coalesce(v_data_inicio, (v_inicio at time zone 'America/Sao_Paulo')::date);
+      if v_dia is not null then
+        select id into v_duplicata from public.eventos e
+         where e.status in ('aprovado', 'pendente')
+           and (e.data_evento is not null or e.data_inicio_civil is not null)
+           and abs(coalesce(e.data_inicio_civil, (e.data_evento at time zone 'America/Sao_Paulo')::date) - v_dia) <= 1
+           and (
+             public.normaliza_titulo(e.titulo) = public.normaliza_titulo(v_titulo)
+             or (
+               length(public.normaliza_titulo(v_titulo)) >= 10
+               and (
+                 public.normaliza_titulo(e.titulo) like '%' || public.normaliza_titulo(v_titulo) || '%'
+                 or public.normaliza_titulo(v_titulo) like '%' || public.normaliza_titulo(e.titulo) || '%'
+               )
+             )
+           )
+         order by e.criado_em
+         limit 1;
+      end if;
     end if;
     if v_motivo is null and v_duplicata is not null then
       v_motivo := 'possivel_duplicata';

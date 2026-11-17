@@ -49,7 +49,7 @@ ifeq ($(wildcard $(VENV_DIR)/bin/python),$(VENV_DIR)/bin/python)
     PIP         := $(VENV_BIN)/pip
 endif
 
-.PHONY: all help setup dev run stop down db-start db-stop db-reset db-status db-migrate db-check backend frontend docs test test-backend clean check-env check-backend check-frontend
+.PHONY: all help setup dev run stop down db-start db-stop db-reset db-status db-migrate db-check backend frontend docs test test-backend clean check-env check-backend check-frontend events-collect events-collect-daemon
 
 # Alvo padrao: exibe ajuda com os comandos disponiveis
 all: help
@@ -78,6 +78,10 @@ help:
 	@echo "  make db-status    - Exibe o status e URLs dos servicos Supabase"
 	@echo "  make db-migrate   - Aplica migracoes pendentes no Supabase local, sem reset"
 	@echo "  make db-check     - Verifica tabelas e colunas exigidas pela API"
+	@echo ""
+	@echo " Coleta de Eventos (Agenda UnB Notícias - #75):"
+	@echo "  make events-collect        - Executa uma rodada do coletor de eventos"
+	@echo "  make events-collect-daemon - Executa o coletor em modo continuo (daemon)"
 	@echo ""
 	@echo " Qualidade e Testes:"
 	@echo "  make test         - Executa a suite de testes automatizados"
@@ -170,6 +174,17 @@ db-migrate:
 
 db-check: check-env check-backend
 	@cd "$(ROOT_DIR)/backend" && "$(PYTHON)" -m src.database.check_schema
+
+# ------------------------------------------------------------------------------
+# Coleta de Eventos (Agenda UnB Notícias)
+# ------------------------------------------------------------------------------
+events-collect: check-backend
+	@echo "[COLLECT] Executando coleta de eventos da Agenda UnB Notícias..."
+	@cd "$(ROOT_DIR)/backend" && PYTHONPATH=. "$(PYTHON)" -m src.modules.events.collector $(COLLECT_ARGS)
+
+events-collect-daemon: check-backend
+	@echo "[COLLECT] Executando coletor de eventos em modo continuo/daemon..."
+	@cd "$(ROOT_DIR)/backend" && PYTHONPATH=. "$(PYTHON)" -m src.modules.events.collector --daemon $(COLLECT_ARGS)
 
 stop: db-stop
 	@echo "[OK] Todos os servicos foram paralisados."
