@@ -26,7 +26,7 @@ def database():
         users = {}
         for name in ('ana', 'bruno', 'carla'):
             uid = str(uuid4())
-            conn.execute(text("insert into auth.users(id,email,raw_user_meta_data) values (:id,:email,:meta)"),
+            conn.execute(text("insert into auth.users(id,email,email_confirmed_at,raw_user_meta_data) values (:id,:email,now(),:meta)"),
                          {'id': uid, 'email': f'test-{uid}@aluno.unb.br',
                           'meta': json.dumps({'nome_completo': 'Teste ' + name})})
             users[name] = uid

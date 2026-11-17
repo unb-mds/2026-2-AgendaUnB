@@ -2,6 +2,29 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { validatePdf, MAX_PDF_BYTES, normalizePlan, normalizePlanList, syllabusError, isProcessing } from './syllabus.js';
 
+test('candidatos reais preservam origem, versão e ambiguidades sem inferir datas', () => {
+  const candidate = { id: 'a', title: 'Prova', status: 'pendente', ambiguous: true,
+    sourcePage: null, sourceExcerpt: 'Prova em novembro', ambiguousFields: ['date'], versionId: 'v1' };
+  const result = normalizePlan({ id: 'p', candidates: [candidate] });
+  assert.equal(result.candidates[0].sourcePage, null);
+  assert.equal(result.candidates[0].suggestedDate, null);
+  assert.equal(result.candidates[0].startsAt, null);
+  assert.equal(result.candidates[0].versionId, 'v1');
+  assert.equal(result.candidates[0].sourceExcerpt, candidate.sourceExcerpt);
+  result.candidates[0].ambiguousFields.push('time');
+  assert.deepEqual(candidate.ambiguousFields, ['date']);
+  assert.equal(normalizePlan({ id: 'p' }).candidates, null);
+  assert.deepEqual(normalizePlan({ id: 'p', candidates: [] }).candidates, []);
+});
+
+test('respostas de candidatos malformadas não se tornam resultado vazio', () => {
+  const item = { id: 'a', title: 'Prova', status: 'pendente', ambiguous: false };
+  for (const candidates of [null, {}, [null], [item, item], [{ ...item, sourcePage: 0 }],
+    [{ ...item, title: {} }], [{ ...item, sourceExcerpt: {} }], [{ ...item, ambiguousFields: 'date' }]]) {
+    assert.throws(() => normalizePlan({ id: 'p', candidates }), /avaliações inválida/);
+  }
+});
+
 test('PDF: limites, MIME ausente, arquivo vazio e extensão', () => {
   const file = { name: 'plano.PDF', type: 'application/pdf', size: MAX_PDF_BYTES };
   assert.equal(validatePdf(file), '');

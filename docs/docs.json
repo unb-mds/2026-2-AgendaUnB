@@ -1,0 +1,285 @@
+{
+  "theme": "mint",
+  "icons": {
+    "library": "lucide"
+  },
+  "name": "Agenda UnB",
+  "colors": {
+    "primary": "#008BFF",
+    "light": "#4DAEFF",
+    "dark": "#005FD2"
+  },
+  "favicon": "/Logo-AgendaUnB1.png",
+  "navbar": {
+    "links": [
+      {
+        "href": "https://www.figma.com/board/RlZe9FgO3Bz3gPkxevs8UJ/AGENDA-UNB?node-id=1-217&t=USKjIQh4OXxQVwsG-1",
+        "label": "Figma"
+      }
+    ],
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/unb-mds/2026-2-AgendaUnB"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/unb-mds/2026-2-AgendaUnB"
+    }
+  },
+  "contextual": {
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "perplexity",
+      "mcp",
+      "cursor",
+      "vscode"
+    ],
+    "display": "header"
+  },
+  "navigation": {
+    "pages": [
+      {
+        "group": "Início",
+        "pages": [
+          "index",
+          "processo/execucao-local"
+        ]
+      },
+      {
+        "group": "Produto",
+        "pages": [
+          "produto/visao",
+          "produto/personas",
+          "produto/requisitos",
+          "produto/padroes",
+          "matriz-release-2"
+        ]
+      },
+      {
+        "group": "Arquitetura e especificações",
+        "pages": [
+          "arquitetura/visao-geral",
+          "arquitetura/modelo-de-dados",
+          "arquitetura/dados-de-planos",
+          "arquitetura/banco-de-dados",
+          "arquitetura/dados-de-eventos",
+          "arquitetura/catalogo-de-turmas",
+          "arquitetura/frontend",
+          "eventos-salvos",
+          "api-specs",
+          "implantacao",
+          {
+            "group": "Decisões arquiteturais",
+            "pages": [
+              "arquitetura/adrs/index",
+              "arquitetura/adrs/adr-001-integracao-fastapi-supabase",
+              "arquitetura/adrs/adr-002-separar-hospedagem-e-ambientes",
+              "arquitetura/adrs/adr-003-minimizar-dados-de-planos",
+              "arquitetura/adrs/adr-004-api-monolitica",
+              "arquitetura/adrs/adr-005-validacao-de-sessao",
+              "arquitetura/adrs/adr-006-autorizacao-em-camadas",
+              "arquitetura/adrs/adr-007-migracoes-sql",
+              "arquitetura/adrs/adr-008-vinculos-de-eventos-publicos",
+              "arquitetura/adrs/adr-009-catalogo-publico-de-turmas",
+              "arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos",
+              "arquitetura/adrs/adr-011-datas-civis-e-instantes",
+              "arquitetura/adrs/adr-012-exportacao-google-idempotente",
+              "arquitetura/adrs/adr-013-lembretes-persistentes",
+              "arquitetura/adrs/adr-014-processamento-assincrono-planos-ia"
+            ]
+          }
+        ]
+      },
+      {
+        "group": "Processo",
+        "pages": [
+          "processo/contribuindo",
+          "processo/uso-de-ia",
+          "processo/seguranca",
+          "atualizacoes",
+          {
+            "group": "Sprints",
+            "pages": [
+              "sprints/sprint-1",
+              "sprints/sprint-2",
+              "sprints/sprint-3",
+              "sprints/sprint-4",
+              "sprints/sprint-5",
+              "sprints/sprint-6",
+              "sprints/sprint-7",
+              "sprints/sprint-8"
+            ]
+          },
+          {
+            "group": "Release notes",
+            "pages": [
+              "processo/release-notes/v0-1-0",
+              "processo/release-notes/v0-2-0-beta-1"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "appearance": {
+    "default": "dark"
+  },
+  "background": {
+    "color": {
+      "light": "#F7F9FC",
+      "dark": "#050508"
+    }
+  },
+  "fonts": {
+    "heading": {
+      "family": "Orbitron",
+      "weight": 700
+    },
+    "body": {
+      "family": "Inter",
+      "weight": 400
+    }
+  },
+  "redirects": [
+    {
+      "source": "/contratos-release-2",
+      "destination": "/atualizacoes#contratos-da-release-2"
+    },
+    {
+      "source": "/Architecture",
+      "destination": "/arquitetura/visao-geral"
+    },
+    {
+      "source": "/modelo-de-dados",
+      "destination": "/arquitetura/modelo-de-dados"
+    },
+    {
+      "source": "/especificacao-banco-de-dados",
+      "destination": "/arquitetura/banco-de-dados"
+    },
+    {
+      "source": "/especificacao-frontend",
+      "destination": "/arquitetura/frontend"
+    },
+    {
+      "source": "/CONTRIBUTING",
+      "destination": "/processo/contribuindo"
+    },
+    {
+      "source": "/introducao",
+      "destination": "/index"
+    },
+    {
+      "source": "/quickstart",
+      "destination": "/processo/execucao-local"
+    },
+    {
+      "source": "/requisitos",
+      "destination": "/produto/requisitos"
+    },
+    {
+      "source": "/personas",
+      "destination": "/produto/personas"
+    },
+    {
+      "source": "/padroes",
+      "destination": "/produto/padroes"
+    },
+    {
+      "source": "/documento-de-visao",
+      "destination": "/produto/visao"
+    },
+    {
+      "source": "/arquitetura/padroes",
+      "destination": "/produto/padroes"
+    },
+    {
+      "source": "/AI-USAGE",
+      "destination": "/processo/uso-de-ia"
+    },
+    {
+      "source": "/release-notes/v0.1.0",
+      "destination": "/processo/release-notes/v0-1-0"
+    },
+    {
+      "source": "/planejamento-r2-sprints-7-8",
+      "destination": "/matriz-release-2"
+    },
+    {
+      "source": "/prototipo-planos-react",
+      "destination": "/arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos"
+    },
+    {
+      "source": "/s6-f02-editor-parcial",
+      "destination": "/sprints/sprint-6#s6-f02"
+    },
+    {
+      "source": "/arquitetura",
+      "destination": "/arquitetura/visao-geral"
+    },
+    {
+      "source": "/processamento-planos",
+      "destination": "/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia"
+    },
+    {
+      "source": "/processamento-planos-s7",
+      "destination": "/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia"
+    },
+    {
+      "source": "/privacidade-planos",
+      "destination": "/arquitetura/adrs/adr-003-minimizar-dados-de-planos"
+    },
+    {
+      "source": "/planos-de-ensino-frontend",
+      "destination": "/arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos"
+    },
+    {
+      "source": "/painel-administrativo",
+      "destination": "/arquitetura/adrs/adr-006-autorizacao-em-camadas"
+    },
+    {
+      "source": "/s7-b01-validacao",
+      "destination": "/sprints/sprint-7#s7-b01"
+    },
+    {
+      "source": "/s7-b02-validacao",
+      "destination": "/sprints/sprint-7#s7-b02"
+    },
+    {
+      "source": "/processo/sprints/sprint-1",
+      "destination": "/sprints/sprint-1"
+    },
+    {
+      "source": "/processo/sprints/sprint-2",
+      "destination": "/sprints/sprint-2"
+    },
+    {
+      "source": "/processo/sprints/sprint-3",
+      "destination": "/sprints/sprint-3"
+    },
+    {
+      "source": "/processo/sprints/sprint-4",
+      "destination": "/sprints/sprint-4"
+    },
+    {
+      "source": "/processo/sprints/sprint-5",
+      "destination": "/sprints/sprint-5"
+    },
+    {
+      "source": "/processo/sprints/sprint-6",
+      "destination": "/sprints/sprint-6"
+    },
+    {
+      "source": "/processo/sprints/sprint-7",
+      "destination": "/sprints/sprint-7"
+    },
+    {
+      "source": "/processo/sprints/sprint-8",
+      "destination": "/sprints/sprint-8"
+    }
+  ]
+}

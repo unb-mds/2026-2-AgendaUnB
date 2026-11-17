@@ -8,6 +8,7 @@ site_dir: ../site
 
 nav:
   - Início: index.md
+  - Execução local: processo/execucao-local.md
   - Visão do Produto: produto/visao.md
   - Arquitetura: arquitetura/visao-geral.md
   - Decisões arquiteturais:
@@ -25,15 +26,15 @@ nav:
     - ADR-011 — Distinguir datas civis de instantes e usar fim exclusivo: arquitetura/adrs/adr-011-datas-civis-e-instantes.md
     - ADR-012 — Exportar por ação explícita para uma agenda Google secundária: arquitetura/adrs/adr-012-exportacao-google-idempotente.md
     - ADR-013 — Persistir lembretes com agendamento idempotente e revalidação: arquitetura/adrs/adr-013-lembretes-persistentes.md
+    - ADR-014 — Processamento assíncrono resiliente de planos com fila persistida, lease e orçamento: arquitetura/adrs/adr-014-processamento-assincrono-planos-ia.md
   - Contratos do Backend: api-specs.md
-  - Extração Autorizada S7: processamento-planos-s7.md
-  - Validação S7-B01: s7-b01-validacao.md
-  - Histórico de Processamento S6: processamento-planos.md
-  - Privacidade dos Planos: privacidade-planos.md
   - Matriz de aceite da Release 2: matriz-release-2.md
   - Plano de Implantação: implantacao.md
   - Modelo de Dados: arquitetura/modelo-de-dados.md
+  - Dados de planos: arquitetura/dados-de-planos.md
   - Especificação do Banco: arquitetura/banco-de-dados.md
+  - Dados de eventos: arquitetura/dados-de-eventos.md
+  - Eventos salvos: eventos-salvos.md
   - Catálogo de turmas: arquitetura/catalogo-de-turmas.md
   - Requisitos: produto/requisitos.md
   - Padrões de Projeto: produto/padroes.md
@@ -67,16 +68,33 @@ plugins:
         especificacao-frontend.md: arquitetura/frontend.md
         CONTRIBUTING.md: processo/contribuindo.md
         introducao.md: index.md
-        quickstart.md: processo/contribuindo.md
+        quickstart.md: processo/execucao-local.md
         requisitos.md: produto/requisitos.md
         personas.md: produto/personas.md
         padroes.md: produto/padroes.md
         documento-de-visao.md: produto/visao.md
+        arquitetura/padroes.md: produto/padroes.md
         AI-USAGE.md: processo/uso-de-ia.md
         release-notes/v0.1.0.md: processo/release-notes/v0-1-0.md
         planejamento-r2-sprints-7-8.md: matriz-release-2.md
-        prototipo-planos-react.md: planos-de-ensino-frontend.md
-        s6-f02-editor-parcial.md: sprints/sprint-6.md
+        prototipo-planos-react.md: arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos.md
+        s6-f02-editor-parcial.md: 'sprints/sprint-6.md#s6-f02'
+        arquitetura.md: arquitetura/visao-geral.md
+        processamento-planos.md: arquitetura/adrs/adr-014-processamento-assincrono-planos-ia.md
+        processamento-planos-s7.md: arquitetura/adrs/adr-014-processamento-assincrono-planos-ia.md
+        privacidade-planos.md: arquitetura/adrs/adr-003-minimizar-dados-de-planos.md
+        planos-de-ensino-frontend.md: arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos.md
+        painel-administrativo.md: arquitetura/adrs/adr-006-autorizacao-em-camadas.md
+        s7-b01-validacao.md: 'sprints/sprint-7.md#s7-b01'
+        s7-b02-validacao.md: 'sprints/sprint-7.md#s7-b02'
+        processo/sprints/sprint-1.md: sprints/sprint-1.md
+        processo/sprints/sprint-2.md: sprints/sprint-2.md
+        processo/sprints/sprint-3.md: sprints/sprint-3.md
+        processo/sprints/sprint-4.md: sprints/sprint-4.md
+        processo/sprints/sprint-5.md: sprints/sprint-5.md
+        processo/sprints/sprint-6.md: sprints/sprint-6.md
+        processo/sprints/sprint-7.md: sprints/sprint-7.md
+        processo/sprints/sprint-8.md: sprints/sprint-8.md
 
 theme:
   name: material
@@ -115,7 +133,16 @@ theme:
     - search.highlight
     - content.code.copy
 
+hooks:
+  - mkdocs_links.py
+
+validation:
+  links:
+    absolute_links: relative_to_docs
+    anchors: warn
+
 markdown_extensions:
+  - attr_list
   - admonition
   - pymdownx.details
   - pymdownx.superfences:
