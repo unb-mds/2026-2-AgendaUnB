@@ -812,6 +812,12 @@ export default function SegundaPagina() {
                   )}
                   <div className="event-card-footer">
                     {evento.salvoNaAgenda && <span className="event-tag">Público salvo</span>}
+                    {evento.fonteUrl && (
+                      <span className="event-tag" title="Fonte: Agenda UnB Notícias">
+                        <span className="material-symbols-outlined" style={{ fontSize: '0.9rem', flexShrink: 0 }}>newspaper</span>
+                        <span className="event-tag-text">UnB Notícias</span>
+                      </span>
+                    )}
                     {evento.campus && (
                       <span className="event-tag"><span className="material-symbols-outlined" style={{ fontSize: '0.9rem', flexShrink: 0 }}>location_on</span><span className="event-tag-text">{evento.campus}</span></span>
                     )}

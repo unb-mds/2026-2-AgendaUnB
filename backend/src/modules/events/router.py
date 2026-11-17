@@ -67,12 +67,18 @@ def _public_read(event: PublicEvent) -> EventRead:
         title=event.title,
         description=event.description,
         starts_at=event.starts_at,
+        ends_at=event.ends_at,
+        all_day=event.all_day,
+        start_date=event.start_date,
+        end_date=event.end_date,
         campus=event.campus.nome if event.campus else None,
         category=event.category.nome if event.category else None,
         location=event.location,
         external_url=event.external_url,
         organizer_name=event.author.nome_completo if event.author else None,
         organizer_avatar=event.author.avatar_url if event.author else None,
+        source=event.source,
+        source_url=event.source_url,
     )
 
 
