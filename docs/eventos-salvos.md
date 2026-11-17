@@ -6,7 +6,7 @@ Em **Meus Eventos**, o frontend combina os eventos privados com os públicos sal
 mantendo busca, filtros, lista e calendário. Um público salvo pode ser removido da
 agenda, mas não editado ou excluído como se fosse um evento privado.
 
-A Release 2 mantém **Conferir evento** como ação separada, com métrica de redirecionamento, e usa o vínculo de eventos salvos para histórico e lembretes. [Contratos da Release 2](atualizacoes.md#contratos-da-release-2)
+A Release 2 mantém **Conferir evento** como ação separada, com métrica de redirecionamento, e usa o vínculo de eventos salvos para histórico e lembretes. [Contratos da Release 2](/atualizacoes#contratos-da-release-2)
 
 ## Banco e implantação
 
@@ -23,7 +23,7 @@ deixarem de estar aprovados não aparecem nas consultas da agenda.
 
 ## API autenticada
 
-Consulte os [contratos de eventos salvos](api-specs.md#eventos-salvos-pos-r1) para métodos, payloads e respostas.
+Consulte os [contratos de eventos salvos](/api-specs#eventos-salvos-pos-r1) para métodos, payloads e respostas.
 
 PUT e DELETE são idempotentes. PUT retorna 404 para evento inexistente ou não
 aprovado. Todas as rotas exigem autenticação; o cliente nunca escolhe `user_id`.

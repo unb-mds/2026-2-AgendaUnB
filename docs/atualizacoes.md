@@ -21,7 +21,7 @@ title: "Atualizações pós-Release 1"
 
 ## API e persistência
 
-A FastAPI ganhou `POST /api/v1/suggestions` e GET/PUT/DELETE de `/api/v1/me/saved-events`, conforme [Padrões](produto/padroes.md). Moderação e gestão de usuários usam RPCs do Supabase, não as rotas `/admin` propostas anteriormente.
+A FastAPI ganhou `POST /api/v1/suggestions` e GET/PUT/DELETE de `/api/v1/me/saved-events`, conforme [Padrões](/produto/padroes). Moderação e gestão de usuários usam RPCs do Supabase, não as rotas `/admin` propostas anteriormente.
 
 Após as cinco migrações da base R1, o repositório inclui:
 
@@ -34,30 +34,34 @@ Após as cinco migrações da base R1, o repositório inclui:
 | `20261018000000` | Moderação por professores/admins, RPCs paginadas, origem estudantil e notificações transacionais |
 | `20261018000100` | Atribuição de professor por admin sem restrição de domínio; cadastro/autopromoção continuam institucionais |
 
-Aplique as migrações pendentes em ordem antes de disponibilizar o código atualizado. No ambiente local já iniciado: `npx supabase migration up --local`. Os detalhes estão em [eventos salvos](eventos-salvos.md) e nas [ADR-001](arquitetura/adrs/adr-001-integracao-fastapi-supabase.md) e [ADR-006](arquitetura/adrs/adr-006-autorizacao-em-camadas.md).
+Aplique as migrações pendentes em ordem antes de disponibilizar o código atualizado. No ambiente local já iniciado: `npx supabase migration up --local`. Os detalhes estão em [eventos salvos](/eventos-salvos) e nas [ADR-001](/arquitetura/adrs/adr-001-integracao-fastapi-supabase) e [ADR-006](/arquitetura/adrs/adr-006-autorizacao-em-camadas).
 
-## Ainda em preparação
+## Estado de referência no início da R2
 
-`/plano-de-ensino` continua informativo e oferece organização manual da agenda.
+No início da R2, `/plano-de-ensino` oferecia informações e acesso à organização manual da agenda.
 No backend, #40/S6-B01 disponibilizam upload autenticado e worker separado para
 candidatos privados com procedência, recuperação e limite de custo. O worker fica
 desativado por padrão. As políticas e a revisão transacional S6-D02 foram validadas
 em PostgreSQL isolado; dados reais exigem aplicá-las/homologá-las no destino. Tela e
 endpoints de revisão/confirmacão ainda pertencem à S6-B02.
-Ver [ADR-003](arquitetura/adrs/adr-003-minimizar-dados-de-planos.md), [ADR-010](arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos.md) e [ADR-014](arquitetura/adrs/adr-014-processamento-assincrono-planos-ia.md).
+Ver [ADR-003](/arquitetura/adrs/adr-003-minimizar-dados-de-planos), [ADR-010](/arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos) e [ADR-014](/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia).
 Upload de atestados e validação colaborativa continuam planejados, assim como
 inscrições, histórico de participação, lembretes de proximidade, exportação `.ics`
 e coleta externa.
 
+## Painel do semestre para planos de ensino
+
+Em `/plano-de-ensino`, a área autenticada reúne vínculo com turmas, envio de vários planos, autorização de texto por documento e revisão consolidada das avaliações. O usuário pode continuar enviando ou revisando outros planos durante a extração. A confirmação em lote informa o resultado de cada plano e encaminha para **Meus Eventos**. Veja o [fluxo e o roteiro de homologação](/arquitetura/frontend#painel-do-semestre).
+
 ## Verificação disponível
 
-O projeto contém testes pytest da API (eventos, sugestões e vínculos salvos), testes Node de calendário e testes PostgreSQL de RLS/RPC/triggers. Estes últimos exigem `TEST_SUPABASE_DB_URL` local e são ignorados se ela não estiver configurada. Consulte [Contribuição](processo/contribuindo.md). A existência das suítes não afirma execução ou aprovação em um ambiente de produção.
+O projeto contém testes pytest da API (eventos, sugestões e vínculos salvos), testes Node de calendário e testes PostgreSQL de RLS/RPC/triggers. Estes últimos exigem `TEST_SUPABASE_DB_URL` local e são ignorados se ela não estiver configurada. Consulte [Contribuição](/processo/contribuindo). A existência das suítes não afirma execução ou aprovação em um ambiente de produção.
 
 # Contratos da Release 2
 
-Contrato de implementação da [S7-F01 (#67)](https://github.com/unb-mds/2026-2-AgendaUnB/issues/67). Os exemplos descrevem a interface alvo e usam dados fictícios. A [API atual](api-specs.md) documenta as rotas em funcionamento. A [matriz de aceite](matriz-release-2.md) registra responsáveis, cenários e evidências.
+Contrato de implementação da [S7-F01 (#67)](https://github.com/unb-mds/2026-2-AgendaUnB/issues/67). Os exemplos descrevem a interface alvo e usam dados fictícios. A [API atual](/api-specs) documenta as rotas em funcionamento. A [matriz de aceite](/matriz-release-2) registra responsáveis, cenários e evidências.
 
-## Catálogo e vínculo com a turma
+## Catálogo e vínculo com a turma {#catalogo-e-vinculo-com-a-turma}
 
 O backend consulta exclusivamente o catálogo público do Followw. Cada oferta tem um UUID local imutável. Preferir uma chave da origem que identifique inequivocamente a **oferta**. Se a origem só fornecer o ID da disciplina, combinar origem, ID da disciplina, número da turma, ano, semestre, unidade e nível. Se faltar o ID da disciplina, usar o código normalizado no lugar dele. Preservar o número da turma como texto, inclusive zeros à esquerda. Professor e horário são atributos atualizáveis. Chave incompleta ou colisão que não possa ser resolvida pela origem exige revisão antes de disponibilizar a oferta.
 
@@ -85,13 +89,13 @@ O backend consulta exclusivamente o catálogo público do Followw. Cada oferta t
 
 Em falha da origem, retornar o último catálogo válido com `stale: true` e preservar os vínculos existentes. Sem cache, devolver 503 à consulta do catálogo. O envio ou vínculo com oferta fora do catálogo disponível é bloqueado. A interface oferece nova busca e o cadastro manual de compromissos na agenda. O vínculo autoriza acesso ao conteúdo compartilhado da oferta e representa uma declaração do usuário. Matrícula, notas, avisos privados e login Followw/SIGAA ficam fora dessa integração. A [#68](https://github.com/unb-mds/2026-2-AgendaUnB/issues/68) ainda precisa comprovar endpoints públicos, cobertura e paginação. A [#70](https://github.com/unb-mds/2026-2-AgendaUnB/issues/70) implementa o adaptador e a [#69](https://github.com/unb-mds/2026-2-AgendaUnB/issues/69) valida as chaves.
 
-## Plano, versão e candidatos
+## Plano, versão e candidatos {#plano-versao-e-candidatos}
 
-A decisão sobre retenção de PDFs e autorização do texto está no [ADR-003](arquitetura/adrs/adr-003-minimizar-dados-de-planos.md).
+A decisão sobre retenção de PDFs e autorização do texto está no [ADR-003](/arquitetura/adrs/adr-003-minimizar-dados-de-planos).
 
 - **Envio.** `POST /api/v1/syllabus/upload` mantém `multipart/form-data` e devolve 202. Para novos planos, exige `class_offering_id` de uma turma disponível que o usuário segue e exatamente um de `file` (PDF digital até 10 MB e 10 páginas) ou `text` (texto bruto, com limite de entrada a confirmar na [#51](https://github.com/unb-mds/2026-2-AgendaUnB/issues/51)). As leituras existentes em `GET /syllabus` e `GET /syllabus/{id}` continuam disponíveis ao dono, inclusive para registros antigos sem oferta.
 - **PDF e revisão.** O arquivo passa apenas pela extração local. Descartar bytes, arquivos temporários e caminhos acessíveis assim que essa etapa terminar, inclusive em erro ou interrupção. Persistir somente texto necessário, metadados e candidatos autorizados. A versão começa privada. A interface exibe o texto minimizado exato e o destino antes de enviar `POST /api/v1/syllabus/{id}/versions/{version_id}/processing-jobs`. O detalhe privado do plano devolve `version_id`, `phase` e `review_text` ao autor na etapa de autorização. O POST recebe `{"approved_text":"Trecho revisado e minimizado"}`. O servidor registra a autorização daquela versão e do texto aprovado. Mudança de texto exige nova revisão e autorização. Ao Gemini vai apenas o texto autorizado. Repetir a mesma operação retoma o job e preserva a unicidade dos candidatos.
-- **Edição e visibilidade.** O autor edita suas versões privadas e compartilhadas. Professor e admin podem editar o conteúdo de uma versão já compartilhada, criando uma revisão separada. O papel por si só não dá acesso a PDF, texto original, candidatos privados ou agenda alheia. `POST /api/v1/syllabus/{id}/versions` cria uma revisão e mantém a versão anterior e as cópias na agenda. `PUT /api/v1/syllabus/{id}/versions/{version_id}/sharing` publica conteúdo revisado mediante decisão do autor. Professor e admin também podem publicar diretamente as revisões que criam a partir de conteúdo já compartilhado, sem aprovação adicional do autor original. Essa permissão não permite tornar público material privado alheio. `DELETE` no mesmo recurso retira o compartilhamento pelo autor ou admin, bloqueando novos acessos, votos e importações. Retirar o compartilhamento da versão original não retira nem exclui suas revisões: elas mantêm sua própria visibilidade e continuam disponíveis quando compartilhadas. Cópias já importadas na agenda também permanecem. Essa regra trata da retirada de compartilhamento, não define a política de exclusão de conta. O PDF original fica fora do compartilhamento e da retenção.
+- **Edição e visibilidade.** O autor edita suas versões privadas e compartilhadas. Professor e admin podem editar o conteúdo de uma versão já compartilhada, criando uma revisão separada. O papel por si só não dá acesso a PDF, texto original, candidatos privados ou agenda alheia. Por decisão de produto (PO, 2026-11-17, [ADR-010](/arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos)), a versão inicial (`v1`) vinculada a uma oferta concluída com candidatos extraídos é compartilhada automaticamente ao ser consultada/confirmada pelo autor (salvo se já retirada); `POST /api/v1/syllabus/{id}/versions` cria uma revisão e mantém a versão anterior e as cópias na agenda. `PUT /api/v1/syllabus/{id}/versions/{version_id}/sharing` publica versões privadas ou republica versão retirada mediante decisão do autor. Professor e admin também podem publicar diretamente as revisões que criam a partir de conteúdo já compartilhado, sem aprovação adicional do autor original. Essa permissão não permite tornar público material privado alheio. `DELETE` no mesmo recurso retira o compartilhamento pelo autor ou admin, bloqueando novos acessos, votos e importações e impedindo novo compartilhamento automático. Retirar o compartilhamento da versão original não retira nem exclui suas revisões: elas mantêm sua própria visibilidade e continuam disponíveis quando compartilhadas. Cópias já importadas na agenda também permanecem. Essa regra trata da retirada de compartilhamento, não define a política de exclusão de conta. O PDF original fica fora do compartilhamento e da retenção.
 - **Procedência.** Registrar `author_role` com o papel da conta no momento do envio e `institutional_source_url` separadamente. A atribuição inicial de origem institucional exige evidência pública oficial vinculada à versão, validada por admin. Uma revisão feita por professor ou admin mantém a procedência institucional já validada da versão de origem. Registrar a versão de origem, a evidência institucional herdada, o autor da revisão e seu papel no momento da alteração. A interface distingue documento institucional de origem e alterações posteriores da comunidade. Papel professor/admin não cria procedência institucional quando a origem não a possuía; revisões estudantis não recebem essa herança automaticamente. Voto, vínculo autodeclarado e papel `professor` não constituem essa evidência.
 - **Colaboração.** Seguidores autenticados da turma leem versões compartilhadas e votam por `PUT /api/v1/syllabus/{id}/versions/{version_id}/candidates/{candidate_id}/vote`, com `{"value":"confirm"}` ou `{"value":"contest"}`. Um voto ativo por usuário, candidato e versão. Repetir ou alterar voto não multiplica o total. A votação não altera datas automaticamente.
 - **Confirmação.** Preservar `POST /api/v1/syllabus/{id}/confirm` para o fluxo particular e acrescentar `version_id` para selecionar explicitamente a versão compartilhada. O servidor verifica acesso, versão, seleção e datas antes de gravar o lote em transação. A decisão na versão compartilhada é por usuário. Deduplicar por `(user_id, version_id, candidate_id)` e manter a procedência do evento pessoal. Requisição antiga não restaura evento apagado. Uma nova importação exige ação explícita do usuário.
@@ -135,7 +139,7 @@ Manter os quatro valores de `status` já consumidos pelo frontend. `phase` é ad
 
 Medir do início do upload até a disponibilização dos candidatos para revisão. Descontar somente os intervalos de espera por revisão e autorização humanas; incluir transferência, validação, extração local, espera em fila e processamento externo. Registrar duração total, intervalos humanos descontados e duração resultante. A meta para planos de até 10 páginas é inferior a 20 segundos; a autorização específica continua obrigatória.
 
-### Confirmação rápida e reimportação
+### Confirmação rápida e reimportação {#confirmacao-rapida-e-reimportacao}
 
 Toda data extraída começa como candidata. Somente a confirmação explícita do usuário a transforma em avaliação efetiva na sua agenda; em versões compartilhadas, essa decisão pertence a cada conta. A revisão deve ser breve: mostrar candidatos em uma lista, permitir selecionar vários e confirmar o lote em uma única ação, destacar apenas campos ambíguos que exigem correção e preservar as escolhas durante ajustes. Não exigir uma sequência de confirmações por item nem importar automaticamente. Avaliar a fluidez na homologação com o tempo e as dificuldades observadas, sem inventar um limite numérico ainda não acordado.
 
@@ -225,7 +229,7 @@ O detalhe do lote retorna `pending`, `running`, `completed`, `partial_failure` o
 }
 ```
 
-## Permissões e erros
+## Permissões e erros {#permissoes-e-erros}
 
 | Operação | Autorização |
 | --- | --- |
@@ -238,7 +242,7 @@ O detalhe do lote retorna `pending`, `running`, `completed`, `partial_failure` o
 | Moderar sugestões de eventos | Professor ou admin. |
 | Gerenciar papéis, categorias e prova de procedência institucional | Admin. |
 
-Manter o [envelope FastAPI existente](api-specs.md#erros-fastapi). Usar 401 para sessão ausente ou inválida, 403 para papel insuficiente, 404 para recurso inexistente ou invisível à conta, 409 para plano fora da etapa esperada ou conexão Google que exige nova autorização, 422 para oferta inválida, candidato ambíguo ou data incompatível, 429 para cota e 503 para catálogo indisponível sem cache. Respostas com falhas parciais da exportação informam o erro por item. Tokens, PDF, texto integral e dados de outra conta ficam fora dos detalhes.
+Manter o [envelope FastAPI existente](/api-specs#erros-fastapi). Usar 401 para sessão ausente ou inválida, 403 para papel insuficiente, 404 para recurso inexistente ou invisível à conta, 409 para plano fora da etapa esperada ou conexão Google que exige nova autorização, 422 para oferta inválida, candidato ambíguo ou data incompatível, 429 para cota e 503 para catálogo indisponível sem cache. Respostas com falhas parciais da exportação informam o erro por item. Tokens, PDF, texto integral e dados de outra conta ficam fora dos detalhes.
 
 Exemplo HTTP 422 ao tentar confirmar candidato sem corrigir data ambígua:
 
@@ -252,10 +256,10 @@ Exemplo HTTP 403 ao concluir autorização Google com e-mail diferente:
 {"detail":"Selecione a conta Google com o mesmo e-mail verificado do Agenda UnB."}
 ```
 
-## Compatibilidade e migração
+## Compatibilidade e migração {#compatibilidade-e-migracao}
 
 - Fazer mudanças aditivas primeiro. Planos antigos mantêm IDs, candidatos, metadados e acesso do dono. Associar automaticamente uma oferta apenas se a correspondência for inequívoca. Pedir seleção do usuário nos demais casos antes de publicar uma versão. Manter os aliases atuais de `syllabus` e adaptar o frontend ao campo `phase` antes de exigir novos campos.
 - A implementação atual guarda `caminho_arquivo` e pode retornar `filePath` ao dono. A migração deve interromper novas gravações permanentes de PDF, inventariar e remover os originais legados e suas referências com verificação de Storage. Preservar candidatos e agenda. Se um plano antigo dependia exclusivamente do PDF para processamento, orientar novo envio temporário ou entrada de texto.
 - Migrar importação de candidatos para unicidade por usuário, candidato e versão antes de liberar versões compartilhadas. O índice legado de `origem_avaliacao_id` sozinho não cobre o novo uso. Alinhar migrations, ORM, RLS e autorização da API. Preservar `eventos_salvos` como vínculo existente.
 - Acrescentar fim e campos civis aos eventos sem reclassificar automaticamente datas legadas de meia-noite. Verificar leitores antigos, dados migrados e rollback compatível antes de exigir os campos no frontend.
-- Preservar exceções do esquema como `profiles`, `categories`, `user_id`, `professor_id`, `category_id` e `event_id`. Preservar também os mapeamentos diferentes de início em `eventos.data_evento` e `eventos_pessoais.data_hora` e os estados em português. Campos novos seguem os [padrões do projeto](produto/padroes.md). Renomeações gerais de tabelas, colunas e aliases ficam fora da Release 2.
+- Preservar exceções do esquema como `profiles`, `categories`, `user_id`, `professor_id`, `category_id` e `event_id`. Preservar também os mapeamentos diferentes de início em `eventos.data_evento` e `eventos_pessoais.data_hora` e os estados em português. Campos novos seguem os [padrões do projeto](/produto/padroes). Renomeações gerais de tabelas, colunas e aliases ficam fora da Release 2.

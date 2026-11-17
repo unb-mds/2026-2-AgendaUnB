@@ -44,4 +44,4 @@ Validar migrações do zero e lint de esquema (`supabase db lint --level error`)
 
 ## Fontes e relações
 
-[Persistência e migrações](../visao-geral.md#7-persistencia-privacidade-e-migracoes) · [Compatibilidade](../../atualizacoes.md#compatibilidade-e-migracao) · [Requisitos](../../produto/requisitos.md) · [Índice de ADRs](index.md)
+[Persistência e migrações](/arquitetura/visao-geral#7-persistencia-privacidade-e-migracoes) · [Compatibilidade](/atualizacoes#compatibilidade-e-migracao) · [Requisitos](/produto/requisitos) · [Índice de ADRs](/arquitetura/adrs/index)

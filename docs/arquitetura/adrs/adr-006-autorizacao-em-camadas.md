@@ -45,4 +45,4 @@ Verificar acessos cruzados entre contas e papéis, incluindo chamadas diretas. A
 
 ## Fontes e relações
 
-[ADR-001](adr-001-integracao-fastapi-supabase.md) · [Matriz de regras](../visao-geral.md#11-matriz-de-regras-e-evidencias) · [Permissões da R2](../../atualizacoes.md#permissoes-e-erros) · [Requisitos](../../produto/requisitos.md) · [Índice de ADRs](index.md)
+[ADR-001](/arquitetura/adrs/adr-001-integracao-fastapi-supabase) · [Matriz de regras](/arquitetura/visao-geral#11-matriz-de-regras-e-evidencias) · [Permissões da R2](/atualizacoes#permissoes-e-erros) · [Requisitos](/produto/requisitos) · [Índice de ADRs](/arquitetura/adrs/index)

@@ -38,4 +38,4 @@ A referência é backend/src/middlewares/auth.py. Verificar sessão ausente, inv
 
 ## Fontes e relações
 
-[Fluxo da API](../visao-geral.md#5-api-rest-implementada) · [Contratos](../../api-specs.md) · [Requisitos](../../produto/requisitos.md) · [Índice de ADRs](index.md)
+[Fluxo da API](/arquitetura/visao-geral#5-api-rest-implementada) · [Contratos](/api-specs) · [Requisitos](/produto/requisitos) · [Índice de ADRs](/arquitetura/adrs/index)

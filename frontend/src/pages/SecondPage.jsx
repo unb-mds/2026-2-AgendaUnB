@@ -1,3 +1,4 @@
+import CustomSelect from '../components/CustomSelect';
 import GoogleCalendarConnection from '../components/GoogleCalendarConnection';
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
@@ -14,82 +15,6 @@ function EventError({ message, compact = false }) {
     <p>{message}</p>
     {needsAccount && <Link className="event-error-signup" to="/?auth=signup">Criar conta</Link>}
   </div>;
-}
-
-const CustomSelect = ({ value, onChange, options, placeholder, dropUp = false, className, wrapperWidth, ariaLabel }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const containerRef = useRef(null);
-  const triggerRef = useRef(null);
-  const selectOption = selected => {
-    onChange(selected);
-    setIsOpen(false);
-    triggerRef.current?.focus();
-  };
-
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (containerRef.current && !containerRef.current.contains(e.target)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  return (
-    <div ref={containerRef} onKeyDownCapture={e => {
-      if (isOpen && e.key === 'Escape') {
-        e.preventDefault(); e.stopPropagation(); setIsOpen(false); triggerRef.current?.focus();
-      }
-    }} style={{ position: 'relative', width: wrapperWidth || '100%', zIndex: isOpen ? 1000 : 1 }}>
-      <div 
-        ref={triggerRef}
-        className={className || "custom-input"}
-        role="button" tabIndex={0} aria-expanded={isOpen} aria-label={ariaLabel}
-        onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setIsOpen(v => !v); } }}
-        onClick={() => setIsOpen(!isOpen)}
-        style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          cursor: 'pointer', userSelect: 'none'
-        }}
-      >
-        <span style={{ color: value ? 'inherit' : 'var(--text-muted)' }}>
-          {value ? options.find(o => o.value === value)?.label : placeholder}
-        </span>
-        <span className="material-symbols-outlined" style={{ fontSize: '1.2rem', transition: 'transform 0.2s', color: 'var(--text-muted)', transform: isOpen ? (dropUp ? 'rotate(0deg)' : 'rotate(180deg)') : (dropUp ? 'rotate(180deg)' : 'rotate(0deg)') }}>
-          {dropUp ? 'expand_less' : 'expand_more'}
-        </span>
-      </div>
-      
-      {isOpen && (
-        <div className="custom-picker-popup" style={{
-          top: dropUp ? 'auto' : 'calc(100% + 8px)',
-          bottom: dropUp ? 'calc(100% + 8px)' : 'auto',
-          width: '100%', minWidth: '180px', maxHeight: '220px', overflowY: 'auto'
-        }}>
-          <div 
-            role="button" tabIndex={0}
-            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectOption(''); } }}
-            onClick={() => selectOption('')}
-            className={`custom-picker-option ${!value ? 'active' : ''}`}
-          >
-            {placeholder}
-          </div>
-          {options.map(opt => (
-            <div 
-              key={opt.value}
-              role="button" tabIndex={0}
-              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectOption(opt.value); } }}
-              onClick={() => selectOption(opt.value)}
-              className={`custom-picker-option ${value === opt.value ? 'active' : ''}`}
-            >
-              {opt.label}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )
 }
 
 const CustomDatePicker = ({ value, onChange, placeholder, dropUp = false, className }) => {
@@ -812,6 +737,12 @@ export default function SegundaPagina() {
                   )}
                   <div className="event-card-footer">
                     {evento.salvoNaAgenda && <span className="event-tag">Público salvo</span>}
+                    {evento.fonteUrl && (
+                      <span className="event-tag" title="Fonte: Agenda UnB Notícias">
+                        <span className="material-symbols-outlined" style={{ fontSize: '0.9rem', flexShrink: 0 }}>newspaper</span>
+                        <span className="event-tag-text">UnB Notícias</span>
+                      </span>
+                    )}
                     {evento.campus && (
                       <span className="event-tag"><span className="material-symbols-outlined" style={{ fontSize: '0.9rem', flexShrink: 0 }}>location_on</span><span className="event-tag-text">{evento.campus}</span></span>
                     )}
@@ -897,11 +828,11 @@ export default function SegundaPagina() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label className="modal-label">CAMPUS</label>
-                  <CustomSelect options={campiOptions} value={campus} onChange={setCampus} placeholder="Selecione..." ariaLabel="Campus" isDark={isDark} className="custom-input" accentColor={accentColor} cardBg={cardBg} borderColor={borderColor} textColor={textColor} dropUp={true} />
+                  <CustomSelect options={campiOptions} value={campus} onChange={setCampus} placeholder="Selecione..." ariaLabel="Campus" dropUp />
                 </div>
                 <div>
                   <label className="modal-label">ÁREA</label>
-                  <CustomSelect options={areasOptions} value={area} onChange={setArea} placeholder="Selecione..." ariaLabel="Área" isDark={isDark} className="custom-input" accentColor={accentColor} cardBg={cardBg} borderColor={borderColor} textColor={textColor} dropUp={true} />
+                  <CustomSelect options={areasOptions} value={area} onChange={setArea} placeholder="Selecione..." ariaLabel="Área" dropUp />
                 </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
@@ -911,7 +842,7 @@ export default function SegundaPagina() {
                 </div>
                 <div>
                   <span className="modal-label">VISIBILIDADE *</span>
-                  <CustomSelect options={visibilidadeOptions} value={visibilidade} onChange={setVisibilidade} placeholder="Selecione..." ariaLabel="Visibilidade" className="custom-input" dropUp={true} />
+                  <CustomSelect options={visibilidadeOptions} value={visibilidade} onChange={setVisibilidade} placeholder="Selecione..." ariaLabel="Visibilidade" dropUp />
                 </div>
               </div>
               {visibilidade === 'Sugestão' && <p id="suggestion-help" className="management-muted">Seu evento será analisado por professores e administradores antes da publicação. Você receberá a confirmação e o resultado pelo sino de notificações.</p>}

@@ -35,7 +35,7 @@ def render(publish=False):
             raise ValueError(f'{source}: revisão e decisões pendentes impedem a publicação.')
         text = re.sub(r'^---\s*\n.*?\n---\s*\n', '', text, count=1, flags=re.S)
         for original, (target, _) in DOCUMENTS.items():
-            text = text.replace(f']({original})', f'](/{target})')
+            text = text.replace(f'](/produto/{Path(original).stem})', f'](/{target})')
         content = markdown.markdown(text, extensions=['tables'])
         content = content.replace('<table>', '<div class="table-scroll"><table>').replace('</table>', '</table></div>')
         warning = '' if publish else '<aside class="draft">Prévia local — documento em revisão, não publicado.</aside>'
