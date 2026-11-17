@@ -33,6 +33,23 @@ O campo **verificado** é o mais importante. Sem ele, a entrada declara o uso ma
 
 ## Entradas
 
+### 15/11/2026 — Sugestão de horário de prova na revisão de datas
+
+- **Quem:** Heitor Gomes Monteiro (solicitante).
+- **Ferramenta:** Codex (OpenAI), Impeccable e Playwright.
+- **O que foi pedido:** Usar o horário da oferta da turma para preencher a hora da prova na aba **Revisar datas**, com edição antes da confirmação.
+- **O que entrou no repositório:** Conversão dos códigos SIGAA retornados pela API de turmas, sugestão no editor com indicação de origem, testes de regressão e documentação da sugestão na revisão de datas. Commits `53085ee`, `cf9afbd` e `b15c30c` na branch `feat/gemini-api` (regra consolidada na `ADR-010` após atualização com `dev`).
+- **O que foi verificado:** A conversão foi conferida com a [grade SIGAA da UnB](https://design.unb.br/codigos-aulas-sigaa/) e exemplos do catálogo. Passaram 42 testes de lógica, o build do frontend e os cenários Playwright de sugestão, edição, confirmação e entrada manual com o catálogo indisponível. Os testes de navegador usaram respostas controladas da API.
+- **O que foi rejeitado ou corrigido:** A sugestão só usa o início de um bloco único no dia da prova. Horários do plano e edições manuais são preservados. Os testes de revisão foram alinhados ao fuso fixo de Brasília e ao contrato atual de confirmação. Uma divergência na mensagem de erro do envio de texto bruto também foi reproduzida na branch base e fica fora deste ajuste.
+
+### 13/11/2026 — Roteiro de homologação S7-B02 (#68)
+
+- **Quem:** Heitor Gomes Monteiro, com assistência do Codex.
+- **Ferramenta:** Codex (OpenAI).
+- **O que foi pedido:** registrar as evidências da #68 e preparar os testes de Calendar, SMTP e retomada dos jobs para alinhamento dos acessos com Thomas.
+- **O que entrou no repositório:** roteiro de homologação com pré-requisitos, passos, resultados esperados e links das provas anteriores.
+- **O que foi verificado:** rotas e configurações conferidas no código candidato e nos PRs #110 e #113. O roteiro registra como evidências anteriores a sondagem do Followw, o benchmark sintético Gemini, o CI e os 92 testes locais de 13/11. As provas hospedadas do roteiro permanecem pendentes.
+
 ### 11/11/2026 — Revisão final e documentação da jornada (#73)
 
 - **Quem:** Gabriel Escramin (solicitante).
@@ -78,6 +95,15 @@ O campo **verificado** é o mais importante. Sem ele, a entrada declara o uso ma
 - **O que entrou no repositório:** `.github/PULL_REQUEST_TEMPLATE.md` e orientações em `docs/CONTRIBUTING.md` e `docs/processo/contribuindo.md`.
 - **O que foi verificado:** Estado inicial limpo na main, ausência do template anterior e `git diff --check`. O build estrito da documentação foi tentado, mas o executável Python disponível não pôde ser iniciado neste ambiente.
 - **O que foi rejeitado ou corrigido:** Evitada a duplicação do checklist da issue no PR. O template orienta atualização manual, sem sincronização automática ou bloqueio de merge.
+
+### 10/11/2026 — Migração do Supabase Cloud e preparação Render/Vercel
+
+- **Quem:** Heitor Gomes Monteiro, com assistência do Codex.
+- **Ferramenta:** Codex (OpenAI).
+- **O que foi pedido:** revisar e aplicar as cinco migrações pendentes no projeto Supabase da equipe, preservando os dados, e preparar a configuração para Render e Vercel.
+- **O que entrou no repositório:** modelos de variáveis por provedor em `deploy/`, guia de configuração e registro operacional com o estado do banco. Backup, scripts operacionais e arquivos com credenciais ficaram somente na pasta ignorada `.supabase/`.
+- **O que foi verificado:** backup lógico consistente de 48 tabelas, restauração isolada, ensaio das cinco migrações e 49 testes PostgreSQL aprovados. Ensaio remoto com rollback e aplicação das cinco migrações em uma única transação, incluindo histórico. A comparação de hashes confirmou a preservação dos dados existentes. Após a transação, foram confirmadas 26 migrações e dez verificações de privacidade. Cinco campi e sete categorias foram preservados. A tabela legada estava vazia quando foi removida.
+- **O que foi rejeitado ou corrigido:** não reaproveitar chaves públicas locais recusadas pelo projeto remoto, não executar wrappers de transação com commit intermediário e não versionar credenciais. A restauração de ensaio precisou preservar os proprietários e privilégios originais. A fila paralela não foi tratada como consumidor do worker atual. Naquela operação, as flags ficaram em `false`. O deploy integrado e a homologação ficaram para as issues #68 e #76.
 
 ### 09/11/2026 — S7-D01: turmas, vínculos, versões e isolamento dos planos (#69)
 

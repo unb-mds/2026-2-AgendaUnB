@@ -170,8 +170,6 @@ TEST_SUPABASE_DB_URL="postgresql+psycopg://postgres:postgres@127.0.0.1:14322/pos
   venv/bin/pytest tests/test_event_collection_database.py -q
 ```
 
-Consulte o [Relatório técnico de validação S7-B05](../s7-b05-validacao.md) para o detalhamento completo dos cenários de aceite e evidências.
-
 ## 5. Coletor da Agenda UnB Notícias
 
 O adaptador está em `backend/src/modules/events/collector.py`. A origem é fixa em `https://noticias.unb.br`; o cliente consulta `robots.txt` e só acessa a listagem `/component/agenda/agendas` e detalhes `/component/agenda/agenda/{id}` quando permitidos. O cliente não segue redirecionamentos, não usa cookies nem proxy do ambiente, tem timeout de 20 segundos e espera pelo menos um segundo entre requisições. Falhas transitórias recebem uma tentativa adicional respeitando `Retry-After` até 60 segundos.
@@ -200,3 +198,23 @@ Os contratos de código, migração e testes unitários locais estão completos.
 - **Validação de concorrência e idempotência em banco remoto:** Executar duas instâncias simultâneas do coletor para registrar o bloqueio via advisory lock e a atualização sem duplicatas.
 - **Validação de resiliência a falhas da fonte:** Simular timeout ou HTTP 503 na conexão com `noticias.unb.br` em execução real e comprovar a preservação intacta dos dados já gravados.
 - **Homologação humana:** Realizar a revisão e moderação de itens marcados como `possivel_duplicata`, `ambiguo` ou `informe` por um usuário com papel professor/admin na interface administrativa.
+
+## 6. Validação e Revisão Técnica — S7-B05 (#75)
+
+Consolidado em **16/11/2026** para a issue [#75](https://github.com/unb-mds/2026-2-AgendaUnB/issues/75) (RF14, RF15, RF16, RNF02, RNF11, RNF13 e [ADR-011](adrs/adr-011-datas-civis-e-instantes.md)). Responsável principal: `@pontesluis`. Corresponsável: `@marrathomaz`. Apoio em migrações: `@felipecduque7`.
+
+| Critério de Aceite / Cenário | Evidência Técnica e Testes | Resultado |
+| --- | --- | --- |
+| **1. Execução agendada, duas execuções sucessivas/concorrentes sem duplicatas e atualização de data no mesmo registro** | Workflow `.github/workflows/production-jobs.yml` (`job: collector`), alvos `make events-collect` / `make events-collect-daemon`, índice único `uq_eventos_fonte (fonte, fonte_id)`, `pg_try_advisory_lock(708073)` e `pg_advisory_xact_lock`, validados em `test_event_collector.py` e `test_event_collection_database.py` | Aprovado |
+| **2. Indisponibilidade da fonte preserva registros, respeito a decisões de moderação/campos editados localmente e cobertura multicampus** | Leitura integral prévia ao bloco transacional, rollback em falha HTTP/timeout com registro em `coletas_eventos` (`status = 'falha'`), trigger `tg_registra_edicao_local` (`campos_editados`), preservação de `moderado_em` e normalização dos 5 campi da UnB | Aprovado |
+| **3. Publicação automática de evento completo e retenção em revisão de item ambíguo, incompleto, informe ou possível duplicata, com procedência visível** | RPC `registrar_evento_coletado(jsonb)`, tratamento de `00:00` sem sinal explícito como `ambiguo`, distinção `evento` vs `informe`, conciliação de URL manual, similaridade de título/data ($\le 2$ dias) e exposição de `source`/`source_url` em `EventRead` e na interface | Aprovado |
+
+### Revisão de Contratos, Permissões e Dados Afetados
+
+- **Revisores:** `@marrathomaz` e `@pontesluis` (apoio em migrações: `@felipecduque7`).
+- **Contratos revisados:** `EventRead` (`GET /api/v1/events`, `GET /api/v1/events/{event_id}`, `GET /api/v1/me/saved-events`) com `ends_at`, `all_day`, `start_date`, `end_date`, `source` e `source_url`, mantendo privados `fonte_hash`, `coletado_em`, `motivo_revisao` e `campos_editados` (`test_public_event_exposes_provenance_without_internal_metadata`).
+- **Permissões e segurança (RLS / Triggers):** `public.coletas_eventos` com RLS ativo e `REVOKE ALL FROM anon, authenticated`; `public.registrar_evento_coletado(jsonb)` restrita a `service_role`; `public.listar_revisoes_coleta(text, integer)` e `public.moderar_sugestao(uuid, text, text)` restritas a moderadores (`public.is_event_moderator()`); trigger `tg_protege_procedencia` bloqueando forja de procedência pelo navegador com SQLSTATE `42501` (`test_browser_cannot_collect_or_forge_provenance`).
+- **Tabelas afetadas:** `public.eventos`, `public.eventos_pessoais` e `public.coletas_eventos` (`supabase/migrations/20261111140000_eventos_datas_e_coleta.sql`).
+- **Pendências abertas rastreadas:**
+  1. Integração visual da RPC `listar_revisoes_coleta` na tela de moderação do frontend acompanhada na issue **#80 (`S8-F02`)** (`@Bielziin07` / `@marrathomaz`).
+  2. Ativação da variável `PRODUCTION_EVENT_COLLECTION_ENABLED=true` no environment `production-jobs` após promoção para `main`, acompanhada na issue **#76 (`S7-B06`)** (`@pontesluis`).

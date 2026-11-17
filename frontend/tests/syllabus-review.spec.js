@@ -39,12 +39,11 @@ test('seleção, validação, teclado e descarte preservam edições sem chamar 
   await page.getByLabel('Título').fill('Prova revisada');
   await page.getByLabel('Data', { exact: false }).fill('2026-11-10');
   await page.getByLabel('Horário').fill('13:00');
-  await page.getByLabel('Fuso UTC').fill('-03:00');
   await page.getByLabel('Decisão').selectOption('discarded');
   await expect(page.getByLabel('Título')).toBeDisabled();
   await page.getByLabel('Decisão').selectOption('selected');
   await expect(page.getByLabel('Título')).toHaveValue('Prova revisada');
-  await expect(page.getByLabel('Fuso UTC')).toHaveValue('-03:00');
+  await expect(page.getByLabel('Horário')).toHaveValue('13:00');
   await page.getByRole('button', { name: 'Conferir selecionados' }).focus();
   await page.keyboard.press('Enter');
   await expect(page.getByText('Campos conferidos. Nenhum evento foi salvo na agenda.')).toBeVisible();

@@ -67,8 +67,10 @@ A minimização por regex tem alcance limitado. Enviar conteúdo ao serviço gra
 - [ ] Registrar o nome do revisor e a revisão dos contratos, permissões e dados afetados por esta entrega.
 
 
-**Evidência local em 10/11/2026:** [contrato e métricas](../processamento-planos-s7.md),
-[revisão técnica e pendências](../s7-b01-validacao.md). O caminho manual e o bloqueio
+**Evidência local em 10/11/2026:** decisões consolidadas nas
+[ADR-003](../arquitetura/adrs/adr-003-minimizar-dados-de-planos.md),
+[ADR-010](../arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos.md) e
+[ADR-014](../arquitetura/adrs/adr-014-processamento-assincrono-planos-ia.md). O caminho manual e o bloqueio
 operacional estão implementados; produção continua pendente de S7-B02, implantação
 validada e revisão humana. Os checks acima representam implementação/validação
 local, sem aprovação automática de dados reais ou fechamento das dependências.
@@ -146,7 +148,7 @@ Demonstrar a viabilidade de Followw público, SMTP, Gemini e jobs persistidos de
 
 Validar SMTP próprio para destinatários externos. Consultar a documentação de [SMTP do Supabase](https://supabase.com/docs/guides/auth/auth-smtp), os [termos do Gemini](https://ai.google.dev/gemini-api/terms) e a [arquitetura do Followw](https://docs.followw.app/arquitetura) durante as provas. O consentimento do usuário não dispensa as condições do provedor.
 
-**Evidências consolidadas em 14/11/2026:** [Relatório técnico de validação S7-B02](../s7-b02-validacao.md). Configurações de custo zero comprovadas; credenciais isoladas por variáveis de ambiente; CI automatizado cobrindo frontend, backend e migrações.
+**Evidências consolidadas em 14/11/2026:** decisões registradas nas [ADR-002](../arquitetura/adrs/adr-002-separar-hospedagem-e-ambientes.md), [ADR-009](../arquitetura/adrs/adr-009-catalogo-publico-de-turmas.md), [ADR-012](../arquitetura/adrs/adr-012-exportacao-google-idempotente.md) e [ADR-014](../arquitetura/adrs/adr-014-processamento-assincrono-planos-ia.md). Configurações de custo zero comprovadas; credenciais isoladas por variáveis de ambiente; CI automatizado cobrindo frontend, backend e migrações.
 
 #### Evidências para fechamento
 
@@ -380,7 +382,7 @@ Alimentar a agenda pela fonte institucional Agenda UnB Notícias, com origem ver
 - [x] Verificar que indisponibilidade da fonte preserva registros, que decisões de moderação e campos editados localmente são respeitados e que a cobertura multicampus reflete os dados disponíveis.
 - [x] Verificar que evento completo é publicado automaticamente e que item ambíguo, incompleto ou possivelmente duplicado fica em revisão.
 
-**Evidências consolidadas em 16/11/2026:** [Relatório técnico de validação S7-B05](../s7-b05-validacao.md) e [guia de dados e coleta de eventos](../arquitetura/dados-de-eventos.md). Coletor, deduplicação por chave canônica/URL/similaridade, normalização de datas civis (`ADR-011`), proteção de edições locais e procedência visível validados em 44 testes de backend/coletor, 18 cenários PostgreSQL e 37 testes de frontend.
+**Evidências consolidadas em 16/11/2026:** decisões e validação técnica registradas em [Dados de eventos: datas e coleta](../arquitetura/dados-de-eventos.md) e na [ADR-011](../arquitetura/adrs/adr-011-datas-civis-e-instantes.md). Coletor, deduplicação por chave canônica/URL/similaridade, normalização de datas civis, proteção de edições locais e procedência visível validados em 44 testes de backend/coletor, 18 cenários PostgreSQL e 37 testes de frontend.
 
 #### Evidências para fechamento
 

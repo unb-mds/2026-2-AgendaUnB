@@ -1,6 +1,35 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildReviewConfirmation, createCandidateReviewDraft, selectReviewItems, createReviewDraft, validReviewDate, validUtcOffset, validateReviewItem } from './syllabusReview.js';
+import { buildReviewConfirmation, createCandidateReviewDraft, selectReviewItems, createReviewDraft, updateCandidateReviewItem, validReviewDate, validUtcOffset, validateReviewItem } from './syllabusReview.js';
+
+test('o catálogo só preenche provas pendentes sem hora explícita e com data confiável', () => {
+  const exam = { id: 'a', type: 'prova', status: 'pendente', suggestedDate: '2026-11-10' };
+  const drafts = createCandidateReviewDraft([
+    exam,
+    { ...exam, id: 'b', suggestedTime: '16:30' },
+    { ...exam, id: 'c', type: 'trabalho' },
+    { ...exam, id: 'd', ambiguousFields: ['data'] },
+    { ...exam, id: 'e', status: 'confirmado' },
+  ], '3T23');
+  assert.deepEqual(drafts.map(({ time }) => time), ['14:00', '16:30', '', '', '']);
+  assert.deepEqual(drafts.map(({ timeSource }) => timeSource), ['catalog', 'plan', null, null, null]);
+  assert.ok(drafts.every(({ decision }) => decision === 'pending'));
+});
+
+test('mudar a data atualiza a sugestão da turma e preserva o horário digitado', () => {
+  const schedule = '3T23 5M12';
+  const [exam] = createCandidateReviewDraft([
+    { id: 'a', type: 'prova', status: 'pendente', suggestedDate: '2026-11-10' },
+  ], schedule);
+  const thursday = updateCandidateReviewItem(exam, { date: '2026-11-12' }, schedule);
+  assert.equal(thursday.time, '08:00');
+  assert.equal(updateCandidateReviewItem(thursday, { date: '2026-11-11' }, schedule).time, '');
+  for (const time of ['09:30', '']) {
+    const manual = updateCandidateReviewItem(thursday, { time }, schedule);
+    assert.equal(updateCandidateReviewItem(manual, { date: '2026-11-10' }, schedule).time, time);
+    assert.equal(manual.timeSource, 'manual');
+  }
+});
 
 test('candidatos usam sugestões civis e convertem startsAt explícito para Brasília', () => {
   const candidates = [
@@ -82,5 +111,35 @@ test('buildReviewConfirmation inclui tipo revisado, título, data em Brasília (
     startsAt: '2026-12-01T14:00-03:00',
     category: 'Acadêmico',
     description: 'Tipo de avaliação: Prova\n\nProva escrita.',
+  });
+});
+
+test('prova sem data herda horario padrao unico e trabalho sem horario confirma como dia inteiro', () => {
+  const [uniformExam, variedExam, assignment] = createCandidateReviewDraft([
+    { id: 'e1', type: 'prova', status: 'pendente', suggestedDate: null, ambiguousFields: ['data', 'hora'] },
+    { id: 'e2', type: 'prova', status: 'pendente', suggestedDate: null, ambiguousFields: ['data', 'hora'] },
+    { id: 't1', type: 'trabalho', status: 'pendente', suggestedDate: '2026-12-01', suggestedTime: null, sourceExcerpt: 'Trabalho final.' },
+  ], '35M5 35T1');
+  assert.equal(uniformExam.time, '12:00');
+  assert.equal(uniformExam.timeSource, 'catalog');
+  assert.equal(assignment.time, '');
+
+  const [variedBefore] = createCandidateReviewDraft([variedExam], '3M34 5T23');
+  assert.equal(variedBefore.time, '');
+  const variedAfter = updateCandidateReviewItem(variedBefore, { date: '2026-11-12' }, '3M34 5T23');
+  assert.equal(variedAfter.time, '14:00');
+
+  const selectedAssignment = { ...assignment, decision: 'selected', title: 'Trabalho final' };
+  assert.deepEqual(validateReviewItem(selectedAssignment, true), {});
+  const [confirmed] = buildReviewConfirmation([selectedAssignment], [{ id: 't1', status: 'pendente', sourceExcerpt: 'Trabalho final.' }]);
+  assert.deepEqual(confirmed, {
+    candidateId: 't1',
+    title: 'Trabalho final',
+    type: 'trabalho',
+    all_day: true,
+    start_date: '2026-12-01',
+    end_date: '2026-12-02',
+    category: 'Acadêmico',
+    description: 'Tipo de avaliação: Trabalho\n\nTrabalho final.',
   });
 });
