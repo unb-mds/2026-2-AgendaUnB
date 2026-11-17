@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator
@@ -44,12 +44,18 @@ class EventRead(BaseModel):
     title: str
     description: str | None
     starts_at: datetime
+    ends_at: datetime | None = None
+    all_day: bool = False
+    start_date: date | None = None
+    end_date: date | None = None
     campus: str | None
     category: str | None
     location: str | None
     external_url: str | None = None
     organizer_name: str | None = None
     organizer_avatar: str | None = None
+    source: str | None = None
+    source_url: str | None = None
 
 
 class SavedEventStatus(BaseModel):
