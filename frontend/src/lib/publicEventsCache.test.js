@@ -1,0 +1,98 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  clearPublicCache,
+  getCachedPublic,
+  isCachedPublicFresh,
+  PUBLIC_EVENTS_CACHE_KEY,
+  PUBLIC_EVENTS_FRESH_TTL_MS,
+  PUBLIC_EVENTS_MAX_STALE_TTL_MS,
+  setCachedPublic,
+  toApiEvent,
+  toUiEvent,
+} from './publicEventsCache.js';
+
+function createMemoryStorage() {
+  const store = new Map();
+  return {
+    getItem: (key) => (store.has(key) ? store.get(key) : null),
+    setItem: (key, value) => { store.set(key, String(value)); },
+    removeItem: (key) => { store.delete(key); },
+  };
+}
+
+test('armazena e recupera eventos públicos em cache respeitando TTL fresco e expirado', () => {
+  const storage = createMemoryStorage();
+  const baseTime = 1_700_000_000_000;
+  const sample = [{ id: 'ev-1', title: 'Semana Universitária', starts_at: '2026-11-15T14:00:00Z' }];
+
+  setCachedPublic(sample, baseTime, storage);
+  assert.deepEqual(getCachedPublic(baseTime + 1000, storage), sample);
+  assert.equal(isCachedPublicFresh(baseTime + PUBLIC_EVENTS_FRESH_TTL_MS, storage), true);
+  assert.equal(isCachedPublicFresh(baseTime + PUBLIC_EVENTS_FRESH_TTL_MS + 1, storage), false);
+
+  // Ainda utilizável em modo stale-while-revalidate antes de 24h
+  assert.deepEqual(getCachedPublic(baseTime + PUBLIC_EVENTS_MAX_STALE_TTL_MS, storage), sample);
+
+  // Expirado após 24h e removido do storage
+  assert.equal(getCachedPublic(baseTime + PUBLIC_EVENTS_MAX_STALE_TTL_MS + 1, storage), null);
+  assert.equal(storage.getItem(PUBLIC_EVENTS_CACHE_KEY), null);
+});
+
+test('clearPublicCache invalida a leitura em memória e no storage', () => {
+  const storage = createMemoryStorage();
+  const now = 1_700_000_000_000;
+  setCachedPublic([{ id: 'ev-2', title: 'Palestra', starts_at: '2026-11-16T10:00:00Z' }], now, storage);
+  assert.ok(getCachedPublic(now, storage));
+
+  clearPublicCache(storage);
+  assert.equal(getCachedPublic(now, storage), null);
+  assert.equal(isCachedPublicFresh(now, storage), false);
+});
+
+test('ignora JSON corrompido ou payload inesperado no storage sem lançar erro', () => {
+  const storage = createMemoryStorage();
+  storage.setItem(PUBLIC_EVENTS_CACHE_KEY, '{invalido');
+  assert.equal(getCachedPublic(Date.now(), storage), null);
+
+  storage.setItem(PUBLIC_EVENTS_CACHE_KEY, JSON.stringify({ events: 'nao-array', timestamp: Date.now() }));
+  assert.equal(getCachedPublic(Date.now(), storage), null);
+});
+
+test('toUiEvent e toApiEvent convertem eventos públicos e privados mantendo o contrato', () => {
+  const ui = toUiEvent({
+    id: '11111111-1111-4111-8111-111111111111',
+    title: 'Oficina de Robótica',
+    description: 'Aberta ao público',
+    starts_at: '2026-11-20T17:30:00Z',
+    campus: 'Faculdade do Gama (FCTE)',
+    category: 'Extensão',
+    location: 'MOCAP',
+    external_url: 'https://agendaunb.com.br',
+    organizer_name: 'Docente UnB',
+    organizer_avatar: null,
+  });
+
+  assert.equal(ui.titulo, 'Oficina de Robótica');
+  assert.equal(ui.visibilidade, 'Público');
+  assert.equal(ui.criadoPorMim, false);
+  assert.equal(ui.campus, 'Faculdade do Gama (FCTE)');
+  assert.equal(ui.area, 'Extensão');
+
+  const apiPayload = toApiEvent({
+    titulo: '  Reunião do Centro Acadêmico  ',
+    data: '2026-11-21',
+    horario: '14:00',
+    campus: 'Darcy Ribeiro (Plano Piloto)',
+    local: 'ICC Sul',
+    area: 'Acadêmico',
+    descricao: '  Pauta semestral  ',
+    linkExterno: '',
+  });
+
+  assert.equal(apiPayload.title, 'Reunião do Centro Acadêmico');
+  assert.equal(apiPayload.description, 'Pauta semestral');
+  assert.equal(apiPayload.location, 'ICC Sul');
+  assert.equal('external_url' in apiPayload, false);
+  assert.ok(apiPayload.starts_at.endsWith('Z'));
+});

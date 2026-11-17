@@ -2,17 +2,18 @@
 
 ## Referência e limites
 
-Este inventário descreve o backend atual. Para os contratos planejados, consulte [Release 2](atualizacoes.md#contratos-da-release-2).
+Este inventário descreve o backend atual. Para os contratos planejados, consulte [Release 2](/atualizacoes#contratos-da-release-2).
 
-A API possui operações HTTP de aplicação (inventário abaixo), incluindo `/health`. `/docs`, `/redoc` e `/openapi.json` são recursos de documentação gerados pelo FastAPI, não operações de negócio. Consulte também [Arquitetura](arquitetura/visao-geral.md), [Padrões](produto/padroes.md) e [Implantação](implantacao.md).
+A API possui operações HTTP de aplicação (inventário abaixo), incluindo `/health`. `/docs`, `/redoc` e `/openapi.json` são recursos de documentação gerados pelo FastAPI, não operações de negócio. Consulte também [Arquitetura](/arquitetura/visao-geral), [Padrões](/produto/padroes) e [Implantação](/implantacao).
 
-Fontes: `backend/src/main.py`, `modules/events/router.py`, `modules/events/schemas.py`, `middlewares/auth.py` e `database/models.py` (os quatro últimos relativos a `backend/src/`). O OpenAPI ajuda a conferir campos e rotas, mas não descreve integralmente os handlers de erro personalizados.
+Fontes: `backend/src/main.py`, `modules/events/router.py`, `modules/events/schemas.py`, `modules/google_calendar/router.py`, `middlewares/auth.py` e `database/models.py` (relativos a `backend/src/`). O OpenAPI ajuda a conferir campos e rotas, mas não descreve integralmente os handlers de erro personalizados.
 
 ## Convenções comuns
 
 - Base local: `http://127.0.0.1:8000/api/v1`.
 - Corpos JSON usam `Content-Type: application/json`. Rotas autenticadas exigem `Authorization: Bearer <token>` do Supabase Auth.
 - Papéis persistidos: `student`, `professor`, `admin`. O servidor obtém o ID da sessão e consulta o papel em `profiles`; o cliente não escolhe a identidade.
+- Toda rota autenticada exige e-mail confirmado no Supabase Auth. Metadata nunca concede `admin`; `professor` só é aceito como solicitação após confirmação do endereço real `@unb.br` da conta Auth. Uma pessoa pode mudar o próprio papel de estudante para professor com esse e-mail confirmado; papel de terceiros só muda pela RPC de admin.
 - `{event_id}` é UUID. UUID malformado gera falha de validação; UUID válido ausente recebe o comportamento indicado em cada operação.
 - GET e DELETE não têm corpo definido; PUT de evento salvo também não. Listas de eventos retornam arrays, e listas vazias retornam `[]`. O histórico de planos usa um envelope de paginação.
 - Os schemas ignoram campos extras; enviar `status` ou `author_id` não altera os valores definidos pelo servidor. Isso não equivale a rejeitar esses campos com 422.
@@ -121,7 +122,7 @@ Todas as operações exigem sessão e restringem os dados ao usuário autenticad
 
 Receber 201 não significa aprovação. O item não aparece no catálogo até ser aprovado pela RPC de moderação.
 
-### Eventos salvos — pós-R1
+### Eventos salvos — pós-R1 {#eventos-salvos-pos-r1}
 
 Todas as operações exigem sessão. O vínculo não copia o evento e não constitui inscrição.
 
@@ -152,17 +153,34 @@ O histórico e o detalhe retornam `ano` e `semestre`. Planos antigos podem ter e
 
 `GET /health`: público, sem parâmetros ou corpo, retorna 200 com `{ "status": "ok" }`. Não consulta banco nem Auth; não é uma verificação de prontidão de todas as dependências.
 
+### Exportação para o Google Calendar
+
+O login Google do Supabase solicita identidade. A permissão do Calendar é opcional e começa em **Meus Eventos**, para qualquer sessão com e-mail confirmado, inclusive por senha. O cliente OAuth do Calendar usa um projeto Google Cloud separado do login.
+
+| Operação | Entrada | Resposta |
+| --- | --- | --- |
+| `POST /api/v1/me/google-calendar/authorization` | Bearer Supabase. | 200 com `authorization_url` e `expires_in_seconds`. O desafio de uso único usa `state` e PKCE S256 e expira em 10 minutos. |
+| `POST /api/v1/me/google-calendar/callback` | Formulário do Google com `state` e `code` ou `error`. | 303 para a URL configurada com `google_calendar` indicando o resultado. Confere o escopo `calendar.app.created` e o e-mail Google verificado com o e-mail confirmado atual da Agenda UnB. |
+| `GET /api/v1/me/google-calendar/connection` | Bearer Supabase. | 200 com `connected` e `recovery_required`. |
+| `DELETE /api/v1/me/google-calendar/connection` | Bearer Supabase. | 200 com `disconnected` e `revocation`. Revoga o acesso no Google, remove as credenciais locais e invalida autorizações em andamento. Se a revogação remota falhar, o retorno orienta removê-la na Conta Google. |
+| `PUT /api/v1/me/google-calendar/destination` | Bearer Supabase e `calendar_id`. | 204 após validar no Google o ID da agenda secundária Agenda UnB. Se o usuário confirmar que a agenda não existe, envia `calendar_id: null` para liberar nova criação. |
+| `POST /api/v1/me/google-calendar/exports` | Bearer Supabase e `events` com 1 a 20 referências `{ id, kind }`. `kind` é `personal` ou `saved`. | 200 com `id`, `kind` e `status` por item. Estados `exported`, `already_exported` ou `failed`. |
+
+O servidor consulta eventos pessoais do dono e eventos públicos aprovados que ele salvou. A exportação cria ou reutiliza a agenda secundária **Agenda UnB**, envia título e horário em `America/Sao_Paulo` e usa uma hora de duração para o modelo atual. Repetir um item usa o mesmo ID remoto. A desconexão preserva o ID da agenda para reconexão com a mesma identidade. Em caso de resposta incerta da criação, use a recuperação do destino em **Meus Eventos**. Os tokens ficam cifrados no servidor e são renovados quando necessário. Se o Google retornar `invalid_grant`, a API remove as credenciais inválidas, retorna 409 e pede nova conexão.
+
 ## Erros FastAPI
 
 | HTTP | Situação | Formato |
 | --- | --- | --- |
 | 401 | Bearer ausente, sessão expirada/inválida ou identidade inválida retornada pelo Auth | `{"detail":"mensagem"}` |
-| 403 | Perfil não encontrado ou papel sem permissão | `{"detail":"mensagem"}` |
+| 403 | Perfil não encontrado, e-mail ainda não confirmado ou papel sem permissão | `{"detail":"mensagem"}` |
 | 404 | Recurso não disponível conforme as regras da operação | `{"detail":"mensagem"}` |
 | 409 | `IntegrityError` não recuperado pela operação | `{"detail":"A operação conflita com os dados existentes."}` |
 | 422 | Validação automática de payload/path/query | `detail` textual e array `errors` de erros Pydantic |
 | 422 | Regra explícita: campus/categoria desconhecido ou intervalo inválido | Somente `detail` textual |
 | 503 | Falha SQLAlchemy ou comunicação/configuração do Auth | `{"detail":"mensagem"}` |
+
+Falhas de configuração OAuth também retornam 503. Falha temporária com Google pode retornar 502/503; autorização expirada/revogada pede reconexão (409). O callback sempre redireciona com estado genérico e não repassa `error_description`, código ou tokens.
 
 Exemplo de validação de título curto:
 
@@ -246,7 +264,7 @@ Cada item tem `id`, `usuario_id`, `evento_id`, `tipo` (`submissao/aprovacao/recu
 
 ## Verificação e manutenção
 
-Conferir inventário com `app.openapi()` e revisar manualmente handlers, permissões e SQL. Os testes de eventos, sugestões e salvos usam SQLite e substituem dependências de autenticação: não comprovam integração real com Auth nem RLS. Os testes de moderação de banco exigem Supabase local descartável. Ver [Contribuição](processo/contribuindo.md) e o registro de validação em [Arquitetura](arquitetura/visao-geral.md#9-verificacao).
+Conferir inventário com `app.openapi()` e revisar manualmente handlers, permissões e SQL. Os testes de eventos, sugestões e salvos usam SQLite e substituem dependências de autenticação: não comprovam integração real com Auth nem RLS. Os testes de moderação de banco exigem Supabase local descartável. Ver [Contribuição](/processo/contribuindo) e o registro de validação em [Arquitetura](/arquitetura/visao-geral#9-verificacao).
 
 Qualquer alteração de rota, schema, autorização, erro ou RPC deve atualizar este documento no mesmo PR. Inscrições, categorias REST e atualização pública não são contratos disponíveis.
 
@@ -283,14 +301,14 @@ Concluído com contagem zero significa documento sem cronograma identificado.
 `processingDurationMs` mede a última tentativa; `totalDurationMs` mede da criação
 do registro ao término, incluindo fila/retentativas, e é nulo antes de finalizar.
 
-O [worker independente](processamento-planos.md) consome a fila. Ele fica
+O [worker independente](/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia) consome a fila. Ele fica
 desativado até a configuração explícita e a validação das políticas S6-D02.
 Upload e worker não criam compromissos. As rotas de listagem, detalhe e confirmação
 S6-B02 já existentes, descritas acima, operam sobre `avaliacoes` legadas; os
 candidatos privados do worker em `candidatos_avaliacao` ainda exigem conciliação
 com esse contrato antes da integração no ambiente da equipe.
 O contrato transacional de banco S6-D02 já está disponível em
-[`revisar_candidatos_plano`](privacidade-planos.md#contrato-transacional-para-s6-b02).
+[`revisar_candidatos_plano`](/arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos).
 
 
 ## Atualização S7-B01 — preparação e autorização do texto (10/11/2026)
@@ -330,14 +348,27 @@ e cada conta tem uma operação independente sobre a mesma versão compartilhada
 A revisão do tipo fica no item de importação da conta e não altera o candidato
 compartilhado.
 
-[Fluxo, flags e evidências](processamento-planos-s7.md).
+[Fluxo, flags e decisões](/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia) · [Minimização (ADR-003)](/arquitetura/adrs/adr-003-minimizar-dados-de-planos) · [Versionamento e confirmação (ADR-010)](/arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos).
 
 ### Catálogo e seleção real de ofertas (#70/#71)
 
 A integração autenticada, rotas de catálogo/filtros/vínculos e operação estão em
-[Catálogo de turmas](arquitetura/catalogo-de-turmas.md). PDF multipart e texto JSON
+[Catálogo de turmas](/arquitetura/catalogo-de-turmas). PDF multipart e texto JSON
 passam a exigir `offering_id` (UUID da oferta disponível). O servidor deriva
 nome da disciplina, turma e período, ignorando metadados livres para associação.
 Histórico particular aceita `offering_id` opcional; dados privados continuam
 restritos ao proprietário. `GET /class-offerings/{id}/shared-plans` expõe apenas
 versões compartilhadas a seguidores da oferta, sem o texto privado do autor.
+
+### Envio vinculado à conta — S7-F03 (#73)
+
+PDF e texto exigem também que a conta autenticada siga a oferta. Ausência de
+vínculo, inclusive após deixar de seguir, retorna 403 com `detail` orientando
+seguir a turma. A verificação ocorre antes da extração e novamente antes da
+persistência. Em PostgreSQL, a segunda consulta bloqueia o vínculo até o commit,
+serializando a gravação com a remoção concorrente do vínculo. Oferta retirada
+continua retornando 409; catálogo sem publicação retorna 503.
+
+A interface consulta a oferta e `GET /me/class-offerings` antes de habilitar
+PDF/texto. Falhas ou respostas inválidas bloqueiam o envio e oferecem nova consulta.
+Histórico e planos particulares continuam acessíveis ao dono após deixar de seguir.
