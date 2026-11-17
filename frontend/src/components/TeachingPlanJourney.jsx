@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useId, useReducer, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Icon, Modal } from './ManagementUI';
-import ConnectedTeachingPlanJourney from './ConnectedTeachingPlanJourney';
 import ClassCatalog from './ClassCatalog';
 import { useSyllabusResource } from '../hooks/useSyllabusResource';
 import { catalogPeriods, demoOffering, loadDemoCatalog, loadDemoFollows, offeringLabel, saveDemoFollows } from '../lib/classCatalogDemo';
@@ -113,11 +113,7 @@ function DemoAgenda({ state, dispatch }) {
   </div>;
 }
 
-export default function TeachingPlanJourney({ userId, renderWorkspace }) {
-  return userId ? <ConnectedTeachingPlanJourney key={userId} userId={userId} renderWorkspace={renderWorkspace} /> : <DemoTeachingPlanJourney />;
-}
-
-function DemoTeachingPlanJourney({ userId }) {
+export default function TeachingPlanJourney({ userId }) {
   const [saved] = useState(() => loadDemoFollows(userId));
   const [state, dispatch] = useReducer(demoReducer, saved.ids, ids => initialDemoState({ periods: catalogPeriods(), ids }));
   const [files, setFiles] = useState({});
@@ -164,7 +160,11 @@ function DemoTeachingPlanJourney({ userId }) {
   };
 
   return <div className="tp-journey">
-    <div className="tp-demo-notice"><strong>Catálogo de demonstração</strong><p>Turmas, professores e planos são exemplos até a integração com o Followw. {userId ? 'As turmas seguidas ficam salvas neste navegador para a sua conta.' : 'Sem login, a seleção dura só nesta visita.'}</p></div>
+    <div className="tp-demo-notice">
+      <strong>Catálogo de demonstração</strong>
+      <p>Você está vendo exemplos. Entre na sua conta para acessar as turmas do Followw, enviar planos e adicionar avaliações à sua agenda.</p>
+      <Link className="management-link" to="/?auth=login">Entrar para usar meus planos<Icon>arrow_forward</Icon></Link>
+    </div>
     <nav ref={stepNavigation} className="tp-steps" aria-label="Etapas do plano de ensino">{steps.map((label, i) => <button type="button" key={label} aria-current={state.step === i + 1 ? 'step' : undefined}
       disabled={!canOpenDemoStep(state, i + 1)} onClick={() => dispatch({ type: 'STEP', step: i + 1 })}><span>{i + 1}</span>{label}</button>)}</nav>
     <h2 ref={heading} tabIndex={-1} className="sr-only">Etapa {state.step}: {steps[state.step - 1]}</h2>

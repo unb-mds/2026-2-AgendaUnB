@@ -121,6 +121,10 @@ def test_allowlist_filters_no_credentials_and_retry():
     requests, waits = [], []
     def handler(request):
         requests.append(request)
+        assert request.url.scheme == 'https'
+        assert request.url.host == 'followw.app'
+        assert request.url.path == '/api/public/classrooms'
+        assert dict(request.url.params) == {'unit': '673', 'semester': '2026.2'}
         assert 'authorization' not in request.headers and 'cookie' not in request.headers
         return httpx.Response(429, headers={'Retry-After': '2', 'Set-Cookie': 'secret=value'}) if len(requests) == 1 else httpx.Response(200, json=[])
     client = FollowwClient(transport=httpx.MockTransport(handler), sleep=waits.append)
@@ -130,10 +134,14 @@ def test_allowlist_filters_no_credentials_and_retry():
         with pytest.raises(CatalogError): client.get(path, **params)
 
 
-@pytest.mark.parametrize('status,body', [(302, []), (200, {}), (503, []), (200, ['bad'])])
+@pytest.mark.parametrize('status,body', [(302, []), (404, 'DEPLOYMENT_NOT_FOUND'), (200, {}), (503, []), (200, ['bad'])])
 def test_invalid_source(status, body):
     client = FollowwClient(transport=httpx.MockTransport(lambda r: httpx.Response(status, json=body)), sleep=lambda _: None)
-    with pytest.raises(CatalogError): client.get('/public/classrooms/units')
+    with pytest.raises(CatalogError) as failure:
+        client.get('/public/classrooms/units')
+    if status != 200:
+        assert failure.value.path == '/public/classrooms/units'
+        assert failure.value.status == status
 
 
 def test_identity_uses_classroom_id_only_and_preserves_zero():
@@ -190,15 +198,31 @@ def test_shared_versions_do_not_expose_private_author_text(api, catalog):
     assert client.get(f'/api/v1/class-offerings/{oid}/shared-plans').status_code == 403
 
 
+def test_catalog_retries_two_transient_timeouts_before_accepting_valid_empty_unit():
+    waits = []
+    calls = []
+
+    def handler(request):
+        calls.append(request)
+        if len(calls) < 3:
+            raise httpx.ReadTimeout('timeout')
+        return httpx.Response(200, json=[])
+
+    client = FollowwClient(transport=httpx.MockTransport(handler), sleep=waits.append)
+    assert client.get('/public/classrooms', unit=1877, semester='2026.2') == []
+    assert len(calls) == 3
+    assert 1 in waits and 2 in waits
+
+
 def test_timeout_and_excessive_retry_after_are_bounded():
     calls = []
     def timeout(request):
         calls.append(request)
-        assert request.extensions['timeout']['read'] == 20
+        assert request.extensions['timeout']['read'] == 30
         raise httpx.ReadTimeout('timeout')
     client = FollowwClient(transport=httpx.MockTransport(timeout), sleep=lambda _: None)
     with pytest.raises(CatalogError): client.get('/public/classrooms/units')
-    assert len(calls) == 2
+    assert len(calls) == 3
     calls.clear()
     def limited(request):
         calls.append(request)

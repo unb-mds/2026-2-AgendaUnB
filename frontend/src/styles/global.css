@@ -785,6 +785,34 @@ body.light .custom-picker-option:hover { background: rgba(0, 140, 255, 0.316); }
 body.light .custom-picker-option.active,
 body.light .custom-picker-option.active:hover { background: #006bc4; color: #fff; }
 
+.custom-select { position: relative; min-width: 0; max-width: 100%; }
+.custom-select[data-open="true"] { z-index: 1000; }
+.custom-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  text-align: start;
+  cursor: pointer;
+}
+.custom-select-trigger:disabled { cursor: not-allowed; }
+.custom-select-trigger > :first-child { min-width: 0; overflow-wrap: anywhere; }
+.custom-select-placeholder, .custom-select-chevron { color: var(--text-muted); }
+.custom-select-chevron { font-size: 1.2rem; flex-shrink: 0; }
+.custom-select-popup { inset-block-start: calc(100% + 8px); width: 100%; max-height: 220px; overflow: auto; }
+.custom-select-popup:not(:empty) { padding-block: 4px; }
+.custom-select:has(.filter-pill) .custom-select-popup { min-width: 180px; }
+.custom-select-up { inset-block: auto calc(100% + 8px); }
+.custom-select-popup > button {
+  flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  text-align: start;
+  font-family: inherit;
+  overflow-wrap: anywhere;
+}
+.custom-select-popup > button:focus-visible { outline: 2px solid var(--accent-color); outline-offset: -3px; }
+
 /* Empty State */
 .empty-state { text-align: center; padding: 4rem 2rem; background: var(--card-bg); border-radius: 24px; border: 1px dashed var(--border-color); }
 

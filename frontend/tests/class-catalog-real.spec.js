@@ -1,128 +1,113 @@
 import { test, expect } from '@playwright/test';
-const plan = { id: 'plan-synthetic', disciplina: 'Computação' };
-async function setup(page, { guest = false, items = [], total = items.length, detail = plan, listStatus = 200 } = {}) {
-  // Substitute only the external auth/data provider, never the page or API client.
-  await page.route('**/src/lib/supabase.js*', route => route.fulfill({ contentType: 'application/javascript', body: `
-    const user = ${guest ? 'null' : "{ id: 'student-test', email: 'student@example.test', user_metadata: { nome_completo: 'Estudante' } }"};
-    let session = user ? { user, access_token: 'test-token' } : null;
-    export const supabase = {
-      auth: {
-        onAuthStateChange(callback) { queueMicrotask(() => callback('INITIAL_SESSION', session));
-          const logout = () => { session = null; callback('SIGNED_OUT', null); };
-          window.addEventListener('test-signout', logout);
-          return { data: { subscription: { unsubscribe() { window.removeEventListener('test-signout', logout); } } } };
-        },
-        async getSession() { return { data: { session } }; },
-        async signOut() { window.dispatchEvent(new Event('test-signout')); }
-      },
-      from(table) {
-        const result = { data: table === 'profiles' ? { papel: 'student', nome_completo: 'Estudante' } : [], count: 0, error: null };
-        const chain = { then(resolve) { return Promise.resolve(result).then(resolve); } };
-        for (const name of ['select','eq','order','range','is','single']) chain[name] = () => chain;
-        return chain;
-      }
-    };
-  ` }));
-  await page.route('**/api/v1/class-offerings/70000000-0000-4000-8000-000000000071', route => route.fulfill({ json: { id: '70000000-0000-4000-8000-000000000071', subject_name: plan.disciplina, subject_code: 'FGA0138', class_number: '01', year: 2026, semester: 2, unit: '673', available: true } }));
-  await page.route('**/api/v1/class-offerings/*/shared-plans?*', route => route.fulfill({ json: { items: [], total: 0 } }));
-  await page.route('**/api/v1/syllabus?*', route => route.fulfill({ status: listStatus, json: listStatus === 200 ? { items, total } : { detail: 'Not Found' } }));
-  await page.route(`**/api/v1/syllabus/${plan.id}`, route => route.fulfill({ json: detail }));
-  await page.route('**/api/v1/events?*', route => route.fulfill({ json: [] }));
-  await page.route('**/api/v1/me/**', route => route.fulfill({ json: [] }));
-}
+import { makeOffer, setupSemester } from './fixtures/semester.js';
 
-
-const offer = { id: '70000000-0000-4000-8000-000000000071', subject_name: 'Computação', subject_code: 'FGA0108', class_number: '01', year: 2026, semester: 2, unit: '673', teacher: 'Docente', schedule: '24T12', available: true };
-async function catalogSetup(page, { guest = false, failed = false } = {}) {
-  await setup(page, { guest });
-  await page.route(`**/api/v1/class-offerings/${offer.id}`, route => route.fulfill({ json: offer }));
-  await page.route(`**/api/v1/class-offerings/${offer.id}/shared-plans?*`, route => route.fulfill({ json: { items: [], total: 0 } }));
-  let following = false;
-  await page.route('**/api/v1/class-offerings/filters', route => route.fulfill({ status: failed ? 503 : 200, json: { units: [{ id: 673, code: 'FCTE', name: 'Gama' }], periods: ['2026.2', '2027.1'], stale: true, source_updated_at: '2026-11-09T12:00:00Z' } }));
-  await page.route('**/api/v1/class-offerings?*', route => {
-    expect(route.request().headers().authorization).toBe('Bearer test-token');
-    const url = new URL(route.request().url());
-    const empty = url.searchParams.get('q') === 'inexistente';
-    return route.fulfill({ json: { items: empty ? [] : [offer], total: empty ? 0 : 21, offset: Number(url.searchParams.get('offset')), limit: 20, stale: true, source_updated_at: '2026-11-09T12:00:00Z' } });
-  });
-  await page.route('**/api/v1/me/class-offerings', route => route.fulfill({ json: { items: following ? [offer] : [] } }));
-  await page.route(`**/api/v1/me/class-offerings/${offer.id}`, route => {
-    following = route.request().method() === 'PUT';
-    return route.fulfill({ status: 204 });
-  });
-  return () => following;
-}
-
-for (const width of [360, 1365]) {
-  test(`busca, vínculo persistente, oferta correta e teclado ${width}px`, async ({ page }, testInfo) => {
-    await page.setViewportSize({ width, height: 1000 });
-    await catalogSetup(page);
-    await page.goto('/plano-de-ensino');
-    await expect(page.getByRole('navigation', { name: 'Etapas do plano de ensino' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Catálogo e planos reais' })).toHaveCount(0);
-    await page.getByLabel('Ano/Período').selectOption('2026.2');
-    await page.getByLabel('Unidade', { exact: true }).selectOption('673');
-    await page.getByLabel('Disciplina, código, professor ou turma').fill('FGA0108');
-    await page.keyboard.press('Tab');
-    await expect(page.getByRole('button', { name: 'Buscar turmas', exact: true })).toBeFocused();
-    await page.keyboard.press('Enter');
-    await expect(page.getByText('21 turmas encontradas.')).toBeVisible();
-    await expect(page.getByText('Catálogo desatualizado', { exact: true })).toBeVisible();
-    await page.locator('summary').filter({ hasText: 'Computação' }).click();
-    await page.getByRole('button', { name: 'Seguir turma', exact: true }).click();
-    await expect(page.getByRole('button', { name: 'Ver planos' })).toBeVisible();
-    await page.reload();
-    await expect(page.getByRole('button', { name: 'Ver planos' })).toBeVisible();
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-    await page.screenshot({ path: testInfo.outputPath('catalog.png'), fullPage: true });
-    await page.getByRole('button', { name: 'Ver planos' }).click();
-    await expect(page).toHaveURL(new RegExp(`oferta=${offer.id}`));
-    await expect(page.getByRole('heading', { name: 'Enviar plano de ensino' })).toBeVisible();
-    await expect(page.getByText('Ainda não há plano compartilhado nesta oferta.', { exact: false })).toBeVisible();
-    await page.getByRole('link', { name: 'Voltar ao catálogo de turmas' }).click();
-    await page.getByRole('button', { name: 'Deixar de seguir', exact: true }).click();
-    await expect(page.getByText('Você ainda não segue turmas.', { exact: false })).toBeVisible();
-  });
-}
-
-test('503 recuperável, vazio e paginação local', async ({ page }) => {
-  await catalogSetup(page, { failed: true });
+const catalog = page => page.getByRole('region', { name: 'Catálogo de turmas' });
+async function openCatalog(page) {
   await page.goto('/plano-de-ensino');
-    await expect(page.getByRole('navigation', { name: 'Etapas do plano de ensino' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Catálogo e planos reais' })).toHaveCount(0);
-  await expect(page.getByRole('link', { name: 'Cadastrar um compromisso manualmente' })).toBeVisible();
-  await catalogSetup(page);
-  await page.getByRole('button', { name: 'Tentar novamente' }).click();
-  await page.getByLabel('Ano/Período').selectOption('2026.2');
   await page.getByRole('button', { name: 'Buscar turmas', exact: true }).click();
-  const next = page.waitForRequest(r => r.url().includes('offset=20'));
-  await page.getByRole('button', { name: 'Próxima' }).click(); await next;
-  await page.getByLabel('Disciplina, código, professor ou turma').fill('inexistente');
+}
+
+test('vínculo persiste na recarga, abre a biblioteca e pode ser removido', async ({ page }) => {
+  await setupSemester(page, { followed: [] });
+  await openCatalog(page);
+  const search = catalog(page).getByRole('searchbox');
+  await search.fill('FGA0101');
+  await search.press('Enter');
+  await catalog(page).locator('summary').filter({ hasText: 'Disciplina 1' }).click();
+  await catalog(page).getByRole('checkbox', { name: 'Selecionar turma 01 de Disciplina 1' }).check();
+  await catalog(page).getByRole('button', { name: 'Seguir 1 turma selecionada', exact: true }).click();
+  await expect(catalog(page).getByText('Turma seguida')).toBeVisible();
+  await page.reload();
   await page.getByRole('button', { name: 'Buscar turmas', exact: true }).click();
-  await expect(page.getByText('Nenhuma turma encontrada.', { exact: false })).toBeVisible();
+  await catalog(page).getByText('Minhas turmas (1)').click();
+  await page.getByRole('link', { name: 'Ver planos da turma' }).click();
+  await expect(page).toHaveURL(/oferta=class-1/);
+  await page.getByText('Planos compartilhados da turma', { exact: true }).click();
+  await expect(page.getByText(/Ainda não há plano compartilhado nesta oferta/)).toBeVisible();
+  await page.getByRole('button', { name: 'Deixar de seguir' }).click();
+  await expect(catalog(page).getByText('Minhas turmas (0)')).toBeVisible();
 });
 
-test('visitante mantém demonstração interativa sem chamar origem', async ({ page }) => {
-  await catalogSetup(page, { guest: true });
+test('primeira carga 503 recupera automaticamente; busca vazia informa o resultado', async ({ page }) => {
+  await setupSemester(page, { followed: [], offers: [makeOffer(1)] });
+  await page.route('**/api/v1/class-offerings/filters', route => route.fulfill({ status: 503, json: { detail: 'Carregando primeira publicação' } }));
+  await page.clock.install();
+  await openCatalog(page);
+  await expect(catalog(page).getByRole('alert')).toContainText('Não foi possível carregar os períodos');
+  await page.route('**/api/v1/class-offerings/filters', route => route.fulfill({ json: {
+    periods: ['2026.2', '2026.1'], units: [
+      { id: 'gama', code: 'FCTE', name: 'Faculdade de Ciências e Tecnologias em Engenharia' },
+      { id: 'direito', code: 'FD', name: 'Faculdade de Direito' },
+    ],
+  } }));
+  await page.clock.fastForward(15000);
+  const period = catalog(page).getByRole('button', { name: 'Ano/Período' });
+  await expect(period).toContainText('2026.2');
+  await period.press('Enter');
+  await catalog(page).getByRole('button', { name: '2026.1', exact: true }).press('Enter');
+  const unit = catalog(page).getByRole('button', { name: 'Unidade' });
+  await unit.click();
+  const unitSearch = catalog(page).getByRole('searchbox', { name: 'Pesquisar unidade' });
+  await expect(unitSearch).toBeFocused();
+  await unitSearch.fill('inexistente');
+  await expect(catalog(page).getByText('Nenhum resultado encontrado.')).toBeVisible();
+  await unitSearch.fill('ciencias');
+  await expect(catalog(page).getByRole('button', { name: /FCTE/ })).toBeVisible();
+  await expect(catalog(page).getByRole('button', { name: /Faculdade de Direito/ })).toHaveCount(0);
+  await unitSearch.fill('fcte');
+  await unitSearch.press('Enter');
+  await expect(unit).toContainText('FCTE');
+  await expect(unitSearch).toHaveCount(0);
+  await catalog(page).getByRole('searchbox').fill('inexistente');
+  const request = page.waitForRequest('**/api/v1/class-offerings?*');
+  await catalog(page).getByRole('button', { name: 'Buscar turmas' }).click();
+  const { searchParams } = new URL((await request).url());
+  expect(searchParams.get('semester')).toBe('1');
+  expect(searchParams.get('unit')).toBe('gama');
+  await expect(catalog(page).getByText('0 turmas encontradas')).toBeVisible();
+});
+
+test('visitante mantém demonstração interativa sem consultar planos privados', async ({ page }) => {
+  await setupSemester(page, { guest: true });
   const calls = [];
-  page.on('request', r => { if (/class-offerings|api.followw.app/.test(r.url())) calls.push(r.url()); });
+  page.on('request', r => { if (/api\/v1\/(class-offerings|syllabus)|api.followw.app/.test(r.url())) calls.push(r.url()); });
   await page.goto('/plano-de-ensino');
-    await expect(page.getByRole('navigation', { name: 'Etapas do plano de ensino' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Catálogo e planos reais' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: '1 Selecionar turmas' })).toBeVisible();
   await expect(page.getByText('Catálogo de demonstração', { exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Entrar para usar meus planos' })).toHaveAttribute('href', '/?auth=login');
   expect(calls).toEqual([]);
 });
 
-test('primeira carga indisponível é consultada novamente automaticamente', async ({ page }) => {
-  await catalogSetup(page, { failed: true });
-  await page.clock.install();
-  await page.goto('/plano-de-ensino');
-  await expect(page.getByText('A primeira carga precisa concluir', { exact: false })).toBeVisible();
-  await page.route('**/api/v1/class-offerings/filters', route => route.fulfill({ json: {
-    units: [{ id: 673, code: 'FCTE', name: 'Gama' }], periods: ['2026.2'], stale: false, source_updated_at: '2026-11-10T12:00:00Z'
-  } }));
-  await page.clock.fastForward(15000);
-  await expect(page.getByLabel('Ano/Período').locator('option', { hasText: '2026.2' })).toHaveCount(1);
-  await expect(page.getByText('A primeira carga precisa concluir', { exact: false })).toHaveCount(0);
-});
+for (const width of [360, 768, 1365]) for (const theme of ['dark', 'light']) {
+  test(`catálogo agrupado, seleção entre buscas e layout ${width} ${theme}`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width, height: 1000 });
+    const offers = [
+      { ...makeOffer(1), subject_name: 'Estruturas de Dados 1', subject_code: 'FGA0146', unit_code: 'FCTE', unit_name: 'Faculdade de Ciências e Tecnologias em Engenharia' },
+      { ...makeOffer(2), subject_name: 'Estruturas de Dados 1', subject_code: 'FGA0146', class_number: '02', unit_code: 'FCTE', unit_name: 'Faculdade de Ciências e Tecnologias em Engenharia' },
+      { ...makeOffer(3), subject_name: 'Estruturas de Dados', subject_code: 'CIC0090', unit_code: 'CIC', unit_name: 'Departamento de Ciência da Computação', available: false },
+    ];
+    await setupSemester(page, { followed: [], offers });
+    await openCatalog(page);
+    await page.evaluate(theme => document.body.classList.toggle('light', theme === 'light'), theme);
+    await catalog(page).getByRole('button', { name: 'Buscar turmas' }).click();
+    await expect(catalog(page).locator('.semester-catalog-subject')).toHaveCount(2);
+    const subject = catalog(page).locator('summary').filter({ hasText: 'FGA0146' });
+    await subject.focus();
+    await page.keyboard.press('Enter');
+    await catalog(page).getByRole('checkbox', { name: 'Selecionar turma 02 de Estruturas de Dados 1', exact: true }).check();
+    await catalog(page).locator('summary').filter({ hasText: 'CIC0090' }).click();
+    await expect(catalog(page).getByRole('checkbox', { name: 'Selecionar turma 01 de Estruturas de Dados', exact: true })).toBeDisabled();
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.screenshot({ fullPage: true, path: testInfo.outputPath(`catalog-${width}-${theme}.png`) });
+    await page.getByRole('button', { name: 'Fechar catálogo', exact: true }).click();
+    await page.getByRole('button', { name: 'Buscar turmas', exact: true }).click();
+    await expect(catalog(page).getByRole('checkbox', { name: 'Selecionar turma 02 de Estruturas de Dados 1', exact: true })).toBeChecked();
+    await catalog(page).getByRole('searchbox').fill('CIC0090');
+    await catalog(page).getByRole('searchbox').press('Enter');
+    await expect(catalog(page).locator('.semester-catalog-subject')).toHaveCount(1);
+    await expect(catalog(page).getByRole('button', { name: 'Seguir 1 turma selecionada', exact: true })).toBeVisible();
+    await catalog(page).getByRole('button', { name: /Remover turma 02/ }).click();
+    await expect(catalog(page).getByRole('button', { name: 'Seguir 1 turma selecionada', exact: true })).toHaveCount(0);
+  });
+}
