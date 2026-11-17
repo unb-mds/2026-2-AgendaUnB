@@ -145,8 +145,44 @@ function PlanQueue({ options, followed, initialOffer, onOffer, plans, selectedId
   </aside>;
 }
 
-function PlanDetails({ plan, onClose, onOpenText }) {
+function PlanDetails({ plan, onClose, onOpenText, onSharedChanged }) {
   const workspace = useSemesterPlans();
+  const [confirmAction, setConfirmAction] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [shareError, setShareError] = useState('');
+  const [shareSuccess, setShareSuccess] = useState('');
+  const canQueryVersions = plan.status === 'concluido' && Boolean(plan.offeringId);
+  const loadVersions = useCallback(
+    signal => (canQueryVersions ? syllabusApi.listVersions(plan.id, signal) : Promise.resolve({ items: [], total: 0 })),
+    [canQueryVersions, plan.id],
+  );
+  const versions = useSyllabusResource(canQueryVersions ? `plan-versions:${plan.id}` : null, loadVersions);
+  const { retry: reloadVersions } = versions;
+  const versionItems = versions.data?.items || [];
+
+  const handleToggleSharing = async (version, share) => {
+    if (busy) return;
+    setBusy(true);
+    setShareError('');
+    setShareSuccess('');
+    try {
+      if (share) {
+        await syllabusApi.shareVersion(plan.id, version.id);
+        setShareSuccess(`Versão ${version.number} compartilhada com os seguidores da turma.`);
+      } else {
+        await syllabusApi.withdrawVersion(plan.id, version.id);
+        setShareSuccess(`Compartilhamento da versão ${version.number} retirado.`);
+      }
+      setConfirmAction(null);
+      reloadVersions();
+      onSharedChanged?.();
+    } catch (error) {
+      setShareError(syllabusError(error));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return <section className="semester-section" aria-labelledby="semester-plan-title">
     <header className="semester-section-heading"><h2 id="semester-plan-title" tabIndex={-1}>{plan.disciplina || plan.fileName}</h2>
       <button className="manage-button" onClick={onClose}>Voltar às avaliações</button>
@@ -157,6 +193,56 @@ function PlanDetails({ plan, onClose, onOpenText }) {
     {plan.preparedTextAvailable && !isProcessing(plan) && <button className="manage-button" onClick={onOpenText}>Rever texto do plano</button>}
     {isProcessing(plan) && <p>Você já pode adicionar outros planos ou revisar as avaliações disponíveis.</p>}
     {plan.status === 'falha' && <p>Adicione outro PDF com texto ou cole o cronograma para tentar novamente.</p>}
+    {canQueryVersions && (
+      <div className="shared-plan-details-sharing">
+        <h3>Compartilhamento com a turma</h3>
+        <Feedback error={shareError || (versions.error && versions.error.status !== 404 ? versions.error.message : '')} success={shareSuccess} />
+        {versions.loading && <p role="status">Consultando versões do plano…</p>}
+        {versionItems.length > 0 && (
+          <ul className="shared-version-history-list">
+            {versionItems.map(version => {
+              const isShared = version.visibility === 'compartilhada';
+              const actionKey = `${version.id}:${isShared ? 'withdraw' : 'share'}`;
+              return <li key={version.id}>
+                <div className="shared-history-info">
+                  <strong>Versão {version.number} · {isShared ? 'Compartilhada com a turma' : 'Privada'}</strong>
+                  <small>
+                    {isShared
+                      ? 'Visível apenas para seguidores autenticados desta turma. O PDF original não é compartilhado.'
+                      : 'Somente você vê esta versão até decidir compartilhá-la voluntariamente.'}
+                  </small>
+                </div>
+                {confirmAction === actionKey ? (
+                  <span className="shared-inline-confirm">
+                    <button
+                      type="button"
+                      className={`manage-button${isShared ? '' : ' primary'}`}
+                      disabled={busy}
+                      onClick={() => handleToggleSharing(version, !isShared)}
+                    >
+                      {isShared ? 'Confirmar retirada' : 'Confirmar compartilhamento'}
+                    </button>
+                    <button type="button" className="management-text-button" disabled={busy} onClick={() => setConfirmAction(null)}>
+                      Cancelar
+                    </button>
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    className={`manage-button${isShared ? ' shared-danger-action' : ' primary'}`}
+                    disabled={busy}
+                    onClick={() => { setConfirmAction(actionKey); setShareError(''); setShareSuccess(''); }}
+                  >
+                    <Icon>{isShared ? 'visibility_off' : 'share'}</Icon>
+                    {isShared ? 'Retirar compartilhamento' : 'Compartilhar com a turma'}
+                  </button>
+                )}
+              </li>;
+            })}
+          </ul>
+        )}
+      </div>
+    )}
   </section>;
 }
 
@@ -168,6 +254,7 @@ function SemesterPanel({ userId }) {
   const [followChanges, setFollowChanges] = useState({});
   const [offerCache, setOfferCache] = useState({});
   const [waitingFor, setWaitingFor] = useState(null);
+  const [libraryRefresh, setLibraryRefresh] = useState(0);
   const legacyFocus = useRef(false);
   const contentRef = useRef(null);
   const selectedId = params.get('plano');
@@ -292,6 +379,21 @@ function SemesterPanel({ userId }) {
   const libraryOfferId = (openOfferId && followedOffers.some(offer => offer.id === openOfferId))
     ? openOfferId
     : (libraryPool[0]?.id || null);
+  const ownOfferPlan = libraryOfferId
+    ? allowedPlans.find(plan => plan.offeringId === libraryOfferId && plan.candidates?.some(candidate => candidate.versionId))
+    : null;
+  const shareablePlan = ownOfferPlan
+    ? {
+        id: ownOfferPlan.id,
+        fileName: ownOfferPlan.fileName,
+        versionId: ownOfferPlan.candidates.find(candidate => candidate.versionId).versionId,
+      }
+    : null;
+  const refreshLibrary = () => setLibraryRefresh(count => count + 1);
+  const uploadForOffer = offerId => {
+    selectOffer(offerId);
+    requestAnimationFrame(() => document.getElementById('semester-add-pdfs')?.focus());
+  };
 
   return <div className="semester-panel">
     <div className="semester-toolbar">
@@ -330,7 +432,7 @@ function SemesterPanel({ userId }) {
       <div className="semester-content" ref={contentRef}>
         {wrongOffer ? <Feedback error="Este plano pertence a outra oferta. Abra-o pelo histórico correto." /> :
           textPlan ? <SemesterTextReview key={textPlan.id} plan={textPlan} onClose={closePlan} /> :
-          selectedPlan ? <PlanDetails plan={selectedPlan} onClose={closePlan} onOpenText={() => setTextId(selectedId)} /> :
+          selectedPlan ? <PlanDetails plan={selectedPlan} onClose={closePlan} onOpenText={() => setTextId(selectedId)} onSharedChanged={refreshLibrary} /> :
           selectedId ? <div className="semester-section">{workspace.planErrors[selectedId] ?
             <Feedback error={workspace.planErrors[selectedId]} onRetry={() => loadPlan(selectedId, true)} /> : <p role="status">Consultando plano…</p>}</div> : null}
         {selectedPlan && !selectedPlan.authorizationRequired && pendingAuth && <button className="manage-button" onClick={() => selectPlan(pendingAuth.id)}>Revisar próximo texto <Icon>arrow_forward</Icon></button>}
@@ -341,7 +443,11 @@ function SemesterPanel({ userId }) {
             offeringId={libraryOfferId}
             offer={offers[libraryOfferId]}
             offers={libraryPool}
+            shareablePlan={shareablePlan}
+            refreshKey={libraryRefresh}
             onSelectOffer={selectOffer}
+            onUploadForOffer={uploadForOffer}
+            onSharedChanged={refreshLibrary}
             onImported={() => { if (selectedId) loadPlan(selectedId, true); }}
           />
         )}

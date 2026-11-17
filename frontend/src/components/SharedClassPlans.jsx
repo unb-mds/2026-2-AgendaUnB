@@ -26,13 +26,17 @@ const formatTimeLabel = item => (
       : 'Sem horário'
 );
 
-function SharedCandidateRow({ item, disabled, canWithdraw, onPatch, onSelect, onWithdrawCandidate }) {
+const DEFAULT_SHARED_NOTICE =
+  'Vínculo autodeclarado com a turma. Apenas avaliações revisadas e compartilhadas voluntariamente ficam visíveis aos seguidores; o PDF original é descartado após a extração local e a votação sinaliza concordância ou divergência sem alterar datas automaticamente.';
+
+function SharedCandidateRow({ item, disabled, canWithdraw, onPatch, onSelect, onVoteCandidate, onWithdrawCandidate }) {
   const uid = useId();
   const [confirmWithdraw, setConfirmWithdraw] = useState(false);
   const errors = fieldErrors(item);
   const title = item.title || 'Avaliação sem título';
   const typeLabel = item.type === 'prova' ? 'Prova' : item.type === 'trabalho' ? 'Trabalho' : 'Tipo a definir';
   const readOnly = disabled || item.imported;
+  const { confirmCount = 0, contestCount = 0, divergent = false, myVote = null } = item.candidate;
 
   return <li className="semester-candidate">
     <div className="semester-candidate-summary">
@@ -45,12 +49,16 @@ function SharedCandidateRow({ item, disabled, canWithdraw, onPatch, onSelect, on
       />
       <div className="semester-candidate-title">
         <strong>{title}</strong>
-        <small>{typeLabel}</small>
+        <small>
+          {typeLabel}
+          {(confirmCount > 0 || contestCount > 0) && ` · ${confirmCount} confirma(m) · ${contestCount} contesta(m)`}
+        </small>
       </div>
       <div className="semester-candidate-date">
         <strong>{formatDate(item.date)}</strong>
         <small>{formatTimeLabel(item)}</small>
       </div>
+      {divergent && <span className="shared-badge is-divergent">Divergência</span>}
       <span className={`semester-status${item.attention ? ' attention' : item.modifiedSinceImport ? ' updated' : ''}`}>
         {item.imported
           ? 'Na agenda'
@@ -123,6 +131,26 @@ function SharedCandidateRow({ item, disabled, canWithdraw, onPatch, onSelect, on
             Usar estes dados
           </button>
         )}
+        <div className="shared-candidate-votes" role="group" aria-label={`Votar em ${title}`}>
+          <button
+            type="button"
+            className={`manage-button${['confirma', 'confirm'].includes(myVote) ? ' primary' : ''}`}
+            aria-pressed={['confirma', 'confirm'].includes(myVote)}
+            disabled={disabled}
+            onClick={() => onVoteCandidate(item.id, 'confirm')}
+          >
+            <Icon>thumb_up</Icon>Confirmar item ({confirmCount})
+          </button>
+          <button
+            type="button"
+            className={`manage-button${['contesta', 'contest'].includes(myVote) ? ' is-contested' : ''}`}
+            aria-pressed={['contesta', 'contest'].includes(myVote)}
+            disabled={disabled}
+            onClick={() => onVoteCandidate(item.id, 'contest')}
+          >
+            <Icon>thumb_down</Icon>Contestar item ({contestCount})
+          </button>
+        </div>
         {canWithdraw && (
           !confirmWithdraw ? (
             <button
@@ -281,13 +309,24 @@ function RevisionEditor({ version, classSchedule, busy, onCancel, onPublish }) {
   </form>;
 }
 
-export default function SharedClassPlans({ offeringId, offer, offers = [], onSelectOffer, onImported }) {
+export default function SharedClassPlans({
+  offeringId,
+  offer,
+  offers = [],
+  shareablePlan = null,
+  refreshKey = 0,
+  onSelectOffer,
+  onUploadForOffer,
+  onSharedChanged,
+  onImported,
+}) {
   const [offset, setOffset] = useState(0);
   const [selectedVersionId, setSelectedVersionId] = useState(null);
   const [drafts, setDrafts] = useState({});
   const [opened, setOpened] = useState({});
   const [editingRevision, setEditingRevision] = useState(false);
   const [confirmWithdrawVersion, setConfirmWithdrawVersion] = useState(false);
+  const [confirmSharePrivate, setConfirmSharePrivate] = useState(false);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState('');
   const [actionSuccess, setActionSuccess] = useState('');
@@ -295,11 +334,25 @@ export default function SharedClassPlans({ offeringId, offer, offers = [], onSel
 
   const load = useCallback(signal => catalogApi.shared(offeringId, offset, signal), [offeringId, offset]);
   const plans = useSyllabusResource(`${offeringId}:${offset}`, load);
+  const { retry: reloadPlans } = plans;
+  const previousRefreshKey = useRef(refreshKey);
+
+  useEffect(() => {
+    if (previousRefreshKey.current !== refreshKey) {
+      previousRefreshKey.current = refreshKey;
+      reloadPlans();
+    }
+  }, [refreshKey, reloadPlans]);
 
   const versions = sortSharedVersions(plans.data?.items || []);
   const activePlan = versions.find(v => v.id === selectedVersionId) || versions[0] || null;
   const updatedPlan = versions.find(v => v.has_imported_update) || null;
   const classSchedule = offer?.schedule || null;
+  const membershipType = plans.data?.membership_type || 'autodeclarado';
+  const sharedNotice = plans.data?.shared_content_notice || DEFAULT_SHARED_NOTICE;
+  const showSharePrompt = Boolean(
+    shareablePlan?.versionId && !versions.some(version => version.id === shareablePlan.versionId),
+  );
 
   useEffect(() => {
     setSelectedVersionId(null);
@@ -307,6 +360,7 @@ export default function SharedClassPlans({ offeringId, offer, offers = [], onSel
     setOpened({});
     setEditingRevision(false);
     setConfirmWithdrawVersion(false);
+    setConfirmSharePrivate(false);
     setActionError('');
     setActionSuccess('');
     importKeyRef.current = null;
@@ -340,7 +394,23 @@ export default function SharedClassPlans({ offeringId, offer, offers = [], onSel
     try {
       await syllabusApi.voteVersion(activePlan.syllabus_id, activePlan.id, value);
       setActionSuccess(value === 'confirm' ? 'Voto positivo registrado.' : 'Divergência sinalizada.');
-      plans.retry();
+      reloadPlans();
+    } catch (error) {
+      setActionError(syllabusError(error));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleVoteCandidate = async (candidateId, value) => {
+    if (!activePlan || busy) return;
+    setBusy(true);
+    setActionError('');
+    setActionSuccess('');
+    try {
+      await syllabusApi.voteCandidate(activePlan.syllabus_id, activePlan.id, candidateId, value);
+      setActionSuccess(value === 'confirm' ? 'Voto positivo no item registrado.' : 'Divergência no item sinalizada.');
+      reloadPlans();
     } catch (error) {
       setActionError(syllabusError(error));
     } finally {
@@ -368,7 +438,7 @@ export default function SharedClassPlans({ offeringId, offer, offers = [], onSel
       importKeyRef.current = null;
       setDrafts({});
       setActionSuccess(`${events.length} ${events.length === 1 ? 'avaliação importada' : 'avaliações importadas'} para sua agenda.`);
-      plans.retry();
+      reloadPlans();
       onImported?.();
     } catch (error) {
       setActionError(syllabusError(error));
@@ -386,12 +456,33 @@ export default function SharedClassPlans({ offeringId, offer, offers = [], onSel
       const created = await syllabusApi.createRevision(activePlan.syllabus_id, {
         sourceVersionId: activePlan.id,
         candidates,
+        share: true,
       });
       setEditingRevision(false);
       setDrafts({});
       setSelectedVersionId(created.id);
       setActionSuccess(`Versão ${created.number} publicada com sucesso.`);
-      plans.retry();
+      reloadPlans();
+      onSharedChanged?.();
+    } catch (error) {
+      setActionError(syllabusError(error));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleShareOwnPlan = async () => {
+    if (!shareablePlan?.versionId || busy) return;
+    setBusy(true);
+    setActionError('');
+    setActionSuccess('');
+    try {
+      const shared = await syllabusApi.shareVersion(shareablePlan.id, shareablePlan.versionId);
+      setConfirmSharePrivate(false);
+      setSelectedVersionId(shared.id || shareablePlan.versionId);
+      setActionSuccess(`Versão ${shared.number || 1} compartilhada voluntariamente com os seguidores da turma.`);
+      reloadPlans();
+      onSharedChanged?.();
     } catch (error) {
       setActionError(syllabusError(error));
     } finally {
@@ -409,7 +500,8 @@ export default function SharedClassPlans({ offeringId, offer, offers = [], onSel
       setConfirmWithdrawVersion(false);
       setSelectedVersionId(null);
       setActionSuccess(`Versão ${activePlan.number} retirada da turma. Eventos já importados permanecem nas agendas.`);
-      plans.retry();
+      reloadPlans();
+      onSharedChanged?.();
     } catch (error) {
       setActionError(syllabusError(error));
     } finally {
@@ -425,7 +517,8 @@ export default function SharedClassPlans({ offeringId, offer, offers = [], onSel
     try {
       await syllabusApi.withdrawCandidate(activePlan.syllabus_id, activePlan.id, candidateId);
       setActionSuccess('Evento retirado desta versão compartilhada.');
-      plans.retry();
+      reloadPlans();
+      onSharedChanged?.();
     } catch (error) {
       setActionError(syllabusError(error));
     } finally {
@@ -457,8 +550,45 @@ export default function SharedClassPlans({ offeringId, offer, offers = [], onSel
       )}
     </header>
 
-    <Feedback error={plans.error?.message} onRetry={plans.retry} />
+    <div className="shared-notice" role="note">
+      <span className="shared-badge">Vínculo {membershipType}</span>
+      <p>{sharedNotice}</p>
+    </div>
+
+    <Feedback error={plans.error?.message} onRetry={reloadPlans} />
     <Feedback error={actionError} success={actionSuccess} />
+
+    {showSharePrompt && (
+      <div className="shared-publish-box">
+        <div>
+          <strong>Seu plano ({shareablePlan.fileName}) está privado</strong>
+          <p>
+            Compartilhe voluntariamente apenas as avaliações extraídas para que colegas que seguem esta turma possam consultá-las.
+            O PDF original já foi descartado.
+          </p>
+        </div>
+        {!confirmSharePrivate ? (
+          <button
+            type="button"
+            className="manage-button primary"
+            disabled={busy}
+            onClick={() => setConfirmSharePrivate(true)}
+          >
+            <Icon>share</Icon>Compartilhar com a turma
+          </button>
+        ) : (
+          <span className="shared-inline-confirm">
+            <span>Publicar estas avaliações para seguidores da turma?</span>
+            <button type="button" className="manage-button primary" disabled={busy} onClick={handleShareOwnPlan}>
+              Confirmar publicação
+            </button>
+            <button type="button" className="management-text-button" disabled={busy} onClick={() => setConfirmSharePrivate(false)}>
+              Cancelar
+            </button>
+          </span>
+        )}
+      </div>
+    )}
 
     {updatedPlan && (
       <div className="shared-update-alert" role="status">
@@ -484,9 +614,20 @@ export default function SharedClassPlans({ offeringId, offer, offers = [], onSel
 
     {plans.loading && <p role="status">Consultando planos compartilhados…</p>}
     {!plans.loading && !plans.error && versions.length === 0 && (
-      <p className="semester-muted">
-        Ainda não há plano compartilhado nesta oferta. Você pode enviar um plano na fila ao lado para compartilhá-lo com a turma.
-      </p>
+      <div className="shared-empty-actions">
+        <p className="semester-muted">
+          Ainda não há plano compartilhado nesta oferta. Ao concluir a extração de um plano vinculado à turma, a versão inicial é compartilhada com os seguidores e pode ser retirada pelo autor a qualquer momento.
+        </p>
+        {onUploadForOffer && (
+          <button
+            type="button"
+            className="manage-button"
+            onClick={() => onUploadForOffer(offeringId)}
+          >
+            <Icon>upload_file</Icon>Enviar plano para esta turma
+          </button>
+        )}
+      </div>
     )}
 
     {activePlan && (
@@ -504,6 +645,9 @@ export default function SharedClassPlans({ offeringId, offer, offers = [], onSel
               <span className={`shared-badge ${activePlan.institutional_provenance ? 'is-verified' : 'is-community'}`}>
                 {activePlan.institutional_provenance ? 'Origem institucional verificada' : 'Sem comprovação institucional'}
               </span>
+              {(activePlan.divergent || (activePlan.contest_count ?? 0) > 0) && (
+                <span className="shared-badge is-divergent">Divergência sinalizada</span>
+              )}
             </div>
             <p className="shared-version-attribution">
               <span>Por <strong>{activePlan.author_name || 'Participante da turma'}</strong></span>
@@ -538,6 +682,12 @@ export default function SharedClassPlans({ offeringId, offer, offers = [], onSel
             </button>
           </div>
         </header>
+
+        {(activePlan.divergent || (activePlan.contest_count ?? 0) > 0) && (
+          <p className="shared-divergence-note" role="status">
+            Há contestação nesta versão. A votação indica divergência para revisão e não altera datas nem sua agenda automaticamente.
+          </p>
+        )}
 
         <div className="shared-version-toolbar">
           {!editingRevision && activePlan.can_edit !== false && (
@@ -580,6 +730,7 @@ export default function SharedClassPlans({ offeringId, offer, offers = [], onSel
                   canWithdraw={Boolean(activePlan.can_withdraw)}
                   onPatch={change => patchRow(item, change)}
                   onSelect={checked => patchRow(item, { selected: checked })}
+                  onVoteCandidate={handleVoteCandidate}
                   onWithdrawCandidate={handleWithdrawCandidate}
                 />
               ))}
@@ -626,6 +777,7 @@ export default function SharedClassPlans({ offeringId, offer, offers = [], onSel
                 <strong>
                   Versão {version.number}
                   {(version.is_default || index === 0) ? ' · Padrão' : ''}
+                  {(version.divergent || (version.contest_count ?? 0) > 0) ? ' · Com divergência' : ''}
                 </strong>
                 <span>
                   {authorRoleLabel(version.author_role)} · {version.author_name || 'Participante da turma'}

@@ -74,13 +74,29 @@ export async function setupSemester(page, { guest = false, offers = [makeOffer(1
     const offer = offers.find(item => item.id === id);
     return offer ? route.fulfill({ json: offer }) : route.fulfill({ status: 404, json: { detail: 'Turma indisponível.' } });
   });
-  await page.route('**/api/v1/class-offerings/*/shared-plans?*', route => route.fulfill({ json: { items: [], total: 0 } }));
+  await page.route('**/api/v1/class-offerings/*/shared-plans?*', route => route.fulfill({
+    json: { membership_type: 'autodeclarado', items: [], total: 0 },
+  }));
   await page.route('**/api/v1/syllabus?*', route => {
     const params = new URL(route.request().url()).searchParams;
     const items = [...data.values()].filter(plan => !params.has('offering_id') || plan.offeringId === params.get('offering_id'));
     const offset = Number(params.get('offset'));
     const limit = Number(params.get('limit'));
     return route.fulfill({ json: { items: items.slice(offset, offset + limit).map(summary), total: items.length } });
+  });
+  await page.route('**/api/v1/syllabus/*/versions', route => {
+    const id = route.request().url().split('/').at(-2);
+    const plan = data.get(id);
+    return route.fulfill({
+      json: {
+        syllabusId: id,
+        offeringId: plan?.offeringId || null,
+        membershipType: 'autodeclarado',
+        sharedContentNotice: 'Vínculo autodeclarado.',
+        items: [],
+        total: 0,
+      },
+    });
   });
   await page.route('**/api/v1/syllabus/*', route => {
     const id = route.request().url().split('/').at(-1);

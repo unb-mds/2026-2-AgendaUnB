@@ -81,6 +81,9 @@ export const syllabusApi = {
     }
     return result.events;
   },
+  async listVersions(syllabusId, signal) {
+    return syllabusRequest(`/${encodeURIComponent(syllabusId)}/versions`, { signal });
+  },
   async voteVersion(syllabusId, versionId, value, signal) {
     const body = typeof value === 'string' ? { value } : value;
     return syllabusRequest(`/${encodeURIComponent(syllabusId)}/versions/${encodeURIComponent(versionId)}/vote`, {
@@ -88,6 +91,12 @@ export const syllabusApi = {
       body: JSON.stringify(body),
       signal,
     });
+  },
+  async voteCandidate(syllabusId, versionId, candidateId, value, signal) {
+    return syllabusRequest(
+      `/${encodeURIComponent(syllabusId)}/versions/${encodeURIComponent(versionId)}/candidates/${encodeURIComponent(candidateId)}/vote`,
+      { method: 'PUT', body: JSON.stringify({ value }), signal },
+    );
   },
   async createRevision(syllabusId, payload, signal) {
     return syllabusRequest(`/${encodeURIComponent(syllabusId)}/versions`, {
