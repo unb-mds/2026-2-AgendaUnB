@@ -78,4 +78,4 @@ e das funcionalidades do AgendaUnB. Todos esses detalhes estão organizados de u
 
 # 7. Permissões na navegação atual
 
-Estudantes gerenciam compromissos privados, salvam públicos aprovados e enviam sugestões. Professores e administradores publicam diretamente e moderam sugestões em `/sugestoes`. Apenas administradores acessam `/admin` para consultar usuários e alterar cargos. A persona organizadora reúne necessidades que, na implementação, são distribuídas entre esses dois papéis. Consulte [Painel administrativo](../painel-administrativo.md).
+Estudantes gerenciam compromissos privados, salvam públicos aprovados e enviam sugestões. Professores e administradores publicam diretamente e moderam sugestões em `/sugestoes`. Apenas administradores acessam `/admin` para consultar usuários e alterar cargos. A persona organizadora reúne necessidades que, na implementação, são distribuídas entre esses dois papéis. Consulte [ADR-001](/arquitetura/adrs/adr-001-integracao-fastapi-supabase) e [ADR-006](/arquitetura/adrs/adr-006-autorizacao-em-camadas).

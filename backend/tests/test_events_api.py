@@ -47,6 +47,7 @@ def test_list_public_events_filters_and_hides_pending(api):
     )
 
     assert response.status_code == 200
+    assert "stale-while-revalidate" in response.headers.get("cache-control", "")
     events = response.json()
     assert len(events) == 1
     assert events[0]["title"] == "Mostra cultural da UnB"
@@ -61,7 +62,9 @@ def test_public_event_detail_returns_404_for_missing_id(api):
         db.commit()
         event_id = event.id
 
-    assert client.get(f"/api/v1/events/{event_id}").status_code == 200
+    detail = client.get(f"/api/v1/events/{event_id}")
+    assert detail.status_code == 200
+    assert "stale-while-revalidate" in detail.headers.get("cache-control", "")
     missing = client.get(f"/api/v1/events/{uuid4()}")
     assert missing.status_code == 404
 

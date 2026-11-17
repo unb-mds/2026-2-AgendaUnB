@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
 
 from src.database.models import Syllabus
+from src.modules.classes.services import followed_available_offering
 from src.modules.syllabus.upload_validation import PdfValidationError, validate_pdf_structure
 
 logger = logging.getLogger("agenda_unb.syllabus")
@@ -117,6 +118,9 @@ def process_syllabus_upload(
     """
     # Serialize uploads for this user across API workers before counting the
     # rolling window. The lock lasts until the prepared text is committed.
+    if offering_id is not None:
+        # Recheck after extraction; serialize persistence with removal of the follow.
+        followed_available_offering(db, offering_id, user_id, lock=True)
     if db.bind.dialect.name == "postgresql":
         db.execute(sql_text("SELECT pg_advisory_xact_lock(hashtextextended(:user_id, 0))"),
                    {"user_id": str(user_id)})

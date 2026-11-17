@@ -2,7 +2,7 @@
 from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException
 from sqlalchemy import select, text
-from src.database.models import CatalogSync, ClassOffering
+from src.database.models import CatalogSync, ClassOffering, ClassFollow
 
 
 def publication(db):
@@ -33,6 +33,16 @@ def available_offering(db, offering_id):
         ClassOffering.publication_id == published.id))
     if offer is None:
         raise HTTPException(409, "Selecione uma oferta disponível no catálogo para continuar.")
+    return offer
+
+
+def followed_available_offering(db, offering_id, user_id, *, lock=False):
+    offer = available_offering(db, offering_id)
+    query = select(ClassFollow).where(ClassFollow.user_id == user_id, ClassFollow.offering_id == offering_id)
+    if lock:
+        query = query.with_for_update()
+    if db.scalar(query) is None:
+        raise HTTPException(403, "Siga esta turma antes de enviar um plano de ensino.")
     return offer
 
 
