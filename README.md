@@ -1,164 +1,101 @@
-<div align="center">
-
-<img src="frontend/public/banner.png" width="100%" alt="Background Agenda UnB" />
-
+<p align="center">
+  <!-- Banner principal no topo (equivalente ao logo do Flutter) -->
+  <img src="frontend/public/banner.png" alt="Banner AgendaUnb" width="760">
+</p>
 
 # **AGENDA UNB**
 
 **Plataforma centralizada de eventos e organização acadêmica da Universidade de Brasília**
 
-Métodos de Desenvolvimento de Software - 2026/2 - Grupo G8
+<p align="center">
+  <a href="https://github.com/unb-mds/2026-2-AgendaUnB/actions">
+    <img src="https://img.shields.io/github/actions/workflow/status/unb-mds/2026-2-AgendaUnB/supabase-ci.yml?branch=dev&label=CI%20%26%20Testes&logo=github" alt="Status do CI">
+  </a>
+  <a href="https://unb-mds.github.io/2026-2-AgendaUnB">
+    <img src="https://img.shields.io/badge/Docs-GitHub%20Pages-008bff?logo=readthedocs&logoColor=white" alt="Documentação Online">
+  </a>
+  <a href="https://github.com/unb-mds/2026-2-AgendaUnB/issues">
+    <img src="https://img.shields.io/github/issues/unb-mds/2026-2-AgendaUnB?color=003366&label=Issues%20Abertas" alt="Issues Abertas">
+  </a>
+  <a href="LICENSE">
+    <img src="https://img.shields.io/badge/Licen%C3%A7a-[NOME_DA_LICENCA]-008744" alt="Licença">
+  </a>
+  <a href="https://www.unb.br/">
+    <img src="https://img.shields.io/badge/UnB-MDS%202026%2F2%20%7C%20Grupo%20G8-003366" alt="UnB - MDS 2026/2">
+  </a>
+</p>
 
-<br/>
+O **AgendaUnb** é uma plataforma web colaborativa de eventos e organização acadêmica desenvolvida para os estudantes e docentes da **Universidade de Brasília (UnB)** centralizarem sua rotina em um único lugar. O sistema integra um catálogo público de eventos dos campi a um organizador acadêmico inteligente com extração automatizada de datas de planos de ensino, e é totalmente gratuito e de código aberto.
 
-[Acesse o Agenda UnB](https://agendaunb.com.br/) · [Documentação](https://agendaunb.com.br/docs) · [Figma](https://www.figma.com/board/RlZe9FgO3Bz3gPkxevs8UJ/AGENDA-UNB?node-id=1-217&t=USKjIQh4OXxQVwsG-1) · [Miro](https://miro.com/welcomeonboard/b0lMYXFqaEFMTnNpejdUOE1tLy8rOGNHdk5QVndFOUN0ZTFtc1kvWC9UUWdCbUJXVkpFU2JKRXhqUHpRZEYxekt6NUNFZXNzOXkxVDRxRmk0TjI1akdVY0Q5QW0vUENuMVpvYWRaZzdVNFdQUDB4eFNqVTdGOHAxd2lDUnhTUTBBS2NFMDFkcUNFSnM0d3FEN050ekl3PT0hdjE=?share_link_id=540201941184)
+## Documentação
 
-</div>
+* [Instalar e executar o AgendaUnb](CONTRIBUTING.md#como-desenvolver)
+* [Documentação oficial (MkDocs)](https://unb-mds.github.io/2026-2-AgendaUnB)
+* [Arquitetura e modelo de dados](docs/Architecture.md)
+* [Requisitos do sistema (21 RFs e 13 RNFs)](docs/requisitos.md)
+* [Contribuindo com o AgendaUnb](CONTRIBUTING.md)
 
----
+Acesse a aplicação em funcionamento em **[agendaunb.com.br](https://agendaunb.com.br)**, ou explore nossos protótipos e quadros de planejamento no **[Figma](https://www.figma.com/board/RlZe9FgO3Bz3gPkxevs8UJ/AGENDA-UNB?node-id=1-217)** e no **[Miro](https://miro.com/app/board/uXjVHtiWi4U=/)**. Nossa documentação também acompanha as [notas de release e sprints](docs/).
 
-## Sumário
+## Termos de uso e privacidade
 
-- [Sobre o Projeto](#sobre-o-projeto)
-- [Stack Tecnológica](#stack-tecnologica)
-- [Como Executar](#como-executar)
-    - [Execução rápida](#execucao-rapida-via-makefile-recomendado)
-- [Funcionalidades Atuais](#funcionalidades)
-- [Equipe](#equipe)
-- [Documentação Oficial](#documentacao)
+O AgendaUnb utiliza autenticação via Google OAuth e e-mail institucional para identificar estudantes e docentes da Universidade de Brasília. Ao criar uma conta ou enviar planos de ensino para extração de datas:
 
----
+* Apenas contas com domínio institucional `@unb.br` recebem automaticamente o perfil de docente (ou mediante atribuição administrativa).
+* Eventos pessoais, planos de ensino enviados em PDF e candidatos a avaliações são isolados por políticas de *Row Level Security (RLS)* e armazenamento privado, sendo acessíveis exclusivamente ao próprio usuário proprietário.
 
-<a id="sobre-o-projeto"></a>
-## Sobre o Projeto
+## Sobre o AgendaUnb
 
-A informação que organiza a rotina de um estudante da UnB está fragmentada: a grade está no SIGAA, as datas de prova estão em PDFs de planos de ensino e os eventos circulam por Instagram, cartazes e grupos de WhatsApp. Não existe um lugar único onde o estudante veja o que vai acontecer nas próximas semanas.
+A rotina de um estudante da UnB costuma estar fragmentada: a grade fica no SIGAA, as datas de provas estão espalhadas em PDFs de planos de ensino e os eventos acadêmicos e culturais circulam por Instagram, cartazes e grupos de WhatsApp. O AgendaUnb foi criado para reunir essas informações em uma única aplicação web produtiva, aberta e extensível.
 
-O **Agenda UnB** resolve esse problema reunindo dois eixos em uma única aplicação web:
+### Experiências acadêmicas unificadas
 
-- **Agenda do Campus** — Catálogo público de eventos acadêmicos, culturais e esportivos de todos os campi (Darcy Ribeiro, FCTE, FCTS, FUP e FAL), com filtros por área, campus e turno.
-- **Organizador Acadêmico** — Agenda pessoal com compromissos privados e eventos públicos adicionados. A Release 2 prevê seleção de turmas no catálogo público Followw e extração de avaliações de planos com revisão humana. [Contratos da Release 2](https://agendaunb.com.br/docs/atualizacoes#contratos-da-release-2)
+Queremos permitir que cada estudante acompanhe a vida universitária e seus compromissos de estudo sem precisar alternar entre dezenas de portais. O AgendaUnb reúne dois eixos principais em uma interface responsiva (com temas claro e escuro):
 
----
+* **Agenda do Campus:** Catálogo público de eventos acadêmicos, culturais e esportivos de todos os campi da UnB (**Darcy Ribeiro, FCTE, FCTS, FUP e FAL**), com visualização em lista ou calendário (mensal e semanal), filtros por área, campus e turno, além de salvamento na agenda pessoal e envio de sugestões com moderação.
+* **Organizador Acadêmico:** Agenda pessoal privada integrada ao envio de planos de ensino (PDF ou texto bruto). O sistema processa o documento com Inteligência Artificial para identificar datas de provas, trabalhos e seminários, apresentando sugestões para revisão e confirmação humana antes de adicioná-las ao calendário.
 
-<a id="stack-tecnologica"></a>
-## Stack Tecnológica
+<p align="center">
+  <!-- Salve a imagem dos 3 celulares em formato PNG em assets/agendaunb-mobile.png -->
+  <img src="frontend/public/agendaunb-mobile.png" alt="Telas do AgendaUnb - Planos de Ensino, Boas-vindas e Eventos Públicos" width="720">
+</p>
+
+### Arquitetura moderna e resultados rápidos
+
+O AgendaUnb foi estruturado com tecnologias modernas e gratuitas para garantir carregamento rápido, segurança de dados e facilidade de manutenção pela equipe:
 
 | Camada | Tecnologia | Finalidade |
-|--------|-----------|------------|
-| Frontend | React 19, Vite 6, React Router 7 | SPA responsiva com roteamento client-side |
-| Backend | Python 3, FastAPI, SQLAlchemy 2, Pydantic 2 | API REST com validação automática |
-| Banco de Dados | PostgreSQL (Supabase) | Dados relacionais com Row Level Security |
-| Autenticação | Supabase Auth | Google OAuth, login com e-mail/senha, JWT |
-| Migrações | Supabase Migrations (SQL) | Versionamento de migrações |
-| Ambiente Local | Supabase CLI + Docker | PostgreSQL, Auth e Studio locais |
-| Documentação | Mintlify | Documentação publicada em `agendaunb.com.br/docs` |
-| Tipografia | Orbitron + Inter (Google Fonts) | Display sci-fi + body legível |
-| Iconografia | Material Symbols | Ícones consistentes em toda a UI |
+| :--- | :--- | :--- |
+| **Frontend** | React 19, Vite 6, React Router 7 | SPA responsiva com temas claro/escuro e tipografia *Orbitron + Inter* |
+| **Backend (API)** | Python 3, FastAPI, SQLAlchemy 2, Pydantic 2 | API REST com validação automática, moderação e extração com IA |
+| **Banco de Dados** | PostgreSQL (Supabase) | Dados relacionais protegidos por *Row Level Security (RLS)* |
+| **Autenticação e Storage** | Supabase Auth & Storage | Google OAuth, e-mail/senha, JWT e buckets privados por usuário |
+| **Documentação e CI** | MkDocs Material & GitHub Actions | Site publicado no GitHub Pages e validação automática de migrações |
 
----
+### Desenvolvimento produtivo e execução simplificada
 
-<a id="como-executar"></a>
-## ⚙️ Como Executar
-
-Instale Git, Node.js 22 ou superior, Python 3.11, Docker e GNU Make. Clone a branch `dev` e abra a raiz do repositório.
-
-<a id="execucao-rapida-via-makefile-recomendado"></a>
-
-### Execução rápida
-
-Com o Docker em execução, instale as dependências e suba o Supabase local:
+O ambiente local do AgendaUnb utiliza **GNU Make**, **Supabase CLI** e **Docker**, permitindo que qualquer pessoa contribuidora suba o banco de dados, o backend e o frontend com poucos comandos e veja suas alterações em tempo real:
 
 ```bash
 make setup
-npx supabase status -o env
-```
-
-Preencha o `.env` conforme o [guia de execução local](docs/processo/execucao-local.md), que também cobre a instalação manual. Depois, inicie a aplicação:
-
-```bash
 make dev
 ```
 
-Abra a [aplicação local](http://localhost:5173). Para encerrar, pressione `Ctrl+C` e execute `make stop`.
+Para encerrar os serviços e parar os containers locais do Supabase, basta pressionar `Ctrl+C` e executar `make stop`. Veja o passo a passo completo no [guia de contribuição](CONTRIBUTING.md#como-desenvolver).
 
-O [guia de contribuição](https://agendaunb.com.br/docs/processo/contribuindo) descreve as verificações do projeto.
+### Modelo aberto, seguro e extensível
 
----
+O AgendaUnb funciona em qualquer ambiente de desenvolvimento (com suporte nativo a VS Code, Docker e Supabase CLI) e segue padrões rigorosos de segurança e qualidade: perfis criados automaticamente via *triggers*, moderação atômica de sugestões estudantis, isolamento de dados privados por usuário e integração contínua automatizada.
 
-<a id="funcionalidades"></a>
+O AgendaUnb é um projeto totalmente de código aberto desenvolvido na disciplina de **Métodos de Desenvolvimento de Software (MDS)** da UnB, e damos as boas-vindas a novas contribuições. Informações sobre como começar podem ser encontradas no nosso [guia de contribuição](CONTRIBUTING.md) ou abrindo uma [issue no GitHub](https://github.com/unb-mds/2026-2-AgendaUnB/issues).
 
-## Funcionalidades Atuais 
-Funcionalidades atualizadas até o fim da Sprint 05 (18/10)
-
-### Frontend
-
-| Funcionalidade | Descrição |
-|---------------|-----------|
-| Landing Page | Hero section, funcionalidades, sobre e equipe |
-| Cadastro | Modal com seletor Estudante/Professor, validação de @unb.br para professor |
-| Login | Modal de login com e-mail/senha e Google OAuth |
-| Página de Eventos | `/eventos`: catálogo público e Meus Eventos, busca e filtros por área/campus/turno |
-| Calendário | Visualização mensal e semanal, navegação por período e botão Hoje, com os mesmos filtros da lista |
-| Eventos Públicos Salvos | Adicionar/remover eventos públicos da agenda pessoal sem copiar ou alterar o original |
-| Sugestões | Estudantes enviam propostas pelo formulário Criar Evento; professores e admins analisam em `/sugestoes` |
-| Notificações | Sino para estudantes com confirmação de envio, aprovação e recusa com justificativa |
-| Administração | `/admin`: busca e filtros de usuários, confirmação de e-mail, último acesso e alteração de cargos |
-| Plano de Ensino | `/plano-de-ensino`: página informativa; backend tem upload/worker Gemini e políticas/revisão transacional S6-D02 validadas em PostgreSQL isolado; ativação depende de homologar o ambiente de destino |
-| Criação de Eventos | Modal com DatePicker e TimePicker customizados, campos completos |
-| Edição e Exclusão | CRUD completo para eventos pessoais |
-| Detalhe do Evento | Página dedicada com descrição, organizador, badges e link externo |
-| Tema Dark / Light | Alternância completa visual (temas claro e escuro) |
-| NavBar | Glassmorphism, avatar do usuário, navegação contextual |
-
-### Backend (API)
-
-A API inclui catálogo público, CRUD privado, sugestões, eventos salvos, administração, upload/consulta de planos e saúde. Consulte os [contratos](https://agendaunb.com.br/docs/api-specs), a [ADR-003 (minimização e privacidade de planos)](https://agendaunb.com.br/docs/arquitetura/adrs/adr-003-minimizar-dados-de-planos) e a [ADR-014 (processamento assíncrono com IA)](https://agendaunb.com.br/docs/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia). A extração salva candidatos para revisão, sem criar compromissos, e permanece condicionada às flags operacionais e travas de privacidade.
-
-### Banco de Dados
-
-O esquema é versionado em migrações SQL. Além das tabelas da R1, inclui `eventos_salvos`, `notificacoes`, candidatos a avaliações, regras de moderação, RPCs administrativas e o bucket privado `syllabus_files` (PDF, até 10 MB). Upload, modelo de candidatos e fila do worker exigem as migrações #40/S6-D01/S6-B01; as políticas S6-D02 precisam ser validadas antes de usar dados reais.
-
-Destaques de segurança:
-
-- Perfil criado automaticamente no cadastro; e-mail imutável no perfil.
-- Cadastro e autopromoção para professor exigem `@unb.br`; admins podem atribuir esse papel a contas de outro domínio.
-- Eventos privados, vínculos salvos e notificações são restritos ao próprio usuário.
-- Sugestões estudantis nascem pendentes; decisões de moderação são atômicas e recusas exigem justificativa.
-- Somente admins alteram cargos de terceiros; não podem remover o próprio acesso administrativo.
-
-Antes de disponibilizar API e frontend atualizados, aplique as migrações pendentes. No ambiente local já inicializado, execute `npx supabase migration up --local`. Consulte os guias de [eventos salvos](https://agendaunb.com.br/docs/eventos-salvos), [integração e rotas](https://agendaunb.com.br/docs/arquitetura/adrs/adr-001-integracao-fastapi-supabase) e [autorização e moderação](https://agendaunb.com.br/docs/arquitetura/adrs/adr-006-autorizacao-em-camadas).
-
----
-
-<a id="equipe"></a>
 ## Equipe
 
 | Nome | Papel | GitHub |
-|------|:-----:|--------|
+| :--- | :--- | :--- |
 | Thomas Augusto Amorim de Araujo | Frontend | [@thomas4ugust0](https://github.com/thomas4ugust0) |
 | Gabriel Escramin Lourenço | Frontend | [@Bielziin07](https://github.com/Bielziin07) |
 | Heitor Gomes Monteiro | Backend | [@heitormontt](https://github.com/heitormontt) |
 | Thomaz Marra Martins | Backend | [@marrathomaz](https://github.com/marrathomaz) |
 | Felipe Couto Duque | Banco de Dados | [@felipecduque7](https://github.com/felipecduque7) |
 | Luis Davi Pontes da Silva | Banco de Dados | [@pontesluis](https://github.com/pontesluis) |
-
----
-
-<a id="documentacao"></a>
-## Documentação
-
-A [documentação do Agenda UnB no Mintlify](https://agendaunb.com.br/docs) reúne os guias do projeto.
-
-| Documento | Descrição |
-|-----------|-----------|
-| [Arquitetura](https://agendaunb.com.br/docs/arquitetura/visao-geral) | Visão arquitetural, stack e modelos de dados |
-| [Requisitos](https://agendaunb.com.br/docs/produto/requisitos) | 21 RFs e 13 RNFs especificados |
-| [Padrões](https://agendaunb.com.br/docs/produto/padroes) | Glossário, naming conventions e rotas da API |
-| [Contratos do backend](https://agendaunb.com.br/docs/api-specs) | API atual e operações originadas na R1 |
-| [Plano de implantação](https://agendaunb.com.br/docs/implantacao) | Hospedagem, CI/CD e homologação |
-| [Atualizações pós-R1](https://agendaunb.com.br/docs/atualizacoes) | Calendário, eventos salvos, sugestões, moderação e administração |
-| [Release v0.1.0](https://agendaunb.com.br/docs/processo/release-notes/v0-1-0) | Release note da primeira entrega |
-| [Sprints](https://agendaunb.com.br/docs/sprints/sprint-1) | Acompanhamento ágil por ciclo |
-
----
