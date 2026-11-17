@@ -89,7 +89,7 @@ class SharedPlanRead(BaseModel):
     my_vote: str | None = None
     is_default: bool = False
     can_withdraw: bool = False
-    can_edit: bool = False
+    can_edit: bool = True
     has_imported_update: bool = False
     imported_from_version_number: int | None = None
     candidates: list[SharedCandidateRead]
