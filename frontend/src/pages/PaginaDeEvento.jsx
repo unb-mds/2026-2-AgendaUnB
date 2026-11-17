@@ -4,6 +4,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { eventsApi, toUiEvent } from '../lib/api';
 import NavBar from '../components/NavBar';
 import SaveEventButton from '../components/SaveEventButton';
+import SearchMetadata from '../components/SearchMetadata.jsx';
+import { eventDescription, eventTitle } from '../lib/searchPages.js';
 import '../styles/global.css';
 
 export default function PaginaDeEvento() {
@@ -151,6 +153,7 @@ export default function PaginaDeEvento() {
     return (
       <main role="alert" style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: '2rem', textAlign: 'center' }}>
         <div>
+          <SearchMetadata />
           <p>{erroEvento}</p>
           <Link to="/eventos">Voltar aos eventos</Link>
         </div>
@@ -160,6 +163,15 @@ export default function PaginaDeEvento() {
 
   return (
     <div className="event-page-wrapper" style={{ position: 'relative', overflow: 'hidden' }}>
+      <SearchMetadata event={eventoCarregado?.visibilidade === 'Público' ? {
+        title: eventTitle(evento.titulo),
+        description: eventDescription({
+          title: evento.titulo,
+          description: eventoCarregado.descricao,
+          location: eventoCarregado.local,
+          campus: eventoCarregado.campus,
+        }),
+      } : undefined} />
       
       {/* Background radial gradient to make it less monochromatic */}
       <div 

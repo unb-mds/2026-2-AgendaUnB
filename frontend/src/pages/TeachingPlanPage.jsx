@@ -4,6 +4,7 @@ import { Feedback, Icon, ManagementShell } from '../components/ManagementUI';
 import { useAuth } from '../contexts/AuthContext';
 import { useSyllabusResource } from '../hooks/useSyllabusResource';
 import { syllabusApi } from '../lib/syllabusApi';
+import { catalogApi } from '../lib/classCatalogApi';
 import SyllabusReviewPanel from '../components/SyllabusReviewPanel';
 import SyllabusTextReview, { SyllabusTextInput } from '../components/SyllabusTextReview';
 import JourneyPlanReview from '../components/JourneyPlanReview';
@@ -100,13 +101,22 @@ function PlanUpload({ onUploaded, offer }) {
   </section>;
 }
 
-function PlanTracking({ id, onClose, offeringId, onConfirmed }) {
+function PlanTracking({ id, onClose, offer, onConfirmed, onChanged }) {
+  const offeringId = offer?.id;
   const load = useCallback(async signal => {
     const plan = await syllabusApi.get(id, signal);
     if (offeringId && plan.offeringId !== offeringId) throw new Error('Este plano pertence a outra oferta. Abra um plano pelo histórico desta turma.');
     return plan;
   }, [id, offeringId]);
   const { data: plan, loading, error, retry } = useSyllabusResource(id, load, isProcessing);
+  const linkedOfferingId = plan?.offeringId;
+  const needsSchedule = !offer && plan?.status === 'concluido' && !plan.authorizationRequired && plan.candidates?.some(
+    candidate => candidate.status === 'pendente' && candidate.type === 'prova' && !candidate.suggestedTime && !candidate.startsAt
+  );
+  const loadLinkedOffer = useCallback(signal => catalogApi.get(linkedOfferingId, signal), [linkedOfferingId]);
+  const linkedOffer = useSyllabusResource(needsSchedule ? linkedOfferingId : null, loadLinkedOffer);
+  const reviewOffer = offer || linkedOffer.data;
+  const classSchedule = reviewOffer?.available && reviewOffer.id === linkedOfferingId ? reviewOffer.schedule : undefined;
   const headingRef = useRef(null);
   useEffect(() => { headingRef.current?.focus(); }, [id]);
   const state = PLAN_STATES[plan?.status];
@@ -122,16 +132,20 @@ function PlanTracking({ id, onClose, offeringId, onConfirmed }) {
       <div className="plan-result" role="status" aria-live="polite" aria-atomic="true">
         <PlanBadge status={plan.status} />
         <h3>{plan.authorizationRequired ? 'Aguardando sua revisão do texto' : empty ? 'Nenhuma avaliação encontrada' : state?.title || 'Estado de processamento indisponível'}</h3>
-        <p>{plan.authorizationRequired ? 'Nenhum texto foi enviado ao Gemini. Revise o trecho abaixo e decida se deseja autorizar.' : empty ? 'A análise terminou, mas não identificou avaliações neste PDF. Isso não é uma falha de processamento. Você pode cadastrar seus prazos manualmente.' : state?.description || 'Tente consultar novamente para verificar o andamento.'}</p>
+        <p>{plan.authorizationRequired ? 'Na última consulta, o envio ao Gemini ainda aguardava sua autorização. Revise o trecho abaixo e decida se deseja autorizar.' : empty ? 'A análise terminou, mas não identificou avaliações neste PDF. Isso não é uma falha de processamento. Você pode cadastrar seus prazos manualmente.' : state?.description || 'Tente consultar novamente para verificar o andamento.'}</p>
         {plan.status === 'concluido' && plan.extractedEventsCount > 0 && <p><strong>{plan.extractedEventsCount} {plan.extractedEventsCount === 1 ? 'avaliação encontrada' : 'avaliações encontradas'}.</strong> Consulte a disponibilidade na área de revisão abaixo.</p>}
         {plan.status === 'falha' && plan.errorMessage && <p className="plan-error-detail">{plan.errorMessage}</p>}
       </div>
       {isProcessing(plan) && <p className="management-muted">{error ? 'A atualização automática foi pausada. Tente novamente para retomar.' : 'Atualização automática enquanto esta página estiver visível.'}</p>}
       {!state && <button className="manage-button" onClick={retry} disabled={loading}>Consultar novamente</button>}
-      {(empty || plan.status === 'falha') && <div className="plan-recovery"><a className="manage-button" href="#plan-subject">Enviar outro PDF</a><Link className="management-text-button" to={manualPath}>Cadastrar prazos manualmente</Link></div>}
+      {(empty || plan.status === 'falha') && <div className="plan-recovery"><Link className="manage-button" to={`/plano-de-ensino?${new URLSearchParams({ ...(plan.offeringId ? { oferta: plan.offeringId } : {}), etapa: '2' })}`}>Enviar outro PDF ou texto</Link><Link className="management-text-button" to={manualPath}>Cadastrar prazos manualmente</Link></div>}
     </>}
-    {plan?.preparedTextAvailable && <SyllabusTextReview plan={plan} onAuthorized={retry} />}
-    {!plan?.authorizationRequired && (plan?.status === "concluido" && plan.candidates?.length ? <JourneyPlanReview key={plan.id} plan={plan} onConfirmed={onConfirmed} /> : <SyllabusReviewPanel selected plan={plan} loading={loading} error={error} />)}
+    {!loading && !error && plan?.preparedTextAvailable && <SyllabusTextReview key={plan.id} plan={plan} onAuthorized={() => { retry(); onChanged(); }} />}
+    {!plan?.authorizationRequired && (linkedOffer.loading
+      ? <p role="status">Consultando o horário da turma…</p>
+      : !loading && !error && offeringId && plan?.status === 'concluido' && plan.candidates?.length
+        ? <JourneyPlanReview key={plan.id} plan={plan} classSchedule={classSchedule} onConfirmed={onConfirmed} />
+        : <SyllabusReviewPanel selected plan={plan} classSchedule={classSchedule} loading={loading} error={error} />)}
   </section>;
 }
 
@@ -159,8 +173,8 @@ function PlanWorkspace({ userId, offer, step, onStep }) {
   };
   return <>
     <Link className="management-text-button" to="/plano-de-ensino">Voltar ao catálogo de turmas</Link>{offer && <OfferingDetails offer={offer} />}
-    <div className="plan-layout"><div>{step === 2 && offer?.available ? <><PlanUpload key={offer.id} offer={offer} onUploaded={onUploaded} /><SyllabusTextInput key={`text-${offer.id}`} offeringId={offer.id} onPrepared={onUploaded} /></> : step === 2 ? <p>Selecione uma oferta disponível no catálogo para enviar um plano. Seus envios anteriores continuam no histórico.</p> : null}</div><div className="plan-sidebar">{selectedId ? <PlanTracking key={selectedId} id={selectedId} offeringId={offer?.id} onConfirmed={() => onStep(4)} onClose={() => { setSelection(null); document.getElementById('plan-subject')?.focus(); }} /> : <PlanHelp />}</div></div>
-    {offer && <SharedClassPlans key={offer.id} offeringId={offer.id} />}
+    <div className="plan-layout"><div>{step === 2 && offer?.available && offer?.following ? <><PlanUpload key={offer.id} offer={offer} onUploaded={onUploaded} /><SyllabusTextInput key={`text-${offer.id}`} offeringId={offer.id} onPrepared={onUploaded} /></> : step === 2 ? <p>Selecione uma oferta disponível que sua conta segue no catálogo para enviar um plano. Seus envios anteriores continuam no histórico.</p> : null}</div><div className="plan-sidebar">{selectedId ? <PlanTracking key={selectedId} id={selectedId} onChanged={history.retry} offer={offer} onConfirmed={() => onStep(4)} onClose={() => { setSelection(null); document.getElementById('plan-subject')?.focus(); }} /> : <PlanHelp />}</div></div>
+    {offer?.following && <SharedClassPlans key={offer.id} offeringId={offer.id} />}
     {!selectedId && <SyllabusReviewPanel />}
     <section className="plan-history" aria-labelledby="plan-history-title" aria-busy={history.loading}>
       <header className="plan-section-heading"><div><h2 id="plan-history-title">Seus planos enviados</h2><p>Retome um acompanhamento a qualquer momento.</p></div><button className="manage-button" onClick={history.retry} disabled={history.loading}><Icon>refresh</Icon>Atualizar</button></header>

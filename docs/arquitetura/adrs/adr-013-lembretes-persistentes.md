@@ -38,4 +38,4 @@ Verificar duplicatas, atraso, cancelamento, mudança de horário e isolamento po
 
 ## Fontes e relações
 
-[Agenda e lembretes](../../atualizacoes.md#agenda-redirecionamento-e-lembretes) · [Implantação](../../implantacao.md) · [Requisitos](../../produto/requisitos.md) · [Índice de ADRs](index.md)
+[Agenda e lembretes](/atualizacoes#agenda-redirecionamento-e-lembretes) · [Implantação](/implantacao) · [Requisitos](/produto/requisitos) · [Índice de ADRs](/arquitetura/adrs/index)

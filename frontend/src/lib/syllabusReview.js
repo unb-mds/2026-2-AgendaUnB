@@ -1,4 +1,31 @@
-// Local editor model, not an API payload. Map the approved S6-B02 contract here later.
+import { classStartOnDate, defaultClassStart } from './classSchedule.js';
+
+// Local editor model, not an API payload.
+export const BRASILIA_UTC_OFFSET = '-03:00';
+
+function formatInBrasilia(isoInstant) {
+  if (!isoInstant) return null;
+  const parsed = new Date(isoInstant);
+  if (Number.isNaN(parsed.getTime())) return null;
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Sao_Paulo',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    }).formatToParts(parsed).map(part => [part.type, part.value])
+  );
+  const hour = parts.hour === '24' ? '00' : parts.hour;
+  return {
+    date: `${parts.year}-${parts.month}-${parts.day}`,
+    time: `${hour}:${parts.minute}:${parts.second}`,
+  };
+}
+
 export function createReviewDraft(items) {
   if (!Array.isArray(items)) throw new Error('Lista de avaliações inválida.');
   const ids = new Set();
@@ -9,7 +36,83 @@ export function createReviewDraft(items) {
     ids.add(item.id);
     const string = key => typeof item[key] === 'string' ? item[key] : '';
     return { id: item.id, title: string('title'), type: string('type'), date: string('date'),
-      time: string('time'), utcOffset: '', decision: 'pending' };
+      time: string('time'), decision: 'pending' };
+  });
+}
+
+export function createCandidateReviewDraft(candidates, classSchedule) {
+  return createReviewDraft(candidates).map((draft, index) => {
+    const candidate = candidates[index];
+    const hasExplicitZone = /(?:Z|[+-]\d{2}:\d{2})$/.test(candidate.startsAt || '');
+    const brasilia = hasExplicitZone ? formatInBrasilia(candidate.startsAt) : null;
+    const time = candidate.suggestedTime ?? brasilia?.time ?? '';
+    return withClassTime({ ...draft, type: draft.type.toLowerCase(),
+      date: candidate.suggestedDate ?? brasilia?.date ?? '',
+      time,
+      timeSource: time ? 'plan' : null,
+      dateNeedsReview: candidate.ambiguousFields?.some(field => ['data', 'date'].includes(field)),
+      status: candidate.status, versionId: candidate.versionId,
+      editable: candidate.status === 'pendente' }, classSchedule);
+  });
+}
+
+function withClassTime(item, classSchedule) {
+  if (item.timeSource === 'plan' || item.timeSource === 'manual') return item;
+  if (item.editable !== true || item.type !== 'prova') {
+    return { ...item, time: '', timeSource: null };
+  }
+  let time = '';
+  if (!item.dateNeedsReview && item.date) {
+    time = classStartOnDate(classSchedule, item.date);
+  } else if (!item.date) {
+    time = defaultClassStart(classSchedule);
+  }
+  return { ...item, time, timeSource: time ? 'catalog' : null };
+}
+
+export function updateCandidateReviewItem(item, patch, classSchedule) {
+  const updated = { ...item, ...patch };
+  if (!('timeSource' in item)) return updated;
+  if ('time' in patch) return { ...updated, timeSource: 'manual' };
+  if (updated.date !== item.date) updated.dateNeedsReview = false;
+  if (updated.date !== item.date || updated.type !== item.type) return withClassTime(updated, classSchedule);
+  return updated;
+}
+
+export function selectReviewItems(items, selected) {
+  return items.map(item => item.editable === false || (selected && item.decision === 'discarded')
+    ? item : { ...item, decision: selected ? 'selected' : item.decision === 'selected' ? 'pending' : item.decision });
+}
+
+function nextCivilDay(isoDate) {
+  const day = new Date(`${isoDate}T00:00:00Z`);
+  day.setUTCDate(day.getUTCDate() + 1);
+  return day.toISOString().slice(0, 10);
+}
+
+export function buildReviewConfirmation(draft, candidates) {
+  const pending = new Map(candidates.filter(item => item.status === 'pendente').map(item => [item.id, item]));
+  const selected = draft.filter(item => item.decision === 'selected');
+  if (!selected.length || selected.length > 100 || new Set(selected.map(item => item.id)).size !== selected.length
+    || selected.some(item => !pending.has(item.id) || Object.keys(validateReviewItem(item, true)).length)) {
+    throw new Error('Revise as avaliações selecionadas antes de confirmar.');
+  }
+  return selected.map(item => {
+    const normalizedType = item.type.toLowerCase();
+    const type = normalizedType === 'prova' ? 'Prova' : 'Trabalho';
+    const excerpt = pending.get(item.id).sourceExcerpt;
+    const description = excerpt ? `Tipo de avaliação: ${type}\n\n${excerpt}` : `Tipo de avaliação: ${type}`;
+    const timing = normalizedType === 'trabalho' && !item.time
+      ? { all_day: true, start_date: item.date, end_date: nextCivilDay(item.date) }
+      : { startsAt: `${item.date}T${item.time}${BRASILIA_UTC_OFFSET}` };
+    return {
+      candidateId: item.id,
+      title: item.title.trim(),
+      type: normalizedType,
+      ...timing,
+      category: 'Acadêmico',
+      description: Array.from(description).slice(0, 10000).join(''),
+    };
   });
 }
 
@@ -26,12 +129,14 @@ export function validUtcOffset(value) {
   return hours <= 14 && minutes < 60 && (hours !== 14 || minutes === 0) && value !== '-00:00';
 }
 
-export function validateReviewItem(item) {
+export function validateReviewItem(item, strict = false) {
   if (item.decision !== 'selected') return {};
   const errors = {};
+  const isAssignment = item.type.toLowerCase() === 'trabalho';
   if (!item.title.trim()) errors.title = 'Informe o título da avaliação.';
+  if (strict && (Array.from(item.title.trim()).length < 3 || Array.from(item.title.trim()).length > 200)) errors.title = 'Informe um título entre 3 e 200 caracteres.';
+  if (strict && !['prova', 'trabalho'].includes(item.type.toLowerCase())) errors.type = 'Selecione Prova ou Trabalho.';
   if (!validReviewDate(item.date)) errors.date = 'Informe uma data válida.';
-  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(item.time)) errors.time = 'Informe o horário entre 00:00 e 23:59.';
-  if (!validUtcOffset(item.utcOffset)) errors.utcOffset = 'Informe o fuso como -03:00 ou +00:00 (até ±14:00).';
+  if ((!isAssignment || item.time) && !/^([01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d{1,6})?)?$/.test(item.time)) errors.time = 'Informe um horário válido entre 00:00 e 23:59:59.';
   return errors;
 }
