@@ -46,7 +46,7 @@ O serviço é oferecido como está, em infraestrutura gratuita, sem garantia de 
 
 ## 7. Privacidade
 
-O tratamento de dados está descrito na [Política de Privacidade](politica-de-privacidade.md). Aceitar estes termos não é o mesmo que consentir com tratamentos específicos: o envio de texto a serviços de inteligência artificial e a conexão com o Google Agenda pedem autorização própria, que pode ser revogada.
+O tratamento de dados está descrito na [Política de Privacidade](/produto/politica-de-privacidade). Aceitar estes termos não é o mesmo que consentir com tratamentos específicos: o envio de texto a serviços de inteligência artificial e a conexão com o Google Agenda pedem autorização própria, que pode ser revogada.
 
 ## 8. Mudanças
 

@@ -1,7 +1,102 @@
 import { supabase } from './supabase';
+import {
+  clearPublicCache,
+  getCachedPublic,
+  isCachedPublicFresh,
+  setCachedPublic,
+  toApiEvent,
+  toUiEvent,
+} from './publicEventsCache';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || '/api/v1')
   .replace(/\/$/, '');
+const COLD_START_FALLBACK_DELAY_MS = 1800;
+
+let inFlightPublicPromise = null;
+
+function canUseSupabaseFallback() {
+  const url = import.meta.env?.VITE_SUPABASE_URL;
+  return Boolean(
+    url
+      && !url.includes('example.supabase.co')
+      && !url.includes('fixture.supabase.co')
+      && typeof supabase?.rpc === 'function',
+  );
+}
+
+async function fetchPublicFromSupabaseFallback() {
+  if (!canUseSupabaseFallback()) return null;
+  try {
+    const { data, error } = await supabase.rpc('listar_eventos_publicos');
+    if (error || !Array.isArray(data)) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchPublicFromBackend(filters = {}) {
+  const query = new URLSearchParams();
+  if (filters.campus) query.set('campus', filters.campus);
+  if (filters.category) query.set('category', filters.category);
+  if (filters.search) query.set('q', filters.search);
+  const pageSize = 100;
+  const events = new Map();
+  query.set('limit', String(pageSize));
+  for (let offset = 0; ; offset += pageSize) {
+    query.set('offset', String(offset));
+    const page = await request(`/events?${query.toString()}`);
+    for (const event of page) events.set(event.id, event);
+    if (page.length < pageSize) return [...events.values()];
+  }
+}
+
+async function loadUnfilteredPublicWithFallback() {
+  const backendPromise = fetchPublicFromBackend({});
+  if (!canUseSupabaseFallback()) {
+    return setCachedPublic(await backendPromise);
+  }
+
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    let fallbackTimer = null;
+
+    const finishResolve = (events) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(fallbackTimer);
+      resolve(setCachedPublic(events));
+    };
+
+    const finishReject = (error) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(fallbackTimer);
+      reject(error);
+    };
+
+    backendPromise.then(
+      (events) => finishResolve(events),
+      async (backendError) => {
+        if (settled) return;
+        const fallbackEvents = await fetchPublicFromSupabaseFallback();
+        if (fallbackEvents !== null) {
+          finishResolve(fallbackEvents);
+        } else {
+          finishReject(backendError);
+        }
+      },
+    );
+
+    fallbackTimer = setTimeout(async () => {
+      if (settled) return;
+      const fallbackEvents = await fetchPublicFromSupabaseFallback();
+      if (settled || fallbackEvents === null) return;
+      backendPromise.then((fresh) => setCachedPublic(fresh)).catch(() => null);
+      finishResolve(fallbackEvents);
+    }, COLD_START_FALLBACK_DELAY_MS);
+  });
+}
 
 async function request(path, { auth = false, ...options } = {}) {
   const headers = new Headers(options.headers || {});
@@ -15,10 +110,18 @@ async function request(path, { auth = false, ...options } = {}) {
     headers.set('Authorization', `Bearer ${session.access_token}`);
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
+  let response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
+  } catch {
+    throw new Error('A API está indisponível. Verifique sua conexão e tente novamente.');
+  }
   if (response.status === 204) return null;
 
   const result = await response.json().catch(() => null);
+  if (response.ok && result === null) {
+    throw new Error('A API retornou uma resposta inválida. Tente novamente mais tarde.');
+  }
   if (!response.ok) {
     let detail = result?.detail;
     if (Array.isArray(detail)) {
@@ -34,26 +137,31 @@ async function request(path, { auth = false, ...options } = {}) {
 }
 
 // Exported for feature clients that share authentication and error handling.
-export { request };
+export { request, toApiEvent, toUiEvent };
 
 export const eventsApi = {
   suggest: (event) => request('/suggestions', {
     method: 'POST', auth: true, body: JSON.stringify(event),
   }),
-  listPublic: async (filters = {}) => {
-    const query = new URLSearchParams();
-    if (filters.campus) query.set('campus', filters.campus);
-    if (filters.category) query.set('category', filters.category);
-    if (filters.search) query.set('q', filters.search);
-    const pageSize = 100;
-    const events = new Map();
-    query.set('limit', String(pageSize));
-    for (let offset = 0; ; offset += pageSize) {
-      query.set('offset', String(offset));
-      const page = await request(`/events?${query.toString()}`);
-      for (const event of page) events.set(event.id, event);
-      if (page.length < pageSize) return [...events.values()];
+  getCachedPublic: () => getCachedPublic(),
+  clearPublicCache: () => clearPublicCache(),
+  prefetchPublic: () => {
+    if (isCachedPublicFresh()) {
+      return Promise.resolve(getCachedPublic());
     }
+    return eventsApi.listPublic().catch(() => null);
+  },
+  listPublic: async (filters = {}) => {
+    const isUnfiltered = !filters.campus && !filters.category && !filters.search;
+    if (!isUnfiltered) {
+      return fetchPublicFromBackend(filters);
+    }
+    if (!inFlightPublicPromise) {
+      inFlightPublicPromise = loadUnfilteredPublicWithFallback().finally(() => {
+        inFlightPublicPromise = null;
+      });
+    }
+    return inFlightPublicPromise;
   },
   getPublic: (id) => request(`/events/${encodeURIComponent(id)}`),
   listPersonal: () => request('/me/events', { auth: true }),
@@ -62,15 +170,23 @@ export const eventsApi = {
   savePublic: (id) => request(`/me/saved-events/${encodeURIComponent(id)}`, { auth: true, method: 'PUT' }),
   removeSaved: (id) => request(`/me/saved-events/${encodeURIComponent(id)}`, { auth: true, method: 'DELETE' }),
   getPersonal: (id) => request(`/me/events/${encodeURIComponent(id)}`, { auth: true }),
-  createPublic: (event) => request('/events', {
-    method: 'POST',
-    auth: true,
-    body: JSON.stringify(event),
-  }),
-  deletePublic: (id) => request(`/events/${encodeURIComponent(id)}`, {
-    method: 'DELETE',
-    auth: true,
-  }),
+  createPublic: async (event) => {
+    const created = await request('/events', {
+      method: 'POST',
+      auth: true,
+      body: JSON.stringify(event),
+    });
+    clearPublicCache();
+    return created;
+  },
+  deletePublic: async (id) => {
+    const result = await request(`/events/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      auth: true,
+    });
+    clearPublicCache();
+    return result;
+  },
   createPersonal: (event) => request('/me/events', {
     method: 'POST',
     auth: true,
@@ -86,39 +202,3 @@ export const eventsApi = {
     auth: true,
   }),
 };
-
-export function toUiEvent(event, isPersonal = false) {
-  const startsAt = new Date(event.starts_at);
-  const pad = (value) => String(value).padStart(2, '0');
-  return {
-    id: event.id,
-    titulo: event.title,
-    data: `${startsAt.getFullYear()}-${pad(startsAt.getMonth() + 1)}-${pad(startsAt.getDate())}`,
-    horario: `${pad(startsAt.getHours())}:${pad(startsAt.getMinutes())}`,
-    campus: event.campus || '',
-    local: event.location || '',
-    area: event.category || 'Acadêmico',
-    descricao: event.description || '',
-    linkExterno: event.external_url || '',
-    organizadorNome: event.organizer_name || '',
-    organizadorFoto: event.organizer_avatar || null,
-    visibilidade: isPersonal ? 'Privado' : 'Público',
-    criadoPorMim: isPersonal,
-  };
-}
-
-export function toApiEvent({ titulo, data, horario, campus, local, area, descricao, linkExterno }) {
-  const startsAt = new Date(`${data}T${horario}:00`);
-  if (Number.isNaN(startsAt.getTime())) {
-    throw new Error('Informe uma data e um horário válidos.');
-  }
-  return {
-    title: titulo.trim(),
-    description: descricao?.trim() || null,
-    starts_at: startsAt.toISOString(),
-    campus: campus?.trim() || null,
-    category: area?.trim() || null,
-    location: local?.trim() || null,
-    ...(linkExterno?.trim() ? { external_url: linkExterno.trim() } : {}),
-  };
-}

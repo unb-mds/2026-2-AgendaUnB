@@ -21,7 +21,7 @@ title: "Atualizações pós-Release 1"
 
 ## API e persistência
 
-A FastAPI ganhou `POST /api/v1/suggestions` e GET/PUT/DELETE de `/api/v1/me/saved-events`, conforme [Padrões](produto/padroes.md). Moderação e gestão de usuários usam RPCs do Supabase, não as rotas `/admin` propostas anteriormente.
+A FastAPI ganhou `POST /api/v1/suggestions` e GET/PUT/DELETE de `/api/v1/me/saved-events`, conforme [Padrões](/produto/padroes). Moderação e gestão de usuários usam RPCs do Supabase, não as rotas `/admin` propostas anteriormente.
 
 Após as cinco migrações da base R1, o repositório inclui:
 
@@ -34,7 +34,7 @@ Após as cinco migrações da base R1, o repositório inclui:
 | `20261018000000` | Moderação por professores/admins, RPCs paginadas, origem estudantil e notificações transacionais |
 | `20261018000100` | Atribuição de professor por admin sem restrição de domínio; cadastro/autopromoção continuam institucionais |
 
-Aplique as migrações pendentes em ordem antes de disponibilizar o código atualizado. No ambiente local já iniciado: `npx supabase migration up --local`. Os detalhes estão nos guias de [eventos salvos](eventos-salvos.md) e [painel administrativo](painel-administrativo.md).
+Aplique as migrações pendentes em ordem antes de disponibilizar o código atualizado. No ambiente local já iniciado: `npx supabase migration up --local`. Os detalhes estão em [eventos salvos](/eventos-salvos) e nas [ADR-001](/arquitetura/adrs/adr-001-integracao-fastapi-supabase) e [ADR-006](/arquitetura/adrs/adr-006-autorizacao-em-camadas).
 
 ## Ainda em preparação
 
@@ -44,20 +44,20 @@ candidatos privados com procedência, recuperação e limite de custo. O worker 
 desativado por padrão. As políticas e a revisão transacional S6-D02 foram validadas
 em PostgreSQL isolado; dados reais exigem aplicá-las/homologá-las no destino. Tela e
 endpoints de revisão/confirmacão ainda pertencem à S6-B02.
-Ver [operação](processamento-planos.md) e [privacidade](privacidade-planos.md).
+Ver [ADR-003](/arquitetura/adrs/adr-003-minimizar-dados-de-planos), [ADR-010](/arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos) e [ADR-014](/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia).
 Upload de atestados e validação colaborativa continuam planejados, assim como
 inscrições, histórico de participação, lembretes de proximidade, exportação `.ics`
 e coleta externa.
 
 ## Verificação disponível
 
-O projeto contém testes pytest da API (eventos, sugestões e vínculos salvos), testes Node de calendário e testes PostgreSQL de RLS/RPC/triggers. Estes últimos exigem `TEST_SUPABASE_DB_URL` local e são ignorados se ela não estiver configurada. Consulte [Contribuição](processo/contribuindo.md). A existência das suítes não afirma execução ou aprovação em um ambiente de produção.
+O projeto contém testes pytest da API (eventos, sugestões e vínculos salvos), testes Node de calendário e testes PostgreSQL de RLS/RPC/triggers. Estes últimos exigem `TEST_SUPABASE_DB_URL` local e são ignorados se ela não estiver configurada. Consulte [Contribuição](/processo/contribuindo). A existência das suítes não afirma execução ou aprovação em um ambiente de produção.
 
 # Contratos da Release 2
 
-Contrato de implementação da [S7-F01 (#67)](https://github.com/unb-mds/2026-2-AgendaUnB/issues/67). Os exemplos descrevem a interface alvo e usam dados fictícios. A [API atual](api-specs.md) documenta as rotas em funcionamento. A [matriz de aceite](matriz-release-2.md) registra responsáveis, cenários e evidências.
+Contrato de implementação da [S7-F01 (#67)](https://github.com/unb-mds/2026-2-AgendaUnB/issues/67). Os exemplos descrevem a interface alvo e usam dados fictícios. A [API atual](/api-specs) documenta as rotas em funcionamento. A [matriz de aceite](/matriz-release-2) registra responsáveis, cenários e evidências.
 
-## Catálogo e vínculo com a turma
+## Catálogo e vínculo com a turma {#catalogo-e-vinculo-com-a-turma}
 
 O backend consulta exclusivamente o catálogo público do Followw. Cada oferta tem um UUID local imutável. Preferir uma chave da origem que identifique inequivocamente a **oferta**. Se a origem só fornecer o ID da disciplina, combinar origem, ID da disciplina, número da turma, ano, semestre, unidade e nível. Se faltar o ID da disciplina, usar o código normalizado no lugar dele. Preservar o número da turma como texto, inclusive zeros à esquerda. Professor e horário são atributos atualizáveis. Chave incompleta ou colisão que não possa ser resolvida pela origem exige revisão antes de disponibilizar a oferta.
 
@@ -85,9 +85,9 @@ O backend consulta exclusivamente o catálogo público do Followw. Cada oferta t
 
 Em falha da origem, retornar o último catálogo válido com `stale: true` e preservar os vínculos existentes. Sem cache, devolver 503 à consulta do catálogo. O envio ou vínculo com oferta fora do catálogo disponível é bloqueado. A interface oferece nova busca e o cadastro manual de compromissos na agenda. O vínculo autoriza acesso ao conteúdo compartilhado da oferta e representa uma declaração do usuário. Matrícula, notas, avisos privados e login Followw/SIGAA ficam fora dessa integração. A [#68](https://github.com/unb-mds/2026-2-AgendaUnB/issues/68) ainda precisa comprovar endpoints públicos, cobertura e paginação. A [#70](https://github.com/unb-mds/2026-2-AgendaUnB/issues/70) implementa o adaptador e a [#69](https://github.com/unb-mds/2026-2-AgendaUnB/issues/69) valida as chaves.
 
-## Plano, versão e candidatos
+## Plano, versão e candidatos {#plano-versao-e-candidatos}
 
-A decisão sobre retenção de PDFs e autorização do texto está no [ADR-003](arquitetura/adrs/adr-003-minimizar-dados-de-planos.md).
+A decisão sobre retenção de PDFs e autorização do texto está no [ADR-003](/arquitetura/adrs/adr-003-minimizar-dados-de-planos).
 
 - **Envio.** `POST /api/v1/syllabus/upload` mantém `multipart/form-data` e devolve 202. Para novos planos, exige `class_offering_id` de uma turma disponível que o usuário segue e exatamente um de `file` (PDF digital até 10 MB e 10 páginas) ou `text` (texto bruto, com limite de entrada a confirmar na [#51](https://github.com/unb-mds/2026-2-AgendaUnB/issues/51)). As leituras existentes em `GET /syllabus` e `GET /syllabus/{id}` continuam disponíveis ao dono, inclusive para registros antigos sem oferta.
 - **PDF e revisão.** O arquivo passa apenas pela extração local. Descartar bytes, arquivos temporários e caminhos acessíveis assim que essa etapa terminar, inclusive em erro ou interrupção. Persistir somente texto necessário, metadados e candidatos autorizados. A versão começa privada. A interface exibe o texto minimizado exato e o destino antes de enviar `POST /api/v1/syllabus/{id}/versions/{version_id}/processing-jobs`. O detalhe privado do plano devolve `version_id`, `phase` e `review_text` ao autor na etapa de autorização. O POST recebe `{"approved_text":"Trecho revisado e minimizado"}`. O servidor registra a autorização daquela versão e do texto aprovado. Mudança de texto exige nova revisão e autorização. Ao Gemini vai apenas o texto autorizado. Repetir a mesma operação retoma o job e preserva a unicidade dos candidatos.
@@ -135,7 +135,7 @@ Manter os quatro valores de `status` já consumidos pelo frontend. `phase` é ad
 
 Medir do início do upload até a disponibilização dos candidatos para revisão. Descontar somente os intervalos de espera por revisão e autorização humanas; incluir transferência, validação, extração local, espera em fila e processamento externo. Registrar duração total, intervalos humanos descontados e duração resultante. A meta para planos de até 10 páginas é inferior a 20 segundos; a autorização específica continua obrigatória.
 
-### Confirmação rápida e reimportação
+### Confirmação rápida e reimportação {#confirmacao-rapida-e-reimportacao}
 
 Toda data extraída começa como candidata. Somente a confirmação explícita do usuário a transforma em avaliação efetiva na sua agenda; em versões compartilhadas, essa decisão pertence a cada conta. A revisão deve ser breve: mostrar candidatos em uma lista, permitir selecionar vários e confirmar o lote em uma única ação, destacar apenas campos ambíguos que exigem correção e preservar as escolhas durante ajustes. Não exigir uma sequência de confirmações por item nem importar automaticamente. Avaliar a fluidez na homologação com o tempo e as dificuldades observadas, sem inventar um limite numérico ainda não acordado.
 
@@ -196,10 +196,11 @@ A [#81](https://github.com/unb-mds/2026-2-AgendaUnB/issues/81) prevê um aviso p
 
 ## Google Agenda e ICS
 
-1. **Conectar.** `POST /api/v1/me/google-calendar/authorization` inicia OAuth adicional com o escopo [`calendar.app.created`](https://developers.google.com/workspace/calendar/api/auth). O callback valida `state`, PKCE e identidade Google. Exigir igualdade entre os e-mails verificados do Google e do Agenda UnB, com comparação sem distinção entre maiúsculas e minúsculas, sem equivalências por aliases. Usar o identificador estável Google (`sub`) para o vínculo e manter uma conexão ativa por usuário. A recusa ou divergência deixa o login normal disponível. O backend cria ou reutiliza a agenda secundária **Agenda UnB** da conta vinculada. A conexão pode ser consultada em `GET /api/v1/me/google-calendar/connection`, sem tokens na resposta.
-2. **Exportar.** `POST /api/v1/me/calendar-exports` recebe período e eventos selecionados da própria agenda, com confirmação da escrita. Retorna 202 com o ID do lote. `GET /api/v1/me/calendar-exports/{id}` apresenta o resultado por item. Enviar título, descrição selecionada, local e datas. Para dia inteiro, usar `start.date` e `end.date` com fim exclusivo. Para intervalo, usar `dateTime` e fuso. Evento com hora e fim ausente exige completar o intervalo antes de enviar ao Google. PDFs, conteúdo integral dos planos, tokens e caminhos internos ficam fora do payload. A saída ICS usa UID estável, UTF-8, escape e a mesma semântica de datas.
-3. **Reexportar.** Persistir `user_id`, Google `sub`, `calendar_id`, tipo e ID local, `google_event_id` e versão exportada. Gerar um ID remoto estável por destino e evento, com caracteres aceitos pela [API de inserção](https://developers.google.com/workspace/calendar/api/v3/reference/events/insert). Serializar escrita pela chave de mapeamento e reconciliar respostas incertas consultando o ID remoto. Repetir a mesma versão não duplica. Nova versão atualiza os campos geridos pela plataforma mediante confirmação de sobrescrita. Retomar apenas itens falhos ou pendentes. Tratar 429 com espera limitada. Destino excluído exige confirmação de recriação. Exclusão local deixa a cópia remota disponível.
-4. **Desconectar.** `DELETE /api/v1/me/google-calendar/connection` bloqueia novas exportações, tenta revogar o consentimento no provedor, remove os tokens locais e preserva os eventos remotos. Se o provedor não confirmar a revogação, orientar o usuário a remover a autorização nas configurações Google. Repetir a desconexão é seguro. Reconectar a mesma identidade reutiliza mapeamentos válidos após verificar o calendário de destino. Serializar a primeira criação por conexão. Se a resposta da criação da agenda se perder, encaminhar para recuperação antes de permitir outra criação. Limpar credenciais na exclusão da conta conforme a [#83](https://github.com/unb-mds/2026-2-AgendaUnB/issues/83). A sincronização automática fica fora da Release 2.
+1. **Autorizar.** Em **Meus Eventos**, a ação **Conectar Google Agenda** solicita o escopo [`calendar.app.created`](https://developers.google.com/workspace/calendar/api/auth) durante o OAuth. O backend valida o retorno OAuth, a identidade Google e a correspondência com o e-mail confirmado da Agenda UnB antes de guardar as credenciais cifradas. Sessões por senha também podem conectar. A exportação fica disponível em **Meus Eventos** após consentimento.
+2. **Exportar.** O fluxo atual permite selecionar até 20 eventos pessoais ou públicos salvos. A cópia usa título, horário de Brasília e duração de uma hora, com ID estável por evento. A primeira exportação cria uma agenda secundária **Agenda UnB**. Falhas são apresentadas por item e a seleção mantém os itens que precisam de nova tentativa.
+3. **Revogar.** A ação **Desconectar Google Agenda** remove as credenciais locais e revoga o acesso no Google. Um novo consentimento com a mesma conta permite reutilizar a agenda. Se a resposta de criação se perder, o usuário pode informar o ID da agenda ou confirmar que ela não existe.
+
+Os contratos abaixo descrevem a ampliação prevista na S8-F03 (#82), incluindo seleção por período, lotes assíncronos, confirmação de sobrescrita, reconciliação do destino e exportação ICS.
 
 ```json
 {
@@ -224,7 +225,7 @@ O detalhe do lote retorna `pending`, `running`, `completed`, `partial_failure` o
 }
 ```
 
-## Permissões e erros
+## Permissões e erros {#permissoes-e-erros}
 
 | Operação | Autorização |
 | --- | --- |
@@ -237,7 +238,7 @@ O detalhe do lote retorna `pending`, `running`, `completed`, `partial_failure` o
 | Moderar sugestões de eventos | Professor ou admin. |
 | Gerenciar papéis, categorias e prova de procedência institucional | Admin. |
 
-Manter o [envelope FastAPI existente](api-specs.md#erros-fastapi). Usar 401 para sessão ausente ou inválida, 403 para papel insuficiente, 404 para recurso inexistente ou invisível à conta, 409 para plano fora da etapa esperada ou conexão Google que exige nova autorização, 422 para oferta inválida, candidato ambíguo ou data incompatível, 429 para cota e 503 para catálogo indisponível sem cache. Respostas com falhas parciais da exportação informam o erro por item. Tokens, PDF, texto integral e dados de outra conta ficam fora dos detalhes.
+Manter o [envelope FastAPI existente](/api-specs#erros-fastapi). Usar 401 para sessão ausente ou inválida, 403 para papel insuficiente, 404 para recurso inexistente ou invisível à conta, 409 para plano fora da etapa esperada ou conexão Google que exige nova autorização, 422 para oferta inválida, candidato ambíguo ou data incompatível, 429 para cota e 503 para catálogo indisponível sem cache. Respostas com falhas parciais da exportação informam o erro por item. Tokens, PDF, texto integral e dados de outra conta ficam fora dos detalhes.
 
 Exemplo HTTP 422 ao tentar confirmar candidato sem corrigir data ambígua:
 
@@ -251,10 +252,10 @@ Exemplo HTTP 403 ao concluir autorização Google com e-mail diferente:
 {"detail":"Selecione a conta Google com o mesmo e-mail verificado do Agenda UnB."}
 ```
 
-## Compatibilidade e migração
+## Compatibilidade e migração {#compatibilidade-e-migracao}
 
 - Fazer mudanças aditivas primeiro. Planos antigos mantêm IDs, candidatos, metadados e acesso do dono. Associar automaticamente uma oferta apenas se a correspondência for inequívoca. Pedir seleção do usuário nos demais casos antes de publicar uma versão. Manter os aliases atuais de `syllabus` e adaptar o frontend ao campo `phase` antes de exigir novos campos.
 - A implementação atual guarda `caminho_arquivo` e pode retornar `filePath` ao dono. A migração deve interromper novas gravações permanentes de PDF, inventariar e remover os originais legados e suas referências com verificação de Storage. Preservar candidatos e agenda. Se um plano antigo dependia exclusivamente do PDF para processamento, orientar novo envio temporário ou entrada de texto.
 - Migrar importação de candidatos para unicidade por usuário, candidato e versão antes de liberar versões compartilhadas. O índice legado de `origem_avaliacao_id` sozinho não cobre o novo uso. Alinhar migrations, ORM, RLS e autorização da API. Preservar `eventos_salvos` como vínculo existente.
 - Acrescentar fim e campos civis aos eventos sem reclassificar automaticamente datas legadas de meia-noite. Verificar leitores antigos, dados migrados e rollback compatível antes de exigir os campos no frontend.
-- Preservar exceções do esquema como `profiles`, `categories`, `user_id`, `professor_id`, `category_id` e `event_id`. Preservar também os mapeamentos diferentes de início em `eventos.data_evento` e `eventos_pessoais.data_hora` e os estados em português. Campos novos seguem os [padrões do projeto](produto/padroes.md). Renomeações gerais de tabelas, colunas e aliases ficam fora da Release 2.
+- Preservar exceções do esquema como `profiles`, `categories`, `user_id`, `professor_id`, `category_id` e `event_id`. Preservar também os mapeamentos diferentes de início em `eventos.data_evento` e `eventos_pessoais.data_hora` e os estados em português. Campos novos seguem os [padrões do projeto](/produto/padroes). Renomeações gerais de tabelas, colunas e aliases ficam fora da Release 2.

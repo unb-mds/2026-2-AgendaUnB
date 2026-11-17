@@ -33,7 +33,7 @@ No worker S6-B01, preservar os nomes portugueses do contrato S6-D01 em candidato
 e metadados de IA; respostas de rastreamento HTTP usam aliases `camelCase`.
 Estados do plano são `pendente`, `processando`, `concluido` e `falha`; estados do
 candidato são `pendente`, `descartado` e `confirmado`. O extrator só grava
-`pendente`, sem confirmar ou converter em evento. [Contrato e regras](../processamento-planos-s7.md).
+`pendente`, sem confirmar ou converter em evento. [ADR-003](/arquitetura/adrs/adr-003-minimizar-dados-de-planos) · [ADR-014](/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia).
 
 | Elemento | Padrão | Exemplo |
 | :--- | :--- | :--- |
@@ -87,9 +87,9 @@ candidato são `pendente`, `descartado` e `confirmado`. O extrator só grava
 
 ### 📄 `Syllabus` / `planos_ensino`
 
-O esquema atual guarda metadados do envio e os estados `pendente`, `processando`, `concluido` e `falha`. O [contrato de plano e versão](../atualizacoes.md#contratos-da-release-2) detalha seleção de oferta, descarte do PDF e migração.
+O esquema atual guarda metadados do envio e os estados `pendente`, `processando`, `concluido` e `falha`. O [contrato de plano e versão](/atualizacoes#contratos-da-release-2) detalha seleção de oferta, descarte do PDF e migração.
 
-O produtor S7 prepara PDF/texto localmente, descarta o original e exige autorização do texto antes da IA. Consulte o [contrato vigente](../processamento-planos-s7.md).
+O produtor S7 prepara PDF/texto localmente, descarta o original e exige autorização do texto antes da IA. Consulte a [ADR-003](/arquitetura/adrs/adr-003-minimizar-dados-de-planos) e a [ADR-014](/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia).
 
 ### 🏷️ `Category` / `categories` (Categoria)
 * `id`: Identificador da categoria (`UUID`)
@@ -100,15 +100,15 @@ O produtor S7 prepara PDF/texto localmente, descarta o original e exige autoriza
 
 ## 4. Contratos e rotas disponíveis
 
-O [inventário do backend](../api-specs.md) descreve rotas disponíveis. Os [contratos da Release 2](../atualizacoes.md#contratos-da-release-2) descrevem a evolução. As rotas de negócio usam `/api/v1`, com `/health` como exceção. Autenticação usa Supabase Auth e moderação/administração usam RPCs.
+O [inventário do backend](/api-specs) descreve rotas disponíveis. Os [contratos da Release 2](/atualizacoes#contratos-da-release-2) descrevem a evolução. As rotas de negócio usam `/api/v1`, com `/health` como exceção. Autenticação usa Supabase Auth e moderação/administração usam RPCs.
 
 A API usa campos em inglês, geralmente `snake_case` (`starts_at`, `external_url`); os filtros de data usam os aliases existentes `startDate` e `endDate`. Papéis são `student`, `professor`, `admin`; status de eventos são `pendente`, `aprovado`, `rejeitado`. Preservar esses valores na integração.
 
 ## 5. Respostas e manutenção
 
-Usar os códigos e envelopes documentados por operação em [API](../api-specs.md#erros-fastapi). RPCs retornam erros pelo caminho do Supabase/PostgreSQL.
+Usar os códigos e envelopes documentados por operação em [API](/api-specs#erros-fastapi). RPCs retornam erros pelo caminho do Supabase/PostgreSQL.
 
-Mudanças de contratos e convenções devem atualizar esta documentação no mesmo PR. Registrar limitações observadas em vez de alterar o comportamento descrito para o comportamento desejado. Decisões e evidências ficam em [Arquitetura](../arquitetura/visao-geral.md); hospedagem proposta fica em [Implantação](../implantacao.md).
+Mudanças de contratos e convenções devem atualizar esta documentação no mesmo PR. Registrar limitações observadas em vez de alterar o comportamento descrito para o comportamento desejado. Decisões e evidências ficam em [Arquitetura](/arquitetura/visao-geral); hospedagem proposta fica em [Implantação](/implantacao).
 
 ## 6. Entidades adicionadas após a R1
 
@@ -119,4 +119,4 @@ Mudanças de contratos e convenções devem atualizar esta documentação no mes
 - `ClassFollow` / `vinculos_turma` (S7-D01): chave `(user_id, oferta_id)`, vínculo autodeclarado; leitura só do próprio usuário.
 - `SyllabusVersion` / `versoes_plano` (S7-D01): versões do plano, `privada` por padrão ou `compartilhada`; leitura pelo dono ou por quem segue a oferta quando compartilhada. `avaliacoes` passa a ter `versao_id` e `ordem`, e `eventos_pessoais` ganha `origem_versao_id` com unicidade por `(user_id, origem_avaliacao_id)`.
 
-O estado atual está em [Atualizações pós-R1](../atualizacoes.md). As exceções de nomes existentes e o plano de migração estão nos [contratos da Release 2](../atualizacoes.md#contratos-da-release-2).
+O estado atual está em [Atualizações pós-R1](/atualizacoes). As exceções de nomes existentes e o plano de migração estão nos [contratos da Release 2](/atualizacoes#contratos-da-release-2).
