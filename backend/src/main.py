@@ -13,15 +13,16 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from src.modules.classes.router import router as classes_router
 from src.modules.events.router import router as events_router
+from src.modules.google_calendar.router import router as google_calendar_router
 from src.modules.syllabus.router import router as syllabus_router
 from src.middlewares.security import (
     BodyLimitMiddleware,
     RateLimitMiddleware,
     SecurityHeadersMiddleware,
     env_flag,
-    parse_cors_origins,
 )
 from src.middlewares.upload_limits import UploadLimitsMiddleware
+from src.deployment import cors_origins
 
 
 # A documentação interativa descreve toda a superfície da API. Em
@@ -36,6 +37,8 @@ app = FastAPI(
     openapi_url="/openapi.json" if docs_enabled else None,
 )
 logger = logging.getLogger("agenda_unb.api")
+if os.environ.get("APP_ENV", "local") != "local":
+    logging.getLogger("uvicorn.access").disabled = True
 
 
 @app.exception_handler(IntegrityError)
@@ -85,14 +88,8 @@ async def handle_validation_error(request: Request, exc: RequestValidationError)
         content={"detail": "; ".join(messages), "errors": [{"loc": e["loc"], "msg": e["msg"], "type": e["type"]} for e in exc.errors()]},
     )
 
-default_origins = "http://localhost:5173,http://127.0.0.1:5173"
-# Deploys da Vercel entram como origens exatas e passam pela mesma validação.
-vercel_origins = [
-    f"https://{host.strip()}"
-    for host in (os.getenv("VERCEL_URL", ""), os.getenv("VERCEL_PROJECT_PRODUCTION_URL", ""))
-    if host.strip()
-]
-allowed_origins = parse_cors_origins(",".join([os.getenv("CORS_ORIGINS", default_origins), *vercel_origins]))
+# Origens exatas, validadas por src.deployment (https obrigatório fora do ambiente local).
+allowed_origins = cors_origins(os.environ)
 
 # A última camada adicionada é a mais externa. Ordem de entrada da requisição:
 # cabeçalhos de segurança -> CORS -> limite de taxa -> limites de corpo -> rotas.
@@ -114,6 +111,7 @@ app.add_middleware(SecurityHeadersMiddleware)
 
 app.include_router(classes_router, prefix="/api/v1")
 app.include_router(events_router, prefix="/api/v1")
+app.include_router(google_calendar_router, prefix="/api/v1")
 app.include_router(syllabus_router, prefix="/api/v1")
 
 

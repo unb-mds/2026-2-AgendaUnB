@@ -38,4 +38,4 @@ Verificar intervalo de vários dias, interseção da janela, navegador em outro 
 
 ## Fontes e relações
 
-[Datas e eventos](../../atualizacoes.md#datas-e-eventos) · [Calendário atual](../visao-geral.md#4-frontend-e-navegacao) · [Requisitos](../../produto/requisitos.md) · [Índice de ADRs](index.md)
+[Datas e eventos](/atualizacoes#datas-e-eventos) · [Calendário atual](/arquitetura/visao-geral#4-frontend-e-navegacao) · [Requisitos](/produto/requisitos) · [Índice de ADRs](/arquitetura/adrs/index)

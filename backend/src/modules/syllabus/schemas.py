@@ -96,7 +96,11 @@ class ConfirmCandidateInput(BaseModel):
     candidate_id: UUID = Field(alias="candidateId")
     title: str | None = Field(default=None, min_length=3, max_length=200)
     description: str | None = Field(default=None, max_length=10000)
+    kind: str | None = Field(default=None, min_length=2, max_length=80, alias="type")
     starts_at: datetime | None = Field(default=None, alias="startsAt")
+    all_day: bool = Field(default=False, alias="allDay")
+    start_date: date | None = None
+    end_date: date | None = None
     category: str | None = Field(default=None, min_length=2, max_length=80)
 
     @field_validator("starts_at")
@@ -106,12 +110,25 @@ class ConfirmCandidateInput(BaseModel):
             raise ValueError("Informe data e hora com fuso horário (ISO 8601)")
         return value
 
-    @field_validator("description", "category", mode="before")
+    @field_validator("description", "category", "kind", mode="before")
     @classmethod
     def empty_values_to_none(cls, value):
         if isinstance(value, str) and not value.strip():
             return None
         return value
+
+    @model_validator(mode="after")
+    def validate_all_day_dates(self):
+        if self.all_day:
+            if self.starts_at is not None:
+                raise ValueError("Evento de dia inteiro não aceita startsAt.")
+            if self.start_date is None:
+                raise ValueError("Evento de dia inteiro exige start_date.")
+            if self.end_date is not None and self.end_date <= self.start_date:
+                raise ValueError("end_date deve ser posterior a start_date.")
+        elif self.start_date is not None or self.end_date is not None:
+            raise ValueError("start_date e end_date exigem all_day=true.")
+        return self
 
 
 class ConfirmSyllabusRequest(BaseModel):
@@ -125,8 +142,21 @@ class ConfirmSyllabusRequest(BaseModel):
         return self
 
 
+class ConfirmItemResult(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    candidate_id: UUID = Field(alias="candidateId")
+    event_id: UUID | None = Field(default=None, alias="eventId")
+    result: str
+    removed: bool = False
+    kind: str | None = Field(default=None, alias="type")
+
+
 class ConfirmSyllabusResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     syllabus_id: UUID = Field(alias="syllabusId")
+    operation_id: UUID = Field(alias="operationId")
+    repeated: bool
+    items: list[ConfirmItemResult]
     events: list[PersonalEventRead]
