@@ -33,7 +33,7 @@ Reter o PDF em armazenamento privado permitiria reprocessar o original, mas aume
 
 Se uma nova extração depender de conteúdo removido após o descarte do PDF, o usuário precisa reenviar o arquivo ou fornecer novo texto. Edições de texto ainda não autorizadas não são persistidas pelo navegador. `store=false` no provedor externo não substitui a revisão humana nem a verificação dos termos de elegibilidade em produção (`SYLLABUS_PROVIDER_TERMS_READY`).
 
-[Contrato da Release 2](../../atualizacoes.md#contratos-da-release-2) · [ADR-010](adr-010-versoes-e-confirmacao-de-planos.md) · [ADR-014](adr-014-processamento-assincrono-planos-ia.md)
+[Contrato da Release 2](/atualizacoes#contratos-da-release-2) · [ADR-010](/arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos) · [ADR-014](/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia)
 
 ## Leitura e manutenção
 

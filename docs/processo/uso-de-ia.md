@@ -33,6 +33,23 @@ O campo **verificado** é o mais importante. Sem ele, a entrada declara o uso ma
 
 ## Entradas
 
+### 17/11/2026 — S8-B01: endpoints de compartilhamento, versões, procedência e votos (#77)
+
+- **Quem:** Thomaz Marra (solicitante).
+- **Ferramenta:** Google Antigravity (Gemini) e Pytest.
+- **O que foi pedido:** Completar na branch `feat/s8-b01-compartilhamento-planos` os endpoints FastAPI, schemas, testes HTTP e documentação da issue #77 sobre a migração SQL já criada.
+- **O que entrou no repositório:** Rotas de compartilhamento/retirada (`PUT/DELETE /syllabus/{id}/versions/{vid}/sharing`), criação e edição de revisão (`POST /syllabus/{id}/versions`, `PUT /syllabus/{id}/versions/{vid}`), validação de procedência institucional (`PUT .../provenance`), votação e resumo de divergência (`PUT .../vote`, `GET .../votes`), suporte a `versionId` em `POST /syllabus/{id}/confirm`, enriquecimento de `GET /class-offerings/{id}/shared-plans`, suíte `backend/tests/test_plan_sharing_api.py` e atualização de `docs/arquitetura/dados-de-planos.md`, `docs/api-specs.md` e `docs/sprints/sprint-8.md`.
+- **O que foi verificado:** Execução de `pytest tests/test_plan_sharing_api.py tests/test_syllabus_review_api.py tests/test_class_catalog_api.py` (40 testes aprovados) e da suíte completa do backend (`226 passed`), validando isolamento de rascunhos privados diante de `professor`/`admin`, voto único editável sem alterar datas e preservação de cópias importadas e revisões após retirada.
+- **O que foi rejeitado ou corrigido:** No SQLite de testes, `DateTime(timezone=True)` devolvia `starts_at` sem `tzinfo` quando o seguidor importava um candidato sem sobrescrever a data no payload, gerando `422` indevido; o fallback SQLite foi ajustado para preservar o fuso da avaliação não ambígua, alinhando-o ao comportamento de `confirmar_importacao` no PostgreSQL.
+
+### 16/11/2026 — Links da documentação e execução local
+
+- **Quem:** Codex, a pedido do mantenedor.
+- **Ferramenta:** Codex (OpenAI).
+- **O que foi pedido:** Corrigir os links e redirecionamentos da documentação na `dev` e documentar a instalação e a execução local.
+- **O que entrou no repositório:** Links e redirecionamentos atualizados, compatibilidade com o MkDocs e [guia de execução local](/processo/execucao-local).
+- **O que foi verificado:** Links, âncoras e redirecionamentos na prévia do Mintlify, build estrito do MkDocs e inicialização do Supabase, da API e do frontend em cópia isolada.
+
 ### 15/11/2026 — Sugestão de horário de prova na revisão de datas
 
 - **Quem:** Heitor Gomes Monteiro (solicitante).

@@ -131,7 +131,7 @@ logs dos provedores também omitem tokens, credenciais e conteúdo acadêmico.
 
 ## Plano original e histórico
 
-O protocolo de migrações seguras e as decisões de infraestrutura estão consolidados nas [ADR-002](arquitetura/adrs/adr-002-separar-hospedagem-e-ambientes.md) e [ADR-007](arquitetura/adrs/adr-007-migracoes-sql.md). Este plano detalha a configuração, a publicação e a recuperação.
+O protocolo de migrações seguras e as decisões de infraestrutura estão consolidados nas [ADR-002](/arquitetura/adrs/adr-002-separar-hospedagem-e-ambientes) e [ADR-007](/arquitetura/adrs/adr-007-migracoes-sql). Este plano detalha a configuração, a publicação e a recuperação.
 
 O plano abaixo registra a proposta de **24/10/2026**, com referência no commit `e0ecf46`. A seção de operação acima documenta a configuração da S7-B06 e as verificações mais recentes.
 
@@ -197,7 +197,7 @@ Além da API, provisionar processo independente com comando, na pasta `backend`,
 `python -m src.modules.syllabus.worker`. Deve usar o mesmo banco e Storage privado
 da API e reiniciar após interrupções. O ciclo de requisição HTTP não executa IA.
 Configurar `GEMINI_API_KEY` como segredo do servidor, nunca no frontend; demais
-limites, preços e regras de fila/orçamento estão na [ADR-014](arquitetura/adrs/adr-014-processamento-assincrono-planos-ia.md).
+limites, preços e regras de fila/orçamento estão na [ADR-014](/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia).
 
 Aplicar #40, S6-D01, `20261109110000_fila_processamento_planos.sql` e
 `20261109113000_privacidade_e_revisao_planos.sql` (S6-D02).
@@ -207,8 +207,36 @@ Somente então habilitar os dois parâmetros no ambiente correspondente. A avali
 sintética com Gemini não homologa privacidade, Storage remoto ou fila em produção.
 Esta entrega não provisiona serviço nem aplica migrações remotas.
 O worker também verifica pré-requisitos nos catálogos do banco e recusa configuração
-incompleta, mesmo com as flags ativas. Consultar as [ADR-003](arquitetura/adrs/adr-003-minimizar-dados-de-planos.md) e [ADR-014](arquitetura/adrs/adr-014-processamento-assincrono-planos-ia.md)
+incompleta, mesmo com as flags ativas. Consultar as [ADR-003](/arquitetura/adrs/adr-003-minimizar-dados-de-planos) e [ADR-014](/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia)
 para conferir o banco local antes de ativar o processo.
+
+### Coleta da Agenda UnB Notícias (S7-B05)
+
+O coletor é um processo desacoplado da API, que utiliza `DATABASE_URL` do ambiente e advisory locks (`pg_advisory_xact_lock`) no PostgreSQL para garantir idempotência e impedir concorrência.
+
+#### Formas de Execução e Ativação em Background
+1. **GitHub Actions (Ambiente Hospedado):**
+   - Configurado no workflow `.github/workflows/production-jobs.yml` através do job `collector`.
+   - Execução programada diariamente às 07h27 BRT (`cron: '27 10 * * *'`) e manual via `workflow_dispatch` com input `job: collector`.
+   - **Ativação:** requer definir a variável `PRODUCTION_EVENT_COLLECTION_ENABLED = 'true'` no environment `production-jobs` e vincular o secret `DATABASE_URL` com TLS.
+2. **Automação Local via Makefile:**
+   - `make events-collect`: executa uma única passagem de coleta localmente.
+   - `make events-collect-daemon`: executa o coletor em modo daemon com intervalo padrão.
+3. **CLI Direto no Backend:**
+   - `python -m src.modules.events.collector`: execução única.
+   - `python -m src.modules.events.collector --daemon`: execução contínua em background.
+   - `python -m src.modules.events.collector --interval-hours <h>`: execução recorrente com intervalo mínimo de 1 hora.
+
+#### Status de Validação e Evidências
+Consulte [Dados de eventos: datas e coleta](/arquitetura/dados-de-eventos) e a [ADR-011](/arquitetura/adrs/adr-011-datas-civis-e-instantes) para a rastreabilidade completa dos critérios de aceite.
+
+| Cenário / Requisito | Validação Realizada (Local / CI) | Acompanhamento na Hospedagem |
+| --- | --- | --- |
+| Deduplicação por similaridade de título e data | 34 testes em `test_event_collector.py` e 18 em `test_event_collection_database.py` cobrindo limiares ($\ge 0{,}80$ / $0{,}85$ / $0{,}92$), janela $\le 2$ dias, acentos/pontuação e prevenção de falsos positivos com números/edições. | Homologação com dados reais de produção e integração visual da fila de revisão em S8-F02 ([#80](https://github.com/unb-mds/2026-2-AgendaUnB/issues/80)). |
+| Marcação de dia inteiro vs `00:00` | Termos explícitos reconhecidos gerando datas civis (`dia_inteiro: True`); horários `00:00` sem indicativo mantidos em revisão (`ambiguo: True`). | Verificação amostral nos eventos extraídos diretamente de `noticias.unb.br`. |
+| Procedência visível (RF16) | Contratos públicos em `EventRead` (`source`, `source_url`), API (`test_events_api.py`), cache frontend (`publicEventsCache.test.js`) e UI (`PaginaDeEvento.jsx`, `SecondPage.jsx`). | Inspeção visual no deploy da Vercel após publicação em `main`. |
+| Cobertura multicampus | Mapeamento e normalização dos 5 campi da UnB (Darcy Ribeiro, FCTE, FCTS, FUP, FAL). | Conferência dos nomes de campus gravados no banco remoto. |
+| Execuções concorrentes e falha da fonte | Advisory lock (`pg_try_advisory_lock(708073)` e lock por item) validado; rollback de transação e preservação de dados existentes em caso de erro HTTP/timeout (`status = 'falha'`). | Ativação de `PRODUCTION_EVENT_COLLECTION_ENABLED=true` no environment `production-jobs` após merge em `main`. |
 
 | Ambiente | Aplicação e dados | Uso e publicação |
 | --- | --- | --- |
@@ -244,11 +272,11 @@ Configurar a conexão PostgreSQL usando a opção oferecida pelo projeto Supabas
 
 ### SPA, CORS e configuração Vercel
 
-Tanto [`frontend/vercel.json`](../frontend/vercel.json) (usado quando o Root Directory é `frontend`) quanto [`vercel.json`](../vercel.json) na raiz configuram exclusivamente o frontend Vite (`framework: "vite"`, saída `dist` / `frontend/dist`), preservando `/api/search` (`kind=sitemap` e `kind=event`), `/auth/retorno` -> `/app.html`, `/eventos` -> `/eventos.html` e rotas profundas em `/app.html`.
+Tanto [`frontend/vercel.json`](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/frontend/vercel.json) (usado quando o Root Directory é `frontend`) quanto [`vercel.json`](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/vercel.json) na raiz configuram exclusivamente o frontend Vite (`framework: "vite"`, saída `dist` / `frontend/dist`), preservando `/api/search` (`kind=sitemap` e `kind=event`), `/auth/retorno` -> `/app.html`, `/eventos` -> `/eventos.html` e rotas profundas em `/app.html`.
 
-O [roteamento do frontend](../frontend/vercel.json) gera títulos, descrições e URLs canônicas no HTML da home e da lista de eventos durante o build. As rotas da SPA, como `/admin` e `/plano-de-ensino`, continuam aceitando acesso direto e recarga.
+O [roteamento do frontend](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/frontend/vercel.json) gera títulos, descrições e URLs canônicas no HTML da home e da lista de eventos durante o build. As rotas da SPA, como `/admin` e `/plano-de-ensino`, continuam aceitando acesso direto e recarga.
 
-A função [de busca](../frontend/api/search.js) responde a `/sitemap.xml` e `/evento/<id>`. Configure a URL e a chave pública do Supabase do mesmo ambiente no build e na função. As leituras passam pela RLS anônima e selecionam apenas eventos aprovados. A CDN pode guardar respostas públicas por cinco minutos. Teste o sitemap, um evento aprovado e um ID inexistente após a publicação. Após o deploy, envie o sitemap e solicite indexação no Search Console.
+A função [de busca](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/frontend/api/search.js) responde a `/sitemap.xml` e `/evento/<id>`. Configure a URL e a chave pública do Supabase do mesmo ambiente no build e na função. As leituras passam pela RLS anônima e selecionam apenas eventos aprovados. A CDN pode guardar respostas públicas por cinco minutos. Teste o sitemap, um evento aprovado e um ID inexistente após a publicação. Após o deploy, envie o sitemap e solicite indexação no Search Console.
 
 A SPA consome a API no Render diretamente por HTTPS através de `VITE_API_URL` (exigida no build em `frontend/src/lib/deploymentConfig.js`, terminada em `/api/v1`), inclusive no upload de 10 MiB, com `CORS_ORIGINS` restrito às origens explícitas da Vercel no Render.
 
@@ -337,7 +365,7 @@ Aceitar a implantação apenas com evidências registradas de migrações, build
 | Criar workflows, secrets por ambiente, gates e publicação pelo SHA | Time, com Backend |
 | Atualizar este documento com evidências e URLs efetivas | Responsável pela release |
 
-Nenhum desses papéis representa atribuição nominal já aprovada. Mudanças de hospedagem, variáveis, migrações ou pipeline devem atualizar este documento no mesmo PR. Ver [Arquitetura](arquitetura/visao-geral.md), [Contratos](api-specs.md) e [Contribuição](processo/contribuindo.md).
+Nenhum desses papéis representa atribuição nominal já aprovada. Mudanças de hospedagem, variáveis, migrações ou pipeline devem atualizar este documento no mesmo PR. Ver [Arquitetura](/arquitetura/visao-geral), [Contratos](/api-specs) e [Contribuição](/processo/contribuindo).
 
 ## Transição do desenvolvimento local para o projeto Supabase da equipe
 
@@ -358,8 +386,8 @@ CORS, Auth/retornos de login, bucket privado e revisão explícita com contas de
 homologação antes de habilitar as flags. A aprovação local não equivale à aprovação
 do ambiente hospedado. A suíte local foi feita para rejeitar hosts remotos; a
 homologação na nuvem deve ter procedimento próprio, com dados sintéticos e o
-projeto de destino identificado. Ver as [ADR-003](arquitetura/adrs/adr-003-minimizar-dados-de-planos.md)
-e [ADR-014](arquitetura/adrs/adr-014-processamento-assincrono-planos-ia.md).
+projeto de destino identificado. Ver as [ADR-003](/arquitetura/adrs/adr-003-minimizar-dados-de-planos)
+e [ADR-014](/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia).
 
 
 ### Correção de configuração em produção (11/11/2026)

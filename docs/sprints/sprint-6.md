@@ -87,7 +87,7 @@ Os textos de #38 e #40 abaixo são propostas de atualização das mesmas issues,
 
 **Dependências:** RPCs e políticas administrativas já existentes (#42).
 
-**Decisão posterior:** o painel mantém as RPCs Supabase existentes como interface única. As rotas REST duplicadas foram removidas. A proposta deste item foi substituída; o contrato vigente e os testes de autorização estão descritos em [Contratos do backend](../api-specs.md#contratos-supabase-separados-da-api-fastapi), [ADR-001](../arquitetura/adrs/adr-001-integracao-fastapi-supabase.md) e [ADR-006](../arquitetura/adrs/adr-006-autorizacao-em-camadas.md).
+**Decisão posterior:** o painel mantém as RPCs Supabase existentes como interface única. As rotas REST duplicadas foram removidas. A proposta deste item foi substituída; o contrato vigente e os testes de autorização estão descritos em [Contratos do backend](/api-specs#contratos-supabase-separados-da-api-fastapi), [ADR-001](/arquitetura/adrs/adr-001-integracao-fastapi-supabase) e [ADR-006](/arquitetura/adrs/adr-006-autorizacao-em-camadas).
 
 ### #40 — Endpoint Base de Upload de Plano de Ensino
 
@@ -127,7 +127,7 @@ Tasks:
 - [ ] Consultar em intervalos controlados, interromper consultas ao sair da tela ou alcançar estado final e permitir retomar a revisão após recarregar.
 - [ ] Apresentar erros recuperáveis e alternativa de cadastro manual; validar teclado, telas a partir de 360px e temas claro/escuro.
 
-### S6-F02 — Revisão Assistida por IA e Importação na Agenda
+### S6-F02 — Revisão Assistida por IA e Importação na Agenda {#s6-f02}
 
 **Responsável principal:** Gabriel Escramin (@Bielziin07).
 
@@ -168,10 +168,10 @@ Tasks:
 - [x] Criar amostras anonimizadas com referência esperada e medir extrações corretas, omissões, datas inventadas e tempo total; verificar a meta de menos de 20s para PDFs de até 10 páginas e registrar desvios.
 
 **Evidência local (09/11/2026):** decisões e testes descritos na
-[ADR-014](../arquitetura/adrs/adr-014-processamento-assincrono-planos-ia.md), com
-[corpus Gemini sintético](../benchmarks/syllabus-gemini-2026-11-09.json),
-[integração HTTP local](../benchmarks/syllabus-http-local-2026-11-09.json) e
-[regressão do upload isolado](../benchmarks/syllabus-upload-local-2026-11-09.json).
+[ADR-014](/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia), com
+[corpus Gemini sintético](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/docs/benchmarks/syllabus-gemini-2026-11-09.json),
+[integração HTTP local](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/docs/benchmarks/syllabus-http-local-2026-11-09.json) e
+[regressão do upload isolado](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/docs/benchmarks/syllabus-upload-local-2026-11-09.json).
 A conclusão local não representa implantação/homologação no Supabase da equipe.
 Dados reais continuam condicionados à S6-D02 no destino; a tela e os endpoints
 de revisão continuam na S6-B02/S6-F02. Desvios da meta RNF06 permanecem registrados.
@@ -239,9 +239,9 @@ Tasks:
 
 ## Base documental
 
-- [Requisitos](../produto/requisitos.md): RF05–RF09, RNF02, RNF04, RNF06, RNF07, RNF09 e RNF10.
-- [Documento de visão](../produto/visao.md): Modelo Dual e prioridade da extração assistida.
-- [Arquitetura](../arquitetura/visao-geral.md): FastAPI, Supabase Auth/Storage e estado atual do processamento.
-- [Especificação de banco](../arquitetura/banco-de-dados.md) e [modelo de dados](../arquitetura/modelo-de-dados.md): estruturas existentes, que precisam evoluir para propriedade estudantil e estados.
-- [ADR-001](../arquitetura/adrs/adr-001-integracao-fastapi-supabase.md) e [ADR-006](../arquitetura/adrs/adr-006-autorizacao-em-camadas.md): permissões, RPCs e notificações já entregues.
+- [Requisitos](/produto/requisitos): RF05–RF09, RNF02, RNF04, RNF06, RNF07, RNF09 e RNF10.
+- [Documento de visão](/produto/visao): Modelo Dual e prioridade da extração assistida.
+- [Arquitetura](/arquitetura/visao-geral): FastAPI, Supabase Auth/Storage e estado atual do processamento.
+- [Especificação de banco](/arquitetura/banco-de-dados) e [modelo de dados](/arquitetura/modelo-de-dados): estruturas existentes, que precisam evoluir para propriedade estudantil e estados.
+- [ADR-001](/arquitetura/adrs/adr-001-integracao-fastapi-supabase) e [ADR-006](/arquitetura/adrs/adr-006-autorizacao-em-camadas): permissões, RPCs e notificações já entregues.
 - Migrações `20260923172640` e `20261014120200`: planos atuais com `professor_id` obrigatório, leitura pública de avaliações e bucket PDF privado de até 10 MB. Essas limitações fundamentam as issues de dados.

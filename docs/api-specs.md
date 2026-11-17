@@ -2,9 +2,9 @@
 
 ## Referência e limites
 
-Este inventário descreve o backend atual. Para os contratos planejados, consulte [Release 2](atualizacoes.md#contratos-da-release-2).
+Este inventário descreve o backend atual. Para os contratos planejados, consulte [Release 2](/atualizacoes#contratos-da-release-2).
 
-A API possui operações HTTP de aplicação (inventário abaixo), incluindo `/health`. `/docs`, `/redoc` e `/openapi.json` são recursos de documentação gerados pelo FastAPI, não operações de negócio. Consulte também [Arquitetura](arquitetura/visao-geral.md), [Padrões](produto/padroes.md) e [Implantação](implantacao.md).
+A API possui operações HTTP de aplicação (inventário abaixo), incluindo `/health`. `/docs`, `/redoc` e `/openapi.json` são recursos de documentação gerados pelo FastAPI, não operações de negócio. Consulte também [Arquitetura](/arquitetura/visao-geral), [Padrões](/produto/padroes) e [Implantação](/implantacao).
 
 Fontes: `backend/src/main.py`, `modules/events/router.py`, `modules/events/schemas.py`, `modules/google_calendar/router.py`, `middlewares/auth.py` e `database/models.py` (relativos a `backend/src/`). O OpenAPI ajuda a conferir campos e rotas, mas não descreve integralmente os handlers de erro personalizados.
 
@@ -122,7 +122,7 @@ Todas as operações exigem sessão e restringem os dados ao usuário autenticad
 
 Receber 201 não significa aprovação. O item não aparece no catálogo até ser aprovado pela RPC de moderação.
 
-### Eventos salvos — pós-R1
+### Eventos salvos — pós-R1 {#eventos-salvos-pos-r1}
 
 Todas as operações exigem sessão. O vínculo não copia o evento e não constitui inscrição.
 
@@ -264,7 +264,7 @@ Cada item tem `id`, `usuario_id`, `evento_id`, `tipo` (`submissao/aprovacao/recu
 
 ## Verificação e manutenção
 
-Conferir inventário com `app.openapi()` e revisar manualmente handlers, permissões e SQL. Os testes de eventos, sugestões e salvos usam SQLite e substituem dependências de autenticação: não comprovam integração real com Auth nem RLS. Os testes de moderação de banco exigem Supabase local descartável. Ver [Contribuição](processo/contribuindo.md) e o registro de validação em [Arquitetura](arquitetura/visao-geral.md#9-verificacao).
+Conferir inventário com `app.openapi()` e revisar manualmente handlers, permissões e SQL. Os testes de eventos, sugestões e salvos usam SQLite e substituem dependências de autenticação: não comprovam integração real com Auth nem RLS. Os testes de moderação de banco exigem Supabase local descartável. Ver [Contribuição](/processo/contribuindo) e o registro de validação em [Arquitetura](/arquitetura/visao-geral#9-verificacao).
 
 Qualquer alteração de rota, schema, autorização, erro ou RPC deve atualizar este documento no mesmo PR. Inscrições, categorias REST e atualização pública não são contratos disponíveis.
 
@@ -301,14 +301,14 @@ Concluído com contagem zero significa documento sem cronograma identificado.
 `processingDurationMs` mede a última tentativa; `totalDurationMs` mede da criação
 do registro ao término, incluindo fila/retentativas, e é nulo antes de finalizar.
 
-O [worker independente](arquitetura/adrs/adr-014-processamento-assincrono-planos-ia.md) consome a fila. Ele fica
+O [worker independente](/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia) consome a fila. Ele fica
 desativado até a configuração explícita e a validação das políticas S6-D02.
 Upload e worker não criam compromissos. As rotas de listagem, detalhe e confirmação
 S6-B02 já existentes, descritas acima, operam sobre `avaliacoes` legadas; os
 candidatos privados do worker em `candidatos_avaliacao` ainda exigem conciliação
 com esse contrato antes da integração no ambiente da equipe.
 O contrato transacional de banco S6-D02 já está disponível em
-[`revisar_candidatos_plano`](arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos.md).
+[`revisar_candidatos_plano`](/arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos).
 
 
 ## Atualização S7-B01 — preparação e autorização do texto (10/11/2026)
@@ -348,12 +348,12 @@ e cada conta tem uma operação independente sobre a mesma versão compartilhada
 A revisão do tipo fica no item de importação da conta e não altera o candidato
 compartilhado.
 
-[Fluxo, flags e decisões](arquitetura/adrs/adr-014-processamento-assincrono-planos-ia.md) · [Minimização (ADR-003)](arquitetura/adrs/adr-003-minimizar-dados-de-planos.md) · [Versionamento e confirmação (ADR-010)](arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos.md).
+[Fluxo, flags e decisões](/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia) · [Minimização (ADR-003)](/arquitetura/adrs/adr-003-minimizar-dados-de-planos) · [Versionamento e confirmação (ADR-010)](/arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos).
 
 ### Catálogo e seleção real de ofertas (#70/#71)
 
 A integração autenticada, rotas de catálogo/filtros/vínculos e operação estão em
-[Catálogo de turmas](arquitetura/catalogo-de-turmas.md). PDF multipart e texto JSON
+[Catálogo de turmas](/arquitetura/catalogo-de-turmas). PDF multipart e texto JSON
 passam a exigir `offering_id` (UUID da oferta disponível). O servidor deriva
 nome da disciplina, turma e período, ignorando metadados livres para associação.
 Histórico particular aceita `offering_id` opcional; dados privados continuam
@@ -372,3 +372,19 @@ continua retornando 409; catálogo sem publicação retorna 503.
 A interface consulta a oferta e `GET /me/class-offerings` antes de habilitar
 PDF/texto. Falhas ou respostas inválidas bloqueiam o envio e oferecem nova consulta.
 Histórico e planos particulares continuam acessíveis ao dono após deixar de seguir.
+
+### Compartilhamento, versões, procedência e votos — S8-B01 (#77)
+
+| Operação | Entrada / Autorização | Resultado |
+| --- | --- | --- |
+| `GET /api/v1/class-offerings/{id}/shared-plans` | Seguidor autenticado da oferta (`limit`, `offset`) | Lista versões compartilhadas com `membership_type: "autodeclarado"`, `shared_content_notice`, autoria (`author_role`, `author_name`), `institutional_provenance`, contagens de votos, `divergent` e candidatos, sem expor PDF ou texto bruto privado |
+| `GET /api/v1/syllabus/{id}/versions` e `.../versions/{vid}` | Autor da versão ou seguidor da oferta quando `compartilhada` | Lista ou detalha versões legíveis pelo ator (`ator_pode_ler_versao`); papel de professor/admin não abre rascunhos privados alheios |
+| `PUT /api/v1/syllabus/{id}/versions/{vid}/sharing` | Somente o autor da versão | Publica voluntariamente a versão para seguidores da oferta (`200`, idempotente; `409` se sem turma ou não concluído) |
+| `DELETE /api/v1/syllabus/{id}/versions/{vid}/sharing` | Autor da versão ou `admin` | Retira o compartilhamento (`visibilidade: "privada"`, `withdrawnAt`), bloqueando novos acessos/votos/importações e preservando revisões derivadas e eventos pessoais já importados |
+| `POST /api/v1/syllabus/{id}/versions` | Autor (em versão própria), seguidor autenticado da oferta, `professor` ou `admin` (em versão `compartilhada`) | Cria nova versão (`numero + 1`, `sourceVersionId`, `authorRole`) mantendo a versão anterior e agendas pessoais; publica quando `share=true` ou enviada com `candidates` em plano com oferta; herda `institutionalProvenance` apenas para `professor`/`admin` |
+| `DELETE /api/v1/syllabus/{id}/versions/{vid}/candidates/{cid}` | Autor da versão ou `admin` | Retira logicamente o candidato da versão (`status: "descartado"`, 204), preservando cópias já importadas |
+| `PUT /api/v1/syllabus/{id}/versions/{vid}` | Somente o autor da versão, enquanto `privada` | Atualiza os candidatos do rascunho privado antes do compartilhamento (`409` se já `compartilhada`) |
+| `PUT /api/v1/syllabus/{id}/versions/{vid}/provenance` | Somente `admin`, com `institutionalSourceUrl` pública `http(s)` | Registra evidência oficial de procedência institucional em versão compartilhada |
+| `PUT /api/v1/syllabus/{id}/versions/{vid}/candidates/{cid}/vote` e `PUT .../versions/{vid}/vote` | Seguidor autenticado da oferta (`{"value": "confirm" \| "contest"}`) | Registra ou altera o voto único ativo por `(user_id, candidate_id)` e devolve `confirmCount`, `contestCount`, `divergent` e `myVote`, sem alterar datas automaticamente |
+| `GET /api/v1/syllabus/{id}/versions/{vid}/votes` | Quem pode ler a versão | Retorna o resumo agregado de votos e divergências por candidato (`resumo_votos_versao`), mantendo votos individuais de terceiros privados |
+| `POST /api/v1/syllabus/{id}/confirm` | `Idempotency-Key`, `versionId` opcional e `candidates` | Permite que seguidores importem candidatos de uma versão compartilhada para suas agendas privadas independentes, deduplicados por `(user_id, candidate_id)` |
