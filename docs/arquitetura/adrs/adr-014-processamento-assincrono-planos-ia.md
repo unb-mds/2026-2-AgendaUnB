@@ -61,4 +61,4 @@ Processar em `BackgroundTasks` na API perderia jobs durante spin-down ou reiníc
 
 ## Fontes e relações
 
-[ADR-002](adr-002-separar-hospedagem-e-ambientes.md) · [ADR-003](adr-003-minimizar-dados-de-planos.md) · [ADR-010](adr-010-versoes-e-confirmacao-de-planos.md) · [Dados de planos](../dados-de-planos.md) · [Contratos da API](../../api-specs.md) · [Índice de ADRs](index.md)
+[ADR-002](/arquitetura/adrs/adr-002-separar-hospedagem-e-ambientes) · [ADR-003](/arquitetura/adrs/adr-003-minimizar-dados-de-planos) · [ADR-010](/arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos) · [Dados de planos](/arquitetura/dados-de-planos) · [Contratos da API](/api-specs) · [Índice de ADRs](/arquitetura/adrs/index)

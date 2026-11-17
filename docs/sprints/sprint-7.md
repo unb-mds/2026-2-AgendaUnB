@@ -9,7 +9,7 @@ Planejamento aprovado para 07–15/11/2026. Entrega final em 25/11/2026. As tare
 
 ## Decisões da entrega
 
-Consulte os [contratos](../atualizacoes.md#contratos-da-release-2) e a [matriz de aceite](../matriz-release-2.md) para os critérios vigentes.
+Consulte os [contratos](/atualizacoes#contratos-da-release-2) e a [matriz de aceite](/matriz-release-2) para os critérios vigentes.
 
 - Seleção manual de turmas pelo catálogo público Followw, com vínculo autodeclarado.
 - Planos privados por padrão, com edição conforme papel e visibilidade. Compartilhamento voluntário de conteúdo revisado. O PDF original é descartado após a extração local.
@@ -27,7 +27,7 @@ F identifica frontend, B backend e D dados. A numeração é independente por á
 
 ## Issues planejadas
 
-### S7-B01 - Concluir extração assíncrona de provas e trabalhos com IA
+### S7-B01 - Concluir extração assíncrona de provas e trabalhos com IA {#s7-b01}
 
 [Issue #51](https://github.com/unb-mds/2026-2-AgendaUnB/issues/51)
 
@@ -68,9 +68,9 @@ A minimização por regex tem alcance limitado. Enviar conteúdo ao serviço gra
 
 
 **Evidência local em 10/11/2026:** decisões consolidadas nas
-[ADR-003](../arquitetura/adrs/adr-003-minimizar-dados-de-planos.md),
-[ADR-010](../arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos.md) e
-[ADR-014](../arquitetura/adrs/adr-014-processamento-assincrono-planos-ia.md). O caminho manual e o bloqueio
+[ADR-003](/arquitetura/adrs/adr-003-minimizar-dados-de-planos),
+[ADR-010](/arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos) e
+[ADR-014](/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia). O caminho manual e o bloqueio
 operacional estão implementados; produção continua pendente de S7-B02, implantação
 validada e revisão humana. Os checks acima representam implementação/validação
 local, sem aprovação automática de dados reais ou fechamento das dependências.
@@ -81,7 +81,7 @@ local, sem aprovação automática de dados reais ou fechamento das dependência
 
 #### Objetivo
 
-Fixar as decisões da Release 2 e publicar contratos para frontend, backend e dados. O resultado está nos [contratos](../atualizacoes.md#contratos-da-release-2) e na [matriz de aceite](../matriz-release-2.md).
+Fixar as decisões da Release 2 e publicar contratos para frontend, backend e dados. O resultado está nos [contratos](/atualizacoes#contratos-da-release-2) e na [matriz de aceite](/matriz-release-2).
 
 - **Sprint** [Sprint 07](https://github.com/unb-mds/2026-2-AgendaUnB/milestone/7)
 - **Janela** 07–08/11/2026
@@ -112,7 +112,7 @@ Fixar as decisões da Release 2 e publicar contratos para frontend, backend e da
 - [ ] Registrar o nome do revisor e a revisão dos contratos, permissões e dados afetados por esta entrega.
 
 
-### S7-B02 - Validar infraestrutura gratuita, integrações e CI
+### S7-B02 - Validar infraestrutura gratuita, integrações e CI {#s7-b02}
 
 [Issue #68](https://github.com/unb-mds/2026-2-AgendaUnB/issues/68)
 
@@ -148,7 +148,7 @@ Demonstrar a viabilidade de Followw público, SMTP, Gemini e jobs persistidos de
 
 Validar SMTP próprio para destinatários externos. Consultar a documentação de [SMTP do Supabase](https://supabase.com/docs/guides/auth/auth-smtp), os [termos do Gemini](https://ai.google.dev/gemini-api/terms) e a [arquitetura do Followw](https://docs.followw.app/arquitetura) durante as provas. O consentimento do usuário não dispensa as condições do provedor.
 
-**Evidências consolidadas em 14/11/2026:** decisões registradas nas [ADR-002](../arquitetura/adrs/adr-002-separar-hospedagem-e-ambientes.md), [ADR-009](../arquitetura/adrs/adr-009-catalogo-publico-de-turmas.md), [ADR-012](../arquitetura/adrs/adr-012-exportacao-google-idempotente.md) e [ADR-014](../arquitetura/adrs/adr-014-processamento-assincrono-planos-ia.md). Configurações de custo zero comprovadas; credenciais isoladas por variáveis de ambiente; CI automatizado cobrindo frontend, backend e migrações.
+**Evidências consolidadas em 14/11/2026:** decisões registradas nas [ADR-002](/arquitetura/adrs/adr-002-separar-hospedagem-e-ambientes), [ADR-009](/arquitetura/adrs/adr-009-catalogo-publico-de-turmas), [ADR-012](/arquitetura/adrs/adr-012-exportacao-google-idempotente) e [ADR-014](/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia). Configurações de custo zero comprovadas; credenciais isoladas por variáveis de ambiente; CI automatizado cobrindo frontend, backend e migrações.
 
 #### Evidências para fechamento
 
@@ -382,7 +382,7 @@ Alimentar a agenda pela fonte institucional Agenda UnB Notícias, com origem ver
 - [x] Verificar que indisponibilidade da fonte preserva registros, que decisões de moderação e campos editados localmente são respeitados e que a cobertura multicampus reflete os dados disponíveis.
 - [x] Verificar que evento completo é publicado automaticamente e que item ambíguo, incompleto ou possivelmente duplicado fica em revisão.
 
-**Evidências consolidadas em 16/11/2026:** decisões e validação técnica registradas em [Dados de eventos: datas e coleta](../arquitetura/dados-de-eventos.md) e na [ADR-011](../arquitetura/adrs/adr-011-datas-civis-e-instantes.md). Coletor, deduplicação por chave canônica/URL/similaridade, normalização de datas civis, proteção de edições locais e procedência visível validados em 44 testes de backend/coletor, 18 cenários PostgreSQL e 37 testes de frontend.
+**Evidências consolidadas em 16/11/2026:** decisões e validação técnica registradas em [Dados de eventos: datas e coleta](/arquitetura/dados-de-eventos) e na [ADR-011](/arquitetura/adrs/adr-011-datas-civis-e-instantes). Coletor, deduplicação por chave canônica/URL/similaridade, normalização de datas civis, proteção de edições locais e procedência visível validados em 44 testes de backend/coletor, 18 cenários PostgreSQL e 37 testes de frontend.
 
 #### Evidências para fechamento
 
@@ -439,4 +439,4 @@ Retirar o compartilhamento da versão original não retira nem exclui suas revis
 
 Uma revisão feita por professor ou admin mantém a procedência institucional já validada da versão de origem. Registrar a versão de origem, a evidência institucional herdada, o autor da revisão e seu papel no momento da alteração. A interface distingue documento institucional de origem e alterações posteriores da comunidade. Papel professor/admin não cria procedência institucional quando a origem não a possuía; revisões estudantis não recebem essa herança automaticamente.
 
-A confirmação e reimportação devem seguir a chave por ação descrita nos [contratos da R2](../atualizacoes.md#confirmacao-rapida-e-reimportacao). Professor/admin publicam diretamente suas revisões de conteúdo já compartilhado.
+A confirmação e reimportação devem seguir a chave por ação descrita nos [contratos da R2](/atualizacoes#confirmacao-rapida-e-reimportacao). Professor/admin publicam diretamente suas revisões de conteúdo já compartilhado.

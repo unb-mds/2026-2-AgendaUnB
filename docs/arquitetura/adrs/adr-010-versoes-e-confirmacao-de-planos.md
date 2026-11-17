@@ -52,4 +52,4 @@ Verificar publicação de revisão por professor/admin sem aprovação adicional
 
 ## Fontes e relações
 
-[Plano, versão e candidatos](../../atualizacoes.md#plano-versao-e-candidatos) · [Dados de planos](../dados-de-planos.md) · [ADR-003](adr-003-minimizar-dados-de-planos.md) · [ADR-014](adr-014-processamento-assincrono-planos-ia.md) · [Requisitos](../../produto/requisitos.md) · [Índice de ADRs](index.md)
+[Plano, versão e candidatos](/atualizacoes#plano-versao-e-candidatos) · [Dados de planos](/arquitetura/dados-de-planos) · [ADR-003](/arquitetura/adrs/adr-003-minimizar-dados-de-planos) · [ADR-014](/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia) · [Requisitos](/produto/requisitos) · [Índice de ADRs](/arquitetura/adrs/index)

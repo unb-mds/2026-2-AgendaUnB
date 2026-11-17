@@ -33,6 +33,14 @@ O campo **verificado** é o mais importante. Sem ele, a entrada declara o uso ma
 
 ## Entradas
 
+### 16/11/2026 — Links da documentação e execução local
+
+- **Quem:** Codex, a pedido do mantenedor.
+- **Ferramenta:** Codex (OpenAI).
+- **O que foi pedido:** Corrigir os links e redirecionamentos da documentação na `dev` e documentar a instalação e a execução local.
+- **O que entrou no repositório:** Links e redirecionamentos atualizados, compatibilidade com o MkDocs e [guia de execução local](/processo/execucao-local).
+- **O que foi verificado:** Links, âncoras e redirecionamentos na prévia do Mintlify, build estrito do MkDocs e inicialização do Supabase, da API e do frontend em cópia isolada.
+
 ### 15/11/2026 — Sugestão de horário de prova na revisão de datas
 
 - **Quem:** Heitor Gomes Monteiro (solicitante).
