@@ -2,7 +2,9 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSemesterPlans } from '../contexts/SemesterPlansContext';
 import { fieldErrors, needsAttention } from '../lib/semesterReview';
+import { isProcessing } from '../lib/syllabus';
 import { updateCandidateReviewItem } from '../lib/syllabusReview';
+import HalftonePet from './HalftonePet';
 import { Icon } from './ManagementUI';
 
 const formatDate = value => value ? value.split('-').reverse().join('/') : 'Sem data';
@@ -89,7 +91,7 @@ function BulkEdit({ selected, disabled, apply, undo, hasUndo }) {
   </details>;
 }
 
-export default function SemesterReview({ plans, rows, offers, onPlan }) {
+export default function SemesterReview({ plans, allPlans = plans, rows, offers, onPlan, onOpenCatalog }) {
   const workspace = useSemesterPlans();
   const [filter, setFilter] = useState('all');
   const [course, setCourse] = useState('');
@@ -97,6 +99,16 @@ export default function SemesterReview({ plans, rows, offers, onPlan }) {
   const [opened, setOpened] = useState({});
   const bulkRef = useRef(null);
   const planNames = new Map(plans.map(plan => [plan.id, plan.disciplina || plan.fileName]));
+  const hasFollowedOffers = Object.keys(offers || {}).length > 0;
+  const pendingAuthPlan = allPlans.find(plan => plan.authorizationRequired && plan.preparedTextAvailable);
+  const activeProcessing = allPlans.some(isProcessing) || workspace.uploads.some(item => item.status === 'sending' || item.status === 'queued');
+  const petMode = rows.length
+    ? 'filtered'
+    : pendingAuthPlan
+      ? 'awaiting_auth'
+      : activeProcessing
+        ? 'processing'
+        : 'idle';
   const label = item => offers[item.offeringId]?.subject_name || planNames.get(item.planId);
   const groupKey = item => item.offeringId || item.planId;
   const courses = [...new Map(rows.map(item => [groupKey(item), offers[item.offeringId]
@@ -172,8 +184,66 @@ export default function SemesterReview({ plans, rows, offers, onPlan }) {
     {visible.length ? <ul className="semester-candidates">{visible.map(item => <CandidateLine key={item.key} item={{ ...item, open: opened[item.key] }}
       label={label(item)} disabled={locked(item)} update={change => patch(item, change)}
       select={checked => patch(item, { selected: checked })} />)}</ul> : <div className="semester-empty">
-      <Icon>event_note</Icon><h3>{rows.length ? 'Nenhuma avaliação neste filtro' : 'As datas aparecem aqui'}</h3>
-      {!rows.length && <p>Adicione um plano e autorize a extração para revisar provas e trabalhos.</p>}
+      <div className="semester-empty-copy">
+        <div className="semester-empty-title">
+          <Icon>event_note</Icon>
+          <h3>{rows.length ? 'Nenhuma avaliação neste filtro' : 'As datas aparecem aqui'}</h3>
+        </div>
+        {!rows.length ? (
+          <>
+            <p>Adicione um plano e autorize a extração para revisar provas e trabalhos.</p>
+            <ul className="semester-empty-steps" aria-label="Como começar">
+              <li className={hasFollowedOffers ? 'is-done' : ''}>
+                <Icon>{hasFollowedOffers ? 'check_circle' : 'school'}</Icon>
+                <div>
+                  <strong>Siga suas turmas do semestre</strong>
+                  <small>Vincule as disciplinas que você cursa para habilitar o envio e a biblioteca da turma.</small>
+                </div>
+              </li>
+              <li className={allPlans.length > 0 ? 'is-done' : ''}>
+                <Icon>{allPlans.length > 0 ? 'check_circle' : 'upload_file'}</Icon>
+                <div>
+                  <strong>Envie o PDF digital ou cole o cronograma</strong>
+                  <small>O texto é preparado localmente e só segue para análise após sua autorização.</small>
+                </div>
+              </li>
+              <li>
+                <Icon>event_available</Icon>
+                <div>
+                  <strong>Revise e adicione em lote à agenda</strong>
+                  <small>Provas e trabalhos extraídos aparecem nesta lista prontos para confirmação rápida.</small>
+                </div>
+              </li>
+            </ul>
+            <div className="semester-empty-actions">
+              {pendingAuthPlan ? (
+                <button type="button" className="manage-button primary" onClick={() => onPlan(pendingAuthPlan.id)}>
+                  <Icon>article</Icon>Abrir texto pendente
+                </button>
+              ) : !hasFollowedOffers && onOpenCatalog ? (
+                <button type="button" className="manage-button primary" onClick={onOpenCatalog}>
+                  <Icon>search</Icon>Selecionar turmas no catálogo
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="manage-button"
+                  onClick={() => {
+                    const addBtn = document.getElementById('semester-add-pdfs');
+                    if (addBtn && !addBtn.disabled) addBtn.focus();
+                    else document.querySelector('.semester-plan-offer button')?.focus();
+                  }}
+                >
+                  <Icon>upload_file</Icon>Ir para envio de plano
+                </button>
+              )}
+            </div>
+          </>
+        ) : (
+          <p>Altere o filtro acima ou selecione &ldquo;Todas&rdquo; para visualizar as avaliações extraídas.</p>
+        )}
+      </div>
+      <HalftonePet mode={petMode} />
     </div>}
     {Object.entries(workspace.results).filter(([id]) => planNames.has(id)).map(([id, result]) => <div
       className={`semester-result${result.error ? ' semester-error' : ''}`} key={id} role={result.error ? 'alert' : 'status'}>

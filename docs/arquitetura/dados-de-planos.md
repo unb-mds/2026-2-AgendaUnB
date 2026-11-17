@@ -65,14 +65,16 @@ O vínculo com a turma é autodeclarado: mostre isso na interface.
 | --- | --- | --- |
 | `PUT .../versions/{id}/sharing` | `select (public.compartilhar_versao(:ator, :versao)).id` | Só o autor da versão. O plano precisa ter turma e estar `concluido` |
 | `DELETE .../versions/{id}/sharing` | `select (public.retirar_compartilhamento(:ator, :versao)).id` | Autor ou admin |
-| `POST .../versions` | `select (public.criar_revisao(:ator, :versao_origem)).id` | Autor da origem; professor e admin, se a origem estiver compartilhada |
+| `POST .../versions` | `select (public.criar_revisao(:ator, :versao_origem)).id` / endpoint `POST /api/v1/syllabus/{id}/versions` | Autor da origem, seguidor autenticado da turma, professor ou admin, se a origem estiver compartilhada |
+| `PUT .../versions/{id}/vote` | `select public.votar_avaliacao(:ator, :candidato, :valor)` | Seguidor autenticado da oferta (ou autor) |
+| `DELETE .../versions/{vid}/candidates/{cid}` | Marca candidato como `descartado` na versão | Autor da versão ou admin |
 | Validar origem institucional | `select (public.validar_procedencia_institucional(:ator, :versao, :url)).id` | Só admin, com URL pública oficial |
 
-Compartilhar e retirar são idempotentes. As funções devolvem a linha de `versoes_plano`; use `(função(...)).*` para ler todos os campos.
+Compartilhar e retirar são idempotentes. As funções devolvem a linha de `versoes_plano`; use `(função(...)).*` para ler todos os campos. Planos vinculados a uma oferta concluídos na extração inicial têm sua versão 1 compartilhada como padrão para a turma.
 
-**Revisão.** `criar_revisao` cria a próxima versão do plano, **privada**, com os candidatos copiados (menos os descartados), `versao_origem_id` preenchido e `autor_papel` com o papel atual de quem revisa. O fluxo é: criar a revisão, ajustar os candidatos da versão nova e então compartilhá-la. Professor e admin publicam direto as próprias revisões.
+**Revisão.** `criar_revisao` / `POST /api/v1/syllabus/{id}/versions` cria a próxima versão do plano com `versao_origem_id` preenchido e `autor_papel` com o papel atual de quem revisa, sem alterar eventos pessoais já importados por outros usuários. A biblioteca ordena por votos positivos decrescentes e desempate pela data de atualização mais recente, sinalizando atualizações (`has_imported_update`) para quem importou versões anteriores.
 
-**Conteúdo compartilhado não é editado.** Depois de compartilhada, a versão não aceita alteração, exclusão nem inclusão de candidatos (`55000`): votos e importações referem-se àquele conteúdo. Para corrigir, cria-se uma revisão. O `status` do candidato continua editável, porque é a decisão particular do autor.
+**Conteúdo compartilhado não é editado.** Depois de compartilhada, a versão não aceita alteração de títulos, datas ou inclusão de candidatos (`55000`): votos e importações referem-se àquele conteúdo. Para corrigir, cria-se uma revisão. O `status` do candidato continua editável (permitindo retirada lógica pelo autor ou admin).
 
 **Retirada.** Bloqueia novos acessos, votos e importações. Não retira as revisões (cada uma tem a própria visibilidade), não apaga votos nem remove eventos já importados. Ficam registrados `retirada_em` e `retirada_por`.
 
