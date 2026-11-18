@@ -3,8 +3,6 @@ title: "ADR-010 · Versionar planos e exigir confirmação individual para impor
 description: "Decisão, consequências e critérios de verificação: versionar planos e exigir confirmação individual para importar candidatos."
 ---
 
-# ADR-010 · Versionar planos e exigir confirmação individual para importar candidatos
-
 | Campo | Valor |
 | --- | --- |
 | Estado | Implementada |

@@ -3,8 +3,6 @@ title: "Política de Privacidade"
 description: "Quais dados o Agenda UnB trata, para quê, com quem compartilha e como exercer seus direitos."
 ---
 
-# Política de Privacidade
-
 **Versão 2026-11-11.** Esta política descreve o tratamento de dados do Agenda UnB. Os recursos indicados como previstos para a Release 2 só se aplicam quando disponibilizados na plataforma.
 
 O Agenda UnB é um projeto acadêmico da disciplina Métodos de Desenvolvimento de Software (UnB, 2026/2), sem fins comerciais. Ele não é um serviço oficial da Universidade de Brasília. Adotamos a Lei Geral de Proteção de Dados (Lei 13.709/2018, LGPD) como referência para todo o tratamento descrito aqui.

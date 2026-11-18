@@ -3,8 +3,6 @@ title: "ADR-007 · Usar migrações SQL como referência do esquema completo"
 description: "Decisão, consequências e critérios de verificação: usar migrações sql como referência do esquema completo."
 ---
 
-# ADR-007 · Usar migrações SQL como referência do esquema completo
-
 | Campo | Valor |
 | --- | --- |
 | Estado | Implementada |
