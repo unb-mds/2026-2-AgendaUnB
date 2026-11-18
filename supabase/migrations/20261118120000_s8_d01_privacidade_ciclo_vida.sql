@@ -29,11 +29,19 @@ begin
   if not exists (select 1 from public.profiles where id = old.user_id) then
     return new;
   end if;
-  if old.status = 'processando' and
-     (new.texto_aprovado, new.hash_texto_aprovado, new.autorizado_em, new.versao_texto, new.versao_aprovada_id)
-       is distinct from
-     (old.texto_aprovado, old.hash_texto_aprovado, old.autorizado_em, old.versao_texto, old.versao_aprovada_id) then
-    raise exception 'O snapshot em processamento não pode ser alterado' using errcode = '42501';
+  if old.status = 'processando' then
+    if (new.texto_aprovado, new.hash_texto_aprovado, new.autorizado_em, new.versao_texto)
+         is distinct from
+       (old.texto_aprovado, old.hash_texto_aprovado, old.autorizado_em, old.versao_texto) then
+      raise exception 'O snapshot em processamento não pode ser alterado' using errcode = '42501';
+    end if;
+    if new.versao_aprovada_id is distinct from old.versao_aprovada_id and not (
+      new.versao_aprovada_id is null
+      and old.versao_aprovada_id is not null
+      and not exists (select 1 from public.versoes_plano where id = old.versao_aprovada_id)
+    ) then
+      raise exception 'O snapshot em processamento não pode ser alterado' using errcode = '42501';
+    end if;
   end if;
   return new;
 end;

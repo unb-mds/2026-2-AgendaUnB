@@ -715,6 +715,130 @@ def test_descartar_pdfs_dry_run_and_execute_skips_pending_and_is_idempotent(api,
         assert still_there.discarded_at is None
 
 
+def test_descartar_pdfs_deletes_both_distinct_paths_and_retries_cleanly(api, monkeypatch):
+    _, SessionLocal, _, _ = api
+    uid = uuid4()
+    with SessionLocal() as db:
+        db.add(Profile(id=uid, papel="student", nome_completo="Ana"))
+        db.add(
+            Syllabus(
+                user_id=uid,
+                file_name="dual.pdf",
+                file_path=f"syllabus_files/{uid}/primary.pdf",
+                arquivo_url=f"syllabus_files/{uid}/secondary.pdf",
+                status="concluido",
+            )
+        )
+        db.commit()
+
+    storage = SupabaseStorageService(supabase_url="https://storage.test", supabase_key="srv-key")
+    called_deletes: list[str] = []
+    fail_secondary = {"value": True}
+
+    def fake_delete(url, **kwargs):
+        called_deletes.append(url)
+        if fail_secondary["value"] and url.endswith("/secondary.pdf"):
+            return httpx.Response(503)
+        if not fail_secondary["value"] and url.endswith("/primary.pdf"):
+            return httpx.Response(404)
+        return httpx.Response(204)
+
+    monkeypatch.setattr(httpx, "delete", fake_delete)
+
+    with SessionLocal() as db:
+        first_run = discard_legacy_pdfs(db, storage, execute=True)
+        assert first_run == {"dry_run": False, "eligible": 1, "discarded": 0, "failed": 1}
+        assert called_deletes == [
+            f"https://storage.test/storage/v1/object/syllabus_files/{uid}/primary.pdf",
+            f"https://storage.test/storage/v1/object/syllabus_files/{uid}/secondary.pdf",
+        ]
+        row = db.query(Syllabus).filter_by(file_name="dual.pdf").one()
+        assert row.file_path == f"syllabus_files/{uid}/primary.pdf"
+        assert row.arquivo_url == f"syllabus_files/{uid}/secondary.pdf"
+        assert row.discarded_at is None
+
+        fail_secondary["value"] = False
+        called_deletes.clear()
+        retry_run = discard_legacy_pdfs(db, storage, execute=True)
+        assert retry_run == {"dry_run": False, "eligible": 1, "discarded": 1, "failed": 0}
+        assert called_deletes == [
+            f"https://storage.test/storage/v1/object/syllabus_files/{uid}/primary.pdf",
+            f"https://storage.test/storage/v1/object/syllabus_files/{uid}/secondary.pdf",
+        ]
+        db.refresh(row)
+        assert row.file_path is None
+        assert row.arquivo_url is None
+        assert row.discarded_at is not None
+
+
+def test_record_legal_acceptance_handles_concurrent_duplicate_insert(api, monkeypatch):
+    client, SessionLocal, auth_state, _ = api
+    user = _make_user()
+    auth_state["value"] = user
+    _seed_profile(SessionLocal, user)
+    version = account_repository.CURRENT_LEGAL_VERSIONS["terms"]
+
+    with SessionLocal() as db:
+        db.add(TermAcceptance(user_id=user.id, document="terms", version=version))
+        db.commit()
+
+    # Simula corrida: db.get retorna None na segunda requisição, mas o INSERT colide na PK.
+    with SessionLocal() as db:
+        monkeypatch.setattr(db, "get", lambda *args, **kwargs: None)
+        account_repository.record_legal_acceptance(db, user.id, "terms", version)
+        db.commit()
+
+    status_res = client.get("/api/v1/me/legal-documents")
+    assert status_res.status_code == 200
+    assert status_res.json()["terms"]["pending"] is False
+
+
+def test_sqlite_deletion_nullifies_public_event_moderation_and_duplicate_refs(api):
+    client, SessionLocal, auth_state, _ = api
+    ana = _make_user(role="admin", email="ana.mod@unb.br")
+    bruno = _make_user(role="admin", email="bruno.autor@unb.br")
+    auth_state["value"] = ana
+
+    with SessionLocal() as db:
+        db.add_all([
+            Profile(id=ana.id, papel="admin", nome_completo="Ana Mod"),
+            Profile(id=bruno.id, papel="admin", nome_completo="Bruno Autor"),
+        ])
+        ev_ana = PublicEvent(
+            author_id=ana.id,
+            title="Evento original Ana",
+            description="Descrição",
+            status="aprovado",
+        )
+        db.add(ev_ana)
+        db.flush()
+        ev_bruno = PublicEvent(
+            author_id=bruno.id,
+            title="Evento Bruno",
+            description="Descrição",
+            status="aprovado",
+            moderated_by=ana.id,
+            possible_duplicate_of=ev_ana.id,
+        )
+        db.add(ev_bruno)
+        db.commit()
+        ev_bruno_id = ev_bruno.id
+
+    class FakeAuthAdmin(account_service.SupabaseAuthAdminClient):
+        def delete_user(self, user_id: UUID) -> None:
+            pass
+
+    app.dependency_overrides[account_service.get_auth_admin_client] = lambda: FakeAuthAdmin()
+    res = client.request("DELETE", "/api/v1/me", json={"confirmation": "EXCLUIR MINHA CONTA"})
+    assert res.status_code == 204
+
+    with SessionLocal() as db:
+        remaining = db.get(PublicEvent, ev_bruno_id)
+        assert remaining is not None
+        assert remaining.moderated_by is None
+        assert remaining.possible_duplicate_of is None
+
+
 def test_database_errors_are_logged_without_row_content(api, monkeypatch, caplog):
     client, SessionLocal, auth_state, _ = api
     user = _make_user()

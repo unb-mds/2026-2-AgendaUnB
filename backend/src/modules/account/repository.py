@@ -4,7 +4,7 @@ from uuid import UUID
 
 from fastapi import HTTPException
 from sqlalchemy import Uuid, column, delete, func, inspect, or_, select, table, text, update
-from sqlalchemy.exc import DBAPIError
+from sqlalchemy.exc import DBAPIError, IntegrityError
 from sqlalchemy.orm import Session
 
 from src.database.models import (
@@ -64,8 +64,13 @@ def get_legal_acceptances(db: Session, user_id: UUID) -> dict[str, TermAcceptanc
 def record_legal_acceptance(db: Session, user_id: UUID, document: str, version: str) -> None:
     existing = db.get(TermAcceptance, (user_id, document, version))
     if existing is None:
-        db.add(TermAcceptance(user_id=user_id, document=document, version=version))
-        db.flush()
+        try:
+            with db.begin_nested():
+                db.add(TermAcceptance(user_id=user_id, document=document, version=version))
+                db.flush()
+        except IntegrityError:
+            # Inserção simultânea da mesma chave primária é idempotente.
+            pass
 
 
 def list_consents(db: Session, user_id: UUID) -> list[Consent]:
@@ -641,6 +646,20 @@ def complete_account_deletion(
 
     db.execute(delete(PersonalEvent).where(PersonalEvent.user_id == user_id))
     db.execute(delete(SavedPublicEvent).where(SavedPublicEvent.user_id == user_id))
+    authored_event_ids = list(
+        db.scalars(select(PublicEvent.id).where(PublicEvent.author_id == user_id)).all()
+    )
+    if authored_event_ids:
+        db.execute(
+            update(PublicEvent)
+            .where(PublicEvent.possible_duplicate_of.in_(authored_event_ids))
+            .values(possible_duplicate_of=None)
+        )
+    db.execute(
+        update(PublicEvent)
+        .where(PublicEvent.moderated_by == user_id)
+        .values(moderated_by=None)
+    )
     db.execute(delete(PublicEvent).where(PublicEvent.author_id == user_id))
     db.execute(delete(ClassFollow).where(ClassFollow.user_id == user_id))
     db.execute(delete(GoogleCalendarOAuthState).where(GoogleCalendarOAuthState.user_id == user_id))

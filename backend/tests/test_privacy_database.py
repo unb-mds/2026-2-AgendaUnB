@@ -345,6 +345,68 @@ def test_account_deletion_end_to_end(database):
     assert tuple(record) == ("concluida", 2, 1, 1, 1)
 
 
+def test_cross_user_version_author_deletion_unblocks_processing_cascade(database):
+    conn, users = database
+    u1 = users["ana"]
+    u2 = users["bruno"]
+    snap = approved_source("Prova 1")
+    p_u1 = str(uuid4())
+
+    conn.execute(
+        text(
+            "insert into public.planos_ensino("
+            "  id, user_id, tipo, nome_arquivo, status, texto_preparado, texto_aprovado, "
+            "  hash_texto_aprovado, autorizado_em, enfileirado_em, versao_texto"
+            ") values ("
+            "  :id, :u, 'particular', 'proc.pdf', 'pendente', cast(:pages as jsonb), "
+            "  cast(:pages as jsonb), :hash, now(), now(), 1"
+            ")"
+        ),
+        {"id": p_u1, "u": u1, "pages": json.dumps(snap["approved_pages"]), "hash": snap["approved_hash"]},
+    )
+    v_u2 = scalar(
+        conn,
+        "insert into public.versoes_plano(plano_id, numero, autor_id) values (:p, 2, :u) returning id",
+        {"p": p_u1, "u": u2},
+    )
+    conn.execute(
+        text(
+            "update public.planos_ensino "
+            "set versao_aprovada_id = :v, status = 'processando', processamento_iniciado_em = now() "
+            "where id = :p"
+        ),
+        {"v": v_u2, "p": p_u1},
+    )
+
+    # Enquanto u1 e v_u2 existem, alterações explícitas no snapshot em processamento continuam bloqueadas (42501).
+    _reject(
+        conn,
+        lambda: conn.execute(
+            text("update public.planos_ensino set versao_aprovada_id = null where id = :p"),
+            {"p": p_u1},
+        ),
+        "42501",
+    )
+    _reject(
+        conn,
+        lambda: conn.execute(
+            text("update public.planos_ensino set versao_texto = 2 where id = :p"),
+            {"p": p_u1},
+        ),
+        "42501",
+    )
+
+    # Ao excluir u2 (autor de v_u2), ON DELETE SET NULL limpa versao_aprovada_id no plano de u1 sem bloquear.
+    conn.execute(text("delete from auth.users where id = :u"), {"u": u2})
+
+    row = conn.execute(
+        text("select status, versao_aprovada_id from public.planos_ensino where id = :p"),
+        {"p": p_u1},
+    ).one()
+    assert row[0] == "processando"
+    assert row[1] is None
+
+
 def test_last_admin_blocked_and_second_admin_allowed_in_db(database):
     conn, users = database
     conn.execute(

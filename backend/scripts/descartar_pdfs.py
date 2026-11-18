@@ -76,9 +76,15 @@ def discard_legacy_pdfs(
                 skipped_ids.add(row_id)
                 continue
 
-            raw_path = plan.file_path or plan.arquivo_url
-            object_key = storage.normalize_path(raw_path)
-            if object_key and not storage.delete_file_if_present(object_key):
+            raw_paths = [p for p in (plan.file_path, plan.arquivo_url) if p]
+            object_keys = list(
+                dict.fromkeys(
+                    key
+                    for raw_path in raw_paths
+                    if (key := storage.normalize_path(raw_path))
+                )
+            )
+            if any(not storage.delete_file_if_present(key) for key in object_keys):
                 db.rollback()
                 skipped_ids.add(row_id)
                 failed += 1

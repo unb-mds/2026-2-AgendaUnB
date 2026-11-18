@@ -37,11 +37,9 @@ def get_legal_documents(
 def accept_legal_document(
     document: LegalDocumentKey,
     payload: LegalAcceptanceInput,
-    response: Response,
     user: CurrentUser = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> Response:
-    _no_store(response)
     service.accept_legal_document(db, user, document, payload)
     return Response(
         status_code=status.HTTP_204_NO_CONTENT,
