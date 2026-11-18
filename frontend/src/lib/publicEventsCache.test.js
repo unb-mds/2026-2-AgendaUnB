@@ -71,6 +71,9 @@ test('toUiEvent e toApiEvent convertem eventos públicos e privados mantendo o c
     external_url: 'https://agendaunb.com.br',
     organizer_name: 'Docente UnB',
     organizer_avatar: null,
+    source: 'agenda_unb_noticias',
+    source_url: 'https://noticias.unb.br/component/agenda/agenda/42',
+    all_day: false,
   });
 
   assert.equal(ui.titulo, 'Oficina de Robótica');
@@ -78,6 +81,26 @@ test('toUiEvent e toApiEvent convertem eventos públicos e privados mantendo o c
   assert.equal(ui.criadoPorMim, false);
   assert.equal(ui.campus, 'Faculdade do Gama (FCTE)');
   assert.equal(ui.area, 'Extensão');
+  assert.equal(ui.fonte, 'agenda_unb_noticias');
+  assert.equal(ui.fonteUrl, 'https://noticias.unb.br/component/agenda/agenda/42');
+  assert.equal(ui.diaInteiro, false);
+
+  const allDayUi = toUiEvent({
+    id: '22222222-2222-4222-8222-222222222222',
+    title: 'Semana Universitária 2026',
+    starts_at: '2026-11-18T03:00:00Z',
+    start_date: '2026-11-18',
+    end_date: '2026-11-21',
+    all_day: true,
+    source: 'agenda_unb_noticias',
+    source_url: 'https://noticias.unb.br/component/agenda/agenda/100',
+  });
+
+  assert.equal(allDayUi.diaInteiro, true);
+  assert.equal(allDayUi.data, '2026-11-18');
+  assert.equal(allDayUi.horario, 'Dia inteiro');
+  assert.equal(allDayUi.fonte, 'agenda_unb_noticias');
+  assert.equal(allDayUi.fonteUrl, 'https://noticias.unb.br/component/agenda/agenda/100');
 
   const apiPayload = toApiEvent({
     titulo: '  Reunião do Centro Acadêmico  ',
