@@ -257,7 +257,7 @@ class Syllabus(Base):
     text_revision: Mapped[int] = mapped_column("versao_texto", Integer, default=0, nullable=False)
     approved_version_id: Mapped[UUID | None] = mapped_column(
         "versao_aprovada_id", Uuid(as_uuid=True), ForeignKey(
-            "versoes_plano.id", ondelete="RESTRICT", use_alter=True,
+            "versoes_plano.id", ondelete="SET NULL", use_alter=True,
             name="planos_versao_aprovada_fkey"
         )
     )
