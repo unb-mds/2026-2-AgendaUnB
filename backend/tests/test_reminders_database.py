@@ -8,6 +8,9 @@ pelos papéis anon e authenticated.
 """
 import json
 import os
+from concurrent.futures import ThreadPoolExecutor
+from queue import Queue
+from time import monotonic, sleep
 from uuid import uuid4
 
 import pytest
@@ -17,12 +20,20 @@ from sqlalchemy.exc import DBAPIError
 
 
 @pytest.fixture
-def database():
+def engine():
     url = os.getenv('TEST_SUPABASE_DB_URL')
     if not url:
         pytest.skip('TEST_SUPABASE_DB_URL not configured')
     assert make_url(url).host in ('localhost', '127.0.0.1'), 'Local database only'
     engine = create_engine(url)
+    try:
+        yield engine
+    finally:
+        engine.dispose()
+
+
+@pytest.fixture
+def database(engine):
     with engine.connect() as conn:
         transaction = conn.begin()
         users = {}
@@ -35,7 +46,6 @@ def database():
             users[role] = uid
         yield conn, users
         transaction.rollback()
-    engine.dispose()
 
 
 def assume(conn, uid=None):
@@ -160,6 +170,53 @@ def test_saved_public_event_reminder_follows_the_event(database):
     assert scalar(conn, REMINDERS, {'u': users['ana']}) == 0
     conn.execute(text("update public.eventos set status='aprovado' where id=:e"), {'e': event_id})
     assert scalar(conn, REMINDERS, {'u': users['ana']}) == 1
+
+
+@pytest.mark.parametrize('save_first', [True, False], ids=['save-first', 'reschedule-first'])
+def test_concurrent_save_and_reschedule_use_current_start(engine, save_first):
+    owner, author = str(uuid4()), str(uuid4())
+    with engine.begin() as conn:
+        for uid in (owner, author):
+            conn.execute(text('insert into auth.users(id, email) values (:id, :email)'),
+                         {'id': uid, 'email': f'test-{uid}@unb.br'})
+        conn.execute(text("update public.profiles set papel='professor' where id=:id"), {'id': author})
+        event_id = manual_event(conn, author)
+
+    params = {'u': owner, 'e': event_id}
+    save = text('insert into public.eventos_salvos(user_id, event_id) values (:u, :e)')
+    reschedule = text("update public.eventos set data_evento=data_evento + interval '2 days' where id=:e")
+    first, second = (save, reschedule) if save_first else (reschedule, save)
+    competing_pid = Queue()
+
+    def run_competing_write():
+        with engine.begin() as conn:
+            conn.execute(text("set local statement_timeout = '10s'"))
+            competing_pid.put(scalar(conn, 'select pg_backend_pid()'))
+            conn.execute(second, params)
+
+    try:
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            with engine.begin() as conn:
+                conn.execute(first, params)
+                competing = executor.submit(run_competing_write)
+                pid = competing_pid.get(timeout=5)
+                deadline = monotonic() + 5
+                # Commit after the second transaction has attempted its write.
+                while not competing.done() and not scalar(conn, 'select pg_blocking_pids(:pid)', {'pid': pid}):
+                    assert monotonic() < deadline, 'A segunda transação não iniciou a escrita'
+                    sleep(0.01)
+            competing.result(timeout=10)
+
+        with engine.connect() as conn:
+            reminder = row(conn, """select r.status, r.inicio_referencia = e.data_evento as inicio_atual
+                from public.lembretes r join public.eventos e on e.id = r.evento_id
+                where r.user_id = :u and r.evento_id = :e""", params)
+            assert (reminder['status'], reminder['inicio_atual']) == ('pendente', True)
+    finally:
+        with engine.begin() as conn:
+            conn.execute(text('delete from public.eventos where id=:e'), params)
+            conn.execute(text('delete from auth.users where id in (:owner, :author)'),
+                         {'owner': owner, 'author': author})
 
 
 def make_due(conn, where, params):
