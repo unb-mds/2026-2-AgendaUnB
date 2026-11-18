@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import PasswordField from '../components/PasswordField';
 import { changePassword, validateNewPassword } from '../lib/auth';
+import { flushPendingSignupLegal } from '../lib/accountApi';
 import { createRecoveryClient, supabase } from '../lib/supabase';
 import '../styles/auth.css';
 
@@ -93,6 +94,7 @@ export default function AuthReturnPage() {
         recoveryClient.current = client;
         setPhase('password');
       } else {
+        await flushPendingSignupLegal(result.data.session.user?.email).catch(() => null);
         setPhase('confirmed');
       }
       setCallback({ type: callback.type });

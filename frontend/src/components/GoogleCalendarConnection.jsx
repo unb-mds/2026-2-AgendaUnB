@@ -24,6 +24,7 @@ export default function GoogleCalendarConnection({ events, callbackResult }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [disconnectedGuide, setDisconnectedGuide] = useState(false);
   const [recoveryOpen, setRecoveryOpen] = useState(false);
 
   useEffect(() => {
@@ -40,6 +41,7 @@ export default function GoogleCalendarConnection({ events, callbackResult }) {
     setBusy(true);
     setError('');
     setNotice('');
+    setDisconnectedGuide(false);
     try {
       if (method === 'POST') {
         const result = await request(`${ROOT}/authorization`, { auth: true, method });
@@ -50,6 +52,7 @@ export default function GoogleCalendarConnection({ events, callbackResult }) {
       }
       const result = await request(`${ROOT}/connection`, { auth: true, method });
       setConnection({ connected: false });
+      setDisconnectedGuide(true);
       setNotice(result.revocation === 'not_confirmed_remove_access_in_google'
         ? 'Desconectado. Remova o acesso também nas conexões da sua Conta Google.'
         : 'Google Agenda desconectado.');
@@ -115,6 +118,14 @@ export default function GoogleCalendarConnection({ events, callbackResult }) {
       )}
       {!recoveryOpen && <Feedback error={error || (!notice && callbackMessages.get(callbackResult))} />}
       <Feedback success={notice || (callbackResult === 'connected' && connection?.connected ? 'Google Agenda conectado.' : '')} />
+      {disconnectedGuide && (
+        <div className="google-calendar-disconnect-guide">
+          <p className="management-muted">
+            Eventos já exportados permanecem na agenda secundária “Agenda UnB” do seu Google Agenda.
+          </p>
+          <GoogleCalendarDeletionInstructions />
+        </div>
+      )}
       {open && <ExportDialog events={events} onClose={() => setOpen(false)} onFailure={refreshConnection} />}
       {recoveryOpen && (
         <Modal title="Recuperar agenda do Google" onClose={() => setRecoveryOpen(false)} busy={busy}>
@@ -191,6 +202,10 @@ function ExportDialog({ events, onClose, onFailure }) {
           Escolha até {MAX_EVENTS} eventos para enviar à agenda Agenda UnB no Google.
           Cada evento será exportado com seu título, horário de Brasília e duração de uma hora.
         </p>
+        <p className="management-muted google-calendar-copy-notice">
+          As cópias enviadas permanecem na agenda “Agenda UnB” do Google Agenda mesmo se você desconectar ou excluir sua conta.
+        </p>
+        <GoogleCalendarDeletionInstructions />
         <fieldset className="google-calendar-event-list" disabled={pending}>
           <legend className="sr-only">Eventos para exportar</legend>
           {events.map(event => {
@@ -217,5 +232,18 @@ function ExportDialog({ events, onClose, onFailure }) {
         </div>
       </form>
     </Modal>
+  );
+}
+
+function GoogleCalendarDeletionInstructions() {
+  return (
+    <details className="google-calendar-help">
+      <summary>Como excluir eventos exportados no Google Agenda</summary>
+      <ol>
+        <li>Acesse calendar.google.com com a sua Conta Google.</li>
+        <li>Em Minhas agendas, abra o menu da agenda “Agenda UnB” → Configurações e compartilhamento → Excluir agenda para remover todas as cópias.</li>
+        <li>Se preferir manter a agenda, clique em um evento específico e escolha Excluir.</li>
+      </ol>
+    </details>
   );
 }
