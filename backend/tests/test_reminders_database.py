@@ -172,8 +172,8 @@ def test_saved_public_event_reminder_follows_the_event(database):
     assert scalar(conn, REMINDERS, {'u': users['ana']}) == 1
 
 
-@pytest.mark.parametrize('save_first', [True, False], ids=['save-first', 'reschedule-first'])
-def test_concurrent_save_and_reschedule_use_current_start(engine, save_first):
+@pytest.fixture
+def committed_public_event(engine):
     owner, author = str(uuid4()), str(uuid4())
     with engine.begin() as conn:
         for uid in (owner, author):
@@ -183,9 +183,16 @@ def test_concurrent_save_and_reschedule_use_current_start(engine, save_first):
         event_id = manual_event(conn, author)
 
     params = {'u': owner, 'e': event_id}
-    save = text('insert into public.eventos_salvos(user_id, event_id) values (:u, :e)')
-    reschedule = text("update public.eventos set data_evento=data_evento + interval '2 days' where id=:e")
-    first, second = (save, reschedule) if save_first else (reschedule, save)
+    try:
+        yield params
+    finally:
+        with engine.begin() as conn:
+            conn.execute(text('delete from public.eventos where id=:e'), params)
+            conn.execute(text('delete from auth.users where id in (:owner, :author)'),
+                         {'owner': owner, 'author': author})
+
+
+def run_concurrent_writes(engine, first, second, params):
     competing_pid = Queue()
 
     def run_competing_write():
@@ -194,29 +201,59 @@ def test_concurrent_save_and_reschedule_use_current_start(engine, save_first):
             competing_pid.put(scalar(conn, 'select pg_backend_pid()'))
             conn.execute(second, params)
 
-    try:
-        with ThreadPoolExecutor(max_workers=1) as executor:
-            with engine.begin() as conn:
-                conn.execute(first, params)
-                competing = executor.submit(run_competing_write)
-                pid = competing_pid.get(timeout=5)
-                deadline = monotonic() + 5
-                # Commit after the second transaction has attempted its write.
-                while not competing.done() and not scalar(conn, 'select pg_blocking_pids(:pid)', {'pid': pid}):
-                    assert monotonic() < deadline, 'A segunda transação não iniciou a escrita'
-                    sleep(0.01)
-            competing.result(timeout=10)
-
-        with engine.connect() as conn:
-            reminder = row(conn, """select r.status, r.inicio_referencia = e.data_evento as inicio_atual
-                from public.lembretes r join public.eventos e on e.id = r.evento_id
-                where r.user_id = :u and r.evento_id = :e""", params)
-            assert (reminder['status'], reminder['inicio_atual']) == ('pendente', True)
-    finally:
+    with ThreadPoolExecutor(max_workers=1) as executor:
         with engine.begin() as conn:
-            conn.execute(text('delete from public.eventos where id=:e'), params)
-            conn.execute(text('delete from auth.users where id in (:owner, :author)'),
-                         {'owner': owner, 'author': author})
+            conn.execute(first, params)
+            competing = executor.submit(run_competing_write)
+            pid = competing_pid.get(timeout=5)
+            deadline = monotonic() + 5
+            # Commit after the second transaction has attempted its write.
+            while not competing.done() and not scalar(conn, 'select pg_blocking_pids(:pid)', {'pid': pid}):
+                assert monotonic() < deadline, 'A segunda transação não iniciou a escrita'
+                sleep(0.01)
+        competing.result(timeout=10)
+
+
+@pytest.mark.parametrize('save_first', [True, False], ids=['save-first', 'reschedule-first'])
+def test_concurrent_save_and_reschedule_use_current_start(engine, committed_public_event, save_first):
+    params = committed_public_event
+    save = text('insert into public.eventos_salvos(user_id, event_id) values (:u, :e)')
+    reschedule = text("update public.eventos set data_evento=data_evento + interval '2 days' where id=:e")
+    first, second = (save, reschedule) if save_first else (reschedule, save)
+    run_concurrent_writes(engine, first, second, params)
+
+    with engine.connect() as conn:
+        reminder = row(conn, """select r.status, r.inicio_referencia = e.data_evento as inicio_atual
+            from public.lembretes r join public.eventos e on e.id = r.evento_id
+            where r.user_id = :u and r.evento_id = :e""", params)
+        assert (reminder['status'], reminder['inicio_atual']) == ('pendente', True)
+
+
+@pytest.mark.parametrize('remove_first', [True, False], ids=['remove-first', 'reschedule-first'])
+def test_concurrent_remove_and_reschedule_cancel_reminder(engine, committed_public_event, remove_first):
+    params = committed_public_event
+    save = text('insert into public.eventos_salvos(user_id, event_id) values (:u, :e)')
+    remove = text('delete from public.eventos_salvos where user_id=:u and event_id=:e')
+    reschedule = text("""update public.eventos set data_evento=now() + interval '24 hours 1 second'
+        where id=:e""")
+    count_reminders = 'select count(*) from public.lembretes where user_id=:u and evento_id=:e'
+
+    with engine.begin() as conn:
+        conn.execute(save, params)
+    first, second = (remove, reschedule) if remove_first else (reschedule, remove)
+    run_concurrent_writes(engine, first, second, params)
+
+    with engine.connect() as conn:
+        assert scalar(conn, count_reminders, params) == 0
+        # Wait on the database clock before starting the late save transaction.
+        conn.execute(text("""select pg_sleep(greatest(0,
+            extract(epoch from data_evento - interval '24 hours' - clock_timestamp())) + 0.01)
+            from public.eventos where id=:e"""), params)
+
+    with engine.begin() as conn:
+        conn.execute(save, params)
+        assert scalar(conn, 'select public.disparar_lembretes()') == 0
+        assert scalar(conn, count_reminders, params) == 0
 
 
 def make_due(conn, where, params):
