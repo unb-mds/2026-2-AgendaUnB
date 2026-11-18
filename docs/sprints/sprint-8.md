@@ -12,7 +12,7 @@ Planejamento aprovado para 16–23/11/2026. Entrega final em 25/11/2026. As tare
 Consulte os [contratos](/atualizacoes#contratos-da-release-2) e a [matriz de aceite](/matriz-release-2) para os critérios vigentes.
 
 - Seleção manual de turmas pelo catálogo público Followw, com vínculo autodeclarado.
-- Planos privados por padrão, com edição conforme papel e visibilidade. Compartilhamento voluntário de conteúdo revisado. O PDF original é descartado após a extração local.
+- Planos privados durante preparação/autorização e reprocessamento; versão inicial (`v1`) vinculada a oferta é compartilhada automaticamente ao concluir a extração com candidatos (PO, 2026-11-17, [ADR-010](/arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos)), podendo ser retirada a qualquer momento sem perder cópias importadas. Edição conforme papel e visibilidade. O PDF original é descartado após a extração local.
 - IA limitada a provas e trabalhos, com revisão do texto antes do envio e confirmação antes da criação de eventos.
 - A Agenda UnB Notícias alimenta o catálogo. Eventos completos são publicados automaticamente e exceções seguem para revisão. Adicionar aos meus eventos e Conferir evento são ações independentes.
 - Professores e administradores moderam eventos. Administradores gerenciam papéis e categorias.
