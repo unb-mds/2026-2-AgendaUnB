@@ -5,11 +5,17 @@ from email.utils import parsedate_to_datetime
 import re
 import httpx
 
+BASE_URL = "https://followw.app/api"
+MAX_ATTEMPTS = 3
+TRANSIENT_HTTP_STATUSES = {429, 500, 502, 503, 504}
 PATHS = frozenset({"/public/classrooms/units", "/public/classrooms", "/public/subjects"})
 
 
 class CatalogError(Exception):
-    pass
+    def __init__(self, code, *, path=None, status=None):
+        super().__init__(code)
+        self.path = path
+        self.status = status
 
 
 class FollowwClient:
@@ -25,20 +31,22 @@ class FollowwClient:
                 raise CatalogError("filtros_invalidos")
         if set(params) - {"unit", "code", "semester"}:
             raise CatalogError("filtros_invalidos")
-        for attempt in range(2):
+        for attempt in range(MAX_ATTEMPTS):
+            can_retry = attempt + 1 < MAX_ATTEMPTS
             if self.last_request is not None:
                 self.sleep(max(0, 1 - (self.clock()-self.last_request)))
             self.last_request = self.clock()
             try:
                 # Um cliente por chamada impede reaproveitar Set-Cookie da origem.
-                with httpx.Client(timeout=20, follow_redirects=False, trust_env=False, transport=self.transport) as client:
-                    response = client.get("https://api.followw.app" + path, params=params)
-            except (httpx.TimeoutException, httpx.TransportError):
-                if attempt == 0:
+                with httpx.Client(timeout=httpx.Timeout(20, read=30), follow_redirects=False, trust_env=False, transport=self.transport) as client:
+                    response = client.get(BASE_URL + path, params=params)
+            except httpx.TransportError:
+                if can_retry:
+                    self.sleep(2 ** attempt)
                     continue
-                raise CatalogError("origem_indisponivel") from None
-            if response.status_code in {429, 500, 502, 503, 504} and attempt == 0:
-                retry = response.headers.get("Retry-After", "1")
+                raise CatalogError("origem_indisponivel", path=path) from None
+            if can_retry and response.status_code in TRANSIENT_HTTP_STATUSES:
+                retry = response.headers.get("Retry-After", str(2 ** attempt))
                 try:
                     delay = float(retry)
                 except ValueError:
@@ -51,7 +59,7 @@ class FollowwClient:
                 self.sleep(delay)
                 continue
             if response.status_code != 200:
-                raise CatalogError("resposta_http_invalida")
+                raise CatalogError("resposta_http_invalida", path=path, status=response.status_code)
             try:
                 data = response.json()
             except ValueError:
