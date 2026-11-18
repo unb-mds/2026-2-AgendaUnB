@@ -1257,3 +1257,87 @@ body.light .manage-button.google-calendar-secondary:hover:not(:disabled) {
 .google-calendar-event-list label + label { border-top: 1px solid var(--manage-border); }
 .google-calendar-event-list input { flex: none; accent-color: var(--manage-action); }
 .google-calendar-event-list label:has(input:disabled) { cursor: default; color: var(--manage-muted); }
+.google-calendar-event-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .2rem;
+}
+.google-calendar-event-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .4rem .5rem;
+}
+.google-calendar-period-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: .75rem;
+  margin-top: 1rem;
+}
+.google-calendar-period-field {
+  flex: 1 1 140px;
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
+  font-size: .85rem;
+  color: var(--manage-muted);
+}
+.google-calendar-period-field .modal-input {
+  min-height: 44px;
+  padding: 8px 12px;
+}
+.google-calendar-period-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .75rem;
+}
+.google-calendar-option-toggle {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  margin-top: .75rem;
+  font-size: .9rem;
+  cursor: pointer;
+}
+.google-calendar-option-toggle input {
+  flex: none;
+  accent-color: var(--manage-action);
+}
+.google-calendar-preview-summary {
+  margin-top: .75rem;
+  padding: .6rem .85rem;
+  border: 1px solid var(--manage-border);
+  border-radius: 10px;
+  background: var(--manage-input);
+  font-size: .875rem;
+  color: var(--manage-text);
+}
+.google-calendar-overwrite-confirm {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(0, 139, 255, .45);
+  border-radius: 12px;
+  background: var(--manage-input);
+  font-size: .9rem;
+}
+.google-calendar-status--exported,
+.google-calendar-status--updated,
+.google-calendar-preview--create {
+  border-color: rgba(0, 139, 255, .5);
+  color: var(--manage-link);
+}
+.google-calendar-preview--update {
+  border-color: rgba(0, 139, 255, .65);
+  color: var(--manage-text);
+}
+.google-calendar-status--failed {
+  border-color: rgba(242, 139, 130, .6);
+  color: #f28b82;
+}
+body.light .google-calendar-status--failed {
+  color: #b32d26;
+}
