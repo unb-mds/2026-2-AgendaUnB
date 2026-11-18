@@ -336,7 +336,7 @@ export default function SettingsPage() {
                   <strong>Compartilhamento de planos na turma</strong>
                 </div>
                 <p className="management-muted">
-                  Planos enviados começam privados. Quando compartilhados, você pode retirar o compartilhamento ou excluir o plano em Plano de Ensino; cópias já importadas por colegas permanecem nas agendas deles.
+                  Planos enviados começam privados. Quando compartilhados, você pode retirar o compartilhamento em Plano de Ensino (ou apagar seus planos ao excluir a conta abaixo); cópias já importadas por colegas permanecem nas agendas deles.
                 </p>
               </div>
               <div className="settings-item-actions">

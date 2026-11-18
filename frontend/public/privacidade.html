@@ -163,10 +163,12 @@ th,td{border:1px solid #445064;padding:12px;text-align:left;vertical-align:top}
 <li>Os tokens de acesso e atualização ficam <strong>criptografados no servidor</strong> (Fernet) apenas enquanto a conexão estiver ativa. O estado temporário do pedido de autorização expira em <strong>10 minutos</strong>.</li>
 <li>Em cada exportação, você seleciona até <strong>20 eventos</strong> pessoais ou públicos salvos. São enviados apenas o identificador técnico do item, o título e os horários de início e fim no fuso <code>America/Sao_Paulo</code> (com duração padrão de 1 hora).</li>
 <li>Ao desconectar em <strong>Meus Eventos</strong>, ao revogar o consentimento em <strong>Configurações</strong> ou ao excluir sua conta, apagamos os tokens guardados e solicitamos ao Google a revogação do acesso. Se o Google não confirmar a revogação remota na hora, mostramos um aviso para que você remova o acesso nas permissões da sua Conta Google.</li>
-<li><strong>Aviso sobre eventos já exportados:</strong> desconectar a integração ou excluir sua conta no Agenda UnB <strong>não apaga</strong> os eventos que já foram exportados. Para removê-los:</li>
+<li><strong>Aviso sobre eventos já exportados:</strong> desconectar a integração ou excluir sua conta no Agenda UnB <strong>não apaga</strong> os eventos que já foram exportados. Para removê-los:<ol>
 <li>Acesse <a href="https://calendar.google.com">calendar.google.com</a> com a sua Conta Google.</li>
 <li>Em <strong>Minhas agendas</strong>, abra o menu da agenda <strong>"Agenda UnB"</strong> → <strong>Configurações e compartilhamento</strong> → <strong>Excluir agenda</strong> para apagar todas as cópias de uma vez.</li>
 <li>Se preferir manter a agenda, clique em um evento específico e escolha <strong>Excluir</strong>.</li>
+</ol>
+</li>
 </ul>
 <h2>6. Por quanto tempo guardamos</h2>
 <div class="table-scroll"><table>
@@ -211,7 +213,7 @@ th,td{border:1px solid #445064;padding:12px;text-align:left;vertical-align:top}
 <p>Você pode exercer os direitos abaixo diretamente na plataforma, em <strong>Configurações</strong> (<code>/configuracoes</code>), ou pelo canal da seção 1:</p>
 <ul>
 <li><strong>acessar e baixar</strong> os seus dados em formato JSON em <strong>Configurações</strong> → <strong>Baixar meus dados</strong>;</li>
-<li><strong>corrigir</strong> nome e foto no perfil;</li>
+<li><strong>corrigir</strong> dados da conta pelo canal da seção 1 (nome e foto exibidos no perfil vêm da conta Google ou do cadastro inicial);</li>
 <li><strong>revogar</strong> o consentimento do Google Agenda em <strong>Configurações</strong> ou desconectar em <strong>Meus Eventos</strong>; a autorização para enviar texto de um plano à IA é dada por plano após revisão em <strong>Plano de Ensino</strong>;</li>
 <li><strong>gerenciar ou retirar o compartilhamento</strong> de planos compartilhados em <strong>Plano de Ensino</strong> (as cópias já importadas por colegas continuam nas agendas deles);</li>
 <li><strong>excluir sua conta</strong> diretamente em <strong>Configurações</strong> → <strong>Excluir conta</strong>, mediante digitação da frase de confirmação;</li>

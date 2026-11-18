@@ -38,7 +38,7 @@ Sugestões de eventos passam por moderação. A equipe pode recusar ou remover c
 
 ## 5. Conteúdo que você compartilha
 
-O conteúdo continua seu. Ao compartilhar um plano com a turma, você autoriza que as pessoas que seguem aquela turma o vejam e importem as datas para as próprias agendas. Você pode retirar o compartilhamento ou remover o plano em **Plano de Ensino**; as cópias já importadas por outras pessoas permanecem com elas.
+O conteúdo continua seu. Ao compartilhar um plano com a turma, você autoriza que as pessoas que seguem aquela turma o vejam e importem as datas para as próprias agendas. Você pode retirar o compartilhamento em **Plano de Ensino** ou apagar todos os seus planos ao excluir a conta em **Configurações**; as cópias já importadas por outras pessoas permanecem com elas.
 
 ## 6. Disponibilidade
 
