@@ -88,8 +88,13 @@ def _personal_read(event: PersonalEvent) -> PersonalEventRead:
         title=event.title,
         description=event.description,
         starts_at=event.starts_at,
+        ends_at=event.ends_at,
+        all_day=event.all_day,
+        start_date=event.start_date,
+        end_date=event.end_date,
         campus=event.campus.nome if event.campus else None,
         category=event.category.nome if event.category else None,
+        location=event.location,
         origin=(
             PersonalEventOriginRead(
                 syllabusId=event.origin_syllabus_id,
@@ -181,6 +186,10 @@ def create_public_event(
         title=payload.title,
         description=payload.description or "",
         starts_at=payload.starts_at,
+        ends_at=payload.ends_at,
+        all_day=payload.all_day,
+        start_date=payload.start_date if payload.all_day else None,
+        end_date=payload.end_date if payload.all_day else None,
         location=payload.location,
         external_url=str(payload.external_url) if payload.external_url else None,
         campus_id=_campus_id(db, payload.campus),
@@ -222,6 +231,10 @@ def suggest_event(
         title=payload.title,
         description=payload.description or "",
         starts_at=payload.starts_at,
+        ends_at=payload.ends_at,
+        all_day=payload.all_day,
+        start_date=payload.start_date if payload.all_day else None,
+        end_date=payload.end_date if payload.all_day else None,
         location=payload.location,
         external_url=str(payload.external_url) if payload.external_url else None,
         campus_id=_campus_id(db, payload.campus),
@@ -346,6 +359,11 @@ def create_personal_event(
         title=payload.title,
         description=payload.description,
         starts_at=payload.starts_at,
+        ends_at=payload.ends_at,
+        all_day=payload.all_day,
+        start_date=payload.start_date if payload.all_day else None,
+        end_date=payload.end_date if payload.all_day else None,
+        location=payload.location,
         campus_id=_campus_id(db, payload.campus),
         category_id=_category_id(db, payload.category),
     )
@@ -374,6 +392,11 @@ def update_personal_event(
     event.title = payload.title
     event.description = payload.description
     event.starts_at = payload.starts_at
+    event.ends_at = payload.ends_at
+    event.all_day = payload.all_day
+    event.start_date = payload.start_date if payload.all_day else None
+    event.end_date = payload.end_date if payload.all_day else None
+    event.location = payload.location
     event.campus_id = _campus_id(db, payload.campus)
     event.category_id = _category_id(db, payload.category)
     db.commit()
