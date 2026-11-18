@@ -36,8 +36,13 @@ def api():
     app.dependency_overrides[get_current_user] = lambda: authenticated_user["value"]
     # Testes unitários não usam o Supabase real configurado no .env local.
     storage = create_autospec(SupabaseStorageService, instance=True)
+    storage.bucket_name = "syllabus_files"
+    storage.normalize_path.side_effect = lambda raw: SupabaseStorageService("http://test", "key").normalize_path(raw)
     storage.upload_file.side_effect = lambda path, **kwargs: f"syllabus_files/{path}"
     storage.delete_file.return_value = True
+    storage.delete_file_if_present.return_value = True
+    storage.list_prefix.return_value = []
+    storage.delete_objects_strict.return_value = 0
     app.dependency_overrides[get_storage_service] = lambda: storage
 
     with TestClient(app) as client:

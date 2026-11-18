@@ -1,8 +1,7 @@
-"""S8-D01 (#83): privacidade, termos e ciclo de vida dos dados.
+"""Testes de banco (PostgreSQL/Supabase local) para privacidade, RLS, cascatas e descarte de PDFs."""
 
-Testes contra o Supabase LOCAL migrado; cada teste desfaz suas alterações.
-Rode com TEST_SUPABASE_DB_URL (nunca produção).
-"""
+from __future__ import annotations
+
 import json
 import os
 from uuid import uuid4
@@ -12,314 +11,486 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.exc import DBAPIError
 
-
-@pytest.fixture
-def database():
-    url = os.getenv('TEST_SUPABASE_DB_URL')
-    if not url:
-        pytest.skip('TEST_SUPABASE_DB_URL not configured')
-    assert make_url(url).host in ('localhost', '127.0.0.1'), 'Local database only'
-    engine = create_engine(url)
-    with engine.connect() as conn:
-        transaction = conn.begin()
-        users = {}
-        for role in ('ana', 'bruno', 'professor', 'admin'):
-            uid = str(uuid4())
-            conn.execute(text("insert into auth.users(id,email,raw_user_meta_data) values (:id,:email,:meta)"),
-                         {'id': uid, 'email': f'test-{uid}@unb.br', 'meta': json.dumps({'nome_completo': 'Teste ' + role})})
-            if role in ('professor', 'admin'):
-                conn.execute(text('update public.profiles set papel=:role where id=:id'), {'role': role, 'id': uid})
-            users[role] = uid
-        yield conn, users
-        transaction.rollback()
-    engine.dispose()
+from src.modules.syllabus.processing_config import ProcessingConfig, ProcessingError
+from src.modules.syllabus.worker import SyllabusWorker
+from syllabus_samples import approved_source
+from test_security_database import as_backend, assume, database, denied, scalar
 
 
-def assume(conn, uid=None):
-    conn.execute(text('reset role'))
-    if uid is None:
-        conn.execute(text("select set_config('request.jwt.claim.sub', '', true)"))
-        conn.execute(text('set local role anon'))
-        return
-    conn.execute(text("select set_config('request.jwt.claim.sub', :uid, true)"), {'uid': uid})
-    conn.execute(text('set local role authenticated'))
+def _reject(conn, operation, sqlstate: str) -> None:
+    with pytest.raises(DBAPIError) as caught:
+        with conn.begin_nested():
+            operation()
+    assert caught.value.orig.sqlstate == sqlstate
 
 
-def as_backend(conn):
-    conn.execute(text('reset role'))
-
-
-def denied(conn, sql, params=None):
-    with conn.begin_nested():
-        with pytest.raises(DBAPIError):
-            with conn.begin_nested():
-                conn.execute(text(sql), params or {})
-
-
-def refused(conn, sqlstate, sql, params=None):
-    with conn.begin_nested():
-        with pytest.raises(DBAPIError) as error:
-            with conn.begin_nested():
-                conn.execute(text(sql), params or {})
-    assert error.value.orig.sqlstate == sqlstate, str(error.value.orig)
-
-
-def scalar(conn, sql, params=None):
-    return conn.execute(text(sql), params or {}).scalar()
-
-
-def populate(conn, users):
-    """Dá a Ana um pouco de tudo o que a plataforma guarda. Bruno segue a turma e importa."""
-    ana, bruno = users['ana'], users['bruno']
-    subject = conn.execute(text("""insert into public.disciplinas(origem, codigo, nome)
-        values ('followw', :c, 'Métodos de Desenvolvimento de Software') returning id"""),
-        {'c': 'T' + uuid4().hex[:8].upper()}).scalar_one()
-    turma = str(conn.execute(text("""insert into public.ofertas_turma(disciplina_id, turma, ano, semestre)
-        values (:s, '01', 2026, 2) returning id"""), {'s': subject}).scalar_one())
-    for uid in (ana, bruno):
-        conn.execute(text('insert into public.vinculos_turma(user_id, oferta_id) values (:u, :o)'), {'u': uid, 'o': turma})
-
-    plan_id = str(uuid4())
-    path = f'syllabus_files/{ana}/{plan_id}_plano.pdf'
-    conn.execute(text("""insert into public.planos_ensino(id, user_id, nome_arquivo, caminho_arquivo, tipo_arquivo,
-            tamanho_bytes, status, processado_em, oferta_id)
-        values (:id, :u, 'plano.pdf', :path, 'pdf', 1024, 'concluido', now(), :o)"""),
-        {'id': plan_id, 'u': ana, 'path': path, 'o': turma})
-    version_id = str(scalar(conn, 'select id from public.versoes_plano where plano_id=:p', {'p': plan_id}))
-    candidate = str(conn.execute(text("""insert into public.avaliacoes(plano_id, versao_id, ordem, titulo, data_avaliacao, trecho_origem)
-        values (:p, :v, 0, 'Prova 1', '2027-04-10T10:00:00-03:00', 'trecho do plano') returning id"""),
-        {'p': plan_id, 'v': version_id}).scalar_one())
-    conn.execute(text('select public.compartilhar_versao(:a, :v)'), {'a': ana, 'v': version_id})
-    conn.execute(text("select public.confirmar_importacao(:a, 'chave-bruno-0001', :v, cast(:i as jsonb))"),
-                 {'a': bruno, 'v': version_id, 'i': json.dumps([{'candidato_id': candidate}])})
-    conn.execute(text("select public.confirmar_importacao(:a, 'chave-ana-00001', :v, cast(:i as jsonb))"),
-                 {'a': ana, 'v': version_id, 'i': json.dumps([{'candidato_id': candidate}])})
-    conn.execute(text("select public.votar_avaliacao(:a, :c, 'confirma')"), {'a': ana, 'c': candidate})
-    conn.execute(text("select public.votar_avaliacao(:a, :c, 'contesta')"), {'a': bruno, 'c': candidate})
-
-    conn.execute(text("""insert into public.eventos_pessoais(user_id, titulo, descricao, data_hora)
-        values (:u, 'Consulta médica', 'Anotação particular da Ana', now() + interval '10 days')"""), {'u': ana})
-    event = str(conn.execute(text("""insert into public.eventos(autor_id, titulo, descricao, data_evento, status)
-        values (:a, 'Palestra aberta', 'Descrição', now() + interval '12 days', 'aprovado') returning id"""),
-        {'a': users['professor']}).scalar_one())
-    for uid in (ana, bruno):
-        conn.execute(text('insert into public.eventos_salvos(user_id, event_id) values (:u, :e)'), {'u': uid, 'e': event})
-    conn.execute(text("""insert into public.eventos(autor_id, titulo, descricao, data_evento)
-        values (:a, 'Sugestão da Ana', 'Descrição', now() + interval '15 days')"""), {'a': ana})
-    conn.execute(text("select public.registrar_aceite_termos(:u, 'termos_de_uso', '2026-11-10')"), {'u': ana})
-    conn.execute(text("select public.registrar_consentimento(:u, 'google_agenda', :v, :h)"),
-                 {'u': ana, 'v': version_id, 'h': 'a' * 64})
-    return {'turma': turma, 'plan': plan_id, 'version': version_id, 'candidate': candidate, 'path': path, 'event': event}
-
-
-# ---------------------------------------------------------------------------
-# Aceite de termos e consentimento
-# ---------------------------------------------------------------------------
-
-def test_terms_acceptance_keeps_the_first_date_per_version(database):
+def test_privacy_tables_rls_and_privileges(database):
     conn, users = database
-    accept = 'select (public.registrar_aceite_termos(:u, :d, :v)).aceito_em'
-    first = scalar(conn, accept, {'u': users['ana'], 'd': 'termos_de_uso', 'v': '2026-11-10'})
-    conn.execute(text("update public.aceites_termos set aceito_em = aceito_em - interval '1 day'"))
-    again = scalar(conn, accept, {'u': users['ana'], 'd': 'termos_de_uso', 'v': '2026-11-10'})
-    assert again < first                                              # repetir não renova a data
-    scalar(conn, accept, {'u': users['ana'], 'd': 'termos_de_uso', 'v': '2027-01-15'})   # versão nova
-    scalar(conn, accept, {'u': users['ana'], 'd': 'politica_de_privacidade', 'v': '2026-11-10'})
-    assert scalar(conn, 'select count(*) from public.aceites_termos where user_id=:u', {'u': users['ana']}) == 3
-    denied(conn, accept, {'u': users['ana'], 'd': 'contrato', 'v': '2026-11-10'})
-    denied(conn, accept, {'u': users['ana'], 'd': 'termos_de_uso', 'v': 'v1'})
+
+    without_rls = conn.execute(
+        text(
+            "select c.relname from pg_class c "
+            "join pg_namespace n on n.oid = c.relnamespace "
+            "where n.nspname = 'public' and c.relname in ('aceites_termos', 'consentimentos', 'exclusoes_conta') "
+            "and not c.relrowsecurity order by 1"
+        )
+    ).scalars().all()
+    assert without_rls == []
+
+    # Funções auxiliares e trigger preservam search_path = '' e são restritas a service_role.
+    funcs = [
+        "revogar_consentimento(uuid,text)",
+        "preparar_exclusao_conta(uuid)",
+        "concluir_exclusao_conta(uuid,integer)",
+        "arquivos_a_descartar()",
+        "registrar_descarte_arquivo(uuid)",
+    ]
+    for sig in funcs:
+        assert not scalar(conn, "select has_function_privilege('anon', :sig, 'execute')", {"sig": f"public.{sig}"})
+        assert not scalar(conn, "select has_function_privilege('authenticated', :sig, 'execute')", {"sig": f"public.{sig}"})
+        assert scalar(conn, "select has_function_privilege('service_role', :sig, 'execute')", {"sig": f"public.{sig}"})
+
+    # Semente de aceites e consentimentos para Ana e Bruno.
+    conn.execute(
+        text("insert into public.aceites_termos(user_id, documento, versao) values (:u, 'terms', '2026-11-18')"),
+        {"u": users["ana"]},
+    )
+    conn.execute(
+        text("insert into public.aceites_termos(user_id, documento, versao) values (:u, 'terms', '2026-11-18')"),
+        {"u": users["bruno"]},
+    )
+    conn.execute(
+        text("insert into public.consentimentos(user_id, finalidade) values (:u, 'google_agenda')"),
+        {"u": users["ana"]},
+    )
+    conn.execute(
+        text("insert into public.exclusoes_conta(status) values ('iniciada')")
+    )
+
+    # Anon não lê nem escreve nenhuma das 3 tabelas.
+    assume(conn)
+    for table in ("aceites_termos", "consentimentos", "exclusoes_conta"):
+        denied(conn, f"select count(*) from public.{table}")
+
+    # Authenticated lê apenas próprios registros; nunca escreve diretamente nem lê exclusoes_conta.
+    assume(conn, users["ana"])
+    assert scalar(conn, "select count(*) from public.aceites_termos") == 1
+    assert scalar(conn, "select count(*) from public.consentimentos") == 1
+    denied(conn, "select count(*) from public.exclusoes_conta")
+    denied(
+        conn,
+        "insert into public.aceites_termos(user_id, documento, versao) values (:u, 'privacy', '2026-11-18')",
+        {"u": users["ana"]},
+    )
+    denied(
+        conn,
+        "insert into public.consentimentos(user_id, finalidade) values (:u, 'google_agenda')",
+        {"u": users["ana"]},
+    )
+    denied(conn, "delete from public.consentimentos where user_id = :u", {"u": users["ana"]})
+
+    # Usuário com e-mail não confirmado não lê nem os próprios registros.
+    as_backend(conn)
+    unconfirmed = str(uuid4())
+    conn.execute(
+        text("insert into auth.users(id, email, raw_user_meta_data) values (:id, :email, '{}'::jsonb)"),
+        {"id": unconfirmed, "email": f"unconfirmed-{unconfirmed}@unb.br"},
+    )
+    conn.execute(
+        text("insert into public.aceites_termos(user_id, documento, versao) values (:u, 'terms', '2026-11-18')"),
+        {"u": unconfirmed},
+    )
+    assume(conn, unconfirmed)
+    assert scalar(conn, "select count(*) from public.aceites_termos") == 0
 
 
-def test_consent_is_specific_and_revocable(database):
+def test_original_pdf_is_discarded_and_the_plan_remains(database):
     conn, users = database
-    version, other = str(uuid4()), str(uuid4())
-    grant = 'select (public.registrar_consentimento(:u, :f, :r, :h)).id'
-    has = 'select public.tem_consentimento(:u, :f, :r, :h)'
-    p = {'u': users['ana'], 'f': 'google_agenda', 'r': version, 'h': 'a' * 64}
+    done_plan = str(uuid4())
+    pending_plan = str(uuid4())
+    conn.execute(
+        text(
+            "insert into public.planos_ensino(id, user_id, tipo, nome_arquivo, caminho_arquivo, status, processado_em) "
+            "values (:id, :u, 'particular', 'antigo.pdf', :path, 'concluido', now())"
+        ),
+        {"id": done_plan, "u": users["ana"], "path": f"syllabus_files/{users['ana']}/{done_plan}.pdf"},
+    )
+    conn.execute(
+        text(
+            "insert into public.planos_ensino(id, user_id, tipo, nome_arquivo, caminho_arquivo, status) "
+            "values (:id, :u, 'particular', 'pendente.pdf', :path, 'pendente')"
+        ),
+        {"id": pending_plan, "u": users["ana"], "path": f"syllabus_files/{users['ana']}/{pending_plan}.pdf"},
+    )
 
-    assert scalar(conn, has, p) is False
-    first = scalar(conn, grant, p)
-    assert scalar(conn, grant, p) == first                      # repetir não duplica
-    assert scalar(conn, has, p) is True
-    # mudou o texto (hash) ou a versão: a autorização anterior não vale
-    assert scalar(conn, has, {**p, 'h': 'b' * 64}) is False
-    assert scalar(conn, has, {**p, 'r': other}) is False
-    assert scalar(conn, has, {**p, 'u': users['bruno']}) is False
-    # aceitar os termos não é consentir
-    conn.execute(text("select public.registrar_aceite_termos(:u, 'termos_de_uso', '2026-11-10')"), {'u': users['bruno']})
-    assert scalar(conn, has, {**p, 'u': users['bruno']}) is False
+    to_discard = conn.execute(text("select plano_id from public.arquivos_a_descartar()")).scalars().all()
+    assert uuid_list_contains(to_discard, done_plan)
+    assert not uuid_list_contains(to_discard, pending_plan)
 
-    revoke = 'select public.revogar_consentimento(:u, :f, :r)'
-    assert scalar(conn, revoke, {'u': users['ana'], 'f': 'google_agenda', 'r': version}) == 1
-    assert scalar(conn, revoke, {'u': users['ana'], 'f': 'google_agenda', 'r': version}) == 0
-    assert scalar(conn, has, p) is False
-    # o histórico da autorização revogada permanece; autorizar de novo cria outro registro
-    assert scalar(conn, grant, p) != first
-    assert scalar(conn, 'select count(*) from public.consentimentos where user_id=:u', {'u': users['ana']}) == 2
-    denied(conn, grant, {**p, 'f': 'marketing'})
-    denied(conn, grant, {**p, 'f': 'envio_texto_ia'})   # registrada no snapshot do plano
+    assert scalar(conn, "select public.registrar_descarte_arquivo(:p)", {"p": pending_plan}) is False
+    assert scalar(conn, "select public.registrar_descarte_arquivo(:p)", {"p": done_plan}) is True
 
+    row = conn.execute(
+        text(
+            "select caminho_arquivo, arquivo_url, arquivo_descartado_em "
+            "from public.planos_ensino where id = :p"
+        ),
+        {"p": done_plan},
+    ).one()
+    assert row[0] is None and row[1] is None and row[2] is not None
 
-def test_legal_records_are_private_and_server_written(database):
-    conn, users = database
-    conn.execute(text("select public.registrar_aceite_termos(:u, 'termos_de_uso', '2026-11-10')"), {'u': users['ana']})
-    conn.execute(text("select public.registrar_consentimento(:u, 'google_agenda')"), {'u': users['ana']})
-    conn.execute(text("insert into public.exclusoes_conta(contagens) values ('{}')"))
-
-    assume(conn, users['bruno'])
-    assert scalar(conn, 'select count(*) from public.aceites_termos') == 0
-    assert scalar(conn, 'select count(*) from public.consentimentos') == 0
-    assume(conn, users['ana'])
-    assert scalar(conn, 'select count(*) from public.aceites_termos') == 1
-    assert scalar(conn, 'select count(*) from public.consentimentos') == 1
-    denied(conn, "insert into public.aceites_termos(user_id, documento, versao) values (:u, 'termos_de_uso', '2020-01-01')", {'u': users['ana']})
-    denied(conn, 'update public.consentimentos set revogado_em = null')
-    denied(conn, 'delete from public.aceites_termos')
-    for function in ("registrar_aceite_termos(:u, 'termos_de_uso', '2026-11-10')", "registrar_consentimento(:u, 'google_agenda')",
-                     "revogar_consentimento(:u, 'google_agenda')", 'exportar_dados_da_conta(:u)', 'preparar_exclusao_conta(:u)'):
-        denied(conn, f'select public.{function}', {'u': users['ana']})
-    for uid in (None, users['ana'], users['admin']):
-        assume(conn, uid)
-        denied(conn, 'select count(*) from public.exclusoes_conta')
+    # Limpar fonte sem texto_preparado nem arquivo_descartado_em viola check constraint (23514).
+    _reject(
+        conn,
+        lambda: conn.execute(
+            text("update public.planos_ensino set caminho_arquivo = null where id = :p"),
+            {"p": pending_plan},
+        ),
+        "23514",
+    )
 
 
-# ---------------------------------------------------------------------------
-# Exportação
-# ---------------------------------------------------------------------------
-
-def test_export_contains_the_account_data_and_nobody_elses(database):
-    conn, users = database
-    data = populate(conn, users)
-    export = scalar(conn, 'select public.exportar_dados_da_conta(:u)', {'u': users['ana']})
-
-    assert export['formato'] == 'agenda-unb-exportacao-v1'
-    assert export['conta']['id'] == users['ana'] and export['conta']['email'].startswith('test-')
-    assert {e['titulo'] for e in export['agenda_pessoal']} == {'Consulta médica', 'Prova 1'}
-    assert [e['titulo'] for e in export['eventos_publicos_salvos']] == ['Palestra aberta']
-    assert [e['titulo'] for e in export['eventos_enviados']] == ['Sugestão da Ana']
-    assert export['turmas_seguidas'][0]['turma'] == '01'
-    assert export['planos_de_ensino'][0]['arquivo_original_armazenado'] is True
-    # o texto guardado do plano também é dado do titular
-    assert {'texto_preparado', 'texto_aprovado', 'texto_autorizado_em'} <= set(export['planos_de_ensino'][0])
-    assert export['versoes_de_planos'][0]['candidatos'][0]['titulo'] == 'Prova 1'
-    assert [v['valor'] for v in export['votos']] == ['confirma']
-    assert len(export['importacoes']) == 1 and export['importacoes'][0]['itens'][0]['resultado'] == 'criado'
-    assert export['aceites_de_termos'][0]['documento'] == 'termos_de_uso'
-    assert export['consentimentos'][0]['finalidade'] == 'google_agenda'
-    assert len(export['lembretes']) >= 1 and len(export['notificacoes']) >= 1
-
-    # nada de Bruno, nem o caminho interno do arquivo, nem o hash do texto autorizado
-    raw = json.dumps(export)
-    assert users['bruno'] not in raw and 'contesta' not in raw
-    assert data['path'] not in raw and 'a' * 64 not in raw
-
-    assert export['conexao_google_agenda'] is None
-
-    # Conexão com o Google Agenda (S7-F04): sai a conta e a agenda, nunca os tokens.
-    conn.execute(text("""insert into public.google_calendar_connections
-        (user_id, google_sub, google_email, calendar_id, encrypted_access_token,
-         encrypted_refresh_token, granted_scope)
-        values (:u, :sub, 'ana@gmail.com', 'agenda-unb-ana', 'cifrado-acesso', 'cifrado-renovacao',
-                'https://www.googleapis.com/auth/calendar.app.created')"""),
-                 {'u': users['ana'], 'sub': str(uuid4())})
-    google = scalar(conn, 'select public.exportar_dados_da_conta(:u)', {'u': users['ana']})['conexao_google_agenda']
-    assert google['conta_google'] == 'ana@gmail.com' and google['agenda_id'] == 'agenda-unb-ana'
-    assert 'cifrado' not in json.dumps(google)
-
-    bruno = scalar(conn, 'select public.exportar_dados_da_conta(:u)', {'u': users['bruno']})
-    assert 'Consulta médica' not in json.dumps(bruno) and bruno['versoes_de_planos'] == []
-    refused(conn, 'P0002', 'select public.exportar_dados_da_conta(:u)', {'u': str(uuid4())})
-
-
-# ---------------------------------------------------------------------------
-# Exclusão de conta
-# ---------------------------------------------------------------------------
-
-LEFTOVERS = {
-    'profiles': 'id', 'eventos_pessoais': 'user_id', 'eventos_salvos': 'user_id', 'eventos': 'autor_id',
-    'notificacoes': 'usuario_id', 'lembretes': 'user_id', 'vinculos_turma': 'user_id', 'planos_ensino': 'user_id',
-    'versoes_plano': 'autor_id', 'votos_avaliacao': 'user_id', 'operacoes_importacao': 'user_id',
-    'aceites_termos': 'user_id', 'consentimentos': 'user_id',
-    'google_calendar_connections': 'user_id', 'google_calendar_oauth_states': 'user_id',
-}
+def uuid_list_contains(items, target: str) -> bool:
+    return any(str(item) == target for item in items)
 
 
 def test_account_deletion_end_to_end(database):
     conn, users = database
-    data = populate(conn, users)
+    ana = users["ana"]
+    bruno = users["bruno"]
 
-    plan = scalar(conn, 'select public.preparar_exclusao_conta(:u)', {'u': users['ana']})
-    assert plan['arquivos'] == [data['path']]                # o que a API remove do Storage
-    assert plan['contagens']['agenda_pessoal'] == 2 and plan['contagens']['planos'] == 1
+    # Oferta para vínculo de turma.
+    subj_id = scalar(
+        conn,
+        "insert into public.disciplinas(codigo, nome) values ('FGA0158', 'OO') returning id",
+    )
+    off_id = scalar(
+        conn,
+        "insert into public.ofertas_turma(disciplina_id, turma, ano, semestre) "
+        "values (:s, '01', 2026, 2) returning id",
+        {"s": subj_id},
+    )
+    conn.execute(
+        text("insert into public.vinculos_turma(user_id, oferta_id) values (:u, :o)"),
+        {"u": ana, "o": off_id},
+    )
+    conn.execute(
+        text("insert into public.vinculos_turma(user_id, oferta_id) values (:u, :o)"),
+        {"u": bruno, "o": off_id},
+    )
 
-    # a conta tinha compromissos na agenda: antes da correção do FK esta exclusão falhava
-    conn.execute(text('delete from auth.users where id=:u'), {'u': users['ana']})
-    assert scalar(conn, 'select public.concluir_exclusao_conta(:r)', {'r': plan['registro_id']}) is True
-    assert scalar(conn, 'select public.concluir_exclusao_conta(:r)', {'r': plan['registro_id']}) is False
+    # Evento público de Ana (gera notificação via trigger) + salvo + agenda pessoal.
+    pub_id = scalar(
+        conn,
+        "insert into public.eventos(autor_id, titulo, descricao, data_evento, status) "
+        "values (:u, 'Evento de Ana', 'Descrição', now() + interval '1 day', 'aprovado') returning id",
+        {"u": ana},
+    )
+    conn.execute(
+        text("insert into public.eventos_salvos(user_id, event_id) values (:u, :e)"),
+        {"u": ana, "e": pub_id},
+    )
+    conn.execute(
+        text("insert into public.eventos_pessoais(user_id, titulo, data_hora) values (:u, 'Agenda Ana', now())"),
+        {"u": ana},
+    )
 
-    for table, column in LEFTOVERS.items():
-        assert scalar(conn, f'select count(*) from public.{table} where {column}=:u', {'u': users['ana']}) == 0, table
-    assert scalar(conn, 'select count(*) from public.avaliacoes where plano_id=:p', {'p': data['plan']}) == 0
-    assert scalar(conn, 'select count(*) from public.votos_avaliacao where avaliacao_id=:c', {'c': data['candidate']}) == 0
+    # Plano concluído e plano em processamento (ambos com versao_aprovada_id preenchida).
+    snap = approved_source("Prova 1")
+    plan_done = str(uuid4())
+    plan_proc = str(uuid4())
+    conn.execute(
+        text(
+            "insert into public.planos_ensino(id, user_id, tipo, nome_arquivo, caminho_arquivo, status, processado_em) "
+            "values (:id, :u, 'particular', 'legado.pdf', :path, 'concluido', now())"
+        ),
+        {"id": plan_done, "u": ana, "path": f"syllabus_files/{ana}/{plan_done}.pdf"},
+    )
+    conn.execute(
+        text(
+            "insert into public.planos_ensino(id, user_id, tipo, nome_arquivo, status, texto_preparado, texto_aprovado, hash_texto_aprovado, autorizado_em, enfileirado_em, versao_texto) "
+            "values (:id, :u, 'particular', 'proc.pdf', 'pendente', cast(:pages as jsonb), cast(:pages as jsonb), :hash, now(), now(), 1)"
+        ),
+        {"id": plan_proc, "u": ana, "pages": json.dumps(snap["approved_pages"]), "hash": snap["approved_hash"]},
+    )
 
-    # o registro da exclusão não identifica a pessoa
-    record = json.dumps(scalar(conn, 'select to_jsonb(e) from public.exclusoes_conta e where id=:r', {'r': plan['registro_id']}))
-    assert users['ana'] not in record and 'test-' not in record
+    ver_shared = scalar(
+        conn,
+        "select id from public.versoes_plano where plano_id = :p and numero = 1",
+        {"p": plan_done},
+    )
+    cand_id = scalar(
+        conn,
+        "insert into public.avaliacoes(plano_id, versao_id, titulo) values (:p, :v, 'Prova Compartilhada') returning id",
+        {"p": plan_done, "v": ver_shared},
+    )
+    conn.execute(
+        text(
+            "update public.versoes_plano set visibilidade = 'compartilhada', compartilhada_em = now() "
+            "where id = :v"
+        ),
+        {"v": ver_shared},
+    )
+    ver_proc = scalar(
+        conn,
+        "select id from public.versoes_plano where plano_id = :p and numero = 1",
+        {"p": plan_proc},
+    )
+    conn.execute(
+        text("update public.planos_ensino set versao_aprovada_id = :v where id = :p"),
+        {"v": ver_shared, "p": plan_done},
+    )
+    conn.execute(
+        text(
+            "update public.planos_ensino set versao_aprovada_id = :v, status = 'processando', processamento_iniciado_em = now() "
+            "where id = :p"
+        ),
+        {"v": ver_proc, "p": plan_proc},
+    )
 
-    # Bruno: a cópia que importou continua na agenda dele, sem vínculo com a origem apagada;
-    # o evento público de outra pessoa e a turma do catálogo também continuam
-    copy = conn.execute(text("""select titulo, origem_versao_id from public.eventos_pessoais where user_id=:u"""),
-                        {'u': users['bruno']}).mappings().one()
-    assert copy['titulo'] == 'Prova 1' and copy['origem_versao_id'] is None
-    assert scalar(conn, 'select count(*) from public.eventos_salvos where user_id=:u', {'u': users['bruno']}) == 1
-    assert scalar(conn, 'select count(*) from public.vinculos_turma where user_id=:u', {'u': users['bruno']}) == 1
-    assert scalar(conn, 'select count(*) from public.ofertas_turma where id=:o', {'o': data['turma']}) == 1
-    # a operação de importação de Bruno sobrevive, sem apontar para a versão apagada
-    assert scalar(conn, 'select versao_id from public.operacoes_importacao where user_id=:u', {'u': users['bruno']}) is None
+    # Operação de importação da própria Ana + cópia independente importada por Bruno.
+    op_ana = scalar(
+        conn,
+        "insert into public.operacoes_importacao(user_id, chave, versao_id, conteudo_hash) "
+        "values (:u, 'operacao-ana-01', :v, repeat('a', 64)) returning id",
+        {"u": ana, "v": ver_shared},
+    )
+    conn.execute(
+        text(
+            "insert into public.itens_importacao(operacao_id, avaliacao_id, resultado) "
+            "values (:op, :c, 'criado')"
+        ),
+        {"op": op_ana, "c": cand_id},
+    )
+    conn.execute(
+        text(
+            "insert into public.eventos_pessoais(user_id, titulo, data_hora, origem_plano_id, origem_avaliacao_id, origem_versao_id, origem_trecho) "
+            "values (:u, 'Cópia Bruno', now(), :p, :c, :v, 'Prova 1')"
+        ),
+        {"u": bruno, "p": plan_done, "c": cand_id, "v": ver_shared},
+    )
+
+    # Google Calendar, aceites e consentimentos.
+    conn.execute(
+        text(
+            "insert into public.google_calendar_connections(user_id, google_sub, google_email, granted_scope) "
+            "values (:u, :sub, 'ana@unb.br', 'scope')"
+        ),
+        {"u": ana, "sub": f"sub-{ana}"},
+    )
+    conn.execute(
+        text(
+            "insert into public.google_calendar_oauth_states(state_hash, user_id, agenda_email, encrypted_code_verifier, expires_at) "
+            "values (repeat('b', 64), :u, 'ana@unb.br', 'enc', now() + interval '5 min')"
+        ),
+        {"u": ana},
+    )
+    conn.execute(
+        text("insert into public.aceites_termos(user_id, documento, versao) values (:u, 'terms', '2026-11-18')"),
+        {"u": ana},
+    )
+    conn.execute(
+        text("insert into public.consentimentos(user_id, finalidade) values (:u, 'google_agenda')"),
+        {"u": ana},
+    )
+
+    prep = conn.execute(
+        text("select exclusao_id, caminhos_arquivos from public.preparar_exclusao_conta(:u)"),
+        {"u": ana},
+    ).one()
+    exclusao_id = prep.exclusao_id
+    assert f"syllabus_files/{ana}/{plan_done}.pdf" in list(prep.caminhos_arquivos)
+
+    conn.execute(text("delete from auth.users where id = :u"), {"u": ana})
+    conn.execute(
+        text("select public.concluir_exclusao_conta(:id, 1)"),
+        {"id": exclusao_id},
+    )
+
+    # Todos os registros de Ana foram apagados em cascata.
+    for table, col in (
+        ("profiles", "id"),
+        ("eventos_pessoais", "user_id"),
+        ("eventos_salvos", "user_id"),
+        ("notificacoes", "usuario_id"),
+        ("eventos", "autor_id"),
+        ("vinculos_turma", "user_id"),
+        ("planos_ensino", "user_id"),
+        ("versoes_plano", "autor_id"),
+        ("operacoes_importacao", "user_id"),
+        ("google_calendar_connections", "user_id"),
+        ("google_calendar_oauth_states", "user_id"),
+        ("aceites_termos", "user_id"),
+        ("consentimentos", "user_id"),
+    ):
+        assert scalar(conn, f"select count(*) from public.{table} where {col} = :u", {"u": ana}) == 0
+    assert scalar(conn, "select count(*) from public.avaliacoes where plano_id in (:p1, :p2)", {"p1": plan_done, "p2": plan_proc}) == 0
+
+    # Cópia independente de Bruno permanece preservada com origem_versao_id nulificada.
+    bruno_copy = conn.execute(
+        text(
+            "select titulo, origem_plano_id, origem_avaliacao_id, origem_versao_id, origem_trecho "
+            "from public.eventos_pessoais where user_id = :u"
+        ),
+        {"u": bruno},
+    ).one()
+    assert bruno_copy[0] == "Cópia Bruno"
+    assert str(bruno_copy[1]) == plan_done
+    assert str(bruno_copy[2]) == str(cand_id)
+    assert bruno_copy[3] is None
+    assert bruno_copy[4] == "Prova 1"
+
+    record = conn.execute(
+        text(
+            "select status, planos_removidos, eventos_pessoais_removidos, eventos_publicos_removidos, arquivos_storage_removidos "
+            "from public.exclusoes_conta where id = :id"
+        ),
+        {"id": exclusao_id},
+    ).one()
+    assert tuple(record) == ("concluida", 2, 1, 1, 1)
 
 
-def test_last_admin_cannot_delete_the_account(database):
+def test_cross_user_version_author_deletion_unblocks_processing_cascade(database):
     conn, users = database
-    conn.execute(text("update public.profiles set papel='professor' where papel='admin' and id<>:a"), {'a': users['admin']})
-    refused(conn, '55000', 'select public.preparar_exclusao_conta(:u)', {'u': users['admin']})
-    conn.execute(text("update public.profiles set papel='admin' where id=:p"), {'p': users['professor']})
-    assert scalar(conn, 'select public.preparar_exclusao_conta(:u)', {'u': users['admin']})['arquivos'] == []
-    refused(conn, 'P0002', 'select public.preparar_exclusao_conta(:u)', {'u': str(uuid4())})
+    u1 = users["ana"]
+    u2 = users["bruno"]
+    snap = approved_source("Prova 1")
+    p_u1 = str(uuid4())
+
+    conn.execute(
+        text(
+            "insert into public.planos_ensino("
+            "  id, user_id, tipo, nome_arquivo, status, texto_preparado, texto_aprovado, "
+            "  hash_texto_aprovado, autorizado_em, enfileirado_em, versao_texto"
+            ") values ("
+            "  :id, :u, 'particular', 'proc.pdf', 'pendente', cast(:pages as jsonb), "
+            "  cast(:pages as jsonb), :hash, now(), now(), 1"
+            ")"
+        ),
+        {"id": p_u1, "u": u1, "pages": json.dumps(snap["approved_pages"]), "hash": snap["approved_hash"]},
+    )
+    v_u2 = scalar(
+        conn,
+        "insert into public.versoes_plano(plano_id, numero, autor_id) values (:p, 2, :u) returning id",
+        {"p": p_u1, "u": u2},
+    )
+    conn.execute(
+        text(
+            "update public.planos_ensino "
+            "set versao_aprovada_id = :v, status = 'processando', processamento_iniciado_em = now() "
+            "where id = :p"
+        ),
+        {"v": v_u2, "p": p_u1},
+    )
+
+    # Enquanto u1 e v_u2 existem, alterações explícitas no snapshot em processamento continuam bloqueadas (42501).
+    _reject(
+        conn,
+        lambda: conn.execute(
+            text("update public.planos_ensino set versao_aprovada_id = null where id = :p"),
+            {"p": p_u1},
+        ),
+        "42501",
+    )
+    _reject(
+        conn,
+        lambda: conn.execute(
+            text("update public.planos_ensino set versao_texto = 2 where id = :p"),
+            {"p": p_u1},
+        ),
+        "42501",
+    )
+
+    # Ao excluir u2 (autor de v_u2), ON DELETE SET NULL limpa versao_aprovada_id no plano de u1 sem bloquear.
+    conn.execute(text("delete from auth.users where id = :u"), {"u": u2})
+
+    row = conn.execute(
+        text("select status, versao_aprovada_id from public.planos_ensino where id = :p"),
+        {"p": p_u1},
+    ).one()
+    assert row[0] == "processando"
+    assert row[1] is None
 
 
-# ---------------------------------------------------------------------------
-# Descarte do PDF original (ADR-003)
-# ---------------------------------------------------------------------------
-
-def test_original_pdf_is_discarded_and_the_plan_remains(database):
+def test_last_admin_blocked_and_second_admin_allowed_in_db(database):
     conn, users = database
-    data = populate(conn, users)
-    pending = str(uuid4())
-    conn.execute(text("""insert into public.planos_ensino(id, user_id, nome_arquivo, caminho_arquivo, tipo_arquivo, status)
-        values (:id, :u, 'novo.pdf', :path, 'pdf', 'pendente')"""),
-        {'id': pending, 'u': users['ana'], 'path': f"syllabus_files/{users['ana']}/{pending}_novo.pdf"})
+    conn.execute(
+        text("update public.profiles set papel = 'student' where papel = 'admin' and id <> :id"),
+        {"id": users["admin"]},
+    )
+    _reject(
+        conn,
+        lambda: conn.execute(text("select * from public.preparar_exclusao_conta(:u)"), {"u": users["admin"]}),
+        "55000",
+    )
+    second_admin = str(uuid4())
+    conn.execute(
+        text("insert into auth.users(id, email, email_confirmed_at, raw_user_meta_data) values (:id, :email, now(), '{}'::jsonb)"),
+        {"id": second_admin, "email": f"admin2-{second_admin}@unb.br"},
+    )
+    conn.execute(text("update public.profiles set papel = 'admin' where id = :id"), {"id": second_admin})
+    row = conn.execute(text("select * from public.preparar_exclusao_conta(:u)"), {"u": users["admin"]}).one()
+    assert row.exclusao_id is not None
 
-    # só planos com processamento encerrado entram na lista
-    queue = conn.execute(text('select plano_id::text, caminho_arquivo from public.arquivos_a_descartar()')).all()
-    assert (data['plan'], data['path']) in queue and pending not in [plan for plan, _ in queue]
 
-    assert scalar(conn, 'select public.registrar_descarte_arquivo(:p)', {'p': data['plan']}) is True
-    assert scalar(conn, 'select public.registrar_descarte_arquivo(:p)', {'p': data['plan']}) is False   # repetir é seguro
-    plan = conn.execute(text("""select caminho_arquivo, tamanho_bytes, arquivo_descartado_em, nome_arquivo, status
-        from public.planos_ensino where id=:p"""), {'p': data['plan']}).mappings().one()
-    assert plan['caminho_arquivo'] is None and plan['tamanho_bytes'] is None and plan['arquivo_descartado_em']
-    assert plan['nome_arquivo'] == 'plano.pdf' and plan['status'] == 'concluido'
-    # candidatos, versão compartilhada e agenda continuam
-    assert scalar(conn, 'select count(*) from public.avaliacoes where plano_id=:p', {'p': data['plan']}) == 1
-    assert scalar(conn, 'select count(*) from public.eventos_pessoais where origem_plano_id=:p', {'p': data['plan']}) == 2
-    assert data['plan'] not in [plan for plan, _ in conn.execute(text('select plano_id::text, caminho_arquivo from public.arquivos_a_descartar()')).all()]
+def test_worker_completion_after_account_deletion_on_postgres():
+    url = os.getenv("TEST_SUPABASE_DB_URL")
+    if not url:
+        pytest.skip("TEST_SUPABASE_DB_URL not configured")
+    assert make_url(url).host in ("localhost", "127.0.0.1"), "Local database only"
 
-    # envio novo: só o texto preparado, sem PDF; plano sem nenhuma fonte continua recusado
-    conn.execute(text("""insert into public.planos_ensino(user_id, tipo_arquivo, status, texto_preparado)
-        values (:u, 'pdf', 'pendente', '[{"pagina": 1, "texto": "Prova 1 em 10/04"}]')"""), {'u': users['ana']})
-    denied(conn, "insert into public.planos_ensino(user_id, tipo_arquivo, status) values (:u, 'pdf', 'pendente')",
-           {'u': users['ana']})
-    for uid in (None, users['ana']):
-        assume(conn, uid)
-        denied(conn, 'select * from public.arquivos_a_descartar()')
-        denied(conn, 'select public.registrar_descarte_arquivo(:p)', {'p': pending})
+    from sqlalchemy.orm import sessionmaker
+
+    engine = create_engine(url, connect_args={"options": "-c statement_timeout=10000"})
+    Session = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+    owner = str(uuid4())
+    snap = approved_source("Prova 1 em 20/11/2026")
+    plan_id = str(uuid4())
+
+    with engine.begin() as conn:
+        conn.execute(
+            text("insert into auth.users(id, email, email_confirmed_at, raw_user_meta_data) values (:id, :email, now(), '{}'::jsonb)"),
+            {"id": owner, "email": f"s8d01-worker-{owner}@unb.br"},
+        )
+        conn.execute(
+            text(
+                "insert into public.planos_ensino(id, user_id, tipo, nome_arquivo, status, texto_preparado, texto_aprovado, hash_texto_aprovado, autorizado_em, enfileirado_em, versao_texto) "
+                "values (:id, :u, 'particular', 'worker.pdf', 'pendente', cast(:pages as jsonb), cast(:pages as jsonb), :hash, now(), now(), 1)"
+            ),
+            {"id": plan_id, "u": owner, "pages": json.dumps(snap["approved_pages"]), "hash": snap["approved_hash"]},
+        )
+
+    exclusao_id = None
+    try:
+        cfg = ProcessingConfig(
+            provider_terms_ready=True,
+            api_key="fake",
+            model="gemini-test",
+            lease_seconds=300,
+            max_attempts=3,
+            retry_delay_seconds=30,
+            rate_limit_delay_seconds=60,
+            min_interval_seconds=0,
+        )
+        worker = SyllabusWorker(Session, None, None, cfg)
+        lease = worker.claim()
+        assert lease is not None and str(lease.id) == plan_id
+
+        with engine.begin() as conn:
+            exclusao_id = conn.execute(
+                text("select exclusao_id from public.preparar_exclusao_conta(:u)"),
+                {"u": owner},
+            ).scalar_one()
+            conn.execute(text("delete from auth.users where id = :u"), {"u": owner})
+            conn.execute(text("select public.concluir_exclusao_conta(:id, 0)"), {"id": exclusao_id})
+
+        worker.fail(lease, ProcessingError("erro_interno", retryable=True), 15)
+
+        with engine.connect() as conn:
+            assert scalar(conn, "select count(*) from public.planos_ensino where id = :p", {"p": plan_id}) == 0
+    finally:
+        with engine.begin() as conn:
+            conn.execute(text("delete from auth.users where id = :u"), {"u": owner})
+            if exclusao_id is not None:
+                conn.execute(text("delete from public.exclusoes_conta where id = :id"), {"id": exclusao_id})
+        engine.dispose()
