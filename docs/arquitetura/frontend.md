@@ -58,9 +58,29 @@ A segunda página concentra as principais funcionalidades do AgendaUnB, relacion
 - Apresentação em cards: organização visual dos eventos em cartões translúcidos (com bordas suaves de 14 a 20px e brilhos interativos de hover), facilitando a leitura e identificação das informações. Categorizações rígidas informam rapidamente a qual campus ou tipo de atividade o evento pertence através de rótulos (badges em formato de pílula).
 - Gerenciamento de eventos: disponibilização das funcionalidades relacionadas à criação e organização dos compromissos pessoais.
 
-### 2.3. Extração de Planos de Ensino (Core Feature pós-R1)
+### 2.3. Extração de Planos de Ensino (Core Feature pós-R1) {#painel-do-semestre}
 
-A página de planos oferece seleção de oferta, revisão e autorização do texto antes da extração, acompanhamento de progresso e confirmação das avaliações antes de adicioná-las à agenda ([ADR-003](/arquitetura/adrs/adr-003-minimizar-dados-de-planos) · [ADR-010](/arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos) · [Contratos da Release 2](/atualizacoes#contratos-da-release-2)).
+O painel de `/plano-de-ensino` exige conta autenticada e reúne os envios, a biblioteca compartilhada da turma e as avaliações do semestre. Visitantes não autenticados recebem apenas orientação e acesso ao login, sem envio nem vínculo de turmas. Escolha uma turma disponível no topo de **Seus planos** antes de adicionar PDFs digitais ou enviar texto. Os arquivos selecionados em lote usam a mesma turma e mantêm esse destino na fila. O catálogo permite seguir várias turmas de uma vez. A preparação de até dois planos corre em paralelo e o worker acompanha a extração mesmo que o usuário navegue para outra página.
+
+Ao abrir **Autorizar texto**, confira a versão preparada e remova informações pessoais, sensíveis ou confidenciais. **Autorizar envio** registra a autorização daquele texto exato para o Gemini. O botão **Revisar próximo texto** dá acesso ao seguinte quando houver outro pronto.
+
+A lista pré-seleciona avaliações completas. Use **Precisam de atenção** para consultar o trecho de origem e corrigir pendências. É possível selecionar as avaliações válidas do filtro e editar o tipo ou horário dos itens selecionados de uma mesma turma. **Adicionar à agenda** confirma os itens incluídos em operações separadas por plano. O painel informa falhas e sucessos parciais e permite consultar o resultado de uma operação antes de repeti-la.
+
+Na seção **Planos compartilhados da turma**, a versão inicial (`v1`) de planos extraídos vinculados a uma turma é compartilhada automaticamente ao concluir (com opção de retirada pelo autor ou admin, sem re-compartilhamento automático após retirada); reprocessamentos e rascunhos posteriores começam privados até publicação explícita. Seguidores autenticados da turma (com vínculo autodeclarado explícito) consultam o histórico de versões (com nome do autor, diferenciação entre contribuição de estudante, perfil professor e administrador, procedência institucional verificada e data da última atualização), votam na versão ou em cada avaliação — exibindo prioritariamente a versão com mais votos positivos e, em empate, a mais recente, sinalizando divergências sem alterar datas automaticamente — e importam avaliações selecionadas diretamente para a agenda sem reenviar arquivo. Estudantes seguidores da turma, professores e administradores podem revisar versões compartilhadas gerando uma nova versão com histórico (`share: true`), preservando os eventos pessoais já importados e sinalizando quando houver alterações em versões posteriores. Autores e administradores podem retirar uma versão compartilhada ou eventos individuais mantendo cópias já importadas.
+
+Arquivos locais, textos em revisão e rascunhos ficam em memória durante a navegação. Após recarregar, o histórico recupera os planos já persistidos e a biblioteca da turma permanece disponível enquanto a conta seguir a oferta.
+
+Veja os contratos de [privacidade](/arquitetura/adrs/adr-003-minimizar-dados-de-planos), [confirmação](/arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos) e [processamento assíncrono](/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia).
+
+#### Homologação da jornada de oito planos
+
+Use um ambiente de homologação com catálogo publicado, oito ofertas disponíveis no mesmo semestre, worker habilitado e provedor elegível. Convide cinco estudantes, cada um com conta de teste autenticada e sem as oito ofertas seguidas. Use oito PDFs digitais sintéticos com 60 datas conhecidas (oito avaliações em cada um dos quatro primeiros, sete em cada um dos demais). Inclua provas com horário e entregas de dia inteiro. Identifique as ofertas nos nomes dos PDFs e entregue ao observador a lista de datas esperadas.
+
+1. Comece o cronômetro quando o participante abrir o painel já autenticado, com os arquivos em mãos. Inclua a seleção de turmas, as autorizações, a revisão, a extração e a confirmação.
+2. Registre individualmente o tempo total até as 60 avaliações constarem em **Meus Eventos**, o tempo de interação e o tempo ocioso aguardando a rede ou a extração. Conte esperas sobrepostas uma vez e registre separadamente a latência por plano.
+3. Confira título, data, horário, dia inteiro e duplicatas na agenda. A meta exige quatro de cinco conclusões corretas abaixo de 300 segundos, sem auxílio. Registre erros de extração e gargalos de preparação, fila, provedor ou confirmação.
+
+O cenário Playwright de oito planos e 60 avaliações durou 13,3 segundos na execução automatizada, com respostas controladas e interações automatizadas. A medição com participantes e Gemini real permanece pendente. O ambiente local utilizado na implementação não tinha credencial e habilitação do provedor. Os resultados simulados não estabelecem o tempo real da jornada.
 
 ### 2.4. Navegação entre páginas
 
@@ -101,3 +121,9 @@ A responsividade da aplicação permite que os usuários acessem o AgendaUnB por
 ### 3.6. Simplicidade, transparência e intuitividade
 
 A organização dos elementos visuais, a divisão das funcionalidades e a utilização de componentes padronizados buscam reduzir a complexidade de utilização do sistema. O objetivo é permitir que os estudantes realizem suas atividades de maneira simples, sem precisar percorrer caminhos desnecessários para encontrar os recursos desejados. A adoção de indicadores de carregamento e áreas de moderação humana em processos densos (como a leitura dos PDFs) garantem que a pessoa mantenha controle total sem se perder na intuição da plataforma.
+
+### Refinamento do catálogo de turmas
+
+A busca precede a seleção: resultados são agrupados por unidade e disciplina/período, com turmas recolhíveis, professor e horário por oferta. O agrupamento respeita a página de 20 resultados da API; a paginação informa o alcance exibido. A seleção permanece ao alternar buscas, páginas ou recolher o catálogo, com resumo e remoção individual antes de seguir. Ofertas indisponíveis e já seguidas não podem ser adicionadas novamente. Os dados continuam em memória e são descartados na troca de usuário.
+
+Validação do refinamento: Playwright cobre agrupamento, teclado, seleção entre buscas, fechamento/reabertura e bloqueio de ofertas indisponíveis em 360, 768 e 1365 px, nos temas claro/escuro. Inspeção visual das capturas e build de produção complementam os testes; usam catálogo e autenticação simulados.

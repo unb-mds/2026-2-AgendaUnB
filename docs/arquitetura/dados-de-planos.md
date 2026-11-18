@@ -67,17 +67,18 @@ O vínculo com a turma é autodeclarado: mostre isso na interface.
 | `GET /api/v1/syllabus/{id}/versions` e `.../versions/{vid}` | `select public.ator_pode_ler_versao(:ator, :versao)` | Autor da versão (privada ou compartilhada) ou seguidor da oferta se `compartilhada` |
 | `PUT /api/v1/syllabus/{id}/versions/{vid}/sharing` | `select (public.compartilhar_versao(:ator, :versao)).id` | Só o autor da versão. O plano precisa ter turma e estar `concluido` |
 | `DELETE /api/v1/syllabus/{id}/versions/{vid}/sharing` | `select (public.retirar_compartilhamento(:ator, :versao)).id` | Autor da versão ou admin |
-| `POST /api/v1/syllabus/{id}/versions` | `select (public.criar_revisao(:ator, :versao_origem)).id` | Autor da origem; professor e admin, somente se a origem estiver `compartilhada` |
+| `POST /api/v1/syllabus/{id}/versions` | `select (public.criar_revisao(:ator, :versao_origem)).id` | Autor da origem; seguidor autenticado da oferta, professor e admin, se a origem estiver `compartilhada` |
 | `PUT /api/v1/syllabus/{id}/versions/{vid}` | Atualiza candidatos da versão privada | Só o autor da versão, enquanto `privada` (`409` se `compartilhada`) |
 | `PUT /api/v1/syllabus/{id}/versions/{vid}/provenance` | `select (public.validar_procedencia_institucional(:ator, :versao, :url)).id` | Só admin, em versão `compartilhada`, com URL pública oficial `http(s)` |
 | `PUT /api/v1/syllabus/{id}/versions/{vid}/candidates/{cid}/vote` | `select public.votar_avaliacao(:ator, :candidato, :valor)` | Quem pode ler a versão `compartilhada` (seguidor da turma ou autor) |
 | `PUT /api/v1/syllabus/{id}/versions/{vid}/vote` e `GET .../votes` | `select * from public.resumo_votos_versao(:ator, :versao)` | Quem pode ler a versão |
+| `DELETE /api/v1/syllabus/{id}/versions/{vid}/candidates/{cid}` | Marca o candidato como `descartado` na versão | Autor da versão ou admin |
 
-Compartilhar e retirar são idempotentes. As funções devolvem a linha de `versoes_plano`; use `(função(...)).*` para ler todos os campos.
+Compartilhar e retirar são idempotentes. As funções devolvem a linha de `versoes_plano`; use `(função(...)).*` para ler todos os campos. Por decisão de produto (PO, 2026-11-17, [ADR-010](/arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos)), a versão inicial (`v1`) de planos vinculados a uma oferta concluídos com candidatos é compartilhada automaticamente para os seguidores da turma ao ser consultada/confirmada pelo autor (salvo se já tiver sido retirada com `retirada_em`); revisões posteriores sem publicação imediata e reprocessamentos nascem `privada`.
 
-**Revisão.** `criar_revisao` cria a próxima versão do plano, **privada**, com os candidatos copiados (menos os descartados), `versao_origem_id` preenchido e `autor_papel` com o papel atual de quem revisa. O fluxo é: criar a revisão, ajustar os candidatos da versão nova e então compartilhá-la. Professor e admin publicam direto as próprias revisões.
+**Revisão.** `criar_revisao` cria a próxima versão do plano com `versao_origem_id` preenchido e `autor_papel` com o papel atual de quem revisa, sem alterar eventos pessoais já importados por outros usuários. Quando enviada com candidatos para um plano vinculado a oferta (ou com `share: true`), já é publicada como `compartilhada`.
 
-**Conteúdo compartilhado não é editado.** Depois de compartilhada, a versão não aceita alteração, exclusão nem inclusão de candidatos (`55000`): votos e importações referem-se àquele conteúdo. Para corrigir, cria-se uma revisão. O `status` do candidato continua editável, porque é a decisão particular do autor.
+**Conteúdo compartilhado não é editado.** Depois de compartilhada, a versão não aceita alteração de títulos ou datas nem inclusão de novos candidatos (`55000`): votos e importações referem-se àquele conteúdo. Para corrigir, cria-se uma revisão. O `status` do candidato continua editável, permitindo retirada lógica pelo autor da versão ou admin (`DELETE .../candidates/{cid}`).
 
 **Retirada.** Bloqueia novos acessos, votos e importações. Não retira as revisões (cada uma tem a própria visibilidade), não apaga votos nem remove eventos já importados. Ficam registrados `retirada_em` e `retirada_por`.
 
