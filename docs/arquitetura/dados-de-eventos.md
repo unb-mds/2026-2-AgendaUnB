@@ -5,14 +5,14 @@ description: "Como a API, o coletor e o agendador usam as estruturas de eventos 
 
 # Dados de eventos: datas, coleta e lembretes
 
-Guia de integração das migrações `20261111140000_eventos_datas_e_coleta.sql` e `20261117152000_eventos_lembretes.sql`. A tabela resume o que as migrações já entregam e as etapas pendentes de integração e operação.
+Guia de integração das migrações de datas, coleta e lembretes. A tabela resume o que as migrações entregam e as etapas pendentes de operação.
 
 | Issue | O que o banco já faz | O que falta na aplicação |
 | --- | --- | --- |
 | [S7-B05 (#75)](https://github.com/unb-mds/2026-2-AgendaUnB/issues/75) | Upsert por origem, decisão publicar/revisar, conciliação por URL, proteção de edições locais e de decisões de moderação, registro das execuções | Configurar e homologar a execução recorrente no ambiente hospedado; registrar as evidências operacionais da issue |
-| [S8-B03 (#81)](https://github.com/unb-mds/2026-2-AgendaUnB/issues/81) | Agendar, trocar, cancelar e disparar avisos, sem duplicar | Chamar o disparo periodicamente, endpoints e central de avisos |
+| [S8-B03 (#81)](https://github.com/unb-mds/2026-2-AgendaUnB/issues/81) | Agendar, trocar, cancelar e disparar avisos com unicidade por conta e início | Homologar o Supabase Cron, a API e a central no ambiente hospedado |
 
-**Regra geral:** o que precisa valer em qualquer caminho de escrita está em chaves únicas, triggers e funções. A aplicação chama as funções; não reimplementa as regras. Nada daqui é gravável pelo navegador.
+As chaves únicas, os gatilhos e as funções aplicam as regras a todos os caminhos de escrita. O destinatário pode registrar a leitura do próprio aviso disparado.
 
 ## 1. Datas (ADR-011)
 
@@ -157,24 +157,36 @@ Para dia inteiro, o início é a meia-noite de Brasília do primeiro dia, então
 
 ### Agendador
 
-Um processo periódico (a cada 5 minutos é suficiente) executa:
+O Supabase Cron (`pg_cron`) executa `public.disparar_lembretes()` a cada cinco minutos. A pendência fica elegível 24 h antes e aparece na próxima execução que a processar. A tabela guarda as pendências e o job roda no PostgreSQL mesmo com a API e o navegador fechados.
+
+Após aplicar as migrações da #81, execute o arquivo versionado `supabase/snippets/habilitar_lembretes.sql` como `postgres` no projeto Supabase do ambiente alvo. O arquivo verifica a função, habilita a extensão se necessário e registra o job de nome `agenda-unb-lembretes`. Reexecutar o arquivo no mesmo projeto com o mesmo papel mantém um único job. Valide primeiro no banco de homologação com contas e eventos sintéticos.
+
+Para testar manualmente e acompanhar o histórico no ambiente em validação, execute estas consultas.
 
 ```sql
-select public.disparar_lembretes();   -- devolve quantos avisos foram disparados
+select public.disparar_lembretes(); -- quantidade de avisos disparados nesta chamada
+
+select jobid, schedule, active
+from cron.job where jobname = 'agenda-unb-lembretes';
+
+select r.start_time, r.end_time, r.status, r.return_message
+from cron.job_run_details r
+join cron.job j on j.jobid = r.jobid
+where j.jobname = 'agenda-unb-lembretes'
+order by r.runid desc
+limit 20;
 ```
 
-- Pode rodar quantas vezes for, em um ou vários processos: cada aviso dispara uma única vez (`FOR UPDATE SKIP LOCKED`).
-- A elegibilidade é conferida de novo no disparo. Aviso atrasado ainda é entregue se o evento não começou; depois do início é descartado.
-- Reiniciar o agendador não perde nem duplica avisos: o estado está na tabela.
+Em incidente, execute `select cron.unschedule('agenda-unb-lembretes')` como o dono do job. As pendências e leituras permanecem na tabela. Confira a compatibilidade do schema antes de reativar com o mesmo arquivo. O disparo revalida o evento e o vínculo, retoma pendências elegíveis antes do início e descarta pendências após o início. A chave de unicidade contém conta, tipo e ID do evento e início de referência. A antecedência fixa de 24 horas é implícita nessa chave. A transação de disparo usa `FOR UPDATE SKIP LOCKED` para processar cada aviso uma única vez.
 
 ### Central de avisos
 
 | Contrato | Consulta |
 | --- | --- |
 | `GET /api/v1/me/reminders` | `Reminder` com `user_id` da sessão e `status = 'disparado'`, ordenado por `fired_at desc` |
-| `PUT /api/v1/me/reminders/{id}/read` | `update lembretes set lido_em = now() where id = :id and user_id = :u and status = 'disparado'` |
+| `PUT /api/v1/me/reminders/{id}/read` | Atualização atômica do próprio lembrete disparado preservando o primeiro `read_at` |
 
-O banco mantém o primeiro `lido_em` em retries. No contrato, `event_kind` é `personal` ou `saved_public` (`pessoal`/`publico_salvo` no banco), `event_id` é `evento_pessoal_id` ou `evento_id`, e `scheduled_at` é `agendado_para`. Pelo navegador, a conta só enxerga os próprios avisos já disparados e só altera `lido_em`.
+O sino da navegação abre os lembretes para qualquer conta autenticada. Para estudantes, a opção Sugestões dá acesso aos avisos de moderação. O [contrato da API](/api-specs#lembretes-da-agenda) descreve os campos e as respostas.
 
 ## 4. Quem pode o quê
 
@@ -185,7 +197,7 @@ O banco mantém o primeiro `lido_em` em retries. No contrato, `event_kind` é `p
 | `coletas_eventos` | Sem acesso | Sem acesso | Sem acesso | Sim |
 | `listar_revisoes_coleta`, `moderar_sugestao` | Não | Recusado | Sim | Sim |
 | `disparar_lembretes` | Não | Não | Não | Sim |
-| `lembretes` | Sem acesso | Lê os próprios disparados; marca leitura | Sem acesso por papel | Sim |
+| `lembretes` | Sem acesso | Lê os próprios disparados e marca leitura | As mesmas permissões de destinatário | Sim |
 
 ## 5. Testes e Validação Local
 
@@ -217,7 +229,7 @@ TEST_SUPABASE_DB_URL="postgresql+psycopg://postgres:postgres@127.0.0.1:14322/pos
   python -m pytest tests/test_reminders_database.py -q
 ```
 
-O agendador periódico, os endpoints e a central de avisos seguem como pendências da S8-B03.
+Os contratos HTTP usam `backend/tests/test_reminders_api.py`. Os testes da central em `frontend/tests/reminders.spec.js` exercitam dois perfis, retorno à sessão, estados de leitura, erro, paginação e navegação por teclado. Consulte o [registro local de aceite](#aceite-local-da-s8-b03).
 
 ## 6. Coletor da Agenda UnB Notícias
 
@@ -267,3 +279,20 @@ Consolidado em **16/11/2026** para a issue [#75](https://github.com/unb-mds/2026
 - **Pendências abertas rastreadas:**
   1. Integração visual da RPC `listar_revisoes_coleta` na tela de moderação do frontend acompanhada na issue **#80 (`S8-F02`)** (`@Bielziin07` / `@marrathomaz`).
   2. Ativação da variável `PRODUCTION_EVENT_COLLECTION_ENABLED=true` no environment `production-jobs` após promoção para `main`, acompanhada na issue **#76 (`S7-B06`)** (`@pontesluis`).
+
+## Aceite local da S8-B03
+
+Validação de 18/11/2026 no commit `3db3e29`, em Supabase local descartável, PostgreSQL 17, FastAPI e Chromium, com contas e eventos sintéticos. Os testes aceleraram o vencimento de pendências sintéticas para observar o disparo.
+
+| Cenário da #81 | Evidência local | Resultado |
+| --- | --- | --- |
+| Compromisso privado e evento público salvo | Criação de compromisso, criação e salvamento de evento público pela API real. O PostgreSQL gravou os dois avisos com antecedência de 24 h e o cron os tornou visíveis. | Passou |
+| Dia inteiro e entrada tardia | A suíte PostgreSQL verificou a meia-noite do primeiro dia em Brasília e a ausência de aviso tardio. Um compromisso criado pela API 12 h antes do início também ficou sem aviso. | Passou |
+| Cancelamento e mudança de início | Exclusão de compromisso e alteração de horário verificadas pela API real. Uma conta removeu o próprio vínculo duas vezes e a outra manteve seu aviso. A suíte PostgreSQL também cobriu retirada do catálogo e salvamento simultâneo à mudança de horário nas duas ordens. | Passou |
+| Reinício, repetição e revalidação | O SQL de ativação foi repetido com um único job. Com a aplicação fechada, o banco foi parado antes do vencimento e iniciado depois dele. Duas execuções do cron terminaram com sucesso e houve um único aviso disparado. A suíte verificou o descarte após o início. | Passou |
+| Retorno e estados de leitura | Chromium abriu o sino com a sessão real, marcou o lembrete e confirmou a leitura depois de sair e entrar novamente. Duas requisições HTTP simultâneas preservaram o mesmo primeiro `read_at`. | Passou |
+| Isolamento | Uma segunda conta autenticada recebeu lista vazia e 404 ao tentar marcar o aviso alheio. O navegador confirmou que a central da segunda conta não incluía dados da primeira. A suíte PostgreSQL também verificou as permissões de visitante e do destinatário. | Passou |
+
+A revisão técnica local cobriu os contratos GET e PUT, a filtragem por sessão e status, RLS, permissões de coluna, a sincronização do vínculo público e o papel executor do cron. A API lê títulos autorizados de `eventos` e `eventos_pessoais`. Registra a primeira leitura em `lembretes`. O job atualiza o estado de disparo na mesma tabela e revalida `eventos_salvos` quando aplicável.
+
+O [PR #105](https://github.com/unb-mds/2026-2-AgendaUnB/pull/105) acompanha a [issue #81](https://github.com/unb-mds/2026-2-AgendaUnB/issues/81). Versão hospedada, evidências de homologação e nome do revisor humano seguem pendentes.
