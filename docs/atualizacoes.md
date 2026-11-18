@@ -201,32 +201,44 @@ A [#81](https://github.com/unb-mds/2026-2-AgendaUnB/issues/81) prevê um aviso p
 ## Google Agenda e ICS
 
 1. **Autorizar.** Em **Meus Eventos**, a ação **Conectar Google Agenda** solicita o escopo [`calendar.app.created`](https://developers.google.com/workspace/calendar/api/auth) durante o OAuth. O backend valida o retorno OAuth, a identidade Google e a correspondência com o e-mail confirmado da Agenda UnB antes de guardar as credenciais cifradas. Sessões por senha também podem conectar. A exportação fica disponível em **Meus Eventos** após consentimento.
-2. **Exportar.** O fluxo atual permite selecionar até 20 eventos pessoais ou públicos salvos. A cópia usa título, horário de Brasília e duração de uma hora, com ID estável por evento. A primeira exportação cria uma agenda secundária **Agenda UnB**. Falhas são apresentadas por item e a seleção mantém os itens que precisam de nova tentativa.
-3. **Revogar.** A ação **Desconectar Google Agenda** remove as credenciais locais e revoga o acesso no Google. Um novo consentimento com a mesma conta permite reutilizar a agenda. Se a resposta de criação se perder, o usuário pode informar o ID da agenda ou confirmar que ela não existe.
+2. **Prévia e Exportação.** Em **Meus Eventos**, o usuário pode filtrar por período (`start_date` e `end_date`), optar por incluir a descrição selecionada (`include_description`) e selecionar até 20 eventos pessoais (`personal`) ou públicos salvos (`saved`). Antes do envio, `POST /api/v1/me/google-calendar/exports/preview` classifica cada item em `create`, `update` ou `unchanged` com base no mapeamento persistido em `google_calendar_event_exports` (`exported_version` SHA-256 dos campos geridos) e informa `requires_overwrite_confirmation`. Na primeira exportação, o backend cria a agenda secundária **Agenda UnB**. Eventos de dia inteiro usam `start.date` e `end.date` exclusivo (`YYYY-MM-DD`), e eventos com horário usam `dateTime` em `America/Sao_Paulo` com `ends_at` (quando posterior a `starts_at`) ou duração padrão de uma hora, sempre com ID determinístico base32hex por evento (`sha256("{user_id}:{kind}:{event_id}").hexdigest()`). Na reexportação explícita com `allow_managed_field_updates: true`, os campos geridos são atualizados via `PUT` remoto (`status: "updated"`); sem essa confirmação, itens já exportados retornam `already_exported` sem sobrescrever o calendário remoto. Exclusões locais não apagam cópias no Google Agenda. Falhas são apresentadas por item (`exported`, `updated`, `already_exported`, `failed`), preservando apenas os pendentes/falhos selecionados para **Tentar novamente** com `Idempotency-Key`.
+3. **Revogar e Recuperar Destino.** A ação **Desconectar Google Agenda** remove as credenciais locais e revoga o acesso no Google, preservando os eventos já exportados. Um novo consentimento com a mesma conta permite reutilizar a agenda. Se a resposta de criação se perder ou se a agenda secundária **Agenda UnB** for excluída no Google (`404`/`410`), o usuário pode informar o ID da agenda existente ou confirmar sua recriação (`PUT /api/v1/me/google-calendar/destination` com `calendar_id: null`, limpando o destino antigo e os mapeamentos associados).
+4. **Arquivo `.ics` complementar.** Mesmo sem conexão Google ativa, **Meus Eventos** e o modal de exportação permitem baixar o arquivo `.ics` (RFC 5545) compatível com Apple Calendar e Outlook, com `VTIMEZONE` `America/Sao_Paulo`, `UID` determinístico (`<kind>-<id>@agendaunb.unb.br`), `DTSTAMP` UTC, `DTSTART`/`DTEND` com fuso ou `VALUE=DATE` exclusivo, codificação UTF-8, escape de caracteres especiais e line folding de 75 octetos.
 
-Os contratos abaixo descrevem a ampliação prevista na S8-F03 (#82), incluindo seleção por período, lotes assíncronos, confirmação de sobrescrita, reconciliação do destino e exportação ICS.
+Exemplo de prévia (`POST /api/v1/me/google-calendar/exports/preview`):
 
 ```json
 {
-  "start_date": "2026-11-18",
-  "end_date": "2026-11-22",
-  "items": [{"event_kind": "saved_public", "event_id": "77777777-7777-4777-8777-777777777777"}],
-  "allow_managed_field_updates": false
+  "requires_overwrite_confirmation": true,
+  "items": [
+    {"id": "77777777-7777-4777-8777-777777777777", "kind": "saved", "action": "create"},
+    {"id": "99999999-9999-4999-8999-999999999999", "kind": "personal", "action": "update"}
+  ]
 }
 ```
 
-O detalhe do lote retorna `pending`, `running`, `completed`, `partial_failure` ou `failed`. A tentativa de cada item tem resultado próprio, incluindo `created`, `updated`, `unchanged` ou `failed`. Usar `Idempotency-Key` por confirmação do lote e verificar se a conexão e os itens continuam autorizados antes da escrita externa. Um retry do mesmo lote não autoriza atualizar campos que o usuário não aprovou.
+Exemplo de envio (`POST /api/v1/me/google-calendar/exports` com cabeçalho opcional `Idempotency-Key`):
 
 ```json
 {
-  "id": "88888888-8888-4888-8888-888888888888",
-  "status": "partial_failure",
-  "items": [
-    {"event_id": "77777777-7777-4777-8777-777777777777", "status": "created"},
-    {"event_id": "99999999-9999-4999-8999-999999999999", "status": "failed",
-     "code": "END_REQUIRED", "retryable": false}
-  ]
+  "events": [
+    {"id": "77777777-7777-4777-8777-777777777777", "kind": "saved"},
+    {"id": "99999999-9999-4999-8999-999999999999", "kind": "personal"}
+  ],
+  "allow_managed_field_updates": true,
+  "include_description": true,
+  "start_date": "2026-11-18",
+  "end_date": "2026-11-22"
 }
+```
+
+Resposta (`200 OK`, `Cache-Control: no-store`):
+
+```json
+[
+  {"id": "77777777-7777-4777-8777-777777777777", "kind": "saved", "status": "exported"},
+  {"id": "99999999-9999-4999-8999-999999999999", "kind": "personal", "status": "updated"}
+]
 ```
 
 ## Permissões e erros {#permissoes-e-erros}

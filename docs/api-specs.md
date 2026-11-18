@@ -27,11 +27,15 @@ Fontes: `backend/src/main.py`, `modules/events/router.py`, `modules/events/schem
 | Campo | Tipo | Obrigatório | Regra |
 | --- | --- | --- | --- |
 | `title` | string | Sim | 3–200 caracteres após remoção de espaços nas extremidades; não aceita null |
-| `starts_at` | datetime | Sim | Data/hora ISO 8601 com fuso, por exemplo `2026-11-10T14:00:00-03:00`; não aceita null |
+| `all_day` | boolean | Não | Padrão `false`. Quando `true`, exige `start_date` (e `end_date` exclusivo opcional) e recusa `starts_at`/`ends_at` |
+| `starts_at` | datetime ou null | Condicional | Obrigatório quando `all_day = false`; data/hora ISO 8601 com fuso, por exemplo `2026-11-10T14:00:00-03:00` |
+| `ends_at` | datetime ou null | Não | Somente quando `all_day = false`; data/hora ISO 8601 com fuso e posterior a `starts_at` |
+| `start_date` | date (`YYYY-MM-DD`) ou null | Condicional | Obrigatório quando `all_day = true`; início civil em `America/Sao_Paulo` |
+| `end_date` | date (`YYYY-MM-DD`) ou null | Não | Somente quando `all_day = true`; fim civil exclusivo posterior a `start_date` (padrão `start_date + 1 dia`) |
 | `description` | string ou null | Não | Até 10.000 caracteres; padrão null |
 | `campus` | string ou null | Não | Nome existente, 2–120 caracteres; padrão null |
 | `category` | string ou null | Não | Nome existente, 2–80 caracteres; padrão null |
-| `location` | string ou null | Não | Até 250 caracteres; padrão null; ver limitação dos eventos pessoais |
+| `location` | string ou null | Não | Até 250 caracteres; padrão null |
 | `external_url` | URL HTTP/HTTPS ou null | Não | Somente evento público/sugestão; validado por `HttpUrl`; padrão null |
 
 Strings são aparadas. Strings vazias ou contendo somente espaços em `description`, `campus`, `category` e `location` viram null. Isso não se aplica a `external_url`: para ausência de link, omitir ou enviar null. Campus e categoria são resolvidos por nome, ignorando maiúsculas/minúsculas, e não por UUID. Nome desconhecido na escrita retorna 422.
@@ -71,7 +75,7 @@ Exemplo `EventCreate`:
 }
 ```
 
-`PersonalEventRead` retorna `id`, `title`, `description`, `starts_at`, `campus`, `category` e `location`, com os mesmos tipos. Não retorna URL externa nem organizador. **Limitação atual:** `location` é aceito na entrada pessoal, mas as rotas não o persistem e o serializador o retorna como null. O cliente não deve esperar que esse valor seja recuperado.
+`PersonalEventRead` retorna `id`, `title`, `description`, `starts_at`, `ends_at`, `all_day`, `start_date`, `end_date`, `campus`, `category` e `location`, com os mesmos tipos. Não retorna URL externa nem organizador. Eventos de dia inteiro preenchem `all_day = true`, `start_date` e `end_date` exclusivo em `America/Sao_Paulo`, além de manterem `starts_at`/`ends_at` normalizados na meia-noite de Brasília para ordenação e filtros ([ADR-011](/arquitetura/adrs/adr-011-datas-civis-e-instantes)).
 
 `SavedEventStatus` é `{ "saved": true }` ou `{ "saved": false }`. Respostas 204 não contêm JSON nem outro corpo.
 
@@ -155,7 +159,7 @@ O histórico e o detalhe retornam `ano` e `semestre`. Planos antigos podem ter e
 
 ### Exportação para o Google Calendar
 
-O login Google do Supabase solicita identidade. A permissão do Calendar é opcional e começa em **Meus Eventos**, para qualquer sessão com e-mail confirmado, inclusive por senha. O cliente OAuth do Calendar usa um projeto Google Cloud separado do login.
+O login Google do Supabase solicita identidade. A permissão do Calendar é opcional e começa em **Meus Eventos**, para qualquer sessão com e-mail confirmado, inclusive por senha. O cliente OAuth do Calendar usa um projeto Google Cloud separado do login. Todas as respostas deste grupo aplicam `Cache-Control: no-store`.
 
 | Operação | Entrada | Resposta |
 | --- | --- | --- |
@@ -163,10 +167,16 @@ O login Google do Supabase solicita identidade. A permissão do Calendar é opci
 | `POST /api/v1/me/google-calendar/callback` | Formulário do Google com `state` e `code` ou `error`. | 303 para a URL configurada com `google_calendar` indicando o resultado. Confere o escopo `calendar.app.created` e o e-mail Google verificado com o e-mail confirmado atual da Agenda UnB. |
 | `GET /api/v1/me/google-calendar/connection` | Bearer Supabase. | 200 com `connected` e `recovery_required`. |
 | `DELETE /api/v1/me/google-calendar/connection` | Bearer Supabase. | 200 com `disconnected` e `revocation`. Revoga o acesso no Google, remove as credenciais locais e invalida autorizações em andamento. Se a revogação remota falhar, o retorno orienta removê-la na Conta Google. |
-| `PUT /api/v1/me/google-calendar/destination` | Bearer Supabase e `calendar_id`. | 204 após validar no Google o ID da agenda secundária Agenda UnB. Se o usuário confirmar que a agenda não existe, envia `calendar_id: null` para liberar nova criação. |
-| `POST /api/v1/me/google-calendar/exports` | Bearer Supabase e `events` com 1 a 20 referências `{ id, kind }`. `kind` é `personal` ou `saved`. | 200 com `id`, `kind` e `status` por item. Estados `exported`, `already_exported` ou `failed`. |
+| `PUT /api/v1/me/google-calendar/destination` | Bearer Supabase e `calendar_id` (string ou `null`). | 204 após validar no Google o ID da agenda secundária Agenda UnB. Se o usuário confirmar que a agenda não existe ou foi excluída, envia `calendar_id: null` para limpar o destino e invalidar os mapeamentos do calendário anterior em `google_calendar_event_exports`, liberando nova criação. |
+| `POST /api/v1/me/google-calendar/exports/preview` | Bearer Supabase e JSON com `events` (1 a 20 referências `{ id, kind }`, onde `kind` é `personal` ou `saved`), `include_description` (booleano opcional, padrão `false`), `start_date` e `end_date` opcionais (`YYYY-MM-DD`). | 200 com `requires_overwrite_confirmation` (booleano) e `items: [{ id, kind, action }]`. `action` é `create` (ainda não exportado para o destino atual ou com estado `pending`/`failed`), `update` (`exported_version` diverge do hash SHA-256 canônico atual dos campos geridos) ou `unchanged` (`exported_version` idêntico ao atual). |
+| `POST /api/v1/me/google-calendar/exports` | Bearer Supabase, cabeçalho opcional `Idempotency-Key` (até 128 caracteres) e JSON com `events` (1 a 20 referências `{ id, kind }`), `allow_managed_field_updates` (booleano opcional, padrão `false`), `include_description` (booleano opcional, padrão `false`), `start_date` e `end_date` opcionais (`YYYY-MM-DD`). | 200 com lista `{ id, kind, status }` por item. Estados: `exported` (criado ou reconciliado após `409 Conflict`), `updated` (atualizado via `PUT` remoto quando `allow_managed_field_updates = true`), `already_exported` (inalterado ou já exportado quando `allow_managed_field_updates = false`) ou `failed`. |
 
-O servidor consulta eventos pessoais do dono e eventos públicos aprovados que ele salvou. A exportação cria ou reutiliza a agenda secundária **Agenda UnB**, envia título e horário em `America/Sao_Paulo` e usa uma hora de duração para o modelo atual. Repetir um item usa o mesmo ID remoto. A desconexão preserva o ID da agenda para reconexão com a mesma identidade. Em caso de resposta incerta da criação, use a recuperação do destino em **Meus Eventos**. Os tokens ficam cifrados no servidor e são renovados quando necessário. Se o Google retornar `invalid_grant`, a API remove as credenciais inválidas, retorna 409 e pede nova conexão.
+O servidor consulta apenas eventos pessoais do dono (`eventos_pessoais`) e eventos públicos aprovados que ele salvou (`eventos_salvos`), opcionalmente filtrados pelo período civil `[start_date, end_date]` em `America/Sao_Paulo`. A exportação cria ou reutiliza a agenda secundária **Agenda UnB** e grava o mapeamento por item em `google_calendar_event_exports` (`user_id`, `event_kind`, `local_event_id`, `calendar_id`, `google_event_id`, `exported_version`, `status`, `last_idempotency_key`).
+
+Cada evento recebe um identificador determinístico compatível com a regra `base32hex` (`a-v0-9`) do Google Calendar (`sha256("{user_id}:{kind}:{event_id}").hexdigest()`) e um hash de versão (`exported_version`) calculado sobre o JSON canônico dos campos geridos (`summary`, `description`, `location`, `start`, `end`):
+- **Datas e intervalos ([ADR-011](/arquitetura/adrs/adr-011-datas-civis-e-instantes)):** eventos de dia inteiro (`all_day = true`) enviam `start.date` e `end.date` exclusivo (`YYYY-MM-DD`); eventos com horário enviam `dateTime` e `timeZone: "America/Sao_Paulo"`, usando `ends_at` quando posterior a `starts_at` ou duração padrão de 1 hora.
+- **Campos opcionais e privacidade (RNF02):** `location` só é incluído no payload quando houver texto não vazio; `description` só é incluído quando `include_description = true` e houver descrição não vazia (nunca inclui PDF, texto integral de planos, dados de terceiros ou tokens).
+- **Idempotência, reexportação e falhas ([ADR-012](/arquitetura/adrs/adr-012-exportacao-google-idempotente)):** antes da chamada externa, o item é registrado como `pending`. Se o Google retornar `409 Conflict` (ex.: retry após timeout de criação), o servidor reconcilia o registro ou atualiza via `PUT` (com `status: "confirmed"`) se `allow_managed_field_updates = true`. Respostas `429` (ou `403` por limite de taxa) aguardam `Retry-After` limitado a 2 segundos com 1 nova tentativa; `404`/`410` na agenda secundária marcam `recovery_required = true` e retornam `409` orientando recriação do destino; `401`/`403` de permissão revogada ou `invalid_grant` limpam as credenciais locais e retornam `409` pedindo reconexão. Exclusões locais não apagam cópias já existentes no Google Agenda. Em **Meus Eventos**, o frontend oferece também exportação complementar em arquivo `.ics` (RFC 5545) para Apple Calendar e Outlook.
 
 ## Erros FastAPI
 
