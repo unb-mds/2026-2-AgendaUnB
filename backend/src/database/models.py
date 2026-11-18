@@ -261,9 +261,12 @@ class Syllabus(Base):
     text_revision: Mapped[int] = mapped_column("versao_texto", Integer, default=0, nullable=False)
     approved_version_id: Mapped[UUID | None] = mapped_column(
         "versao_aprovada_id", Uuid(as_uuid=True), ForeignKey(
-            "versoes_plano.id", ondelete="RESTRICT", use_alter=True,
+            "versoes_plano.id", ondelete="SET NULL", use_alter=True,
             name="planos_versao_aprovada_fkey"
         )
+    )
+    discarded_at: Mapped[datetime | None] = mapped_column(
+        "arquivo_descartado_em", DateTime(timezone=True), nullable=True
     )
 
 
@@ -615,3 +618,59 @@ class CatalogSync(Base):
     periods: Mapped[list] = mapped_column("periodos", JSON, default=list)
     coverage: Mapped[list] = mapped_column("cobertura", JSON, default=list)
     rejected: Mapped[list] = mapped_column("rejeitadas", JSON, default=list)
+
+
+class TermAcceptance(Base):
+    """Registro de ciência por versão de Termos ou Política de Privacidade (S8-D01)."""
+
+    __tablename__ = "aceites_termos"
+
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), primary_key=True
+    )
+    document: Mapped[str] = mapped_column("documento", String, primary_key=True)
+    version: Mapped[str] = mapped_column("versao", String(40), primary_key=True)
+    accepted_at: Mapped[datetime] = mapped_column(
+        "aceito_em", DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class Consent(Base):
+    """Consentimentos específicos e revogáveis (S8-D01)."""
+
+    __tablename__ = "consentimentos"
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    purpose: Mapped[str] = mapped_column("finalidade", String, nullable=False)
+    reference_id: Mapped[UUID | None] = mapped_column("referencia_id", Uuid(as_uuid=True), nullable=True)
+    content_hash: Mapped[str | None] = mapped_column("conteudo_hash", String(64), nullable=True)
+    granted_at: Mapped[datetime] = mapped_column(
+        "concedido_em", DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    revoked_at: Mapped[datetime | None] = mapped_column("revogado_em", DateTime(timezone=True), nullable=True)
+
+
+class AccountDeletionRecord(Base):
+    """Registro anônimo com contagens agregadas de exclusão de conta (sem PII)."""
+
+    __tablename__ = "exclusoes_conta"
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    status: Mapped[str] = mapped_column(String, default="iniciada", nullable=False)
+    started_at: Mapped[datetime] = mapped_column(
+        "iniciada_em", DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    completed_at: Mapped[datetime | None] = mapped_column("concluida_em", DateTime(timezone=True), nullable=True)
+    removed_syllabi: Mapped[int] = mapped_column("planos_removidos", Integer, default=0, nullable=False)
+    removed_personal_events: Mapped[int] = mapped_column(
+        "eventos_pessoais_removidos", Integer, default=0, nullable=False
+    )
+    removed_public_events: Mapped[int] = mapped_column(
+        "eventos_publicos_removidos", Integer, default=0, nullable=False
+    )
+    removed_storage_files: Mapped[int] = mapped_column(
+        "arquivos_storage_removidos", Integer, default=0, nullable=False
+    )

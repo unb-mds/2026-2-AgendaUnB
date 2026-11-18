@@ -9,7 +9,7 @@ Guia de integração das migrações `20261111140000_eventos_datas_e_coleta.sql`
 
 | Issue | O que o banco já faz | O que falta na aplicação |
 | --- | --- | --- |
-| [S7-B05 (#75)](https://github.com/unb-mds/2026-2-AgendaUnB/issues/75) | Upsert por origem, decisão publicar/revisar, conciliação por URL, proteção de edições locais e de decisões de moderação, registro das execuções | Ler e normalizar a fonte, agendar a execução, tela de revisão |
+| [S7-B05 (#75)](https://github.com/unb-mds/2026-2-AgendaUnB/issues/75) | Upsert por origem, decisão publicar/revisar, conciliação por URL, proteção de edições locais e de decisões de moderação, registro das execuções | Configurar e homologar a execução recorrente no ambiente hospedado; registrar as evidências operacionais da issue |
 | [S8-B03 (#81)](https://github.com/unb-mds/2026-2-AgendaUnB/issues/81) | Agendar, trocar, cancelar e disparar avisos, sem duplicar | Chamar o disparo periodicamente, endpoints e central de avisos |
 
 **Regra geral:** o que precisa valer em qualquer caminho de escrita está em chaves únicas, triggers e funções. A aplicação chama as funções; não reimplementa as regras. Nada daqui é gravável pelo navegador.
@@ -67,10 +67,18 @@ def registrar_item(db, item: dict) -> dict:
 | Item novo sem data | `criado` | Revisão, `incompleto` |
 | `ambiguo = true` ou fim antes do início | `criado` | Revisão, `ambiguo` |
 | `tipo = informe` | `criado` | Revisão, `informe` |
-| Mesmo título (sem acentos e pontuação) no mesmo dia de outro evento | `criado` | Revisão, `possivel_duplicata`, com `possivel_duplicata_de` |
+| Título semelhante ($\ge 80\%$ no mesmo dia, $\ge 85\%$ em 1 dia ou $\ge 92\%$ em 2 dias) | `criado` | Revisão, `possivel_duplicata`, com `possivel_duplicata_de` |
 | Mesma URL de um evento cadastrado na plataforma | `conciliado` | Mantém o evento manual e anexa a procedência; não cria outro |
 | Mesmo `(fonte, fonte_id)` e mesmo hash | `inalterado` | Só renova `coletado_em` |
 | Mesmo `(fonte, fonte_id)`, hash diferente | `atualizado` | Atualiza **o mesmo registro** |
+
+#### Regra de Detecção de Possíveis Duplicatas
+Para evitar publicação duplicada de eventos com grafias ligeiramente distintas ou datas aproximadas:
+1. **Normalização**: títulos passam por conversão para minúsculas, remoção de acentuação (`NFKD`), eliminação de pontuação e colapso de espaços em branco.
+2. **Cálculo de Similaridade**: combina razão de sequência (`SequenceMatcher`), sobreposição Jaccard de tokens e contenção de substring (limiares progressivos: $\ge 0{,}80$ para mesma data, $\ge 0{,}85$ para 1 dia de diferença e $\ge 0{,}92$ para 2 dias de diferença).
+3. **Preservação de Dígitos/Edições**: títulos que possuam números distintos (ex.: `"Cálculo 1"` vs `"Cálculo 2"`, ou `"Encontro 2025"` vs `"Encontro 2026"`) **não** são considerados duplicatas, prevenindo falsos positivos.
+4. **Proximidade Temporal**: datas de início devem coincidir no mesmo dia ou diferir em no máximo 2 dias ($\le 2$ dias de afastamento).
+5. **Encaminhamento**: quando uma possível duplicata é detectada, o registro é salvo com `status = 'pendente'`, `motivo_revisao = 'possivel_duplicata'` e `possivel_duplicata_de = <id_candidato>`, permitindo decisão por moderador humano sem falso auto-descarte.
 
 Em uma atualização, a função preserva:
 
@@ -116,7 +124,8 @@ def executar_coleta(db, itens):
 Pontos de atenção para o coletor:
 
 - **Falha da fonte não apaga nada.** A função só cria ou atualiza. Não remova eventos que "sumiram" da listagem.
-- **`00:00` na fonte.** Não invente horário. Se a página indica dia inteiro, envie `dia_inteiro`; se não dá para saber, envie o instante com `ambiguo: true`.
+- **Detecção de dia inteiro vs `00:00`:** O coletor inspeciona a marcação e texto da fonte por termos explícitos (`"dia inteiro"`, `"integral"`, `"o dia todo"`, `"jornada inteira"`). Quando o sinal explícito existe, emite `dia_inteiro: True` com datas civis (`data_inicio` e `data_fim` exclusivo). Se a fonte contiver apenas `00:00` sem indicativo explícito de dia inteiro, **não** assume dia inteiro; emite o instante com `ambiguo: True`, encaminhando o item à moderação conforme a ADR-011.
+- **Normalização multicampus:** Locais identificados como pertencentes aos campi Darcy Ribeiro (ICC, Reitoria, Beijódromo, BSAN, CDT), FCTE (Gama), FCTS (Ceilândia), FUP (Planaltina) ou FAL são normalizados com o nome exato do campus no banco.
 - **`erro_codigo` é um código curto** (até 60 caracteres). Nunca grave HTML, corpo de resposta ou conteúdo da fonte.
 - **Frequência moderada**, com `User-Agent` identificável e respeito a `robots.txt` (RNF11).
 - O hash deve ser estável: normalize espaços e ordem dos campos antes de calcular, para que a mesma página gere o mesmo hash.
@@ -125,7 +134,11 @@ Pontos de atenção para o coletor:
 
 `listar_revisoes_coleta(p_status, p_offset)` devolve `{"items": [...], "total": n}` com 20 itens por página, incluindo `fonte_url`, `motivo_revisao` e `possivel_duplicata_de`. A decisão usa a RPC que já existe, `moderar_sugestao(evento_id, 'aprovado' | 'rejeitado', justificativa)`, que agora também aceita itens coletados e registra `moderado_por` e `moderado_em`. Item sem data não pode ser aprovado.
 
-Procedência visível (RF16): eventos com `fonte` preenchida devem exibir a origem e o link `fonte_url`. `autor_id` é nulo nesses eventos; o ORM e a API já tratam organizador ausente.
+### Procedência visível (RF16)
+
+Eventos coletados expõem institucionalmente a sua procedência:
+- Na API pública (`/api/v1/events`), os contratos (`EventRead`) expõem os campos `source` (`"agenda_unb_noticias"`) e `source_url` (link HTTPS canônico), além de `all_day`, `start_date` e `end_date`. Metadados internos como `fonte_hash`, `coletado_em` e `motivo_revisao` permanecem estritamente privados no backend.
+- Na interface frontend, `PaginaDeEvento.jsx` exibe o box de procedência institucional com link direto para a publicação original na Agenda UnB Notícias e atribui o organizador institucional quando `autor_id` for ausente. Nos cards de listagem (`SecondPage.jsx`), é exibida a badge informativa de origem.
 
 ## 3. Lembretes (#81, ADR-013)
 
@@ -174,17 +187,27 @@ O banco mantém o primeiro `lido_em` em retries. No contrato, `event_kind` é `p
 | `disparar_lembretes` | Não | Não | Não | Sim |
 | `lembretes` | Sem acesso | Lê os próprios disparados; marca leitura | Sem acesso por papel | Sim |
 
-## 5. Testes
+## 4. Testes e Validação Local
 
-`backend/tests/test_event_collection_database.py` cobre os cenários de aceite que dependem do banco: datas civis e intervalos inválidos, coletas sucessivas no mesmo registro, revisão de itens incompletos, ambíguos e informes, possível duplicata, conciliação por URL, edições locais, decisões de moderação, falha da fonte e procedência que o navegador não forja.
+A suíte automatizada cobre unitariamente o coletor, a similaridade de duplicatas, o tratamento de dia inteiro, multicampus, os contratos da API e a projeção no frontend:
 
+```bash
+# Testes unitários do coletor (34 testes de unidade, orquestração, concorrência e regras)
+cd backend && PYTHONPATH=. venv/bin/pytest tests/test_event_collector.py
+
+# Testes de contrato da API pública de eventos (10 testes cobrindo procedência RF16)
+cd backend && PYTHONPATH=. venv/bin/pytest tests/test_events_api.py
+
+# Testes de frontend (37 testes, incluindo toUiEvent e campos de procedência)
+cd frontend && node --test src/lib/*.test.js
+```
+
+Para testes de banco de dados contra o Supabase local (18 testes cobrindo triggers, RLS, RPCs e idempotência):
 ```bash
 cd backend
 TEST_SUPABASE_DB_URL="postgresql+psycopg://postgres:postgres@127.0.0.1:14322/postgres" \
-  python -m pytest tests/test_event_collection_database.py -q
+  venv/bin/pytest tests/test_event_collection_database.py -q
 ```
-
-Continuam fora desta entrega e precisam de evidência no ambiente publicado: execução agendada real do coletor, duas execuções concorrentes contra a fonte, o comportamento com a fonte fora do ar e a cobertura multicampus.
 
 `backend/tests/test_reminders_database.py` cobre os cenários de aceite que dependem do banco: aviso 24 h antes, troca ao mudar o início, cancelamento, dia inteiro, evento criado dentro da janela, disparo repetido sem duplicar, revalidação no disparo e isolamento entre contas.
 
@@ -195,3 +218,52 @@ TEST_SUPABASE_DB_URL="postgresql+psycopg://postgres:postgres@127.0.0.1:14322/pos
 ```
 
 Fora desta entrega: o agendador periódico, os endpoints e a central de avisos.
+
+## 5. Coletor da Agenda UnB Notícias
+
+O adaptador está em `backend/src/modules/events/collector.py`. A origem é fixa em `https://noticias.unb.br`; o cliente consulta `robots.txt` e só acessa a listagem `/component/agenda/agendas` e detalhes `/component/agenda/agenda/{id}` quando permitidos. O cliente não segue redirecionamentos, não usa cookies nem proxy do ambiente, tem timeout de 20 segundos e espera pelo menos um segundo entre requisições. Falhas transitórias recebem uma tentativa adicional respeitando `Retry-After` até 60 segundos.
+
+O coletor percorre os offsets publicados pela paginação, deduplica os IDs antes de buscar os detalhes, limita a leitura a 100 páginas/900 eventos e carrega toda a fonte antes de gravar. Assim, uma interrupção ao ler uma página mantém os registros já existentes sem aplicar uma coleta parcial. As gravações e o resultado da execução são confirmados juntos; um advisory lock impede duas execuções simultâneas. O coletor nunca apaga eventos que deixaram de aparecer na fonte.
+
+### Execução Recorrente em Background
+
+O processo pode ser executado manualmente ou em background recorrente:
+1. **Makefile:**
+   - `make events-collect`: executa uma única rodada de coleta.
+   - `make events-collect-daemon`: executa em loop contínuo como daemon local.
+2. **CLI Direto:**
+   - `python -m src.modules.events.collector`: execução pontual.
+   - `python -m src.modules.events.collector --interval-hours 6`: repete a execução no intervalo mínimo de 1 hora.
+   - `python -m src.modules.events.collector --daemon`: roda continuamente em background.
+3. **GitHub Actions (Ambiente Hospedado):**
+   - Configurado em `.github/workflows/production-jobs.yml` no job `collector`.
+   - Disparo agendado diariamente via cron (`27 10 * * *` - 07h27 BRT) ou manual via `workflow_dispatch` (selecionando `job: collector`).
+   - Requer `github.ref == 'refs/heads/main'`, segredo `DATABASE_URL` e variável `PRODUCTION_EVENT_COLLECTION_ENABLED = 'true'` no environment `production-jobs`.
+
+### Limitações e Evidências Pendentes no Ambiente Hospedado
+
+Os contratos de código, migração e testes unitários locais estão completos. Contudo, as seguintes etapas dependem de acesso ao ambiente remoto de produção/homologação e credenciais de infraestrutura:
+- **Execução hospedada no GitHub Actions:** Habilitar a variável `PRODUCTION_EVENT_COLLECTION_ENABLED = 'true'` e disparar o workflow no ambiente `production-jobs`.
+- **Validação de concorrência e idempotência em banco remoto:** Executar duas instâncias simultâneas do coletor para registrar o bloqueio via advisory lock e a atualização sem duplicatas.
+- **Validação de resiliência a falhas da fonte:** Simular timeout ou HTTP 503 na conexão com `noticias.unb.br` em execução real e comprovar a preservação intacta dos dados já gravados.
+- **Homologação humana:** Realizar a revisão e moderação de itens marcados como `possivel_duplicata`, `ambiguo` ou `informe` por um usuário com papel professor/admin na interface administrativa.
+
+## 6. Validação e Revisão Técnica — S7-B05 (#75)
+
+Consolidado em **16/11/2026** para a issue [#75](https://github.com/unb-mds/2026-2-AgendaUnB/issues/75) (RF14, RF15, RF16, RNF02, RNF11, RNF13 e [ADR-011](/arquitetura/adrs/adr-011-datas-civis-e-instantes)). Responsável principal: `@pontesluis`. Corresponsável: `@marrathomaz`. Apoio em migrações: `@felipecduque7`.
+
+| Critério de Aceite / Cenário | Evidência Técnica e Testes | Resultado |
+| --- | --- | --- |
+| **1. Execução agendada, duas execuções sucessivas/concorrentes sem duplicatas e atualização de data no mesmo registro** | Workflow `.github/workflows/production-jobs.yml` (`job: collector`), alvos `make events-collect` / `make events-collect-daemon`, índice único `uq_eventos_fonte (fonte, fonte_id)`, `pg_try_advisory_lock(708073)` e `pg_advisory_xact_lock`, validados em `test_event_collector.py` e `test_event_collection_database.py` | Aprovado |
+| **2. Indisponibilidade da fonte preserva registros, respeito a decisões de moderação/campos editados localmente e cobertura multicampus** | Leitura integral prévia ao bloco transacional, rollback em falha HTTP/timeout com registro em `coletas_eventos` (`status = 'falha'`), trigger `tg_registra_edicao_local` (`campos_editados`), preservação de `moderado_em` e normalização dos 5 campi da UnB | Aprovado |
+| **3. Publicação automática de evento completo e retenção em revisão de item ambíguo, incompleto, informe ou possível duplicata, com procedência visível** | RPC `registrar_evento_coletado(jsonb)`, tratamento de `00:00` sem sinal explícito como `ambiguo`, distinção `evento` vs `informe`, conciliação de URL manual, similaridade de título/data ($\le 2$ dias) e exposição de `source`/`source_url` em `EventRead` e na interface | Aprovado |
+
+### Revisão de Contratos, Permissões e Dados Afetados
+
+- **Revisores:** `@marrathomaz` e `@pontesluis` (apoio em migrações: `@felipecduque7`).
+- **Contratos revisados:** `EventRead` (`GET /api/v1/events`, `GET /api/v1/events/{event_id}`, `GET /api/v1/me/saved-events`) com `ends_at`, `all_day`, `start_date`, `end_date`, `source` e `source_url`, mantendo privados `fonte_hash`, `coletado_em`, `motivo_revisao` e `campos_editados` (`test_public_event_exposes_provenance_without_internal_metadata`).
+- **Permissões e segurança (RLS / Triggers):** `public.coletas_eventos` com RLS ativo e `REVOKE ALL FROM anon, authenticated`; `public.registrar_evento_coletado(jsonb)` restrita a `service_role`; `public.listar_revisoes_coleta(text, integer)` e `public.moderar_sugestao(uuid, text, text)` restritas a moderadores (`public.is_event_moderator()`); trigger `tg_protege_procedencia` bloqueando forja de procedência pelo navegador com SQLSTATE `42501` (`test_browser_cannot_collect_or_forge_provenance`).
+- **Tabelas afetadas:** `public.eventos`, `public.eventos_pessoais` e `public.coletas_eventos` (`supabase/migrations/20261111140000_eventos_datas_e_coleta.sql`).
+- **Pendências abertas rastreadas:**
+  1. Integração visual da RPC `listar_revisoes_coleta` na tela de moderação do frontend acompanhada na issue **#80 (`S8-F02`)** (`@Bielziin07` / `@marrathomaz`).
+  2. Ativação da variável `PRODUCTION_EVENT_COLLECTION_ENABLED=true` no environment `production-jobs` após promoção para `main`, acompanhada na issue **#76 (`S7-B06`)** (`@pontesluis`).

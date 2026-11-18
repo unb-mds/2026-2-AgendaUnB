@@ -195,7 +195,7 @@ $$;
 -- Nova versão a partir de outra, com os candidatos copiados. Nasce
 -- privada, para o autor da revisão ajustar e então compartilhar.
 --   - o autor revisa as próprias versões, privadas ou compartilhadas;
---   - professor e admin revisam versões compartilhadas;
+--   - seguidores autenticados da turma, professor e admin revisam versões compartilhadas;
 --   - a procedência institucional só é herdada por professor/admin.
 create or replace function public.criar_revisao(p_ator uuid, p_versao_origem_id uuid)
 returns public.versoes_plano
@@ -217,7 +217,10 @@ begin
     raise exception 'Versão não encontrada' using errcode = 'P0002';
   end if;
   if v_origem.autor_id <> p_ator
-     and not (v_origem.visibilidade = 'compartilhada' and v_papel in ('professor', 'admin')) then
+     and not (
+       v_origem.visibilidade = 'compartilhada'
+       and (v_papel in ('professor', 'admin') or public.ator_pode_ler_versao(p_ator, v_origem.id))
+     ) then
     raise exception 'Sem permissão para revisar esta versão' using errcode = '42501';
   end if;
 

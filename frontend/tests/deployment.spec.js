@@ -1,5 +1,10 @@
 import { test, expect } from '@playwright/test';
 
+test.beforeEach(async ({ page }) => {
+  // Exercise the API error banner even when a local Supabase fallback is configured.
+  await page.route('**/rest/v1/rpc/listar_eventos_publicos', route => route.abort('connectionfailed'));
+});
+
 test('API outage leaves navigation usable and displays a clear error', async ({ page }) => {
   await page.route('**/api/v1/events?*', route => route.abort('connectionfailed'));
   await page.goto('/eventos');
