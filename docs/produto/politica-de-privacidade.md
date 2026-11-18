@@ -69,9 +69,9 @@ Podemos fornecer dados a autoridades quando houver obrigação legal.
 - Em cada exportação, você seleciona até **20 eventos** pessoais ou públicos salvos. São enviados apenas o identificador técnico do item, o título e os horários de início e fim no fuso `America/Sao_Paulo` (com duração padrão de 1 hora).
 - Ao desconectar em **Meus Eventos**, ao revogar o consentimento em **Configurações** ou ao excluir sua conta, apagamos os tokens guardados e solicitamos ao Google a revogação do acesso. Se o Google não confirmar a revogação remota na hora, mostramos um aviso para que você remova o acesso nas permissões da sua Conta Google.
 - **Aviso sobre eventos já exportados:** desconectar a integração ou excluir sua conta no Agenda UnB **não apaga** os eventos que já foram exportados. Para removê-los:
-  1. Acesse [calendar.google.com](https://calendar.google.com) com a sua Conta Google.
-  2. Em **Minhas agendas**, abra o menu da agenda **"Agenda UnB"** → **Configurações e compartilhamento** → **Excluir agenda** para apagar todas as cópias de uma vez.
-  3. Se preferir manter a agenda, clique em um evento específico e escolha **Excluir**.
+    1. Acesse [calendar.google.com](https://calendar.google.com) com a sua Conta Google.
+    2. Em **Minhas agendas**, abra o menu da agenda **"Agenda UnB"** → **Configurações e compartilhamento** → **Excluir agenda** para apagar todas as cópias de uma vez.
+    3. Se preferir manter a agenda, clique em um evento específico e escolha **Excluir**.
 
 ## 6. Por quanto tempo guardamos
 
@@ -90,7 +90,7 @@ Podemos fornecer dados a autoridades quando houver obrigação legal.
 Você pode exercer os direitos abaixo diretamente na plataforma, em **Configurações** (`/configuracoes`), ou pelo canal da seção 1:
 
 - **acessar e baixar** os seus dados em formato JSON em **Configurações** → **Baixar meus dados**;
-- **corrigir** nome e foto no perfil;
+- **corrigir** dados da conta pelo canal da seção 1 (nome e foto exibidos no perfil vêm da conta Google ou do cadastro inicial);
 - **revogar** o consentimento do Google Agenda em **Configurações** ou desconectar em **Meus Eventos**; a autorização para enviar texto de um plano à IA é dada por plano após revisão em **Plano de Ensino**;
 - **gerenciar ou retirar o compartilhamento** de planos compartilhados em **Plano de Ensino** (as cópias já importadas por colegas continuam nas agendas deles);
 - **excluir sua conta** diretamente em **Configurações** → **Excluir conta**, mediante digitação da frase de confirmação;

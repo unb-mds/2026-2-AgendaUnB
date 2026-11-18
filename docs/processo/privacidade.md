@@ -82,7 +82,7 @@ Base legal: referência aos incisos do art. 7º da LGPD. O projeto tem finalidad
 | Revogar consentimento | `DELETE /api/v1/me/consents/google_agenda` → `204` | Desconecta e solicita revogação do token no Google Agenda e revoga o consentimento ativo |
 | Acesso e portabilidade | `GET /api/v1/me/data-export` → `200` JSON (`agenda-unb-dados.json`) | `Cache-Control: no-store`, `Pragma: no-cache`. Exclui tokens cifrados, `google_sub`, caminhos do Storage e dados de terceiros |
 | Exclusão | `DELETE /api/v1/me` com `{"confirmation": "EXCLUIR MINHA CONTA"}` → `204` | `409` para o último administrador |
-| Correção | Edição do perfil (nome e foto) | E-mail é imutável no perfil |
+| Correção | Solicitação via `unbagenda@gmail.com` | `/configuracoes` exibe nome e e-mail apenas para leitura; não há edição self-service na interface |
 | Retirar compartilhamento | `DELETE …/versions/{id}/sharing` (`retirar_compartilhamento`, `#77`) | Implementado na branch `feat/s8-b01`, pendente de merge na `dev`; **Configurações** orienta sobre a retirada em **Plano de Ensino** |
 
 A versão vigente de cada documento fica em `CURRENT_LEGAL_VERSIONS` (`backend/src/modules/account/repository.py`). Ao publicar um texto novo, atualize a versão nos documentos e em `CURRENT_LEGAL_VERSIONS`: as contas passam a receber `pending: true`.
@@ -132,7 +132,7 @@ venv/bin/python -m scripts.descartar_pdfs --executar  # remove do Storage e regi
 - O SQLAlchemy usa `hide_parameters=True` (`database/connection.py`).
 - O handler global `@app.exception_handler(Exception)` em `backend/src/main.py` responde `500` genérico e registra apenas o nome da exceção, método HTTP e caminho, sem corpo de requisição, cabeçalhos, conteúdo acadêmico ou tokens.
 - Os loggers `httpx` e `httpcore` são ajustados para `WARNING` em `main.py`, `modules/syllabus/worker.py` e `scripts/descartar_pdfs.py`.
-- Falhas de banco registram apenas tipo e SQLSTATE; erros de PDF/Storage e chamadas administrativas ao Supabase não gravam `user_id`, caminho de arquivo, corpo de resposta nem chaves.
+- Falhas de banco (`IntegrityError` e `SQLAlchemyError` em `main.py`) registram apenas método HTTP e caminho; erros de PDF/Storage e chamadas administrativas ao Supabase não gravam `user_id`, caminho de arquivo, corpo de resposta nem chaves.
 - `erro_codigo` de `coletas_eventos` e `sincronizacoes_catalogo` aceita apenas código curto.
 
 ## Atendimento ao titular e incidente
