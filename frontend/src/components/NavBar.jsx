@@ -36,7 +36,7 @@ export default function NavBar({ pageType = 'home', isDark, toggleTheme, onLogin
       {toggleTheme && <button className="theme-toggle" onClick={toggleTheme} aria-label={isDark ? 'Ativar tema claro' : 'Ativar tema escuro'} title={isDark ? 'Tema claro' : 'Tema escuro'}>
         <span className="material-symbols-outlined" aria-hidden="true">{isDark ? 'brightness_7' : 'bedtime'}</span>
       </button>}
-      {user && profile?.papel === 'student' && <NotificationBell key={user.id} userId={user.id} />}
+      {user && <NotificationBell key={user.id} userId={user.id} showModeration={profile?.papel === 'student'} />}
       {user && <button className="nav-avatar" title="Sair da conta" aria-label="Sair da conta" onClick={signOut}>
         {avatar ? <img src={avatar} referrerPolicy="no-referrer" alt="" /> : (profile?.nome_completo?.[0] || user.email?.[0] || 'U').toUpperCase()}
       </button>}
