@@ -52,6 +52,9 @@ jobs:
           cache: pip
           cache-dependency-path: backend/requirements-dev.txt
       - run: python -m pip install -r backend/requirements-dev.txt
+      - name: Executar testes unitários do coletor institucional
+        working-directory: backend
+        run: python -m pytest tests/test_event_collector.py -q
       - name: Validar integração com Auth, Storage e PostgreSQL locais
         run: |
           local_status="$(supabase status --output json)"
