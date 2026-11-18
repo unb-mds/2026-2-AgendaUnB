@@ -119,3 +119,45 @@ test('toUiEvent e toApiEvent convertem eventos públicos e privados mantendo o c
   assert.equal('external_url' in apiPayload, false);
   assert.ok(apiPayload.starts_at.endsWith('Z'));
 });
+
+test('toUiEvent usa fuso America/Sao_Paulo e toApiEvent trata dia inteiro e intervalos', () => {
+  // 2026-11-19T01:30:00Z corresponde a 18/11 às 22:30 em Brasília (-03:00)
+  const lateNightUi = toUiEvent({
+    id: '33333333-3333-4333-8333-333333333333',
+    title: 'Observação Astronômica',
+    starts_at: '2026-11-19T01:30:00Z',
+    ends_at: '2026-11-19T02:30:00Z',
+    outbound_clicks_count: 7,
+  });
+
+  assert.equal(lateNightUi.data, '2026-11-18');
+  assert.equal(lateNightUi.horario, '22:30');
+  assert.equal(lateNightUi.horarioFim, '23:30');
+  assert.equal(lateNightUi.interessadosCount, 7);
+
+  const allDayPayload = toApiEvent({
+    titulo: 'Semana Universitária',
+    data: '2026-11-18',
+    dataFim: '2026-11-20',
+    diaInteiro: true,
+  });
+  assert.equal(allDayPayload.all_day, true);
+  assert.equal(allDayPayload.start_date, '2026-11-18');
+  assert.equal(allDayPayload.end_date, '2026-11-21');
+
+  const timedRange = toApiEvent({
+    titulo: 'Oficina',
+    data: '2026-11-20',
+    horario: '14:00',
+    horarioFim: '16:00',
+  });
+  assert.equal(timedRange.all_day, false);
+  assert.ok(timedRange.ends_at.endsWith('Z'));
+
+  assert.throws(() => toApiEvent({
+    titulo: 'Inválido',
+    data: '2026-11-20',
+    horario: '14:00',
+    horarioFim: '13:00',
+  }));
+});

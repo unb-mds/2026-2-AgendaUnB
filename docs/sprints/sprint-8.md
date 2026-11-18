@@ -159,6 +159,8 @@ Completar e homologar agenda, eventos, filtros e moderação nos fluxos existent
 - [ ] Preservar data, horário ou dia inteiro, intervalo, local e URL do formulário à tela. Verificar fuso, eventos de vários dias e combinação de filtros.
 - [ ] Confirmar legibilidade nos dois temas e distinção entre participação e eventos particulares.
 
+**Evidências técnicas locais (18/11/2026):** implementação da migração `20261117200000_s8_f02_eventos_moderacao_categorias.sql`, endpoints FastAPI (`all_day`, `ends_at`, `start_date`, `end_date`, `location` pessoal, `POST /events/{id}/outbound-clicks` e gestão de categorias restrita a `admin`), calendário multi-dia em `America/Sao_Paulo`, fila de revisão da coleta em `/sugestoes`, gestão de categorias em `/admin`, filtros combináveis por categoria/campus/turno/intervalo, persistência de tema e filtros, confirmação de ações destrutivas e verificação `impeccable detect --json` limpa (`[]`), validados nas suítes `test_events_api.py`, `test_suggestions_api.py`, `test_saved_events_api.py`, `calendar.test.js`, `publicEventsCache.test.js` e `preferences.test.js`.
+
 #### Evidências para fechamento
 
 - [ ] Anexar à issue o PR, a versão implantada e o resultado de cada cenário dos critérios de aceite, identificando falhas ainda abertas.
