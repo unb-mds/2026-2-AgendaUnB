@@ -38,9 +38,9 @@ test('persiste, recupera e limpa filtros úteis da agenda ignorando JSON inváli
     visaoEventos: 'Públicos',
     modoVisualizacao: 'lista',
     searchQuery: '',
-    filtroArea: '',
-    filtroCampus: '',
-    filtroTurno: '',
+    filtroArea: [],
+    filtroCampus: [],
+    filtroTurno: [],
     filtroDataInicio: '',
     filtroDataFim: '',
   });
@@ -50,9 +50,9 @@ test('persiste, recupera e limpa filtros úteis da agenda ignorando JSON inváli
       visaoEventos: 'MEUS',
       modoVisualizacao: 'calendario',
       searchQuery: 'semana',
-      filtroArea: 'Cultura',
-      filtroCampus: 'Faculdade do Gama (FCTE)',
-      filtroTurno: 'Vespertino',
+      filtroArea: ['Cultura', 'Esporte', 'Cultura'],
+      filtroCampus: ['Darcy Ribeiro (Plano Piloto)', 'Faculdade do Gama (FCTE)'],
+      filtroTurno: ['Vespertino', 'Noturno'],
       filtroDataInicio: '2026-11-18',
       filtroDataFim: '2026-11-22',
     },
@@ -63,14 +63,18 @@ test('persiste, recupera e limpa filtros úteis da agenda ignorando JSON inváli
     visaoEventos: 'MEUS',
     modoVisualizacao: 'calendario',
     searchQuery: 'semana',
-    filtroArea: 'Cultura',
-    filtroCampus: 'Faculdade do Gama (FCTE)',
-    filtroTurno: 'Vespertino',
+    filtroArea: ['Cultura', 'Esporte'],
+    filtroCampus: ['Darcy Ribeiro (Plano Piloto)', 'Faculdade do Gama (FCTE)'],
+    filtroTurno: ['Vespertino', 'Noturno'],
     filtroDataInicio: '2026-11-18',
     filtroDataFim: '2026-11-22',
   });
 
+  // Mantém compatibilidade com formato legado em string única
+  storage.setItem(EVENT_FILTERS_STORAGE_KEY, JSON.stringify({ filtroArea: 'Acadêmico' }));
+  assert.deepEqual(getStoredEventFilters(storage).filtroArea, ['Acadêmico']);
+
   clearStoredEventFilters(storage);
-  assert.equal(getStoredEventFilters(storage).filtroCampus, '');
+  assert.deepEqual(getStoredEventFilters(storage).filtroCampus, []);
   assert.equal(getStoredEventFilters(storage).visaoEventos, 'Públicos');
 });

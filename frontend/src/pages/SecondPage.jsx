@@ -780,16 +780,21 @@ export default function SegundaPagina() {
 
   const clearAllFilters = () => {
     setSearchQuery('');
-    setFiltroArea('');
-    setFiltroCampus('');
-    setFiltroTurno('');
+    setFiltroArea([]);
+    setFiltroCampus([]);
+    setFiltroTurno([]);
     setFiltroDataInicio('');
     setFiltroDataFim('');
     clearStoredEventFilters();
   };
 
   const hasActiveFilters = Boolean(
-    searchQuery || filtroArea || filtroCampus || filtroTurno || filtroDataInicio || filtroDataFim,
+    searchQuery
+    || filtroArea.length
+    || filtroCampus.length
+    || filtroTurno.length
+    || filtroDataInicio
+    || filtroDataFim,
   );
 
   // --- LÓGICA DE FILTRAGEM ---
@@ -798,9 +803,9 @@ export default function SegundaPagina() {
     return eventos.filter(evento => {
       const matchVisao = visaoEventos === 'Públicos' ? evento.visibilidade === 'Público' : evento.criadoPorMim || evento.salvoNaAgenda;
       const matchBusca = !queryLower || `${evento.titulo} ${evento.descricao || ''} ${evento.local || ''}`.toLowerCase().includes(queryLower);
-      const matchArea = filtroArea ? evento.area === filtroArea : true;
-      const matchCampus = filtroCampus ? evento.campus === filtroCampus : true;
-      const matchTurno = filtroTurno ? getTurnoByEvento(evento) === filtroTurno : true;
+      const matchArea = filtroArea.length ? filtroArea.includes(evento.area) : true;
+      const matchCampus = filtroCampus.length ? filtroCampus.includes(evento.campus) : true;
+      const matchTurno = filtroTurno.length ? filtroTurno.includes(getTurnoByEvento(evento)) : true;
       const evInicio = evento.data || '';
       const evFim = evento.dataFim || evInicio;
       const matchDataInicio = filtroDataInicio ? (evFim ? evFim >= filtroDataInicio : false) : true;
@@ -882,15 +887,15 @@ export default function SegundaPagina() {
 
             <CustomSelect
               options={areasOptions} value={filtroArea} onChange={setFiltroArea} placeholder="Todas as áreas"
-              className="filter-pill" wrapperWidth="fit-content" ariaLabel="Filtrar por área"
+              className="filter-pill" wrapperWidth="fit-content" ariaLabel="Filtrar por área" multiple
             />
             <CustomSelect
               options={campiOptions} value={filtroCampus} onChange={setFiltroCampus} placeholder="Qualquer campus"
-              className="filter-pill" wrapperWidth="fit-content" ariaLabel="Filtrar por campus"
+              className="filter-pill" wrapperWidth="fit-content" ariaLabel="Filtrar por campus" multiple
             />
             <CustomSelect
               options={turnoOptions} value={filtroTurno} onChange={setFiltroTurno} placeholder="Qualquer turno"
-              className="filter-pill" wrapperWidth="fit-content" ariaLabel="Filtrar por turno"
+              className="filter-pill" wrapperWidth="fit-content" ariaLabel="Filtrar por turno" multiple
             />
             <CustomDatePicker
               value={filtroDataInicio}

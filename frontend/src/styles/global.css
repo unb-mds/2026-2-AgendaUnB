@@ -802,6 +802,22 @@ body.light .custom-picker-option:hover { background: rgba(0, 140, 255, 0.316); }
 .custom-picker-option.active { background: rgba(0, 140, 255, 0.775); color: #fff; }
 body.light .custom-picker-option.active,
 body.light .custom-picker-option.active:hover { background: #006bc4; color: #fff; }
+.custom-picker-option-multi { display: flex; align-items: center; gap: 10px; }
+.custom-picker-option-multi.active,
+.custom-picker-option-multi.active:hover { background: rgba(0, 139, 255, 0.14); color: var(--text-color); }
+body.light .custom-picker-option-multi.active,
+body.light .custom-picker-option-multi.active:hover { background: rgba(0, 107, 196, 0.1); color: var(--text-color); }
+.custom-select-popup > .custom-picker-option-clear { border-bottom: 1px solid var(--border-color); margin-bottom: 2px; }
+.custom-select-checkbox {
+  width: 16px; height: 16px; border-radius: 4px; flex-shrink: 0;
+  display: inline-grid; place-items: center;
+  border: 1.5px solid var(--text-muted); background: transparent;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.custom-select-checkbox .material-symbols-outlined { font-size: 13px; font-weight: 700; line-height: 1; }
+.custom-select-checkbox.checked { background: #008bff; border-color: #008bff; color: #fff; }
+body.light .custom-select-checkbox.checked { background: #006bc4; border-color: #006bc4; color: #fff; }
+.custom-select-option-label { min-width: 0; flex: 1; }
 
 .custom-select { position: relative; min-width: 0; max-width: 100%; }
 .custom-select[data-open="true"] { z-index: 1000; }
@@ -819,7 +835,7 @@ body.light .custom-picker-option.active:hover { background: #006bc4; color: #fff
 .custom-select-chevron { font-size: 1.2rem; flex-shrink: 0; }
 .custom-select-popup { inset-block-start: calc(100% + 8px); width: 100%; max-height: 220px; overflow: auto; }
 .custom-select-popup:not(:empty) { padding-block: 4px; }
-.custom-select:has(.filter-pill) .custom-select-popup { min-width: 180px; }
+.custom-select:has(.filter-pill) .custom-select-popup { min-width: max(220px, 100%); }
 .custom-select-up { inset-block: auto calc(100% + 8px); }
 .custom-select-popup > button {
   flex: 0 0 auto;
@@ -841,7 +857,8 @@ body.light .custom-picker-option.active:hover { background: #006bc4; color: #fff
   transition: all 0.2s;
   min-width: 160px;
 }
-.filter-pill:hover {
+.filter-pill:hover,
+.filter-pill.has-selection {
   border-color: var(--accent-color);
 }
 @media (max-width: 600px) {
