@@ -4,10 +4,21 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { eventsApi, toApiEvent, toUiEvent } from '../lib/api';
+import { formatEventSchedule } from '../lib/calendar';
 import NavBar from '../components/NavBar';
 import EventCalendar from '../components/EventCalendar';
 import EventsLoading from '../components/EventsLoading';
 import { Feedback, Modal } from '../components/ManagementUI';
+
+const DEFAULT_CATEGORIES = ['Acadêmico', 'Cultura', 'Esporte', 'Extensão', 'Lazer', 'Comunicado', 'Reunião'];
+
+const UNB_CAMPUSES = [
+  { label: 'Darcy Ribeiro', value: 'Darcy Ribeiro (Plano Piloto)' },
+  { label: 'FCTE - Gama', value: 'Faculdade do Gama (FCTE)' },
+  { label: 'FCTS - Ceilândia', value: 'Faculdade de Ceilândia (FCTS)' },
+  { label: 'FUP - Planaltina', value: 'Faculdade de Planaltina (FUP)' },
+  { label: 'FAL', value: 'Fazenda Água Limpa (FAL)' },
+];
 
 function EventError({ message, compact = false }) {
   const needsAccount = message.includes('Entre na sua conta');
@@ -17,10 +28,17 @@ function EventError({ message, compact = false }) {
   </div>;
 }
 
-const CustomDatePicker = ({ value, onChange, placeholder, dropUp = false, className }) => {
+const CustomDatePicker = ({ value, onChange, placeholder, dropUp = false, className, wrapperWidth = '100%', ariaLabel }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
   const [viewDate, setViewDate] = useState(() => value ? new Date(`${value}T12:00:00`) : new Date());
+
+  useEffect(() => {
+    if (value) {
+      const next = new Date(`${value}T12:00:00`);
+      if (!Number.isNaN(next.getTime())) setViewDate(next);
+    }
+  }, [value]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -32,8 +50,8 @@ const CustomDatePicker = ({ value, onChange, placeholder, dropUp = false, classN
 
   const daysInMonth = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0).getDate();
   const startDay = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1).getDay();
-  
-  const days = Array(startDay).fill(null).concat(Array.from({length: daysInMonth}, (_, i) => i + 1));
+
+  const days = Array(startDay).fill(null).concat(Array.from({ length: daysInMonth }, (_, i) => i + 1));
   const weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
   const handleSelectDate = (d) => {
@@ -56,59 +74,61 @@ const CustomDatePicker = ({ value, onChange, placeholder, dropUp = false, classN
     <div ref={containerRef} onKeyDownCapture={e => {
       if (isOpen && e.key === 'Escape') {
         e.preventDefault(); e.stopPropagation(); setIsOpen(false);
-        containerRef.current?.querySelector('.custom-input')?.focus();
+        containerRef.current?.querySelector('.custom-input, .filter-pill')?.focus();
       }
-    }} style={{ position: 'relative', width: '100%', zIndex: isOpen ? 1000 : 1 }}>
-      <div 
-        className={className || "custom-input"}
-        role="button" tabIndex={0} aria-expanded={isOpen}
-        onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setIsOpen(v => !v); } }}
+    }} style={{ position: 'relative', width: wrapperWidth, zIndex: isOpen ? 1000 : 1 }}>
+      <div
+        className={className || 'custom-input'}
+        role="button" tabIndex={0} aria-expanded={isOpen} aria-label={ariaLabel || placeholder}
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsOpen(v => !v); } }}
         onClick={() => setIsOpen(!isOpen)}
         style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px',
           cursor: 'pointer', userSelect: 'none'
         }}
       >
-        <span style={{ color: value ? 'inherit' : 'var(--text-muted)' }}>{displayValue || placeholder}</span>
-        <span className="material-symbols-outlined" style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>calendar_today</span>
+        <span style={{ color: value ? 'inherit' : 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {displayValue || placeholder}
+        </span>
+        <span className="material-symbols-outlined" style={{ fontSize: '1.1rem', color: 'var(--text-muted)', flexShrink: 0 }}>calendar_today</span>
       </div>
-      
+
       {isOpen && (
         <div className="custom-picker-popup" style={{
           top: dropUp ? 'auto' : 'calc(100% + 8px)', bottom: dropUp ? 'calc(100% + 8px)' : 'auto',
           width: '280px', padding: '16px'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <button type="button" onClick={(e) => changeMonth(e, -1)} style={{ background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer', padding: '4px', display: 'flex' }}>
+            <button type="button" aria-label="Mês anterior" onClick={(e) => changeMonth(e, -1)} style={{ background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer', padding: '4px', display: 'flex' }}>
               <span className="material-symbols-outlined">chevron_left</span>
             </button>
             <span style={{ fontWeight: 'bold', textTransform: 'capitalize' }}>
               {viewDate.toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}
             </span>
-            <button type="button" onClick={(e) => changeMonth(e, 1)} style={{ background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer', padding: '4px', display: 'flex' }}>
+            <button type="button" aria-label="Próximo mês" onClick={(e) => changeMonth(e, 1)} style={{ background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer', padding: '4px', display: 'flex' }}>
               <span className="material-symbols-outlined">chevron_right</span>
             </button>
           </div>
-          
+
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', textAlign: 'center', marginBottom: '8px' }}>
             {weekDays.map(wd => <span key={wd} style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 'bold' }}>{wd}</span>)}
           </div>
-          
+
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}>
             {days.map((d, i) => {
               const isSelected = value && d && value === `${viewDate.getFullYear()}-${String(viewDate.getMonth() + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
               const isToday = !value && d === new Date().getDate() && viewDate.getMonth() === new Date().getMonth() && viewDate.getFullYear() === new Date().getFullYear();
-              
+
               let classes = 'custom-picker-option';
               if (isSelected) classes += ' active';
-              
+
               return (
-                <div 
-                  key={i} 
+                <div
+                  key={i}
                   className={classes}
-                  role={d ? "button" : undefined} tabIndex={d ? 0 : undefined}
+                  role={d ? 'button' : undefined} tabIndex={d ? 0 : undefined}
                   aria-label={d ? `${d}/${viewDate.getMonth() + 1}/${viewDate.getFullYear()}` : undefined}
-                  onKeyDown={e => { if (d && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); handleSelectDate(d); } }}
+                  onKeyDown={e => { if (d && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); handleSelectDate(d); } }}
                   onClick={() => handleSelectDate(d)}
                   style={{
                     height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -122,6 +142,19 @@ const CustomDatePicker = ({ value, onChange, placeholder, dropUp = false, classN
               );
             })}
           </div>
+          {value && (
+            <button
+              type="button"
+              onClick={() => { onChange(''); setIsOpen(false); }}
+              style={{
+                marginTop: '10px', width: '100%', padding: '6px', borderRadius: '8px',
+                border: '1px solid var(--border-color)', background: 'transparent',
+                color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600
+              }}
+            >
+              Limpar data
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -164,8 +197,8 @@ const CustomTimePicker = ({ value, onChange, placeholder, dropUp = false, classN
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const hours = Array.from({length: 24}, (_, i) => String(i).padStart(2, '0'));
-  const minutes = Array.from({length: 60}, (_, i) => String(i).padStart(2, '0'));
+  const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
+  const minutes = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
 
   const handleHourClick = (h) => {
     setTempHour(h);
@@ -177,10 +210,9 @@ const CustomTimePicker = ({ value, onChange, placeholder, dropUp = false, classN
     onChange(`${tempHour}:${m}`);
   };
 
-  // Esconder barra de rolagem (cross-browser)
   const hideScrollbarStyle = {
-    msOverflowStyle: 'none',  // IE and Edge
-    scrollbarWidth: 'none',  // Firefox
+    msOverflowStyle: 'none',
+    scrollbarWidth: 'none',
   };
 
   return (
@@ -190,10 +222,10 @@ const CustomTimePicker = ({ value, onChange, placeholder, dropUp = false, classN
         containerRef.current?.querySelector('.custom-input')?.focus();
       }
     }} style={{ position: 'relative', width: '100%', zIndex: isOpen ? 1000 : 1 }}>
-      <div 
-        className={className || "custom-input"}
+      <div
+        className={className || 'custom-input'}
         role="button" tabIndex={0} aria-expanded={isOpen}
-        onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setIsOpen(v => !v); } }}
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsOpen(v => !v); } }}
         onClick={() => setIsOpen(!isOpen)}
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -203,13 +235,12 @@ const CustomTimePicker = ({ value, onChange, placeholder, dropUp = false, classN
         <span style={{ color: value ? 'inherit' : 'var(--text-muted)' }}>{value || placeholder}</span>
         <span className="material-symbols-outlined" style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>schedule</span>
       </div>
-      
+
       {isOpen && (
         <div className="custom-picker-popup" style={{
           top: dropUp ? 'auto' : 'calc(100% + 8px)', bottom: dropUp ? 'calc(100% + 8px)' : 'auto',
           width: '240px', padding: '0', overflow: 'hidden'
         }}>
-          {/* Header */}
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
             padding: '14px 16px', borderBottom: '1px solid var(--border-color)',
@@ -221,7 +252,6 @@ const CustomTimePicker = ({ value, onChange, placeholder, dropUp = false, classN
             </span>
           </div>
 
-          {/* Column labels */}
           <div style={{
             display: 'flex', justifyContent: 'space-around', padding: '10px 16px 6px',
             fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)'
@@ -230,7 +260,6 @@ const CustomTimePicker = ({ value, onChange, placeholder, dropUp = false, classN
             <span>Minuto</span>
           </div>
 
-          {/* Columns */}
           <div style={{ display: 'flex', gap: '0', height: '220px', padding: '4px 12px 12px' }}>
             <div style={{
               flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '3px',
@@ -240,7 +269,7 @@ const CustomTimePicker = ({ value, onChange, placeholder, dropUp = false, classN
                 <div
                   key={h} ref={tempHour === h ? hourRef : null}
                   role="button" tabIndex={0} aria-label={`Hora ${h}`}
-                  onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleHourClick(h); } }}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleHourClick(h); } }}
                   onClick={() => handleHourClick(h)}
                   className="time-picker-item"
                   style={{
@@ -257,10 +286,9 @@ const CustomTimePicker = ({ value, onChange, placeholder, dropUp = false, classN
               ))}
             </div>
 
-            {/* Divider */}
             <div style={{
               width: '1px', margin: '8px 0',
-              background: 'linear-gradient(to bottom, transparent, var(--border-color), transparent)',
+              background: 'var(--border-color)',
               borderRadius: '2px'
             }}></div>
 
@@ -272,7 +300,7 @@ const CustomTimePicker = ({ value, onChange, placeholder, dropUp = false, classN
                 <div
                   key={m} ref={tempMin === m ? minRef : null}
                   role="button" tabIndex={0} aria-label={`Minuto ${m}`}
-                  onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleMinClick(m); } }}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleMinClick(m); } }}
                   onClick={() => handleMinClick(m)}
                   className="time-picker-item"
                   style={{
@@ -292,20 +320,129 @@ const CustomTimePicker = ({ value, onChange, placeholder, dropUp = false, classN
         </div>
       )}
       <style>{`
-        /* Hack extra para garantir hide scrollbar webkit */
         ::-webkit-scrollbar { width: 0px; background: transparent; }
       `}</style>
     </div>
   );
 };
 
+function getAreaIcon(areaName) {
+  switch (areaName) {
+    case 'Acadêmico': return 'school';
+    case 'Cultura': return 'palette';
+    case 'Esporte': return 'sports_soccer';
+    case 'Extensão': return 'groups';
+    case 'Lazer': return 'celebration';
+    case 'Comunicado': return 'campaign';
+    case 'Reunião': return 'forum';
+    default: return 'event';
+  }
+}
+
+function EventCardItem({
+  evento,
+  visaoEventos,
+  isProfessor,
+  isAdmin,
+  textColor,
+  onOpen,
+  onEdit,
+  onRemove,
+}) {
+  const canEdit = visaoEventos === 'MEUS' && evento.criadoPorMim;
+  const canRemove = visaoEventos === 'MEUS'
+    ? (evento.criadoPorMim || evento.salvoNaAgenda)
+    : (isProfessor || isAdmin);
+
+  return (
+    <div
+      className="event-card"
+      onClick={() => onOpen(evento)}
+      style={{ cursor: 'pointer' }}
+    >
+      <div className="event-card-icon">
+        <span className="material-symbols-outlined" style={{ color: textColor }}>
+          {getAreaIcon(evento.area)}
+        </span>
+      </div>
+
+      <div className="event-card-body">
+        <h3 className="event-card-title">{evento.titulo}</h3>
+        <div className="event-card-date">
+          {formatEventSchedule(evento) || `${evento.data} · ${evento.horario}`}
+        </div>
+        {evento.descricao && (
+          <p className="event-card-desc">{evento.descricao}</p>
+        )}
+        <div className="event-card-footer">
+          {visaoEventos === 'MEUS' && evento.criadoPorMim && (
+            <span className="event-tag event-tag--personal">Compromisso privado</span>
+          )}
+          {evento.salvoNaAgenda && (
+            <span className="event-tag event-tag--saved">Público salvo</span>
+          )}
+          {evento.fonteUrl && (
+            <span className="event-tag" title="Fonte: Agenda UnB Notícias">
+              <span className="material-symbols-outlined" style={{ fontSize: '0.9rem', flexShrink: 0 }}>newspaper</span>
+              <span className="event-tag-text">UnB Notícias</span>
+            </span>
+          )}
+          {evento.campus && (
+            <span className="event-tag">
+              <span className="material-symbols-outlined" style={{ fontSize: '0.9rem', flexShrink: 0 }}>location_on</span>
+              <span className="event-tag-text">{evento.campus}</span>
+            </span>
+          )}
+          {evento.local && (
+            <span className="event-tag">
+              <span className="material-symbols-outlined" style={{ fontSize: '0.9rem', flexShrink: 0 }}>meeting_room</span>
+              <span className="event-tag-text">{evento.local}</span>
+            </span>
+          )}
+        </div>
+      </div>
+
+      {canRemove && (
+        <div
+          onClick={(event) => event.stopPropagation()}
+          style={{ position: 'absolute', top: '12px', right: '12px', display: 'flex', gap: '6px' }}
+        >
+          {canEdit && (
+            <button
+              type="button"
+              onClick={() => onEdit(evento)}
+              title="Editar evento"
+              aria-label={`Editar ${evento.titulo}`}
+              className="event-card-delete"
+              style={{ position: 'static' }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>edit</span>
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => onRemove(evento)}
+            title={evento.salvoNaAgenda ? 'Remover dos meus eventos' : 'Excluir evento'}
+            aria-label={evento.salvoNaAgenda ? `Remover ${evento.titulo} dos meus eventos` : `Excluir ${evento.titulo}`}
+            className="event-card-delete"
+            style={{ position: 'static' }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>{evento.salvoNaAgenda ? 'bookmark_remove' : 'delete'}</span>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function SegundaPagina() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user, profile, signOut, isProfessor, isAdmin } = useAuth();
+  const { user, profile, isProfessor, isAdmin } = useAuth();
+
   // --- GERENCIAMENTO DE TEMA LOCAL ---
   const [theme, setTheme] = useState(() => document.body.classList.contains('light') ? 'light' : 'dark');
-  
+
   useEffect(() => {
     document.body.classList.remove('light', 'dark');
     document.body.classList.add(theme);
@@ -328,11 +465,15 @@ export default function SegundaPagina() {
   const savingEventRef = useRef(false);
   const [suggestionSuccess, setSuggestionSuccess] = useState('');
   const [eventoEmEdicao, setEventoEmEdicao] = useState(null);
+  const [categoriesList, setCategoriesList] = useState(DEFAULT_CATEGORIES);
 
   // Estados do Modal
   const [titulo, setTitulo] = useState('');
   const [data, setData] = useState('');
+  const [dataFim, setDataFim] = useState('');
   const [horario, setHorario] = useState('');
+  const [horarioFim, setHorarioFim] = useState('');
+  const [diaInteiro, setDiaInteiro] = useState(false);
   const [campus, setCampus] = useState('');
   const [local, setLocal] = useState('');
   const [area, setArea] = useState('');
@@ -345,20 +486,32 @@ export default function SegundaPagina() {
   const [filtroArea, setFiltroArea] = useState('');
   const [filtroCampus, setFiltroCampus] = useState('');
   const [filtroTurno, setFiltroTurno] = useState('');
+  const [filtroDataInicio, setFiltroDataInicio] = useState('');
+  const [filtroDataFim, setFiltroDataFim] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    eventsApi.listCategories()
+      .then(items => {
+        if (!active || !Array.isArray(items) || !items.length) return;
+        const names = items.map(c => c.name).filter(Boolean);
+        if (names.length) setCategoriesList(names);
+      })
+      .catch(() => {});
+    return () => { active = false; };
+  }, []);
 
   // --- DADOS BASE PARA OS DROPDOWNS ---
-  const areasOptions = ['Acadêmico', 'Cultura', 'Esporte', 'Extensão', 'Lazer', 'Comunicado'].map(a => ({ label: a, value: a }));
-  const campiOptions = [
-    { label: 'Darcy Ribeiro', value: 'Darcy Ribeiro (Plano Piloto)' },
-    { label: 'FCTE - Gama', value: 'Faculdade do Gama (FCTE)' },
-    { label: 'FCTS - Ceilândia', value: 'Faculdade de Ceilândia (FCTS)' },
-    { label: 'FUP - Planaltina', value: 'Faculdade de Planaltina (FUP)' },
-    { label: 'FAL', value: 'Fazenda Água Limpa (FAL)' },
-  ];
+  const areasOptions = useMemo(
+    () => categoriesList.map(a => ({ label: a, value: a })),
+    [categoriesList],
+  );
+  const campiOptions = UNB_CAMPUSES;
   const turnoOptions = [
     { label: 'Matutino (06h - 12h)', value: 'Matutino' },
     { label: 'Vespertino (12h - 18h)', value: 'Vespertino' },
-    { label: 'Noturno (18h - 06h)', value: 'Noturno' }
+    { label: 'Noturno (18h - 06h)', value: 'Noturno' },
+    { label: 'Dia inteiro', value: 'Dia inteiro' },
   ];
   const visibilidadeOptions = [
     ...((isProfessor || isAdmin) && !eventoEmEdicao ? [{ label: 'Público', value: 'Público' }] : []),
@@ -413,43 +566,24 @@ export default function SegundaPagina() {
   }, [visaoEventos, visaoEventos === 'MEUS' ? user?.id : null]);
 
   // --- FUNÇÕES AUXILIARES ---
-  const getAreaIcon = (areaName) => {
-    switch (areaName) {
-      case 'Acadêmico': return 'school';
-      case 'Cultura': return 'palette';
-      case 'Esporte': return 'sports_soccer';
-      case 'Extensão': return 'groups';
-      case 'Lazer': return 'celebration';
-      case 'Comunicado': return 'campaign';
-      default: return 'event';
-    }
-  };
-
-  const getTurnoByHorario = (horarioStr) => {
-    if (!horarioStr) return null;
-    const [hora] = horarioStr.split(':').map(Number);
+  const getTurnoByEvento = (evento) => {
+    if (evento.diaInteiro || evento.horario === 'Dia inteiro') return 'Dia inteiro';
+    if (!evento.horario) return null;
+    const [hora] = evento.horario.split(':').map(Number);
+    if (Number.isNaN(hora)) return null;
     if (hora >= 6 && hora < 12) return 'Matutino';
     if (hora >= 12 && hora < 18) return 'Vespertino';
-    return 'Noturno'; 
-  };
-
-  const formatarData = (dataStr) => {
-    if (!dataStr) return '';
-    const partes = dataStr.split('-');
-    if (partes.length !== 3) return dataStr;
-    const dataObj = new Date(`${dataStr}T12:00:00`);
-    const mes = dataObj.toLocaleString('pt-BR', { month: 'short' }).replace('.', '');
-    const diaSemana = dataObj.toLocaleString('pt-BR', { weekday: 'long' }).split('-')[0];
-    const diaSemanaCap = diaSemana.charAt(0).toUpperCase() + diaSemana.slice(1);
-    const mesCap = mes.charAt(0).toUpperCase() + mes.slice(1);
-    return `${diaSemanaCap}, ${partes[2]} ${mesCap}`;
+    return 'Noturno';
   };
 
   // --- HANDLERS ---
   const resetModal = () => {
     setTitulo('');
     setData('');
+    setDataFim('');
     setHorario('');
+    setHorarioFim('');
+    setDiaInteiro(false);
     setCampus('');
     setLocal('');
     setArea('');
@@ -473,11 +607,15 @@ export default function SegundaPagina() {
       return;
     }
     if (!data) {
-      setErroEventos('Selecione uma data para o evento.');
+      setErroEventos('Selecione uma data de início para o evento.');
       return;
     }
-    if (!horario) {
-      setErroEventos('Selecione um horário para o evento.');
+    if (dataFim && dataFim < data) {
+      setErroEventos('A data de término não pode ser anterior à data de início.');
+      return;
+    }
+    if (!diaInteiro && !horario) {
+      setErroEventos('Selecione um horário de início ou marque como dia inteiro.');
       return;
     }
     if (!visibilidade) {
@@ -489,7 +627,19 @@ export default function SegundaPagina() {
     setSavingEvent(true);
     try {
       setErroEventos('');
-      const payload = toApiEvent({ titulo, data, horario, campus, local, area, descricao, linkExterno });
+      const payload = toApiEvent({
+        titulo,
+        data,
+        dataFim,
+        horario,
+        horarioFim,
+        diaInteiro,
+        campus,
+        local,
+        area,
+        descricao,
+        linkExterno,
+      });
       let savedEvent;
       if (visibilidade === 'Sugestão' && !eventoEmEdicao) {
         await eventsApi.suggest(payload);
@@ -533,7 +683,10 @@ export default function SegundaPagina() {
     setEventoEmEdicao(evento);
     setTitulo(evento.titulo);
     setData(evento.data);
-    setHorario(evento.horario);
+    setDiaInteiro(Boolean(evento.diaInteiro));
+    setDataFim(evento.dataFim && evento.dataFim !== evento.data ? evento.dataFim : '');
+    setHorario(evento.diaInteiro ? '' : (evento.horario || ''));
+    setHorarioFim(evento.diaInteiro ? '' : (evento.horarioFim || ''));
     setCampus(evento.campus);
     setLocal(evento.local);
     setArea(evento.area);
@@ -554,24 +707,42 @@ export default function SegundaPagina() {
       } else {
         await eventsApi.deletePublic(idParaRemover);
       }
-      setEventos((current) => current.filter((event) => event.id !== idParaRemover || event.visibilidade !== evento.visibilidade));
+      setEventos((current) => current.filter((event) => !(event.id === idParaRemover && event.visibilidade === evento.visibilidade)));
     } catch (error) {
       setErroEventos(error.message || 'Não foi possível excluir o evento.');
     }
   };
 
+  const clearAllFilters = () => {
+    setSearchQuery('');
+    setFiltroArea('');
+    setFiltroCampus('');
+    setFiltroTurno('');
+    setFiltroDataInicio('');
+    setFiltroDataFim('');
+  };
+
+  const hasActiveFilters = Boolean(
+    searchQuery || filtroArea || filtroCampus || filtroTurno || filtroDataInicio || filtroDataFim,
+  );
+
   // --- LÓGICA DE FILTRAGEM ---
   const eventosFiltrados = useMemo(() => {
+    const queryLower = searchQuery.trim().toLowerCase();
     return eventos.filter(evento => {
       const matchVisao = visaoEventos === 'Públicos' ? evento.visibilidade === 'Público' : evento.criadoPorMim || evento.salvoNaAgenda;
-      const matchBusca = evento.titulo.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchBusca = !queryLower || `${evento.titulo} ${evento.descricao || ''} ${evento.local || ''}`.toLowerCase().includes(queryLower);
       const matchArea = filtroArea ? evento.area === filtroArea : true;
       const matchCampus = filtroCampus ? evento.campus === filtroCampus : true;
-      const matchTurno = filtroTurno ? getTurnoByHorario(evento.horario) === filtroTurno : true;
-      
-      return matchVisao && matchBusca && matchArea && matchCampus && matchTurno;
+      const matchTurno = filtroTurno ? getTurnoByEvento(evento) === filtroTurno : true;
+      const evInicio = evento.data || '';
+      const evFim = evento.dataFim || evInicio;
+      const matchDataInicio = filtroDataInicio ? (evFim ? evFim >= filtroDataInicio : false) : true;
+      const matchDataFim = filtroDataFim ? (evInicio ? evInicio <= filtroDataFim : false) : true;
+
+      return matchVisao && matchBusca && matchArea && matchCampus && matchTurno && matchDataInicio && matchDataFim;
     });
-  }, [eventos, visaoEventos, searchQuery, filtroArea, filtroCampus, filtroTurno]);
+  }, [eventos, visaoEventos, searchQuery, filtroArea, filtroCampus, filtroTurno, filtroDataInicio, filtroDataFim]);
 
   // --- ESTILIZAÇÃO DINÂMICA ---
   const bgColor = isDark ? '#080c16' : '#f0f4f8';
@@ -583,34 +754,36 @@ export default function SegundaPagina() {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: bgColor, color: textColor, paddingBottom: '4rem', transition: 'background-color 0.3s' }}>
-      
+
       <NavBar pageType="second" isDark={isDark} toggleTheme={toggleTheme} />
 
       <main className="events-page" style={{ maxWidth: '1200px', margin: '0 auto', padding: '8rem 1.5rem 2rem' }}>
-        
+
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2.5rem' }}>
           <div className="btn-toggle-group">
-            <button 
+            <button
+              type="button"
               onClick={() => setVisaoEventos('Públicos')}
               className={`btn-toggle-item ${visaoEventos === 'Públicos' ? 'active' : ''}`}
             >
               Eventos Públicos
             </button>
-            <button 
+            <button
+              type="button"
               onClick={() => setVisaoEventos('MEUS')}
               className={`btn-toggle-item ${visaoEventos === 'MEUS' ? 'active' : ''}`}
             >
-            Meus Eventos
+              Meus Eventos
             </button>
           </div>
         </div>
 
-        <div style={{ marginBottom: '2.5rem' }}>
-          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+        <div style={{ marginBottom: '2rem' }}>
+          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
             <div style={{ flex: '1 1 280px', minWidth: 0, position: 'relative' }}>
               <span className="material-symbols-outlined" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: textMuted }}>search</span>
               <input
-                type="text" aria-label="Buscar eventos e comunicados" placeholder="Busque eventos, comunicados..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                type="text" aria-label="Buscar eventos e comunicados" placeholder="Busque eventos, locais ou comunicados..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
                 style={{
                   width: '100%', padding: '16px 20px 16px 48px', borderRadius: '24px',
                   border: `1px solid ${borderColor}`, background: cardBg, color: textColor, fontSize: '1.05rem',
@@ -620,6 +793,7 @@ export default function SegundaPagina() {
             </div>
             {user && (
               <button
+                type="button"
                 onClick={() => {
                   resetModal();
                   setVisibilidade(isProfessor || isAdmin ? 'Público' : 'Privado');
@@ -635,28 +809,44 @@ export default function SegundaPagina() {
                 Criar Evento
               </button>
             )}
-
           </div>
 
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center', zIndex: 11, position: 'relative' }}>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center', zIndex: 11, position: 'relative' }}>
             <span style={{ color: textMuted, fontSize: '0.9rem', fontWeight: 600, marginRight: '4px' }}>Filtros:</span>
-            
-            <CustomSelect 
+
+            <CustomSelect
               options={areasOptions} value={filtroArea} onChange={setFiltroArea} placeholder="Todas as áreas"
-              className="filter-pill" wrapperWidth="fit-content"
+              className="filter-pill" wrapperWidth="fit-content" ariaLabel="Filtrar por área"
             />
-            <CustomSelect 
+            <CustomSelect
               options={campiOptions} value={filtroCampus} onChange={setFiltroCampus} placeholder="Qualquer campus"
-              className="filter-pill" wrapperWidth="fit-content"
+              className="filter-pill" wrapperWidth="fit-content" ariaLabel="Filtrar por campus"
             />
-            <CustomSelect 
+            <CustomSelect
               options={turnoOptions} value={filtroTurno} onChange={setFiltroTurno} placeholder="Qualquer turno"
-              className="filter-pill" wrapperWidth="fit-content"
+              className="filter-pill" wrapperWidth="fit-content" ariaLabel="Filtrar por turno"
+            />
+            <CustomDatePicker
+              value={filtroDataInicio}
+              onChange={setFiltroDataInicio}
+              placeholder="De (início)"
+              className="filter-pill"
+              wrapperWidth="165px"
+              ariaLabel="Filtrar a partir da data"
+            />
+            <CustomDatePicker
+              value={filtroDataFim}
+              onChange={setFiltroDataFim}
+              placeholder="Até (término)"
+              className="filter-pill"
+              wrapperWidth="165px"
+              ariaLabel="Filtrar até a data"
             />
 
-            {(filtroArea || filtroCampus || filtroTurno) && (
-              <button 
-                onClick={() => { setFiltroArea(''); setFiltroCampus(''); setFiltroTurno(''); }}
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={clearAllFilters}
                 style={{ background: 'transparent', border: 'none', color: accentColor, cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, padding: '8px', marginLeft: 'auto' }}
               >
                 Limpar Filtros
@@ -672,8 +862,9 @@ export default function SegundaPagina() {
             <span className="material-symbols-outlined" aria-hidden="true" style={{ color: accentColor, fontSize: '1.4rem' }}>event</span>
           </h2>
           <div className="events-section-actions">
-            {user && visaoEventos === 'MEUS' &&
-              <GoogleCalendarConnection key={user.id} callbackResult={searchParams.get('google_calendar')} events={carregandoEventos || erroEventos ? [] : eventosFiltrados} />}
+            {user && visaoEventos === 'MEUS' && (
+              <GoogleCalendarConnection key={user.id} callbackResult={searchParams.get('google_calendar')} events={carregandoEventos || erroEventos ? [] : eventosFiltrados} />
+            )}
             <div className="btn-toggle-group events-view-toggle" role="group" aria-label="Visualização dos eventos">
               <button
                 type="button"
@@ -700,88 +891,46 @@ export default function SegundaPagina() {
         )}
 
         {modoVisualizacao === 'calendario' ? (
-          <EventCalendar events={eventosFiltrados} loading={carregandoEventos} error={Boolean(erroEventos)} />
+          <EventCalendar
+            events={eventosFiltrados}
+            loading={carregandoEventos}
+            error={Boolean(erroEventos)}
+            hasActiveFilters={hasActiveFilters}
+            onClearFilters={clearAllFilters}
+          />
         ) : carregandoEventos ? (
           <EventsLoading />
         ) : erroEventos ? null : eventosFiltrados.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '4rem 2rem', background: cardBg, borderRadius: '24px', border: `1px dashed ${borderColor}` }}>
             <span className="material-symbols-outlined" style={{ fontSize: '3rem', color: textMuted, marginBottom: '1rem' }}>event_busy</span>
             <h3 style={{ color: textColor, marginBottom: '0.5rem' }}>Nenhum evento encontrado</h3>
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={clearAllFilters}
+                style={{
+                  marginTop: '12px', padding: '10px 20px', borderRadius: '12px',
+                  background: accentColor, color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600,
+                }}
+              >
+                Limpar filtros
+              </button>
+            )}
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))', gap: '20px' }}>
             {eventosFiltrados.map((evento) => (
-              <div 
+              <EventCardItem
                 key={`${evento.visibilidade}-${evento.id}`}
-                className="event-card"
-                onClick={() => navigate(`/evento/${evento.id}`, { state: { evento } })}
-                style={{ cursor: 'pointer' }}
-              >
-                <div className="event-card-icon">
-                  <span className="material-symbols-outlined" style={{ color: textColor }} >
-                    {getAreaIcon(evento.area)}
-                  </span>
-                </div>
-
-                <div className="event-card-body">
-                  <h3 className="event-card-title">
-                    {evento.titulo}
-                  </h3>
-                  <div className="event-card-date">
-                    {formatarData(evento.data)} - {evento.horario}
-                  </div>
-                  {evento.descricao && (
-                    <p className="event-card-desc">
-                      {evento.descricao}
-                    </p>
-                  )}
-                  <div className="event-card-footer">
-                    {evento.salvoNaAgenda && <span className="event-tag">Público salvo</span>}
-                    {evento.fonteUrl && (
-                      <span className="event-tag" title="Fonte: Agenda UnB Notícias">
-                        <span className="material-symbols-outlined" style={{ fontSize: '0.9rem', flexShrink: 0 }}>newspaper</span>
-                        <span className="event-tag-text">UnB Notícias</span>
-                      </span>
-                    )}
-                    {evento.campus && (
-                      <span className="event-tag"><span className="material-symbols-outlined" style={{ fontSize: '0.9rem', flexShrink: 0 }}>location_on</span><span className="event-tag-text">{evento.campus}</span></span>
-                    )}
-                    {evento.local && (
-                      <span className="event-tag"><span className="material-symbols-outlined" style={{ fontSize: '0.9rem', flexShrink: 0 }}>meeting_room</span><span className="event-tag-text">{evento.local}</span></span>
-                    )}
-                  </div>
-                </div>
-
-                {(visaoEventos === 'MEUS' ? (evento.criadoPorMim || evento.salvoNaAgenda) : (isProfessor || isAdmin)) && (
-                  <div
-                    onClick={(event) => event.stopPropagation()}
-                    style={{ position: 'absolute', top: '12px', right: '12px', display: 'flex', gap: '6px' }}
-                  >
-                    {visaoEventos === 'MEUS' && evento.criadoPorMim && (
-                      <button
-                        type="button"
-                        onClick={() => handleEditarEvento(evento)}
-                        title="Editar evento"
-                        aria-label={`Editar ${evento.titulo}`}
-                        className="event-card-delete"
-                        style={{ position: 'static' }}
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>edit</span>
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => handleRemoverEvento(evento)}
-                      title={evento.salvoNaAgenda ? 'Remover dos meus eventos' : 'Excluir evento'}
-                      aria-label={evento.salvoNaAgenda ? `Remover ${evento.titulo} dos meus eventos` : `Excluir ${evento.titulo}`}
-                      className="event-card-delete"
-                      style={{ position: 'static' }}
-                    >
-                      <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>{evento.salvoNaAgenda ? 'bookmark_remove' : 'delete'}</span>
-                    </button>
-                  </div>
-                )}
-              </div>
+                evento={evento}
+                visaoEventos={visaoEventos}
+                isProfessor={isProfessor}
+                isAdmin={isAdmin}
+                textColor={textColor}
+                onOpen={ev => navigate(`/evento/${ev.id}`, { state: { evento: ev } })}
+                onEdit={handleEditarEvento}
+                onRemove={handleRemoverEvento}
+              />
             ))}
           </div>
         )}
@@ -805,7 +954,7 @@ export default function SegundaPagina() {
               {erroEventos && (
                 <EventError message={erroEventos} compact />
               )}
-              
+
               <div>
                 <label htmlFor="event-title" className="modal-label">TÍTULO DO EVENTO *</label>
                 <input id="event-title" type="text" required minLength={3} maxLength={200} value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder="Dê um título breve para o seu evento..." className="custom-input" />
@@ -815,16 +964,51 @@ export default function SegundaPagina() {
                 <textarea id="event-description" maxLength={10000} value={descricao} onChange={(e) => setDescricao(e.target.value)}
                   placeholder="Forneça mais detalhes..." className="custom-input event-description-input" />
               </div>
+
+              <label htmlFor="event-all-day" style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontWeight: 600, fontSize: '0.92rem' }}>
+                <input
+                  id="event-all-day"
+                  type="checkbox"
+                  checked={diaInteiro}
+                  onChange={e => {
+                    const checked = e.target.checked;
+                    setDiaInteiro(checked);
+                    if (checked) {
+                      setHorario('');
+                      setHorarioFim('');
+                    }
+                  }}
+                  style={{ width: '18px', height: '18px', accentColor }}
+                />
+                Evento de dia inteiro
+              </label>
+
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
-                  <label className="modal-label">DATA *</label>
-                  <CustomDatePicker value={data} onChange={setData} placeholder="dd/mm/aaaa" isDark={isDark} className="custom-input" accentColor={accentColor} cardBg={cardBg} borderColor={borderColor} textColor={textColor} />
+                  <label className="modal-label">DATA DE INÍCIO *</label>
+                  <CustomDatePicker value={data} onChange={setData} placeholder="dd/mm/aaaa" className="custom-input" />
                 </div>
-                <div>
-                  <label className="modal-label">HORÁRIO *</label>
-                  <CustomTimePicker value={horario} onChange={setHorario} placeholder="-- : --" isDark={isDark} className="custom-input" accentColor={accentColor} cardBg={cardBg} borderColor={borderColor} textColor={textColor} />
-                </div>
+                {!diaInteiro && (
+                  <div>
+                    <label className="modal-label">HORÁRIO DE INÍCIO *</label>
+                    <CustomTimePicker value={horario} onChange={setHorario} placeholder="-- : --" className="custom-input" />
+                  </div>
+                )}
               </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label className="modal-label">DATA DE TÉRMINO (OPCIONAL)</label>
+                  <CustomDatePicker value={dataFim} onChange={setDataFim} placeholder="Mesmo dia ou término" className="custom-input" />
+                </div>
+                {!diaInteiro && (
+                  <div>
+                    <label className="modal-label">HORÁRIO DE TÉRMINO (OPCIONAL)</label>
+                    <CustomTimePicker value={horarioFim} onChange={setHorarioFim} placeholder="-- : --" className="custom-input" />
+                  </div>
+                )}
+              </div>
+
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label className="modal-label">CAMPUS</label>
@@ -865,6 +1049,3 @@ export default function SegundaPagina() {
     </div>
   );
 }
-
-
-
