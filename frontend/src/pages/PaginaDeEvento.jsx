@@ -184,27 +184,26 @@ export default function PaginaDeEvento() {
   const renderDescricao = () => {
     return evento.descricao.split('\n\n').map((para, idx) => {
       if (para.startsWith('**')) {
-        return <p key={idx} style={{
-          marginTop: '2rem',
+        return <h2 key={idx} style={{
+          marginTop: '1.75rem',
+          marginBottom: '0.75rem',
           fontWeight: 700,
           fontSize: '1.2rem',
           color: isDark ? '#fff' : '#1a1a2e',
-          borderLeft: '4px solid rgb(0, 139, 255)',
-          paddingLeft: '1rem',
-          background: isDark ? 'linear-gradient(90deg, rgba(0, 139, 255, 0.1), transparent)' : 'linear-gradient(90deg, rgba(0, 139, 255, 0.05), transparent)',
-          padding: '0.5rem 1rem'
-        }}>{para.replace(/\*\*/g, '')}</p>;
+          paddingBottom: '0.4rem',
+          borderBottom: '1px solid var(--border-color)'
+        }}>{para.replace(/\*\*/g, '')}</h2>;
       }
       if (para.startsWith('-')) {
         return (
-          <ul key={idx} className="event-list" style={{ color: isDark ? 'rgba(255,255,255,0.8)' : 'rgba(26,26,46,0.8)' }}>
+          <ul key={idx} className="event-list" style={{ color: isDark ? '#e2e8f0' : '#1e293b' }}>
             {para.split('\n').map((item, i) => (
               <li key={i} style={{ paddingLeft: '0.5rem', marginBottom: '0.75rem' }}>{item.replace('-', '').trim()}</li>
             ))}
           </ul>
         );
       }
-      return <p key={idx} style={{ color: isDark ? 'rgba(255,255,255,0.75)' : 'rgba(26,26,46,0.75)', fontSize: '1.05rem', lineHeight: '1.8' }}>{para}</p>;
+      return <p key={idx} style={{ color: isDark ? '#e2e8f0' : '#1e293b', fontSize: '1.05rem', lineHeight: '1.8' }}>{para}</p>;
     });
   };
 
@@ -235,18 +234,6 @@ export default function PaginaDeEvento() {
           campus: eventoCarregado.campus,
         }),
       } : undefined} />
-
-      <div
-        style={{
-          position: 'absolute',
-          top: 0, left: 0, right: 0, height: '600px',
-          background: isDark
-            ? 'radial-gradient(ellipse at 50% 0%, rgba(0, 139, 255, 0.15), transparent 70%)'
-            : 'radial-gradient(ellipse at 50% 0%, rgba(0, 139, 255, 0.1), transparent 70%)',
-          zIndex: 0,
-          pointerEvents: 'none'
-        }}
-      />
 
       <NavBar pageType="evento" isDark={isDark} toggleTheme={toggleTheme} />
 
@@ -294,7 +281,7 @@ export default function PaginaDeEvento() {
                 )}
               </div>
               <div className="organizer-info">
-                <span className="org-label" style={{ color: isDark ? 'rgba(255, 255, 255, 0.45)' : 'rgba(26, 26, 46, 0.55)' }}>
+                <span className="org-label" style={{ color: isDark ? '#b0bfd0' : '#475569' }}>
                   {evento.organizador.isFonteInstitucional ? 'Fonte Oficial' : 'Organizado por'}
                 </span>
                 <span className="org-name" style={{ color: isDark ? '#fff' : '#1a1a2e', fontSize: '1.1rem' }}>{evento.organizador.nome}</span>
@@ -365,7 +352,7 @@ export default function PaginaDeEvento() {
           <div className="event-action-card" style={{
             background: isDark ? 'rgba(8, 12, 22, 0.78)' : 'rgba(255, 255, 255, 0.85)',
             borderColor: isDark ? 'rgba(0, 139, 255, 0.15)' : 'rgba(0, 139, 255, 0.25)',
-            boxShadow: isDark ? '0 20px 40px rgba(0,0,0,0.4), 0 0 40px rgba(0, 139, 255, 0.1)' : '0 12px 30px rgba(0, 0, 0, 0.08)'
+            boxShadow: isDark ? '0 16px 32px rgba(0, 0, 0, 0.2), 0 0 28px rgba(0, 139, 255, 0.12)' : '0 10px 24px rgba(0, 0, 0, 0.08)'
           }}>
             <div className="event-info-line" style={{ color: isDark ? '#fff' : '#1a1a2e' }}>
               <span className="material-symbols-outlined icon-blue" style={{ fontSize: '1.6rem' }}>calendar_month</span>
