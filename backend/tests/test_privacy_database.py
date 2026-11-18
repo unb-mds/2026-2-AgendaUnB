@@ -216,9 +216,20 @@ def test_account_deletion_end_to_end(database):
 
     ver_shared = scalar(
         conn,
-        "update public.versoes_plano set visibilidade = 'compartilhada', compartilhada_em = now() "
-        "where plano_id = :p and numero = 1 returning id",
+        "select id from public.versoes_plano where plano_id = :p and numero = 1",
         {"p": plan_done},
+    )
+    cand_id = scalar(
+        conn,
+        "insert into public.avaliacoes(plano_id, versao_id, titulo) values (:p, :v, 'Prova Compartilhada') returning id",
+        {"p": plan_done, "v": ver_shared},
+    )
+    conn.execute(
+        text(
+            "update public.versoes_plano set visibilidade = 'compartilhada', compartilhada_em = now() "
+            "where id = :v"
+        ),
+        {"v": ver_shared},
     )
     ver_proc = scalar(
         conn,
@@ -235,12 +246,6 @@ def test_account_deletion_end_to_end(database):
             "where id = :p"
         ),
         {"v": ver_proc, "p": plan_proc},
-    )
-
-    cand_id = scalar(
-        conn,
-        "insert into public.avaliacoes(plano_id, versao_id, titulo) values (:p, :v, 'Prova Compartilhada') returning id",
-        {"p": plan_done, "v": ver_shared},
     )
 
     # Operação de importação da própria Ana + cópia independente importada por Bruno.

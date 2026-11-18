@@ -400,17 +400,12 @@ def test_export_contains_the_account_data_and_nobody_elses(api):
     ):
         assert forbidden not in raw
 
-    # Compatibilidade quando votos_avaliacao existir (branch s8-b01).
+    # Exportação inclui votos quando registrados em votos_avaliacao.
     with SessionLocal() as db:
         db.execute(
             text(
-                "create table votos_avaliacao ("
-                "user_id text, avaliacao_id text, valor integer, criado_em text, atualizado_em text)"
-            )
-        )
-        db.execute(
-            text(
-                "insert into votos_avaliacao values (:uid, :cid, 1, '2026-11-18T00:00:00Z', '2026-11-18T00:00:00Z')"
+                "insert into votos_avaliacao (user_id, avaliacao_id, valor, criado_em, atualizado_em) "
+                "values (:uid, :cid, 'confirma', '2026-11-18T00:00:00Z', '2026-11-18T00:00:00Z')"
             ),
             {"uid": ana.id.hex, "cid": ana_cand_id},
         )
