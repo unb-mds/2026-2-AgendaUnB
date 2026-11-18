@@ -3,8 +3,6 @@ title: "ADR-013 · Persistir lembretes com agendamento idempotente e revalidaç�
 description: "Decisão, consequências e critérios de verificação: persistir lembretes com agendamento idempotente e revalidação."
 ---
 
-# ADR-013 · Persistir lembretes com agendamento idempotente e revalidação
-
 | Campo | Valor |
 | --- | --- |
 | Estado | Aceita para a Release 2 |

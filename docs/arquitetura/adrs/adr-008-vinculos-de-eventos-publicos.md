@@ -3,8 +3,6 @@ title: "ADR-008 · Salvar vínculos aos eventos públicos na agenda pessoal"
 description: "Decisão, consequências e critérios de verificação: salvar vínculos aos eventos públicos na agenda pessoal."
 ---
 
-# ADR-008 · Salvar vínculos aos eventos públicos na agenda pessoal
-
 | Campo | Valor |
 | --- | --- |
 | Estado | Implementada |

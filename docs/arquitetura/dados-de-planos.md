@@ -3,8 +3,6 @@ title: "Dados de planos: leitura e confirmação"
 description: "Como a API usa as funções de planos da Release 2."
 ---
 
-# Dados de planos: leitura e confirmação
-
 Guia de integração das migrações `20261111141000_planos_confirmacao_idempotente.sql`, que completam o modelo da [S7-D01 (#69)](https://github.com/unb-mds/2026-2-AgendaUnB/issues/69).
 
 | Issue | O que o banco e a aplicação fazem |
