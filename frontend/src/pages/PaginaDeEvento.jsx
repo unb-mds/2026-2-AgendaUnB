@@ -3,6 +3,7 @@ import { useParams, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { eventsApi, toUiEvent } from '../lib/api';
 import { formatEventSchedule } from '../lib/calendar';
+import { getStoredTheme, setStoredTheme } from '../lib/preferences';
 import NavBar from '../components/NavBar';
 import SaveEventButton from '../components/SaveEventButton';
 import SearchMetadata from '../components/SearchMetadata.jsx';
@@ -46,11 +47,10 @@ export default function PaginaDeEvento() {
   const [isCopied, setIsCopied] = useState(false);
   const clickIdRef = useRef(createSessionClickId());
 
-  const [theme, setTheme] = useState(() => document.body.classList.contains('light') ? 'light' : 'dark');
+  const [theme, setTheme] = useState(() => getStoredTheme());
 
   useEffect(() => {
-    document.body.classList.remove('light', 'dark');
-    document.body.classList.add(theme);
+    setStoredTheme(theme);
   }, [theme]);
 
   useEffect(() => {
