@@ -71,6 +71,14 @@ export default function PaginaDeEvento() {
         iniciais: eventoCarregado.organizadorNome.charAt(0).toUpperCase()
       };
     }
+    if (eventoCarregado?.fonte === 'agenda_unb_noticias' || eventoCarregado?.fonteUrl) {
+      return {
+        nome: 'Agenda UnB Notícias',
+        foto: '/Logo-AgendaUnB1.png',
+        iniciais: 'U',
+        isFonteInstitucional: true,
+      };
+    }
     if (user) {
       const nome = profile?.nome_completo || user.user_metadata?.nome_completo || user.user_metadata?.full_name || user.user_metadata?.name || user.email || "Organizador";
       return {
@@ -226,10 +234,42 @@ export default function PaginaDeEvento() {
                 )}
               </div>
               <div className="organizer-info">
-                <span className="org-label" style={{ color: isDark ? 'rgba(255, 255, 255, 0.45)' : 'rgba(26, 26, 46, 0.55)' }}>Organizado por</span>
+                <span className="org-label" style={{ color: isDark ? 'rgba(255, 255, 255, 0.45)' : 'rgba(26, 26, 46, 0.55)' }}>
+                  {evento.organizador.isFonteInstitucional ? 'Fonte Oficial' : 'Organizado por'}
+                </span>
                 <span className="org-name" style={{ color: isDark ? '#fff' : '#1a1a2e', fontSize: '1.1rem' }}>{evento.organizador.nome}</span>
               </div>
             </div>
+
+            {eventoCarregado?.fonteUrl && (
+              <div
+                className="event-provenance-box"
+                style={{
+                  marginTop: '1rem',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '8px 16px',
+                  borderRadius: '12px',
+                  background: isDark ? 'rgba(0, 139, 255, 0.08)' : 'rgba(0, 139, 255, 0.06)',
+                  border: `1px solid ${isDark ? 'rgba(0, 139, 255, 0.2)' : 'rgba(0, 139, 255, 0.18)'}`,
+                  fontSize: '0.95rem',
+                }}
+              >
+                <span className="material-symbols-outlined icon-blue" style={{ fontSize: '1.2rem' }}>verified</span>
+                <span style={{ color: isDark ? 'rgba(255, 255, 255, 0.75)' : 'rgba(26, 26, 46, 0.75)' }}>
+                  Origem institucional:{' '}
+                  <a
+                    href={eventoCarregado.fonteUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: '#008bff', fontWeight: 600, textDecoration: 'underline' }}
+                  >
+                    Agenda UnB Notícias
+                  </a>
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="event-body">
