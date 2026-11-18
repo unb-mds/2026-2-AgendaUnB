@@ -5,12 +5,26 @@ const DEFAULT_FILTERS = {
   visaoEventos: 'Públicos',
   modoVisualizacao: 'lista',
   searchQuery: '',
-  filtroArea: '',
-  filtroCampus: '',
-  filtroTurno: '',
+  filtroArea: [],
+  filtroCampus: [],
+  filtroTurno: [],
   filtroDataInicio: '',
   filtroDataFim: '',
 };
+
+function normalizeFilterList(value) {
+  if (Array.isArray(value)) {
+    return [...new Set(
+      value
+        .filter((item) => typeof item === 'string' && item.trim())
+        .map((item) => item.trim()),
+    )];
+  }
+  if (typeof value === 'string' && value.trim()) {
+    return [value.trim()];
+  }
+  return [];
+}
 
 function defaultStorage() {
   try {
@@ -59,9 +73,9 @@ export function getStoredEventFilters(storage = defaultStorage()) {
       visaoEventos: parsed.visaoEventos === 'MEUS' ? 'MEUS' : 'Públicos',
       modoVisualizacao: parsed.modoVisualizacao === 'calendario' ? 'calendario' : 'lista',
       searchQuery: typeof parsed.searchQuery === 'string' ? parsed.searchQuery : '',
-      filtroArea: typeof parsed.filtroArea === 'string' ? parsed.filtroArea : '',
-      filtroCampus: typeof parsed.filtroCampus === 'string' ? parsed.filtroCampus : '',
-      filtroTurno: typeof parsed.filtroTurno === 'string' ? parsed.filtroTurno : '',
+      filtroArea: normalizeFilterList(parsed.filtroArea),
+      filtroCampus: normalizeFilterList(parsed.filtroCampus),
+      filtroTurno: normalizeFilterList(parsed.filtroTurno),
       filtroDataInicio: typeof parsed.filtroDataInicio === 'string' ? parsed.filtroDataInicio : '',
       filtroDataFim: typeof parsed.filtroDataFim === 'string' ? parsed.filtroDataFim : '',
     };
@@ -75,9 +89,9 @@ export function setStoredEventFilters(filters, storage = defaultStorage()) {
     visaoEventos: filters?.visaoEventos === 'MEUS' ? 'MEUS' : 'Públicos',
     modoVisualizacao: filters?.modoVisualizacao === 'calendario' ? 'calendario' : 'lista',
     searchQuery: typeof filters?.searchQuery === 'string' ? filters.searchQuery : '',
-    filtroArea: typeof filters?.filtroArea === 'string' ? filters.filtroArea : '',
-    filtroCampus: typeof filters?.filtroCampus === 'string' ? filters.filtroCampus : '',
-    filtroTurno: typeof filters?.filtroTurno === 'string' ? filters.filtroTurno : '',
+    filtroArea: normalizeFilterList(filters?.filtroArea),
+    filtroCampus: normalizeFilterList(filters?.filtroCampus),
+    filtroTurno: normalizeFilterList(filters?.filtroTurno),
     filtroDataInicio: typeof filters?.filtroDataInicio === 'string' ? filters.filtroDataInicio : '',
     filtroDataFim: typeof filters?.filtroDataFim === 'string' ? filters.filtroDataFim : '',
   };
