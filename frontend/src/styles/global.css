@@ -1350,3 +1350,34 @@ body.light .manage-button.google-calendar-secondary:hover:not(:disabled) {
 .google-calendar-event-list label + label { border-top: 1px solid var(--manage-border); }
 .google-calendar-event-list input { flex: none; accent-color: var(--manage-action); }
 .google-calendar-event-list label:has(input:disabled) { cursor: default; color: var(--manage-muted); }
+.google-calendar-copy-notice {
+  margin-top: .5rem;
+}
+.google-calendar-help {
+  margin-top: .625rem;
+  font-size: .875rem;
+  line-height: 1.55;
+  color: var(--manage-muted);
+}
+.google-calendar-help summary {
+  cursor: pointer;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  color: var(--manage-link);
+  font-weight: 600;
+}
+.google-calendar-help ol {
+  margin: .35rem 0 0;
+  padding-inline-start: 1.25rem;
+  display: grid;
+  gap: .35rem;
+}
+.google-calendar-disconnect-guide {
+  flex-basis: 100%;
+  text-align: start;
+  padding: .75rem 1rem;
+  border: 1px solid var(--manage-border);
+  border-radius: 10px;
+  background: var(--manage-surface);
+}
