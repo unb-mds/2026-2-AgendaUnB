@@ -258,10 +258,10 @@ const CustomTimePicker = ({ value, onChange, placeholder, dropUp = false, classN
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
             padding: '14px 16px', borderBottom: '1px solid var(--border-color)',
-            background: 'rgba(0, 139, 255, 0.06)'
+            background: 'rgba(0, 139, 255, 0.08)'
           }}>
-            <span className="material-symbols-outlined" style={{ fontSize: '1.1rem', color: 'var(--white)' }}>schedule</span>
-            <span style={{ fontWeight: 700, fontSize: '0.85rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--white)' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '1.1rem', color: 'var(--text-color)' }}>schedule</span>
+            <span style={{ fontWeight: 700, fontSize: '0.85rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--text-color)' }}>
               Selecione o horário
             </span>
           </div>
@@ -275,7 +275,7 @@ const CustomTimePicker = ({ value, onChange, placeholder, dropUp = false, classN
           </div>
 
           <div style={{ display: 'flex', gap: '0', height: '220px', padding: '4px 12px 12px' }}>
-            <div style={{
+            <div className="time-picker-col" style={{
               flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '3px',
               paddingRight: '6px', ...hideScrollbarStyle
             }}>
@@ -290,9 +290,9 @@ const CustomTimePicker = ({ value, onChange, placeholder, dropUp = false, classN
                     padding: '8px 0', textAlign: 'center', borderRadius: '10px', cursor: 'pointer',
                     fontSize: '0.95rem', fontWeight: tempHour === h ? 700 : 400,
                     transition: 'all 0.2s',
-                    background: tempHour === h ? 'rgba(0, 140, 255, 0.64)' : 'transparent',
-                    color: tempHour === h ? 'var(--white)' : 'var(--text-color)',
-                    border: tempHour === h ? '1px solid rgba(9, 14, 19, 0.74)' : '1px solid transparent',
+                    background: tempHour === h ? '#005fd2' : 'transparent',
+                    color: tempHour === h ? '#ffffff' : 'var(--text-color)',
+                    border: tempHour === h ? '1px solid rgba(0, 139, 255, 0.5)' : '1px solid transparent',
                   }}
                 >
                   {h}
@@ -306,7 +306,7 @@ const CustomTimePicker = ({ value, onChange, placeholder, dropUp = false, classN
               borderRadius: '2px'
             }}></div>
 
-            <div style={{
+            <div className="time-picker-col" style={{
               flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '3px',
               paddingLeft: '6px', ...hideScrollbarStyle
             }}>
@@ -321,9 +321,9 @@ const CustomTimePicker = ({ value, onChange, placeholder, dropUp = false, classN
                     padding: '8px 0', textAlign: 'center', borderRadius: '10px', cursor: 'pointer',
                     fontSize: '0.95rem', fontWeight: tempMin === m ? 700 : 400,
                     transition: 'all 0.2s',
-                    background: tempMin === m ? 'rgba(0, 140, 255, 0.64)' : 'transparent',
-                    color: tempMin === m ? 'var(--white)' : 'var(--text-color)',
-                    border: tempMin === m ? '1px solid rgba(9, 14, 19, 0.74)' : '1px solid transparent',
+                    background: tempMin === m ? '#005fd2' : 'transparent',
+                    color: tempMin === m ? '#ffffff' : 'var(--text-color)',
+                    border: tempMin === m ? '1px solid rgba(0, 139, 255, 0.5)' : '1px solid transparent',
                   }}
                 >
                   {m}
@@ -333,9 +333,6 @@ const CustomTimePicker = ({ value, onChange, placeholder, dropUp = false, classN
           </div>
         </div>
       )}
-      <style>{`
-        ::-webkit-scrollbar { width: 0px; background: transparent; }
-      `}</style>
     </div>
   );
 };
@@ -371,7 +368,16 @@ function EventCardItem({
   return (
     <div
       className="event-card"
+      role="button"
+      tabIndex={0}
+      aria-label={`Abrir detalhes de ${evento.titulo}`}
       onClick={() => onOpen(evento)}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onOpen(evento);
+        }
+      }}
       style={{ cursor: 'pointer' }}
     >
       <div className="event-card-icon">
