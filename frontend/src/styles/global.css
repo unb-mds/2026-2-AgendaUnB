@@ -826,6 +826,20 @@ body.light .custom-picker-option.active:hover { background: #006bc4; color: #fff
 .filter-pill:hover {
   border-color: var(--accent-color);
 }
+@media (max-width: 600px) {
+  .events-filters-label {
+    flex-basis: 100%;
+    margin-right: 0 !important;
+    margin-bottom: 2px;
+  }
+  .events-filters-bar > div {
+    width: 100% !important;
+    flex: 1 1 100%;
+  }
+  .events-filters-bar .filter-pill {
+    width: 100%;
+  }
+}
 
 /* Time Picker Items */
 .time-picker-item:hover {

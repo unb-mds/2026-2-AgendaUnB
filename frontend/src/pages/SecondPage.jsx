@@ -5,6 +5,13 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { eventsApi, toApiEvent, toUiEvent } from '../lib/api';
 import { formatEventSchedule } from '../lib/calendar';
+import {
+  clearStoredEventFilters,
+  getStoredEventFilters,
+  getStoredTheme,
+  setStoredEventFilters,
+  setStoredTheme,
+} from '../lib/preferences';
 import NavBar from '../components/NavBar';
 import EventCalendar from '../components/EventCalendar';
 import EventsLoading from '../components/EventsLoading';
@@ -20,11 +27,18 @@ const UNB_CAMPUSES = [
   { label: 'FAL', value: 'Fazenda Água Limpa (FAL)' },
 ];
 
-function EventError({ message, compact = false }) {
+function EventError({ message, compact = false, onRetry = null }) {
   const needsAccount = message.includes('Entre na sua conta');
   return <div role="alert" className={`event-error${needsAccount ? ' event-error-auth' : ''}${compact ? ' event-error-compact' : ''}`}>
     <p>{message}</p>
-    {needsAccount && <Link className="event-error-signup" to="/?auth=signup">Criar conta</Link>}
+    <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginLeft: 'auto', flexWrap: 'wrap' }}>
+      {onRetry && (
+        <button type="button" className="manage-button" onClick={onRetry}>
+          Tentar novamente
+        </button>
+      )}
+      {needsAccount && <Link className="event-error-signup" to="/?auth=signup">Criar conta</Link>}
+    </div>
   </div>;
 }
 
@@ -440,31 +454,35 @@ export default function SegundaPagina() {
   const [searchParams] = useSearchParams();
   const { user, profile, isProfessor, isAdmin } = useAuth();
 
-  // --- GERENCIAMENTO DE TEMA LOCAL ---
-  const [theme, setTheme] = useState(() => document.body.classList.contains('light') ? 'light' : 'dark');
+  // --- GERENCIAMENTO DE TEMA PERSISTENTE ---
+  const [theme, setTheme] = useState(() => getStoredTheme());
 
   useEffect(() => {
-    document.body.classList.remove('light', 'dark');
-    document.body.classList.add(theme);
+    setStoredTheme(theme);
   }, [theme]);
 
   const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark');
   const isDark = theme === 'dark';
 
-  // --- ESTADOS DA APLICAÇÃO ---
-  const initialVisao = searchParams.get('aba') === 'meus' ? 'MEUS' : 'Públicos';
+  // --- ESTADOS DA APLICAÇÃO (COM PERSISTÊNCIA DE FILTROS) ---
+  const savedFilters = useMemo(() => getStoredEventFilters(), []);
+  const urlAba = searchParams.get('aba');
+  const initialVisao = urlAba === 'meus' ? 'MEUS' : (urlAba === 'publicos' ? 'Públicos' : savedFilters.visaoEventos);
   const initialCachedPublic = initialVisao === 'Públicos' ? eventsApi.getCachedPublic() : null;
   const [eventos, setEventos] = useState(() => initialCachedPublic ? initialCachedPublic.map(event => toUiEvent(event)) : []);
   const [carregandoEventos, setCarregandoEventos] = useState(() => !initialCachedPublic);
   const [erroEventos, setErroEventos] = useState('');
+  const [reloadRevision, setReloadRevision] = useState(0);
 
   const [visaoEventos, setVisaoEventos] = useState(initialVisao);
-  const [modoVisualizacao, setModoVisualizacao] = useState('lista');
+  const [modoVisualizacao, setModoVisualizacao] = useState(savedFilters.modoVisualizacao);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [savingEvent, setSavingEvent] = useState(false);
   const savingEventRef = useRef(false);
   const [suggestionSuccess, setSuggestionSuccess] = useState('');
   const [eventoEmEdicao, setEventoEmEdicao] = useState(null);
+  const [eventoParaRemover, setEventoParaRemover] = useState(null);
+  const [removendoEvento, setRemovendoEvento] = useState(false);
   const [categoriesList, setCategoriesList] = useState(DEFAULT_CATEGORIES);
 
   // Estados do Modal
@@ -482,12 +500,25 @@ export default function SegundaPagina() {
   const [linkExterno, setLinkExterno] = useState('');
 
   // Estados dos Filtros
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filtroArea, setFiltroArea] = useState('');
-  const [filtroCampus, setFiltroCampus] = useState('');
-  const [filtroTurno, setFiltroTurno] = useState('');
-  const [filtroDataInicio, setFiltroDataInicio] = useState('');
-  const [filtroDataFim, setFiltroDataFim] = useState('');
+  const [searchQuery, setSearchQuery] = useState(savedFilters.searchQuery);
+  const [filtroArea, setFiltroArea] = useState(savedFilters.filtroArea);
+  const [filtroCampus, setFiltroCampus] = useState(savedFilters.filtroCampus);
+  const [filtroTurno, setFiltroTurno] = useState(savedFilters.filtroTurno);
+  const [filtroDataInicio, setFiltroDataInicio] = useState(savedFilters.filtroDataInicio);
+  const [filtroDataFim, setFiltroDataFim] = useState(savedFilters.filtroDataFim);
+
+  useEffect(() => {
+    setStoredEventFilters({
+      visaoEventos,
+      modoVisualizacao,
+      searchQuery,
+      filtroArea,
+      filtroCampus,
+      filtroTurno,
+      filtroDataInicio,
+      filtroDataFim,
+    });
+  }, [visaoEventos, modoVisualizacao, searchQuery, filtroArea, filtroCampus, filtroTurno, filtroDataInicio, filtroDataFim]);
 
   useEffect(() => {
     let active = true;
@@ -563,7 +594,7 @@ export default function SegundaPagina() {
     };
     loadEvents();
     return () => { active = false; };
-  }, [visaoEventos, visaoEventos === 'MEUS' ? user?.id : null]);
+  }, [visaoEventos, visaoEventos === 'MEUS' ? user?.id : null, reloadRevision]);
 
   // --- FUNÇÕES AUXILIARES ---
   const getTurnoByEvento = (evento) => {
@@ -671,6 +702,13 @@ export default function SegundaPagina() {
       }
       resetModal();
       setIsModalOpen(false);
+      setSuggestionSuccess(
+        eventoEmEdicao
+          ? 'Alterações no evento salvas com sucesso.'
+          : visibilidade === 'Público'
+            ? 'Evento público publicado na agenda.'
+            : 'Compromisso privado adicionado à sua agenda.',
+      );
     } catch (error) {
       setErroEventos(error.message || 'Não foi possível salvar o evento.');
     } finally {
@@ -696,20 +734,35 @@ export default function SegundaPagina() {
     setIsModalOpen(true);
   };
 
-  const handleRemoverEvento = async (evento) => {
+  const handleSolicitarRemocao = (evento) => {
+    setErroEventos('');
+    setEventoParaRemover(evento);
+  };
+
+  const handleConfirmarRemocao = async () => {
+    if (!eventoParaRemover || removendoEvento) return;
+    const evento = eventoParaRemover;
     const idParaRemover = evento.id;
+    setRemovendoEvento(true);
     try {
       setErroEventos('');
       if (visaoEventos === 'MEUS' && evento.salvoNaAgenda) {
         await eventsApi.removeSaved(idParaRemover);
+        setSuggestionSuccess(`"${evento.titulo}" foi removido dos seus eventos salvos.`);
       } else if (visaoEventos === 'MEUS') {
         await eventsApi.deletePersonal(idParaRemover);
+        setSuggestionSuccess(`Compromisso "${evento.titulo}" excluído da sua agenda.`);
       } else {
         await eventsApi.deletePublic(idParaRemover);
+        setSuggestionSuccess(`Evento público "${evento.titulo}" excluído do catálogo.`);
       }
       setEventos((current) => current.filter((event) => !(event.id === idParaRemover && event.visibilidade === evento.visibilidade)));
+      setEventoParaRemover(null);
     } catch (error) {
       setErroEventos(error.message || 'Não foi possível excluir o evento.');
+      setEventoParaRemover(null);
+    } finally {
+      setRemovendoEvento(false);
     }
   };
 
@@ -720,6 +773,7 @@ export default function SegundaPagina() {
     setFiltroTurno('');
     setFiltroDataInicio('');
     setFiltroDataFim('');
+    clearStoredEventFilters();
   };
 
   const hasActiveFilters = Boolean(
@@ -811,8 +865,8 @@ export default function SegundaPagina() {
             )}
           </div>
 
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center', zIndex: 11, position: 'relative' }}>
-            <span style={{ color: textMuted, fontSize: '0.9rem', fontWeight: 600, marginRight: '4px' }}>Filtros:</span>
+          <div className="events-filters-bar" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center', zIndex: 11, position: 'relative' }}>
+            <span className="events-filters-label" style={{ color: textMuted, fontSize: '0.9rem', fontWeight: 600, marginRight: '4px' }}>Filtros:</span>
 
             <CustomSelect
               options={areasOptions} value={filtroArea} onChange={setFiltroArea} placeholder="Todas as áreas"
@@ -887,7 +941,7 @@ export default function SegundaPagina() {
         </div>
 
         {erroEventos && (
-          <EventError message={erroEventos} />
+          <EventError message={erroEventos} onRetry={() => setReloadRevision(v => v + 1)} />
         )}
 
         {modoVisualizacao === 'calendario' ? (
@@ -904,18 +958,43 @@ export default function SegundaPagina() {
           <div style={{ textAlign: 'center', padding: '4rem 2rem', background: cardBg, borderRadius: '24px', border: `1px dashed ${borderColor}` }}>
             <span className="material-symbols-outlined" style={{ fontSize: '3rem', color: textMuted, marginBottom: '1rem' }}>event_busy</span>
             <h3 style={{ color: textColor, marginBottom: '0.5rem' }}>Nenhum evento encontrado</h3>
-            {hasActiveFilters && (
-              <button
-                type="button"
-                onClick={clearAllFilters}
-                style={{
-                  marginTop: '12px', padding: '10px 20px', borderRadius: '12px',
-                  background: accentColor, color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600,
-                }}
-              >
-                Limpar filtros
-              </button>
-            )}
+            <p style={{ color: textMuted, marginBottom: '1rem', fontSize: '0.95rem' }}>
+              {hasActiveFilters
+                ? 'Nenhum evento corresponde à combinação atual de filtros.'
+                : visaoEventos === 'MEUS'
+                  ? 'Você ainda não possui compromissos pessoais ou eventos salvos na sua agenda.'
+                  : 'Nenhum evento público cadastrado no momento.'}
+            </p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  onClick={clearAllFilters}
+                  style={{
+                    padding: '10px 20px', borderRadius: '12px',
+                    background: accentColor, color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600,
+                  }}
+                >
+                  Limpar filtros
+                </button>
+              )}
+              {user && !hasActiveFilters && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    resetModal();
+                    setVisibilidade(visaoEventos === 'MEUS' ? 'Privado' : (isProfessor || isAdmin ? 'Público' : 'Privado'));
+                    setIsModalOpen(true);
+                  }}
+                  style={{
+                    padding: '10px 20px', borderRadius: '12px',
+                    background: accentColor, color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600,
+                  }}
+                >
+                  Criar evento
+                </button>
+              )}
+            </div>
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))', gap: '20px' }}>
@@ -929,7 +1008,7 @@ export default function SegundaPagina() {
                 textColor={textColor}
                 onOpen={ev => navigate(`/evento/${ev.id}`, { state: { evento: ev } })}
                 onEdit={handleEditarEvento}
-                onRemove={handleRemoverEvento}
+                onRemove={handleSolicitarRemocao}
               />
             ))}
           </div>
@@ -1044,6 +1123,44 @@ export default function SegundaPagina() {
                 </button>
               </div>
             </form>
+        </Modal>
+      )}
+      {eventoParaRemover && (
+        <Modal
+          title={eventoParaRemover.salvoNaAgenda ? 'Remover dos meus eventos' : 'Confirmar exclusão'}
+          busy={removendoEvento}
+          onClose={() => { if (!removendoEvento) setEventoParaRemover(null); }}
+        >
+          <p className="dialog-event-title">{eventoParaRemover.titulo}</p>
+          <p className="management-muted" style={{ marginBottom: '16px' }}>
+            {visaoEventos === 'MEUS' && eventoParaRemover.salvoNaAgenda
+              ? 'Este evento público deixará de aparecer na sua agenda pessoal, mas continuará disponível no catálogo público.'
+              : visaoEventos === 'MEUS'
+                ? 'Este compromisso particular será excluído permanentemente da sua agenda.'
+                : 'Este evento público será excluído permanentemente do catálogo para toda a comunidade.'}
+          </p>
+          <footer className="dialog-actions">
+            <button
+              type="button"
+              className="manage-button"
+              disabled={removendoEvento}
+              onClick={() => setEventoParaRemover(null)}
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              className="manage-button primary"
+              disabled={removendoEvento}
+              onClick={handleConfirmarRemocao}
+            >
+              {removendoEvento
+                ? 'Processando…'
+                : eventoParaRemover.salvoNaAgenda
+                  ? 'Remover da agenda'
+                  : 'Confirmar exclusão'}
+            </button>
+          </footer>
         </Modal>
       )}
     </div>
