@@ -50,16 +50,18 @@ export const syllabusApi = {
   async confirm(id, candidates, options) {
     const {
       idempotencyKey = crypto.randomUUID(),
+      versionId,
       signal,
     } = typeof options === 'string'
       ? { idempotencyKey: options }
       : options && typeof options === 'object' && 'aborted' in options
         ? { signal: options }
         : (options || {});
+    const payload = versionId ? { versionId, candidates } : { candidates };
     const result = await syllabusRequest(`/${encodeURIComponent(id)}/confirm`, {
       method: 'POST',
       headers: { 'Idempotency-Key': idempotencyKey },
-      body: JSON.stringify({ candidates }),
+      body: JSON.stringify(payload),
       signal,
     });
     const requested = new Set(candidates.map(item => item.candidateId));
@@ -78,5 +80,47 @@ export const syllabusApi = {
       throw new Error('A resposta da confirmação não pôde ser verificada.');
     }
     return result.events;
+  },
+  async listVersions(syllabusId, signal) {
+    return syllabusRequest(`/${encodeURIComponent(syllabusId)}/versions`, { signal });
+  },
+  async voteVersion(syllabusId, versionId, value, signal) {
+    const body = typeof value === 'string' ? { value } : value;
+    return syllabusRequest(`/${encodeURIComponent(syllabusId)}/versions/${encodeURIComponent(versionId)}/vote`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+      signal,
+    });
+  },
+  async voteCandidate(syllabusId, versionId, candidateId, value, signal) {
+    return syllabusRequest(
+      `/${encodeURIComponent(syllabusId)}/versions/${encodeURIComponent(versionId)}/candidates/${encodeURIComponent(candidateId)}/vote`,
+      { method: 'PUT', body: JSON.stringify({ value }), signal },
+    );
+  },
+  async createRevision(syllabusId, payload, signal) {
+    return syllabusRequest(`/${encodeURIComponent(syllabusId)}/versions`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      signal,
+    });
+  },
+  async shareVersion(syllabusId, versionId, signal) {
+    return syllabusRequest(`/${encodeURIComponent(syllabusId)}/versions/${encodeURIComponent(versionId)}/sharing`, {
+      method: 'PUT',
+      signal,
+    });
+  },
+  async withdrawVersion(syllabusId, versionId, signal) {
+    return syllabusRequest(`/${encodeURIComponent(syllabusId)}/versions/${encodeURIComponent(versionId)}/sharing`, {
+      method: 'DELETE',
+      signal,
+    });
+  },
+  async withdrawCandidate(syllabusId, versionId, candidateId, signal) {
+    return syllabusRequest(
+      `/${encodeURIComponent(syllabusId)}/versions/${encodeURIComponent(versionId)}/candidates/${encodeURIComponent(candidateId)}`,
+      { method: 'DELETE', signal },
+    );
   },
 };

@@ -4,6 +4,7 @@ import { lazy, Suspense } from 'react'
 import App from './App.jsx'
 import SecondPage from './pages/SecondPage.jsx'
 import PaginaDeEvento from './pages/PaginaDeEvento.jsx'
+import { SemesterPlansProvider } from './contexts/SemesterPlansContext.jsx'
 import { AuthProvider } from './contexts/AuthContext.jsx'
 import { AUTH_RETURN_PATH } from './lib/auth.js'
 import './styles/global.css'
@@ -24,17 +25,19 @@ function LegacyEventsRedirect() {
 createRoot(document.getElementById('root')).render(
   <BrowserRouter>
     <AuthProvider>
-      <Suspense fallback={<div className="management-state" role="status">Carregando página…</div>}><Routes>
-        <Route path="/" element={<><SearchMetadata /><App /></>} />
-        <Route path={AUTH_RETURN_PATH} element={<AuthReturnPage />} />
-        <Route path="/eventos" element={<><SearchMetadata /><SecondPage /></>} />
-        <Route path="/segunda-pagina" element={<LegacyEventsRedirect />} />
-        <Route path="/plano-de-ensino" element={<><SearchMetadata /><TeachingPlanPage /></>} />
-        <Route path="/evento/:id" element={<PaginaDeEvento />} />
-        <Route path="/sugestoes" element={<><SearchMetadata /><ProtectedRoute roles={['professor', 'admin']}><SuggestionsPage /></ProtectedRoute></>} />
-        <Route path="/admin" element={<><SearchMetadata /><ProtectedRoute roles={['admin']}><AdminPage /></ProtectedRoute></>} />
-      </Routes></Suspense>
-      <Analytics />
+      <SemesterPlansProvider>
+        <Suspense fallback={<div className="management-state" role="status">Carregando página…</div>}><Routes>
+          <Route path="/" element={<><SearchMetadata /><App /></>} />
+          <Route path={AUTH_RETURN_PATH} element={<AuthReturnPage />} />
+          <Route path="/eventos" element={<><SearchMetadata /><SecondPage /></>} />
+          <Route path="/segunda-pagina" element={<LegacyEventsRedirect />} />
+          <Route path="/plano-de-ensino" element={<><SearchMetadata /><TeachingPlanPage /></>} />
+          <Route path="/evento/:id" element={<PaginaDeEvento />} />
+          <Route path="/sugestoes" element={<><SearchMetadata /><ProtectedRoute roles={['professor', 'admin']}><SuggestionsPage /></ProtectedRoute></>} />
+          <Route path="/admin" element={<><SearchMetadata /><ProtectedRoute roles={['admin']}><AdminPage /></ProtectedRoute></>} />
+        </Routes></Suspense>
+        <Analytics />
+      </SemesterPlansProvider>
     </AuthProvider>
   </BrowserRouter>
 )
