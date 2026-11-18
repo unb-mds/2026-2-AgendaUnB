@@ -561,6 +561,12 @@ export default function SegundaPagina() {
     const loadEvents = async () => {
       setErroEventos('');
       if (visaoEventos === 'MEUS') {
+        if (!user) {
+          setEventos([]);
+          setCarregandoEventos(false);
+          setErroEventos('Entre na sua conta para acessar seus eventos e compromissos.');
+          return;
+        }
         setCarregandoEventos(true);
         try {
           const [personal, saved] = await Promise.all([eventsApi.listPersonal(), eventsApi.listSaved()]);
@@ -1019,17 +1025,6 @@ export default function SegundaPagina() {
             ))}
           </div>
         )}
-
-        <div style={{ marginTop: '3.5rem' }}>
-          <Link to="/" style={{
-            display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 22px',
-            borderRadius: '999px', background: isDark ? '#1e293b' : '#e2e8f0', color: textColor,
-            textDecoration: 'none', fontWeight: 600, fontSize: '0.9rem'
-          }}>
-            <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>arrow_back</span>
-            Voltar para a Página Inicial
-          </Link>
-        </div>
       </main>
 
       {isModalOpen && (
