@@ -68,3 +68,10 @@ def test_masks_identity_documents_without_touching_academic_numbers(field, expec
 ])
 def test_masks_institutional_person_identifiers(field, expected):
     assert minimize(f"Período 2026/2 | {field} | CIC0004") == f"Período 2026/2 | {expected} | CIC0004"
+
+
+@pytest.mark.parametrize("date", ["01/02/1990", "1990-02-01", "1.2.90", "1 de março de 1990"])
+def test_masks_birth_date_only_in_personal_context(date):
+    assert minimize(f"Data de nascimento: {date} | Avaliação em {date}") == (
+        f"Data de nascimento: [identificador removido] | Avaliação em {date}"
+    )
