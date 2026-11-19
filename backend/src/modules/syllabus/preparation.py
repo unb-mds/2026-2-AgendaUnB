@@ -5,7 +5,6 @@ import json
 import logging
 import multiprocessing
 import os
-import re
 import time
 from datetime import datetime, timezone
 
@@ -16,6 +15,7 @@ from sqlalchemy import select, update
 from src.database.models import AssessmentCandidate, Syllabus, SyllabusVersion
 from src.modules.syllabus.versions import private_version
 from src.modules.syllabus.extraction import extract_pages
+from src.modules.syllabus.minimization import minimize
 from src.modules.syllabus.processing_config import ProcessingConfig, ProcessingError
 
 MAX_TEXT_BYTES = 40000
@@ -79,14 +79,6 @@ def checked_pages(pages):
 def text_hash(pages):
     snapshot = [{"pagina": page["pagina"], "texto": page["texto"]} for page in pages]
     return hashlib.sha256(json.dumps(snapshot, ensure_ascii=False, separators=(",", ":")).encode("utf-8")).hexdigest()
-
-
-def minimize(text):
-    text = re.sub(r"(?im)^(?:professor(?:a)?|docente|aluno(?:a)?|discente|nome|matr[ií]cula|cpf|nascimento)\s*[:=].*$", "[identificador removido]", text)
-    text = re.sub(r"[\w.+-]+@[\w.-]+\.[a-zA-Z]{2,}", "[email removido]", text)
-    text = re.sub(r"(?<!\d)(?:\d{3}[.]\d{3}[.]\d{3}-\d{2}|\d{9,11})(?!\d)", "[identificador removido]", text)
-    text = re.sub(r"(?:\+55\s*)?\(?\d{2}\)?[ -]\d{4,5}-\d{4}", "[telefone removido]", text)
-    return text
 
 
 def _prepare_child(send, content):
