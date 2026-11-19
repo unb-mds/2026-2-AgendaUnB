@@ -47,6 +47,9 @@ export const syllabusApi = {
   async get(id, signal) {
     return normalizePlan(await syllabusRequest(`/${encodeURIComponent(id)}`, { signal }));
   },
+  async remove(id, signal) {
+    return syllabusRequest(`/${encodeURIComponent(id)}`, { method: 'DELETE', signal });
+  },
   async confirm(id, candidates, options) {
     const {
       idempotencyKey = crypto.randomUUID(),

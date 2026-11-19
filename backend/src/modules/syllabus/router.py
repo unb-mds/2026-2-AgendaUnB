@@ -738,6 +738,43 @@ def confirm_syllabus_candidates(
 
 
 @router.delete(
+    "/{syllabus_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Remove um plano privado do usuário e suas datas extraídas",
+)
+def delete_syllabus(
+    syllabus_id: UUID,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Response:
+    syllabus = db.scalar(
+        select(Syllabus).where(Syllabus.id == syllabus_id, Syllabus.user_id == current_user.id).with_for_update()
+    )
+    if syllabus is None:
+        raise HTTPException(status_code=404, detail="Plano de ensino não encontrado.")
+    has_shared = db.scalar(
+        select(SyllabusVersion.id).where(
+            SyllabusVersion.syllabus_id == syllabus_id,
+            SyllabusVersion.visibility == "compartilhada",
+        ).limit(1)
+    )
+    if has_shared is not None:
+        raise HTTPException(
+            status_code=409,
+            detail="Retire o compartilhamento antes de remover este plano.",
+        )
+    db.execute(
+        SyllabusCandidate.__table__.delete().where(SyllabusCandidate.syllabus_id == syllabus_id)
+    )
+    db.execute(
+        SyllabusVersion.__table__.delete().where(SyllabusVersion.syllabus_id == syllabus_id)
+    )
+    db.delete(syllabus)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.delete(
     "/{syllabus_id}/candidates/{candidate_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Descarta um candidato de um plano privado",

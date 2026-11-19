@@ -1,49 +1,65 @@
 .semester-panel {
-  --semester-accent: #78c1ff;
-  --semester-text: #edf4ff;
-  --semester-muted: #afbed4;
-  --semester-surface: #131d2e;
-  --semester-field: #10192a;
-  --semester-line: #34425a;
-  --semester-control-line: #697f9e;
-  --semester-warn: #ffd18a;
-  --semester-error: #ffb3aa;
-  --semester-selection: #182c47;
+  --semester-accent: #52b8ff;
+  --semester-brand: #008bff;
+  --semester-primary: #006dc7;
+  --semester-primary-hover: #0077db;
+  --semester-text: #eaf1fb;
+  --semester-muted: #93a7c2;
+  --semester-surface: rgba(12, 18, 32, 0.78);
+  --semester-field: rgba(6, 12, 24, 0.68);
+  --semester-line: rgba(140, 174, 218, 0.14);
+  --semester-line-subtle: rgba(140, 174, 218, 0.09);
+  --semester-line-accent: rgba(0, 139, 255, 0.34);
+  --semester-control-line: rgba(140, 174, 218, 0.28);
+  --semester-glow: 0 4px 20px rgba(0, 139, 255, 0.09);
+  --semester-warn: #e58c7a;
+  --semester-error: #ef7e8c;
+  --semester-ok: #5cc9ba;
+  --semester-selection: rgba(255, 255, 255, 0.05);
+  --semester-tab-active: #101e36;
   color: var(--semester-text);
   display: grid;
-  gap: 16px;
+  gap: 18px;
 }
 body.light .semester-panel {
-  --semester-accent: #005bab;
-  --semester-text: #172740;
-  --semester-muted: #475871;
-  --semester-surface: #fff;
-  --semester-field: #f0f4f8;
-  --semester-line: #c6d1df;
-  --semester-control-line: #7b8da5;
-  --semester-warn: #774107;
-  --semester-error: #a52118;
-  --semester-selection: #eaf3fe;
+  --semester-accent: #0062b8;
+  --semester-brand: #008bff;
+  --semester-primary: #006dc7;
+  --semester-primary-hover: #0059a8;
+  --semester-text: #1b283e;
+  --semester-muted: #52637c;
+  --semester-surface: #ffffff;
+  --semester-field: #f4f7fb;
+  --semester-line: rgba(21, 34, 56, 0.12);
+  --semester-line-subtle: rgba(21, 34, 56, 0.08);
+  --semester-line-accent: rgba(0, 139, 255, 0.38);
+  --semester-control-line: rgba(21, 34, 56, 0.24);
+  --semester-glow: 0 4px 18px rgba(0, 139, 255, 0.08);
+  --semester-warn: #b3442e;
+  --semester-error: #a9283b;
+  --semester-ok: #167469;
+  --semester-selection: #eef3f9;
+  --semester-tab-active: #ffffff;
 }
 .semester-panel [hidden] { display: none !important; }
 .semester-panel :is(p, small) { overflow-wrap: anywhere; }
 .semester-panel :is(p, small, label) { line-height: 1.5; }
 .semester-panel :is(summary, button, input, select, textarea, a):focus-visible {
-  outline: 2px solid var(--semester-accent);
+  outline: 2px solid var(--semester-brand);
   outline-offset: 3px;
 }
-.semester-panel ::selection { background: var(--semester-accent); color: var(--semester-field); }
+.semester-panel ::selection { background: var(--semester-primary); color: #fff; }
 .semester-panel :is(select, textarea, input:where(:not([type="checkbox"], [type="file"]))) {
   min-width: 0;
   max-width: 100%;
   min-height: 42px;
   padding: 8px 10px;
   border: 1px solid var(--semester-line);
-  border-radius: 8px;
+  border-radius: 10px;
   color: var(--semester-text);
   background: var(--semester-field);
   font: inherit;
-  caret-color: var(--semester-accent);
+  caret-color: var(--semester-brand);
 }
 .semester-panel :is(select, input[type="date"], input[type="time"]) { color-scheme: dark; }
 body.light .semester-panel :is(select, input[type="date"], input[type="time"]) { color-scheme: light; }
@@ -54,7 +70,7 @@ body.light .semester-panel :is(select, input[type="date"], input[type="time"]) {
   cursor: pointer;
   text-overflow: ellipsis;
 }
-.semester-panel select:enabled:hover { border-color: var(--semester-accent); }
+.semester-panel select:enabled:hover { border-color: var(--semester-brand); }
 .semester-panel select:disabled { cursor: not-allowed; }
 .semester-panel .material-symbols-outlined {
   display: inline-block;
@@ -64,17 +80,151 @@ body.light .semester-panel :is(select, input[type="date"], input[type="time"]) {
   line-height: 1;
   overflow: hidden;
 }
-.semester-panel input[type="checkbox"] { accent-color: #005ec3; inline-size: 19px; block-size: 19px; flex: 0 0 auto; margin: 0; }
+.semester-panel input[type="checkbox"] { accent-color: var(--semester-primary); inline-size: 19px; block-size: 19px; flex: 0 0 auto; margin: 0; }
 .semester-panel button, .semester-panel summary, .semester-panel .management-text-button { min-height: 42px; }
 .semester-panel .management-text-button { color: var(--semester-accent); }
 .semester-panel .management-text-button:hover { text-decoration: underline; text-underline-offset: .2em; }
 .semester-panel .manage-button { max-width: 100%; white-space: normal; }
-.semester-panel .manage-button.primary { background: #005ec3; color: #fff; }
-.semester-panel .manage-button.primary:not(:disabled):hover { background: #004f9f; }
-.semester-panel h2 { margin: 0; font-size: 1.12rem; letter-spacing: .005em; }
+.semester-panel .manage-button.primary { background: var(--semester-primary); color: #fff; border-color: transparent; }
+.semester-panel .manage-button.primary:not(:disabled):hover {
+  background: var(--semester-primary-hover);
+  box-shadow: 0 4px 20px rgba(0, 139, 255, 0.22);
+}
+.semester-panel .manage-button.primary:disabled {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--semester-muted);
+  border-color: var(--semester-line);
+  opacity: 1;
+}
+body.light .semester-panel .manage-button.primary:disabled {
+  background: #e2e8f0;
+  color: #475569;
+  border-color: var(--semester-line);
+  opacity: 1;
+}
+body.light .semester-panel :is(.semester-step-btn, .semester-metrics, .semester-section, .semester-workspace-tabs) {
+  backdrop-filter: none;
+}
+.semester-panel h2 {
+  margin: 0;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: .02em;
+  line-height: 1.35;
+}
 .semester-panel h3 { margin: 0; }
 .semester-panel :is(.semester-muted, small) { color: var(--semester-muted); }
 .semester-panel .semester-error { color: var(--semester-error); }
+
+/* 2-Step Header & Period Bar */
+.semester-header-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 12px 16px;
+}
+.semester-stepper {
+  flex: 1 1 520px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  min-width: 0;
+}
+.semester-step-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  min-height: 58px;
+  padding: 10px 14px;
+  border: 1px solid var(--semester-line);
+  border-radius: 14px;
+  background: var(--semester-surface);
+  backdrop-filter: blur(8px);
+  color: var(--semester-text);
+  text-align: left;
+  cursor: pointer;
+}
+.semester-step-btn:hover {
+  border-color: var(--semester-line-accent);
+}
+.semester-step-btn.is-active {
+  border-color: var(--semester-brand);
+  box-shadow: var(--semester-glow);
+}
+.semester-step-num {
+  display: grid;
+  place-items: center;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--semester-control-line);
+  background: var(--semester-field);
+  color: var(--semester-muted);
+  font-family: 'Orbitron', sans-serif;
+  font-size: .85rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.semester-step-btn.is-active .semester-step-num {
+  border-color: transparent;
+  background: var(--semester-primary);
+  color: #fff;
+}
+.semester-step-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+.semester-step-copy strong {
+  font-family: 'Orbitron', sans-serif;
+  font-size: .88rem;
+  letter-spacing: .02em;
+  line-height: 1.3;
+}
+.semester-step-copy small {
+  font-size: .8rem;
+  font-variant-numeric: tabular-nums;
+}
+.semester-period-wrap {
+  display: flex;
+  align-items: stretch;
+  flex: 0 0 auto;
+}
+.semester-period-wrap .custom-select {
+  display: flex;
+  align-items: stretch;
+}
+.semester-panel .semester-toolbar-period.custom-select-trigger {
+  min-inline-size: min(220px, 100%);
+  min-height: 58px;
+  height: 100%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border-color: var(--semester-line);
+  background: var(--semester-surface);
+}
+.semester-panel .semester-toolbar-period.custom-select-trigger:hover:not(:disabled) {
+  border-color: var(--semester-line-accent);
+}
+
+/* Step 1: Class Selection & Followed List */
+.semester-step-classes {
+  display: grid;
+  gap: 18px;
+}
+.semester-followed-panel .semester-section-heading {
+  margin-bottom: 10px;
+}
+
+/* Step 2: Date Organization Layout & Metrics */
+#semester-step-dates {
+  display: grid;
+  gap: 16px;
+}
 .semester-toolbar, .semester-section-heading, .semester-selection, .semester-pagination,
 .semester-offer-context, .semester-confirm, .semester-result,
 .semester-filters, .semester-filter-buttons {
@@ -83,15 +233,17 @@ body.light .semester-panel :is(select, input[type="date"], input[type="time"]) {
   align-items: center;
   gap: 10px 14px;
 }
-.semester-toolbar-period { min-inline-size: min(220px, 100%); }
 .semester-metrics {
   list-style: none;
-  padding: 12px 0;
+  padding: 12px 14px;
   margin: 0;
   display: flex;
   flex-wrap: wrap;
   gap: 12px 24px;
-  border-block: 1px solid var(--semester-line);
+  border: 1px solid var(--semester-line);
+  border-radius: 12px;
+  background: var(--semester-surface);
+  backdrop-filter: blur(8px);
   color: var(--semester-muted);
   font-size: .87rem;
   font-variant-numeric: tabular-nums;
@@ -99,15 +251,130 @@ body.light .semester-panel :is(select, input[type="date"], input[type="time"]) {
 .semester-metrics li { display: flex; gap: 6px; align-items: center; }
 .semester-metrics strong { color: var(--semester-text); }
 .semester-metrics .material-symbols-outlined { color: var(--semester-accent); font-size: 18px; }
-.semester-layout { display: grid; grid-template-columns: minmax(240px, 300px) minmax(0, 1fr); gap: 16px; }
-.semester-section { min-width: 0; padding: clamp(14px, 2vw, 22px); border: 1px solid var(--semester-line); border-radius: 14px; background: var(--semester-surface); }
+.semester-metrics li.is-auth .material-symbols-outlined { color: var(--semester-brand); }
+.semester-metrics li.is-attention .material-symbols-outlined { color: var(--semester-warn); }
+.semester-metrics li.is-added .material-symbols-outlined { color: var(--semester-ok); }
+.semester-layout { display: grid; grid-template-columns: minmax(250px, 310px) minmax(0, 1fr); gap: 16px; align-items: start; }
+.semester-section {
+  min-width: 0;
+  padding: clamp(14px, 2vw, 22px);
+  border: 1px solid var(--semester-line);
+  border-radius: 14px;
+  background: var(--semester-surface);
+  backdrop-filter: blur(8px);
+}
 .semester-section-heading { justify-content: space-between; margin-bottom: 12px; }
 .semester-section-heading p { margin: 4px 0 0; color: var(--semester-muted); }
+.semester-queue-heading-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.semester-reset-send-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 1px solid var(--semester-line);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--semester-muted);
+  font: inherit;
+  font-size: .8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color .15s ease, color .15s ease, background-color .15s ease;
+}
+.semester-reset-send-btn .material-symbols-outlined {
+  font-size: 16px;
+}
+.semester-reset-send-btn:hover:not(:disabled) {
+  border-color: var(--semester-line-accent);
+  background: var(--semester-field);
+  color: var(--semester-text);
+}
+.semester-reset-send-btn:focus-visible {
+  outline: 2px solid var(--semester-brand);
+  outline-offset: 2px;
+}
+.semester-reset-send-btn:disabled {
+  opacity: .48;
+  cursor: not-allowed;
+}
 .semester-queue-toggle { display: none; }
-.semester-plan-offer { display: grid; gap: 4px; margin-block-end: 14px; }
+.semester-plan-offer { display: grid; gap: 6px; margin-block-end: 14px; }
 .semester-plan-offer > .management-text-button { justify-self: start; }
 .semester-content { min-width: 0; display: flex; flex-direction: column; gap: 12px; }
 .semester-review { flex: auto; }
+
+/* Segmented Tabs (PlanQueue Input Mode & Step 2 Workspace Tabs) */
+.semester-input-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 12px;
+  border: 1px solid var(--semester-line);
+  border-radius: 12px;
+  background: var(--semester-field);
+}
+.semester-input-tabs button,
+.semester-workspace-tabs button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--semester-muted);
+  font: inherit;
+  font-size: .82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.semester-input-tabs button {
+  white-space: nowrap;
+}
+.semester-input-tabs button .material-symbols-outlined,
+.semester-workspace-tabs button .material-symbols-outlined {
+  font-size: 18px;
+}
+.semester-input-tabs button:hover:not(.is-active),
+.semester-workspace-tabs button:hover:not(.is-active) {
+  color: var(--semester-text);
+}
+.semester-input-tabs button.is-active,
+.semester-workspace-tabs button.is-active {
+  background: var(--semester-tab-active);
+  border-color: var(--semester-line-accent);
+  color: var(--semester-text);
+}
+.semester-input-tabs button.is-active .material-symbols-outlined,
+.semester-workspace-tabs button.is-active .material-symbols-outlined {
+  color: var(--semester-accent);
+}
+.semester-workspace-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 5px;
+  border: 1px solid var(--semester-line);
+  border-radius: 14px;
+  background: var(--semester-surface);
+  backdrop-filter: blur(8px);
+}
+.semester-workspace-tabs button {
+  flex: 1 1 200px;
+  min-height: 42px;
+  font-size: .88rem;
+  font-variant-numeric: tabular-nums;
+}
+
 .semester-drop {
   display: grid;
   gap: 8px;
@@ -115,12 +382,16 @@ body.light .semester-panel :is(select, input[type="date"], input[type="time"]) {
   padding: 12px;
   border: 1px dashed var(--semester-line);
   border-radius: 10px;
+  background: var(--semester-field);
 }
 .semester-drop > #semester-add-pdfs { justify-self: stretch; }
-.semester-drop.is-dragging { outline: 2px solid var(--semester-accent); background: var(--semester-selection); }
+.semester-drop.is-dragging {
+  border-color: var(--semester-brand);
+  box-shadow: var(--semester-glow);
+}
 .semester-panel .semester-field { display: grid; gap: 5px; font-size: .875rem; min-width: 0; }
 .semester-raw, .semester-queue-list, .semester-preview form { display: grid; gap: 10px; }
-.semester-raw { margin-block-start: 16px; padding-block: 16px; border-block-start: 1px solid var(--semester-line); }
+.semester-raw { padding-top: 2px; }
 .semester-upload-consent { margin-block: 12px; font-size: .875rem; }
 .semester-panel .custom-select-trigger { padding: 10px 12px; font: inherit; }
 .semester-panel .custom-select-trigger, .semester-panel .custom-select-popup { background: var(--semester-field); }
@@ -128,7 +399,12 @@ body.light .semester-panel :is(select, input[type="date"], input[type="time"]) {
 .semester-queue-list, .semester-candidates { list-style: none; padding: 0; margin: 12px 0 0; }
 .semester-queue-list:empty { display: none; }
 .semester-queue-list li { display: grid; gap: 6px; border-top: 1px solid var(--semester-line); padding: 10px 0 0; }
-.semester-queue-list li.is-current > .semester-queue-line { padding: 6px; border-radius: 8px; background: var(--semester-selection); }
+.semester-queue-list li.is-current > .semester-queue-line {
+  padding: 8px;
+  border: 1px solid var(--semester-line-accent);
+  border-radius: 10px;
+  background: var(--semester-selection);
+}
 .semester-queue-line { display: flex; align-items: flex-start; gap: 8px; min-width: 0; }
 .semester-queue-line > div { flex-grow: 1; min-width: 0; overflow-wrap: anywhere; }
 .semester-queue-line :is(strong, small) { display: block; }
@@ -140,7 +416,7 @@ body.light .semester-panel :is(select, input[type="date"], input[type="time"]) {
 .semester-preview textarea, .semester-raw textarea { resize: vertical; }
 .semester-preview form > button { justify-self: start; }
 .semester-capacity {
-  --capacity-fill: var(--semester-accent);
+  --capacity-fill: var(--semester-brand);
   display: grid;
   gap: 8px;
   min-width: 0;
@@ -169,26 +445,35 @@ body.light .semester-panel :is(select, input[type="date"], input[type="time"]) {
   .semester-capacity progress { appearance: auto; }
 }
 .semester-filters select { margin-inline-start: auto; }
-.semester-filter-buttons button[aria-pressed="true"] { background: var(--semester-selection); color: var(--semester-text); border-color: var(--semester-line); }
+.semester-filter-buttons button[aria-pressed="true"] {
+  background: var(--semester-tab-active);
+  color: var(--semester-text);
+  border-color: var(--semester-line-accent);
+}
 .semester-selection { margin-top: 12px; justify-content: space-between; font-size: .875rem; }
 .semester-selection label { display: flex; align-items: center; min-height: 42px; gap: 8px; }
 .semester-bulk-edit form { display: flex; align-items: end; flex-wrap: wrap; gap: 8px; padding-bottom: 8px; }
-.semester-candidate { border-top: 1px solid var(--semester-line); }
+.semester-candidate { border-top: 1px solid var(--semester-line-subtle); }
 .semester-candidate-summary {
   display: grid;
   grid-template-columns: 22px minmax(0, 1fr) minmax(124px, .38fr) 76px 42px;
-  gap: 8px;
-  align-items: center;
-  padding-block: 9px;
+  gap: 8px 14px;
+  align-items: start;
+  padding-block: 13px;
 }
-.semester-candidate-summary > button { grid-column: 5; }
+.semester-candidate-summary > input[type="checkbox"] { margin-top: 3px; }
+.semester-candidate-summary > button { grid-column: 5; margin-top: -6px; }
 .semester-candidate-title, .semester-candidate-date { min-width: 0; overflow-wrap: anywhere; }
 .semester-candidate-summary :is(strong, small) { display: block; }
-.semester-candidate-date { grid-column: 3; font-variant-numeric: tabular-nums; font-size: .875rem; }
-.semester-candidate-summary .semester-status { grid-column: 4; }
+.semester-candidate-title strong { font-weight: 500; font-size: .935rem; line-height: 1.48; color: var(--semester-text); }
+.semester-candidate-title small { margin-top: 3px; font-size: .8rem; color: var(--semester-muted); }
+.semester-candidate-date { grid-column: 3; font-variant-numeric: tabular-nums; font-size: .86rem; }
+.semester-candidate-date strong { font-weight: 600; color: #ffffff; }
+.semester-candidate-date small { font-size: .78rem; margin-top: 2px; }
+.semester-candidate-summary .semester-status { grid-column: 4; padding-top: 2px; }
 .semester-status { color: var(--semester-muted); font-size: .8rem; }
-.semester-status.attention { color: var(--semester-warn); font-weight: 650; }
-.semester-candidate-detail { padding: 0 8px 12px 30px; }
+.semester-status.attention { color: var(--semester-warn); font-weight: 500; }
+.semester-candidate-detail { padding: 0 8px 14px 30px; }
 .semester-candidate-detail blockquote { margin: 4px 0 12px; padding: 8px 12px; border-inline-start: 1px solid var(--semester-line); overflow-wrap: anywhere; white-space: pre-wrap; }
 .semester-edit-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 10px 0; }
 .semester-candidate-summary .manage-icon-button { width: 42px; }
@@ -255,12 +540,15 @@ body.light .semester-panel :is(select, input[type="date"], input[type="time"]) {
   background: var(--semester-field);
 }
 .semester-empty-steps li.is-done {
-  border-color: var(--semester-accent);
+  border-color: var(--semester-line-accent);
 }
 .semester-empty-steps li > .material-symbols-outlined {
   color: var(--semester-accent);
   font-size: 19px;
   margin-top: 2px;
+}
+.semester-empty-steps li.is-done > .material-symbols-outlined {
+  color: var(--semester-ok);
 }
 .semester-empty-steps strong {
   display: block;
@@ -290,6 +578,9 @@ body.light .semester-panel :is(select, input[type="date"], input[type="time"]) {
   background-color: var(--semester-field);
   min-width: 0;
 }
+.semester-review > .halftone-pet-stage {
+  margin-top: 12px;
+}
 .halftone-pet-canvas-wrap {
   display: grid;
   justify-items: center;
@@ -303,77 +594,66 @@ body.light .semester-panel :is(select, input[type="date"], input[type="time"]) {
   image-rendering: pixelated;
   shape-rendering: crispEdges;
 }
-.pixel-cat-o {
-  fill: #2c3c56;
+.pixel-cat-o { fill: #2c3c56; }
+.pixel-cat-k { fill: #06090f; }
+.pixel-cat-s { fill: #172133; }
+.pixel-cat-h { fill: #1c283b; }
+.pixel-cat-i { fill: #2a3a55; }
+.pixel-cat-w { fill: #5a7398; }
+.pixel-cat-n { fill: #3c4f6e; }
+.pixel-cat-f { fill: #1a2639; }
+body.light .pixel-cat-o { fill: #05080d; }
+body.light .pixel-cat-k { fill: #121a28; }
+body.light .pixel-cat-s { fill: #26344b; }
+body.light .pixel-cat-h { fill: #2a3a52; }
+body.light .pixel-cat-i { fill: #3e5170; }
+body.light .pixel-cat-w { fill: #3a4a62; }
+body.light .pixel-cat-n { fill: #4a5d78; }
+body.light .pixel-cat-f { fill: #d3dce8; }
+.pixel-cat-eye-top { fill: #0077e6; }
+.pixel-cat-eye-iris { fill: #00c8ff; }
+.pixel-cat-eye-glow { fill: #7ef4ff; }
+body.light .pixel-cat-eye-top { fill: #005ec3; }
+body.light .pixel-cat-eye-iris { fill: #00a2eb; }
+body.light .pixel-cat-eye-glow { fill: #6ee6ff; }
+.pixel-cat-eye-pupil { fill: #050811; }
+.pixel-cat-eye-glint { fill: #ffffff; }
+.pixel-cat-toy { transform-origin: 28.5px 20px; }
+@media (prefers-reduced-motion: no-preference) {
+  .halftone-pet-svg { --nyx-play-cycle: 2.4s; }
+  .pixel-cat-toy { animation: nyx-toss var(--nyx-play-cycle) ease-in-out infinite; }
+  .pixel-cat-bat { animation: nyx-bat var(--nyx-play-cycle) step-end infinite; }
+  .pixel-cat-kick { animation: nyx-kick var(--nyx-play-cycle) step-end infinite; }
 }
-.pixel-cat-k {
-  fill: #06090f;
+@keyframes nyx-toss {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  9% { transform: translate(-1px, 1px) rotate(-9deg); }
+  16% { transform: translate(0, -2px) rotate(16deg); animation-timing-function: ease-out; }
+  32% { transform: translate(2px, -7px) rotate(92deg); animation-timing-function: ease-in; }
+  49% { transform: translate(3px, -1px) rotate(174deg); }
+  56% { transform: translate(4px, 1px) rotate(186deg); }
+  64% { transform: translate(2px, -2px) rotate(207deg); animation-timing-function: ease-out; }
+  78% { transform: translate(0, -6px) rotate(275deg); animation-timing-function: ease-in; }
+  95% { transform: translate(-1px, -1px) rotate(351deg); }
+  100% { transform: translate(0, 0) rotate(360deg); }
 }
-.pixel-cat-s {
-  fill: #172133;
+@keyframes nyx-bat {
+  0%, 100% { transform: translateX(0); }
+  8% { transform: translateX(-50px); }
+  16% { transform: translateX(-100px); }
+  29% { transform: translateX(-150px); }
+  44% { transform: translateX(-200px); }
+  80% { transform: translateX(-250px); }
 }
-.pixel-cat-h {
-  fill: #1c283b;
-}
-.pixel-cat-i {
-  fill: #2a3a55;
-}
-.pixel-cat-w {
-  fill: #5a7398;
-}
-.pixel-cat-n {
-  fill: #3c4f6e;
-}
-.pixel-cat-f {
-  fill: #1a2639;
-}
-body.light .pixel-cat-o {
-  fill: #05080d;
-}
-body.light .pixel-cat-k {
-  fill: #121a28;
-}
-body.light .pixel-cat-s {
-  fill: #26344b;
-}
-body.light .pixel-cat-h {
-  fill: #2a3a52;
-}
-body.light .pixel-cat-i {
-  fill: #3e5170;
-}
-body.light .pixel-cat-w {
-  fill: #3a4a62;
-}
-body.light .pixel-cat-n {
-  fill: #4a5d78;
-}
-body.light .pixel-cat-f {
-  fill: #d3dce8;
-}
-.pixel-cat-eye-top {
-  fill: #0077e6;
-}
-.pixel-cat-eye-iris {
-  fill: #00c8ff;
-}
-.pixel-cat-eye-glow {
-  fill: #7ef4ff;
-}
-body.light .pixel-cat-eye-top {
-  fill: #005ec3;
-}
-body.light .pixel-cat-eye-iris {
-  fill: #00a2eb;
-}
-body.light .pixel-cat-eye-glow {
-  fill: #6ee6ff;
-}
-.pixel-cat-eye-pupil {
-  fill: #050811;
-}
-.pixel-cat-eye-glint {
-  fill: #ffffff;
+@keyframes nyx-kick {
+  0%, 100% { transform: translateX(0); }
+  15% { transform: translateX(-50px); }
+  32% { transform: translateX(-100px); }
+  46% { transform: translateX(-150px); }
+  56% { transform: translateX(-200px); }
+  64% { transform: translateX(-250px); }
+  79% { transform: translateX(-150px); }
+  90% { transform: translateX(-50px); }
 }
 .halftone-pet-trigger {
   display: inline-flex;
@@ -390,7 +670,7 @@ body.light .pixel-cat-eye-glow {
   cursor: pointer;
 }
 .halftone-pet-trigger:hover {
-  border-color: var(--semester-accent);
+  border-color: var(--semester-brand);
 }
 .halftone-pet-speech {
   margin: 0;
@@ -431,6 +711,17 @@ body.light .pixel-cat-eye-glow {
   .semester-queue-toggle { display: inline-flex; }
   .semester-queue-collapsed { display: none; }
   .semester-queue-list { grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr)); }
+}
+@media (max-width: 600px) {
+  .semester-stepper { grid-template-columns: minmax(0, 1fr); }
+  .semester-period-wrap,
+  .semester-period-wrap .custom-select,
+  .semester-panel .semester-toolbar-period.custom-select-trigger {
+    min-width: 100%;
+    width: 100%;
+    min-height: 48px;
+    height: auto;
+  }
 }
 @media (max-width: 520px) {
   .semester-candidate-summary { grid-template-columns: 20px minmax(0, 1fr) 42px; }
@@ -489,45 +780,54 @@ body.light .pixel-cat-eye-glow {
 .semester-offer-info { flex: 1; min-width: 0; display: grid; gap: 2px; font-size: .875rem; overflow-wrap: anywhere; }
 .semester-offer-info > span { color: var(--semester-muted); }
 .semester-offer-schedule { display: flex; align-items: center; gap: 6px; font-size: .875rem; font-variant-numeric: tabular-nums; }
-.semester-catalog-selection { border-block: 1px solid var(--semester-line); margin-block: 20px; padding-block: 16px; }
+.semester-catalog-selection {
+  border: 1px solid var(--semester-line-accent);
+  border-radius: 14px;
+  background: var(--semester-field);
+  box-shadow: var(--semester-glow);
+  margin-block: 20px;
+  padding: 16px;
+}
 .semester-catalog-selection .semester-section-heading { margin: 0; }
-.semester-catalog-selection p { font-size: .8rem; margin-block: 12px; }
-.semester-selected-offers { display: flex; flex-wrap: wrap; gap: 8px 24px; list-style: none; padding: 0; margin: 8px 0; }
-.semester-selected-offers li { display: flex; gap: 12px; align-items: center; font-size: .875rem; min-width: 0; }
+.semester-catalog-selection p { font-size: .8rem; margin-block: 10px 12px; }
+.semester-selected-offers { display: flex; flex-wrap: wrap; gap: 8px 20px; list-style: none; padding: 0; margin: 10px 0; }
+.semester-selected-offers li { display: flex; gap: 10px; align-items: center; font-size: .875rem; min-width: 0; }
 .semester-selected-offers li > span { overflow-wrap: anywhere; }
 .semester-selected-offers small { display: block; }
-
-.semester-followed {
-  margin-block-start: 20px;
-  border: 1px solid var(--semester-line);
-  border-radius: 12px;
-}
-.semester-followed > summary {
-  display: flex;
-  align-items: center;
+.semester-catalog-feedback {
+  display: grid;
   gap: 10px;
-  min-height: 48px;
-  padding: 10px 14px;
-  border-radius: 11px;
-  font-weight: 600;
-  list-style: none;
+  margin-top: 16px;
 }
-.semester-followed > summary::-webkit-details-marker { display: none; }
-.semester-followed > summary:hover, .semester-followed[open] > summary { background: var(--semester-field); }
-.semester-followed[open] > summary { border-end-start-radius: 0; border-end-end-radius: 0; }
-.semester-followed > summary .material-symbols-outlined { color: var(--semester-accent); font-size: 20px; }
-.semester-followed > summary .material-symbols-outlined:last-child { margin-inline-start: auto; }
-.semester-followed[open] > summary .material-symbols-outlined:last-child { transform: rotate(180deg); }
-.semester-followed-list { margin: 0; padding: 0 14px; list-style: none; }
+.semester-catalog-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--semester-line-accent);
+  border-radius: 12px;
+  background: var(--semester-field);
+}
+.semester-catalog-status-row p {
+  margin: 0;
+  color: var(--semester-text);
+  font-size: .9rem;
+  font-weight: 500;
+}
+
+/* Step 1 Followed Classes List */
+.semester-followed-list { margin: 0; padding: 0; list-style: none; }
 .semester-followed-list > li {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   gap: 12px 24px;
-  padding-block: 16px;
+  padding-block: 14px;
+  border-top: 1px solid var(--semester-line);
 }
-.semester-followed-list > li + li { border-block-start: 1px solid var(--semester-line); }
 .semester-followed-info { flex: 1 1 280px; min-width: 0; }
 .semester-followed-info h3 { margin-block-end: 4px; font-size: 1rem; line-height: 1.4; overflow-wrap: anywhere; }
 .semester-followed-info p { margin: 0; color: var(--semester-muted); font-size: .875rem; }
@@ -540,11 +840,11 @@ body.light .pixel-cat-eye-glow {
   color: var(--semester-warn);
 }
 .semester-followed-warning .material-symbols-outlined { align-self: center; font-size: 16px; }
-.semester-followed-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 12px; }
-.semester-followed-actions .semester-unfollow { padding-inline: 4px; border-color: transparent; color: var(--semester-muted); }
+.semester-followed-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; }
+.semester-followed-actions .semester-unfollow { padding-inline: 8px; border-color: transparent; color: var(--semester-muted); }
 .semester-unfollow .material-symbols-outlined { color: var(--semester-accent); }
 .semester-followed-actions .semester-unfollow:enabled:hover { color: var(--semester-text); text-decoration: underline; }
-.semester-followed-empty { margin: 0; padding: 14px; color: var(--semester-muted); font-size: .875rem; }
+.semester-followed-empty { margin: 4px 0 0; color: var(--semester-muted); font-size: .9rem; }
 
 @media (max-width: 900px) {
   .semester-catalog-form { grid-template-columns: 112px minmax(0, 1fr); }
@@ -553,26 +853,14 @@ body.light .pixel-cat-eye-glow {
 }
 @media (max-width: 520px) {
   .semester-unit-filter { grid-column: 1 / -1; }
-}
-@media (max-width: 520px) {
   .semester-offer-option { display: grid; grid-template-columns: 19px minmax(0, 1fr); gap: 6px 10px; }
   .semester-offer-schedule { grid-column: 2; }
+  .semester-catalog-selection { position: static; }
   .semester-catalog-selection > button { width: 100%; }
   .semester-subject-count { max-width: 90px; }
 }
 .semester-catalog, .semester-catalog :is(h2, summary, input, select, button) { scroll-margin-top: 100px; }
 .semester-offer-schedule { overflow-wrap: anywhere; min-width: 0; }
-
-@media (prefers-reduced-motion: no-preference) {
-  #semester-catalog:not([hidden]) > .semester-catalog {
-    animation: semester-catalog-reveal 220ms cubic-bezier(.16, 1, .3, 1);
-  }
-
-  @keyframes semester-catalog-reveal {
-    from { clip-path: inset(0 0 12px 0 round 14px); opacity: .82; }
-    to { clip-path: inset(0 round 14px); opacity: 1; }
-  }
-}
 
 /* Guest notice */
 .semester-guest {
@@ -602,6 +890,9 @@ body.light .pixel-cat-eye-glow {
   display: grid;
   gap: 14px;
 }
+.shared-plans-section .semester-confirm {
+  position: static;
+}
 .shared-offer-picker select {
   max-width: min(320px, 100%);
 }
@@ -611,7 +902,7 @@ body.light .pixel-cat-eye-glow {
   align-items: center;
   gap: 10px 14px;
   padding: 12px 14px;
-  border: 1px solid var(--semester-warn);
+  border: 1px solid var(--semester-line);
   border-radius: 10px;
   background: var(--semester-field);
 }
@@ -654,38 +945,35 @@ body.light .pixel-cat-eye-glow {
   align-items: center;
   gap: 6px 8px;
 }
+/* Quieter neutral badges with subtle semantic status dots */
 .shared-badge {
   display: inline-flex;
   align-items: center;
+  gap: 6px;
   padding: 3px 9px;
   border-radius: 999px;
   border: 1px solid var(--semester-line);
   background: var(--semester-field);
   color: var(--semester-muted);
-  font-size: .78rem;
-  font-weight: 600;
+  font-size: .76rem;
+  font-weight: 500;
+  letter-spacing: .01em;
 }
-.shared-badge.is-default {
-  border-color: var(--semester-accent);
-  color: var(--semester-accent);
+.shared-badge::before {
+  content: "";
+  inline-size: 6px;
+  block-size: 6px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  background: var(--semester-muted);
 }
-.shared-badge.is-role-professor {
-  border-color: #82d9b5;
-  color: #82d9b5;
-}
-.shared-badge.is-role-admin {
-  border-color: var(--semester-warn);
-  color: var(--semester-warn);
-}
-.shared-badge.is-verified {
-  border-color: #82d9b5;
-  color: #82d9b5;
-}
-.shared-badge.is-divergent {
-  border-color: var(--semester-warn);
-  color: var(--semester-warn);
-}
-.shared-notice,
+.shared-badge.is-default::before { background: var(--semester-brand); }
+.shared-badge.is-role-professor::before,
+.shared-badge.is-verified::before { background: var(--semester-ok); }
+.shared-badge.is-role-admin::before,
+.shared-badge.is-divergent::before { background: var(--semester-warn); }
+.shared-badge.is-community::before { background: var(--semester-muted); }
+
 .shared-publish-box {
   display: flex;
   flex-wrap: wrap;
@@ -697,7 +985,6 @@ body.light .pixel-cat-eye-glow {
   border-radius: 10px;
   background: var(--semester-field);
 }
-.shared-notice p,
 .shared-publish-box p,
 .shared-divergence-note {
   margin: 0;
@@ -723,6 +1010,37 @@ body.light .pixel-cat-eye-glow {
 .shared-plan-details-sharing h3 {
   font-size: .95rem;
 }
+.shared-personal-adjust {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 12px;
+  border: 1px solid var(--semester-line);
+  border-radius: 10px;
+  background: var(--semester-field);
+}
+.shared-personal-adjust > button {
+  justify-self: start;
+}
+.shared-personal-note {
+  margin: 0;
+  color: var(--semester-muted);
+  font-size: .82rem;
+}
+.shared-community-bar {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--semester-line);
+}
+.shared-community-label {
+  color: var(--semester-muted);
+  font-size: .75rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
 .shared-candidate-votes {
   display: flex;
   flex-wrap: wrap;
@@ -731,11 +1049,6 @@ body.light .pixel-cat-eye-glow {
 .shared-candidate-votes button.is-contested {
   border-color: var(--semester-error);
   color: var(--semester-error);
-}
-body.light .shared-badge.is-role-professor,
-body.light .shared-badge.is-verified {
-  border-color: #176b4a;
-  color: #176b4a;
 }
 .shared-version-attribution,
 .shared-version-source {
@@ -817,7 +1130,7 @@ body.light .shared-badge.is-verified {
   background: var(--semester-field);
 }
 .shared-version-history-list li.is-current {
-  border-color: var(--semester-accent);
+  border-color: var(--semester-line-accent);
   background: var(--semester-selection);
 }
 .shared-history-info {

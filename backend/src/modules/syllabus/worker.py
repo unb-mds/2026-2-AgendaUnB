@@ -48,6 +48,8 @@ def worker_ready_to_spawn() -> bool:
 def spawn_worker_drain() -> bool:
     """Inicia um worker independente em --drain quando a execução automática está ativa."""
     global _ACTIVE_WORKER
+    if os.getenv("SYLLABUS_DAEMON_ACTIVE", "false").lower() == "true":
+        return False
     if not worker_ready_to_spawn():
         return False
     with _SPAWN_LOCK:

@@ -5,7 +5,7 @@ const TIPS = [
   'EM BREVE - pergunte ao Nyx',
   'Provas sem horário no PDF recebem automaticamente o horário da sua turma no catálogo.',
   'Trabalhos e entregas sem horário entram como dia inteiro na sua agenda.',
-  'Você também pode importar datas já revisadas por colegas na biblioteca da turma abaixo.',
+  'Você também pode importar datas já revisadas por colegas na aba Planos compartilhados da turma.',
 ];
 
 // Grade em pixels (cada unidade do viewBox = 1 pixel da arte).
@@ -142,6 +142,194 @@ const TAIL_POSES = [
 
 const EYES = [20, 30]; // colunas centrais dos olhos
 
+function renderRects(rects) {
+  return rects.map(rect => (
+    <rect key={rect.key} x={rect.x} y={rect.y} width={rect.w} height={1} className={`pixel-cat-${rect.code}`} />
+  ));
+}
+
+// Sprite da pose deitada. A borda de um pixel usa a mesma regra do Nyx sentado.
+function recliningSprite(rows, left, top) {
+  const filled = new Set();
+  const details = new Map();
+  rows.forEach((row, dy) => {
+    [...row].forEach((pixel, dx) => {
+      if (pixel === '.') return;
+      const cell = key(left + dx, top + dy);
+      filled.add(cell);
+      if (pixel !== '#') details.set(cell, pixel);
+    });
+  });
+  return toRects(new Map([...classify(filled), ...details]));
+}
+
+const PLAY_HEAD = recliningSprite([
+  '...............#',
+  '..............##',
+  '.............#i##',
+  '............#ii##',
+  '...........######',
+  '.........#########',
+  '.###...###########',
+  '.#ii######hh#######',
+  '..#ii####hh########',
+  '..##################',
+  '...#################',
+  '...###############wwww',
+  '...############n####',
+  '....##########nn###www',
+  '....ww########n####',
+  '.www##############',
+  '......ww#########',
+  '...www..#######',
+], 0, 13);
+
+const PLAY_BODY = recliningSprite([
+  '..........................######',
+  '.........................###hh###',
+  '....######..............#########',
+  '....#######............###########',
+  '.....########.........############',
+  '.....##########.....####s#########',
+  '.....##################s##########',
+  '......#################s##########',
+  '......##################s#########',
+  '......###################ss######',
+  '.......##########################',
+  '.......##########################',
+  '.......#########################',
+  '........##########hhhhh#########',
+  '.........#####################',
+], 7, 26);
+
+// As patas distantes aparecem acima do ombro e da anca. O tronco cobre as bases.
+const FAR_FOREPAW = recliningSprite([
+  '....###',
+  '...#hh##',
+  '...#####',
+  '...####',
+  '...###',
+  '..####',
+  '..###',
+  '.####',
+  '.####',
+  '#####',
+  '#####',
+  '#####',
+  '.####',
+  '..###',
+], 17, 18);
+
+const FAR_HINDPAW = recliningSprite([
+  '.###',
+  '#hh##',
+  '#####',
+  '.####',
+  '..#####',
+  '..#####',
+  '..#####',
+  '.######',
+  '#######',
+  '#######',
+  '######',
+  '######',
+], 33, 18);
+
+// Cada pose mantém o ombro fixo. O pulso muda a curva e a ponta arredondada
+// engrossa a silhueta da patinha, sempre na mesma grade do rosto.
+function buildPaw(shoulder, wrist, toes) {
+  const filled = new Set();
+  for (let y = 15; y <= 38; y += 1) {
+    for (let x = 16; x <= 42; x += 1) {
+      for (let frame = 0; frame <= 24; frame += 1) {
+        const t = frame / 24;
+        const u = 1 - t;
+        const cx = u * u * shoulder[0] + 2 * u * t * wrist[0] + t * t * toes[0];
+        const cy = u * u * shoulder[1] + 2 * u * t * wrist[1] + t * t * toes[1];
+        const radius = 2.1 + .8 * u * u + 1.1 * t ** 5;
+        if ((x + .5 - cx) ** 2 + (y + .5 - cy) ** 2 <= radius ** 2) {
+          filled.add(key(x, y));
+          break;
+        }
+      }
+    }
+  }
+  const grid = classify(filled);
+  setIfInterior(grid, toes[0] - 1, toes[1] - 1, 'h');
+  setIfInterior(grid, toes[0], toes[1] - 1, 'h');
+  return toRects(grid);
+}
+
+const FRONT_PAW = [
+  [[21, 28], [26, 25]], [[24, 30], [28, 26]], [[21, 25], [27, 20]],
+  [[20, 26], [26, 22]], [[21, 30], [25, 26]], [[22, 29], [25, 25]],
+].map(([wrist, toes]) => buildPaw([20, 34], wrist, toes));
+const BACK_PAW = [
+  [[41, 26], [36, 24]], [[41, 27], [37, 25]], [[41, 28], [38, 26]],
+  [[42, 24], [36, 22]], [[41, 27], [37, 24]], [[39, 23], [33, 20]],
+].map(([wrist, toes]) => buildPaw([38, 33], wrist, toes));
+
+function PawFrames({ poses, className }) {
+  return <svg width={WIDTH} height={HEIGHT} overflow="hidden">
+    <g className={className}>{poses.map((rects, index) => (
+      <g key={index} transform={`translate(${index * WIDTH} 0)`}>{renderRects(rects)}</g>
+    ))}</g>
+  </svg>;
+}
+
+function CatEyes({ blinking, step }) {
+  return (
+    <g className="pixel-cat-eyes">
+      {EYES.map(cx => (blinking ? (
+        <rect key={cx} x={cx - 2} y={12} width={5} height={1} className="pixel-cat-eye-top" />
+      ) : (
+        <g key={cx}>
+          <rect x={cx - 1} y={10} width={3} height={1} className="pixel-cat-eye-top" />
+          <rect x={cx - 2} y={11} width={5} height={2} className="pixel-cat-eye-iris" />
+          <rect x={cx - 1} y={13} width={3} height={1} className="pixel-cat-eye-glow" />
+          <rect x={cx + step} y={10} width={1} height={3} className="pixel-cat-eye-pupil" />
+          <rect x={cx - 1 + step} y={11} width={1} height={1} className="pixel-cat-eye-glint" />
+        </g>
+      )))}
+    </g>
+  );
+}
+
+function PlayingCat({ tailIdx }) {
+  return <>
+    <path className="pixel-cat-f" d="M15 41h24v1H15z M19 42h16v1H19z" />
+    <g className="pixel-cat-tail" transform="translate(52 -4) scale(-1 1)">
+      {renderRects(TAIL_POSES[tailIdx])}
+    </g>
+    <g opacity=".82">
+      <g>{renderRects(FAR_FOREPAW)}</g>
+      <g>{renderRects(FAR_HINDPAW)}</g>
+    </g>
+    {renderRects(PLAY_BODY)}
+    <PawFrames poses={BACK_PAW} className="pixel-cat-kick" />
+    <g transform="translate(1 2)">
+      {renderRects(PLAY_HEAD)}
+      {[[8, 25], [16, 22]].map(([x, y]) => (
+        <g key={x} transform={`translate(${x} ${y})`}>
+          <path className="pixel-cat-eye-top" d="M-1 -1h3v1h-3z" />
+          <path className="pixel-cat-eye-iris" d="M-2 0h5v2h-5z" />
+          <path className="pixel-cat-eye-glow" d="M-1 2h3v1h-3z" />
+          <path className="pixel-cat-eye-pupil" d="M1 0h1v2H1z" />
+          <path className="pixel-cat-eye-glint" d="M0 0h1v1H0z" />
+        </g>
+      ))}
+    </g>
+    <g className="pixel-cat-toy">
+      <path fill="#164987" d="M23 12h11v2h-1v3h-1v2h-2v2h2v2h1v3h1v2H23v-2h1v-3h1v-2h2v-2h-2v-2h-1v-3h-1z" />
+      <path fill="#102540" d="M25 14h7v3h-1v1h-2v4h2v1h1v3h-7v-3h1v-1h2v-4h-2v-1h-1z" />
+      <path fill="#369dff" d="M26 15h5v1h-1v1h-3v-1h-1z M28 20h1v1h-1z M28 23h1v1h2v1h1v1h-7v-1h2v-1h1z" />
+      <path fill="#008bff" d="M23 12h11v2H23z M23 26h11v2H23z" />
+      <path fill="#88caff" d="M24 12h4v1h-4z M24 26h3v1h-3z M25 14h1v2h-1z" />
+    </g>
+    <PawFrames poses={FRONT_PAW} className="pixel-cat-bat" />
+  </>;
+}
+
 export default function HalftonePet({ mode = 'idle' }) {
   const stageRef = useRef(null);
   const [lookStep, setLookStep] = useState(0);
@@ -150,11 +338,13 @@ export default function HalftonePet({ mode = 'idle' }) {
   const [chirpIndex, setChirpIndex] = useState(0);
   const [excited, setExcited] = useState(false);
 
+  const processing = mode === 'processing';
+
   const reducedMotion = () => typeof window === 'undefined'
     || window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
 
   useEffect(() => {
-    if (reducedMotion()) return undefined;
+    if (processing || reducedMotion()) return undefined;
     const handleMove = event => {
       const rect = stageRef.current?.getBoundingClientRect();
       if (!rect) return;
@@ -163,24 +353,34 @@ export default function HalftonePet({ mode = 'idle' }) {
     };
     window.addEventListener('pointermove', handleMove, { passive: true });
     return () => window.removeEventListener('pointermove', handleMove);
-  }, []);
+  }, [processing]);
 
   useEffect(() => {
-    if (reducedMotion()) return undefined;
-    const id = setInterval(() => setTailIdx(current => (current + 1) % TAIL_POSES.length),
-      excited || mode === 'processing' ? 180 : 420);
-    return () => clearInterval(id);
-  }, [excited, mode]);
+    const preference = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let timer;
+    const sync = () => {
+      clearInterval(timer);
+      if (preference.matches) return;
+      timer = setInterval(() => setTailIdx(current => (current + 1) % TAIL_POSES.length),
+        excited && !processing ? 180 : 420);
+    };
+    sync();
+    preference.addEventListener('change', sync);
+    return () => {
+      clearInterval(timer);
+      preference.removeEventListener('change', sync);
+    };
+  }, [excited, processing]);
 
   useEffect(() => {
-    if (reducedMotion()) return undefined;
+    if (processing || reducedMotion()) return undefined;
     let closeTimer;
     const cycle = setInterval(() => {
       setBlinking(true);
       closeTimer = setTimeout(() => setBlinking(false), 160);
     }, 4800);
     return () => { clearInterval(cycle); clearTimeout(closeTimer); };
-  }, []);
+  }, [processing]);
 
   useEffect(() => {
     if (!excited) return undefined;
@@ -202,10 +402,6 @@ export default function HalftonePet({ mode = 'idle' }) {
     setChirpIndex(current => (current + 1) % TIPS.length);
   };
 
-  const renderRects = rects => rects.map(rect => (
-    <rect key={rect.key} x={rect.x} y={rect.y} width={rect.w} height={1} className={`pixel-cat-${rect.code}`} />
-  ));
-
   return (
     <div ref={stageRef} className={`halftone-pet-stage is-${mode}${excited ? ' is-excited' : ''}`}>
       <div className="halftone-pet-canvas-wrap">
@@ -216,24 +412,14 @@ export default function HalftonePet({ mode = 'idle' }) {
           aria-hidden="true"
           focusable="false"
         >
-          <g className="pixel-cat-tail">{renderRects(TAIL_POSES[tailIdx])}</g>
-          <g className="pixel-cat-body">{renderRects(BODY_RECTS)}</g>
-          <g className="pixel-cat-eyes">
-            {EYES.map(cx => (blinking ? (
-              <rect key={cx} x={cx - 2} y={12} width={5} height={1} className="pixel-cat-eye-top" />
-            ) : (
-              <g key={cx}>
-                <rect x={cx - 1} y={10} width={3} height={1} className="pixel-cat-eye-top" />
-                <rect x={cx - 2} y={11} width={5} height={2} className="pixel-cat-eye-iris" />
-                <rect x={cx - 1} y={13} width={3} height={1} className="pixel-cat-eye-glow" />
-                <rect x={cx + step} y={10} width={1} height={3} className="pixel-cat-eye-pupil" />
-                <rect x={cx - 1 + step} y={11} width={1} height={1} className="pixel-cat-eye-glint" />
-              </g>
-            )))}
-          </g>
+          {processing ? <PlayingCat tailIdx={tailIdx} /> : <>
+            <g className="pixel-cat-tail">{renderRects(TAIL_POSES[tailIdx])}</g>
+            <g className="pixel-cat-body">{renderRects(BODY_RECTS)}</g>
+            <CatEyes blinking={blinking} step={step} />
+          </>}
         </svg>
 
-        <button
+        {!processing && <button
           type="button"
           className="halftone-pet-trigger"
           onClick={interact}
@@ -241,7 +427,7 @@ export default function HalftonePet({ mode = 'idle' }) {
         >
           <Icon>auto_awesome</Icon>
           <span>Dica do Nyx</span>
-        </button>
+        </button>}
       </div>
 
       <p className="halftone-pet-speech">

@@ -49,7 +49,7 @@ ifeq ($(wildcard $(VENV_DIR)/bin/python),$(VENV_DIR)/bin/python)
     PIP         := $(VENV_BIN)/pip
 endif
 
-.PHONY: all help setup dev run stop down db-start db-stop db-reset db-status db-migrate db-check backend frontend docs test test-backend clean check-env check-backend check-frontend events-collect events-collect-daemon
+.PHONY: all help setup dev run stop down db-start db-stop db-reset db-status db-migrate db-check backend frontend docs test test-backend clean check-env check-backend check-frontend events-collect events-collect-daemon syllabus-check syllabus-worker syllabus-worker-once
 
 # Alvo padrao: exibe ajuda com os comandos disponiveis
 all: help
@@ -62,7 +62,7 @@ help:
 	@echo "======================================================================"
 	@echo " Agenda UnB - Comandos de Automacao (Make)"
 	@echo "======================================================================"
-	@echo "  make dev          - Sobe Banco (Supabase), Backend e Frontend juntos"
+	@echo "  make dev          - Sobe Banco (Supabase), Backend, Frontend e Worker Gemini juntos"
 	@echo "  make setup        - Instala todas as dependencias e configura o .env"
 	@echo "  make stop         - Encerra os containers do banco de dados (Supabase)"
 	@echo ""
@@ -82,6 +82,11 @@ help:
 	@echo " Coleta de Eventos (Agenda UnB Notícias - #75):"
 	@echo "  make events-collect        - Executa uma rodada do coletor de eventos"
 	@echo "  make events-collect-daemon - Executa o coletor em modo continuo (daemon)"
+	@echo ""
+	@echo " Extracao de Planos de Ensino (Gemini - #51):"
+	@echo "  make syllabus-check       - Valida RLS/privacidade e configuracao Gemini local"
+	@echo "  make syllabus-worker      - Executa o worker de planos em modo continuo (daemon)"
+	@echo "  make syllabus-worker-once - Processa um item da fila de planos (--once)"
 	@echo ""
 	@echo " Qualidade e Testes:"
 	@echo "  make test         - Executa a suite de testes automatizados"
@@ -107,13 +112,17 @@ check-backend:
 	@"$(PYTHON)" -m pip install -r "$(ROOT_DIR)/backend/requirements-dev.txt"
 
 check-frontend:
-	@echo "[INFO] Sincronizando dependencias do Frontend..."
-	@cd "$(ROOT_DIR)/frontend" && npm ci --no-audit --no-fund
+	@if [ ! -f "$(ROOT_DIR)/frontend/node_modules/vite/bin/vite.js" ]; then \
+		echo "[INFO] Instalando dependencias do Frontend..."; \
+		cd "$(ROOT_DIR)/frontend" && npm ci --no-audit --no-fund; \
+	fi
 
 # ------------------------------------------------------------------------------
 # Setup Completo
 # ------------------------------------------------------------------------------
-setup: check-env check-backend check-frontend
+setup: check-env check-backend
+	@echo "[INFO] Sincronizando dependencias do Frontend..."
+	@cd "$(ROOT_DIR)/frontend" && npm ci --no-audit --no-fund
 	@echo "[SETUP] Iniciando configuracao completa do ambiente..."
 	@echo "[SETUP] Inicializando banco de dados Supabase..."
 	@"$(PYTHON)" "$(ROOT_DIR)/scripts/start_supabase.py"
@@ -129,6 +138,7 @@ run: dev
 dev: check-env check-backend check-frontend db-start
 	@$(MAKE) db-migrate
 	@$(MAKE) db-check
+	@$(MAKE) syllabus-check
 	@"$(PYTHON)" "$(ROOT_DIR)/scripts/dev.py" --backend-port $(BACKEND_PORT) --frontend-port $(FRONTEND_PORT)
 
 # ------------------------------------------------------------------------------
@@ -136,6 +146,7 @@ dev: check-env check-backend check-frontend db-start
 # ------------------------------------------------------------------------------
 backend: check-env check-backend
 	@$(MAKE) db-check
+	@$(MAKE) syllabus-check
 	@echo "[INFO] Iniciando Backend FastAPI na porta $(BACKEND_PORT)..."
 	@cd "$(ROOT_DIR)/backend" && "$(PYTHON)" -m uvicorn src.main:app --host 127.0.0.1 --port $(BACKEND_PORT)
 
@@ -185,6 +196,23 @@ events-collect: check-backend
 events-collect-daemon: check-backend
 	@echo "[COLLECT] Executando coletor de eventos em modo continuo/daemon..."
 	@cd "$(ROOT_DIR)/backend" && PYTHONPATH=. "$(PYTHON)" -m src.modules.events.collector --daemon $(COLLECT_ARGS)
+
+# ------------------------------------------------------------------------------
+# Extracao de Planos de Ensino (Gemini)
+# ------------------------------------------------------------------------------
+syllabus-check: check-env
+	@if [ ! -f "$(PYTHON)" ]; then $(MAKE) check-backend; fi
+	@cd "$(ROOT_DIR)/backend" && PYTHONPATH=. "$(PYTHON)" -m src.modules.syllabus.privacy
+
+syllabus-worker: check-env
+	@if [ ! -f "$(PYTHON)" ]; then $(MAKE) check-backend; fi
+	@echo "[WORKER] Executando worker de planos de ensino em modo continuo (daemon)..."
+	@cd "$(ROOT_DIR)/backend" && PYTHONPATH=. "$(PYTHON)" -m src.modules.syllabus.worker
+
+syllabus-worker-once: check-env
+	@if [ ! -f "$(PYTHON)" ]; then $(MAKE) check-backend; fi
+	@echo "[WORKER] Executando uma rodada do worker de planos de ensino (--once)..."
+	@cd "$(ROOT_DIR)/backend" && PYTHONPATH=. "$(PYTHON)" -m src.modules.syllabus.worker --once
 
 stop: db-stop
 	@echo "[OK] Todos os servicos foram paralisados."

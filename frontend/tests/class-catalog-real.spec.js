@@ -2,9 +2,12 @@ import { test, expect } from '@playwright/test';
 import { makeOffer, setupSemester } from './fixtures/semester.js';
 
 const catalog = page => page.getByRole('region', { name: 'Catálogo de turmas' });
+const followedSection = page => page.getByRole('region', { name: /Suas turmas/ });
 async function openCatalog(page) {
   await page.goto('/plano-de-ensino');
-  await page.getByRole('button', { name: 'Buscar turmas', exact: true }).click();
+  if (!(await catalog(page).isVisible())) {
+    await page.getByRole('button', { name: /Selecionar turmas/ }).click();
+  }
 }
 
 test('vínculo persiste na recarga, abre a biblioteca e pode ser removido', async ({ page }) => {
@@ -18,14 +21,15 @@ test('vínculo persiste na recarga, abre a biblioteca e pode ser removido', asyn
   await catalog(page).getByRole('button', { name: 'Seguir 1 turma selecionada', exact: true }).click();
   await expect(catalog(page).getByText('Turma seguida')).toBeVisible();
   await page.reload();
-  await page.getByRole('button', { name: 'Buscar turmas', exact: true }).click();
-  await catalog(page).getByText('Minhas turmas (1)').click();
-  await page.getByRole('link', { name: 'Ver planos da turma' }).click();
+  await page.getByRole('button', { name: /Selecionar turmas/ }).click();
+  await expect(followedSection(page).getByRole('heading', { name: 'Suas turmas (1)' })).toBeVisible();
+  await followedSection(page).getByRole('link', { name: 'Ver planos da turma' }).click();
   await expect(page).toHaveURL(/oferta=class-1/);
   await expect(page.getByRole('heading', { name: 'Planos compartilhados da turma' })).toBeVisible();
   await expect(page.getByText(/Ainda não há plano compartilhado nesta oferta/)).toBeVisible();
-  await page.getByRole('button', { name: 'Deixar de seguir' }).click();
-  await expect(catalog(page).getByText('Minhas turmas (0)')).toBeVisible();
+  await page.getByRole('button', { name: /Selecionar turmas/ }).click();
+  await followedSection(page).getByRole('button', { name: 'Deixar de seguir' }).click();
+  await expect(followedSection(page).getByRole('heading', { name: 'Suas turmas (0)' })).toBeVisible();
 });
 
 test('primeira carga 503 recupera automaticamente; busca vazia informa o resultado', async ({ page }) => {
@@ -77,6 +81,7 @@ test('visitante recebe convite de login sem demonstração nem acesso a planos',
   await expect(page.getByRole('link', { name: 'Criar conta' })).toHaveAttribute('href', '/?auth=signup');
   await expect(page.getByText(/demonstração/i)).toHaveCount(0);
   await expect(page.locator('input[type="file"]')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Selecionar turmas/ })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Buscar turmas' })).toHaveCount(0);
   expect(calls).toEqual([]);
 });
@@ -103,8 +108,9 @@ for (const width of [360, 768, 1365]) for (const theme of ['dark', 'light']) {
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.screenshot({ fullPage: true, path: testInfo.outputPath(`catalog-${width}-${theme}.png`) });
-    await page.getByRole('button', { name: 'Fechar catálogo', exact: true }).click();
-    await page.getByRole('button', { name: 'Buscar turmas', exact: true }).click();
+    const stepper = page.getByRole('navigation', { name: 'Etapas dos planos de ensino' });
+    await stepper.getByRole('button', { name: /Organizar datas/ }).click();
+    await stepper.getByRole('button', { name: /Selecionar turmas/ }).click();
     await expect(catalog(page).getByRole('checkbox', { name: 'Selecionar turma 02 de Estruturas de Dados 1', exact: true })).toBeChecked();
     await catalog(page).getByRole('searchbox').fill('CIC0090');
     await catalog(page).getByRole('searchbox').press('Enter');
