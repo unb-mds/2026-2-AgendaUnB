@@ -143,6 +143,9 @@ export function toUiEvent(event, isPersonal = false) {
 
   const horarioInicio = isAllDay ? 'Dia inteiro' : (startParts?.time || '');
   const horarioFim = !isAllDay && endParts?.time ? endParts.time : '';
+  const clicksCount = typeof event.outbound_clicks_count === 'number'
+    ? event.outbound_clicks_count
+    : (typeof event.interessados_count === 'number' ? event.interessados_count : 0);
 
   return {
     id: event.id,
@@ -165,6 +168,7 @@ export function toUiEvent(event, isPersonal = false) {
     organizadorFoto: event.organizer_avatar || null,
     fonte: event.source || '',
     fonteUrl: event.source_url || '',
+    interessadosCount: clicksCount,
     origem: event.origin || null,
     visibilidade: isPersonal ? 'Privado' : 'Público',
     criadoPorMim: isPersonal,
@@ -186,7 +190,7 @@ export function toApiEvent({
 }) {
   const cleanTitle = titulo?.trim() || '';
   if (!data) {
-    throw new Error('Informe uma data e um horário válidos.');
+    throw new Error('Selecione uma data para o evento.');
   }
 
   const basePayload = {
@@ -203,11 +207,12 @@ export function toApiEvent({
     if (inclusiveEnd < data.trim()) {
       throw new Error('A data de término não pode ser anterior à data de início.');
     }
+    const exclusiveEnd = addCivilDays(inclusiveEnd, 1);
     return {
       ...basePayload,
       all_day: true,
       start_date: data.trim(),
-      end_date: addCivilDays(inclusiveEnd, 1),
+      end_date: exclusiveEnd,
     };
   }
 
@@ -227,7 +232,10 @@ export function toApiEvent({
   if (hasExplicitEnd) {
     const effectiveEndTime = (horarioFim && horarioFim.trim()) ? horarioFim.trim() : horario.trim();
     const endsAt = new Date(`${targetEndDate}T${effectiveEndTime}:00-03:00`);
-    if (Number.isNaN(endsAt.getTime()) || endsAt.getTime() <= startsAt.getTime()) {
+    if (Number.isNaN(endsAt.getTime())) {
+      throw new Error('Informe uma data e um horário de término válidos.');
+    }
+    if (endsAt.getTime() <= startsAt.getTime()) {
       throw new Error('O horário de término deve ser posterior ao início.');
     }
     endsAtIso = endsAt.toISOString();
@@ -235,6 +243,7 @@ export function toApiEvent({
 
   return {
     ...basePayload,
+    all_day: false,
     starts_at: startsAt.toISOString(),
     ...(endsAtIso ? { ends_at: endsAtIso } : {}),
   };

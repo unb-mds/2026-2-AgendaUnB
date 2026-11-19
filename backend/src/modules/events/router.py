@@ -1,22 +1,34 @@
 from datetime import datetime
 from typing import Annotated
+from urllib.parse import urlparse
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Query, Response
-from sqlalchemy import func, select
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
 from src.database.connection import get_db
-from src.database.models import Campus, Category, PersonalEvent, PublicEvent, SavedPublicEvent
-from src.middlewares.auth import CurrentUser, get_current_user, require_event_manager
+from src.database.models import (
+    Campus,
+    Category,
+    EventOutboundClick,
+    PersonalEvent,
+    PublicEvent,
+    SavedPublicEvent,
+)
+from src.middlewares.auth import CurrentUser, get_current_user, require_admin, require_event_manager
 from src.modules.events.schemas import (
+    CategoryCreate,
+    CategoryRead,
     EventCreate,
     EventRead,
     EventUpdate,
+    OutboundClickCreate,
+    OutboundClickRead,
     PersonalEventCreate,
-    PersonalEventRead,
     PersonalEventOriginRead,
+    PersonalEventRead,
     PersonalEventUpdate,
     SavedEventStatus,
 )
@@ -61,6 +73,13 @@ def _check_date_range(start_date: datetime | None, end_date: datetime | None) ->
         )
 
 
+def _is_valid_http_url(url: str | None) -> bool:
+    if not url or not url.strip():
+        return False
+    parsed = urlparse(url.strip())
+    return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
+
+
 def _public_read(event: PublicEvent) -> EventRead:
     return EventRead(
         id=event.id,
@@ -79,6 +98,7 @@ def _public_read(event: PublicEvent) -> EventRead:
         organizer_avatar=event.author.avatar_url if event.author else None,
         source=event.source,
         source_url=event.source_url,
+        outbound_clicks_count=event.outbound_clicks_count or 0,
     )
 
 
@@ -106,6 +126,65 @@ def _personal_read(event: PersonalEvent) -> PersonalEventRead:
             else None
         ),
     )
+
+
+def _category_read(category: Category) -> CategoryRead:
+    return CategoryRead(
+        id=category.id,
+        name=category.nome,
+        color=category.cor or "#008bff",
+    )
+
+
+@router.get("/categories", response_model=list[CategoryRead])
+def list_categories(db: Session = Depends(get_db)) -> list[CategoryRead]:
+    categories = db.scalars(
+        select(Category).order_by(func.lower(Category.nome).asc(), Category.id.asc())
+    ).all()
+    return [_category_read(category) for category in categories]
+
+
+@router.post("/categories", response_model=CategoryRead, status_code=201)
+def create_category(
+    payload: CategoryCreate,
+    db: Session = Depends(get_db),
+    _: CurrentUser = Depends(require_admin),
+) -> CategoryRead:
+    existing = db.scalar(
+        select(Category.id).where(func.lower(Category.nome) == payload.name.strip().lower())
+    )
+    if existing is not None:
+        raise HTTPException(status_code=409, detail="Já existe uma categoria com este nome")
+    category = Category(nome=payload.name.strip(), cor=payload.color)
+    db.add(category)
+    db.commit()
+    db.refresh(category)
+    return _category_read(category)
+
+
+@router.delete("/categories/{category_id}", status_code=204)
+def delete_category(
+    category_id: UUID,
+    db: Session = Depends(get_db),
+    _: CurrentUser = Depends(require_admin),
+) -> Response:
+    category = db.get(Category, category_id)
+    if category is None:
+        raise HTTPException(status_code=404, detail="Categoria não encontrada")
+    in_use_public = db.scalar(
+        select(PublicEvent.id).where(PublicEvent.category_id == category_id).limit(1)
+    )
+    in_use_personal = db.scalar(
+        select(PersonalEvent.id).where(PersonalEvent.category_id == category_id).limit(1)
+    )
+    if in_use_public is not None or in_use_personal is not None:
+        raise HTTPException(
+            status_code=409,
+            detail="Não é possível excluir uma categoria vinculada a eventos existentes",
+        )
+    db.delete(category)
+    db.commit()
+    return Response(status_code=204)
 
 
 @router.get("/events", response_model=list[EventRead])
@@ -140,7 +219,14 @@ def list_public_events(
             func.lower(Category.nome) == category.strip().lower()
         )
     if start_date:
-        statement = statement.where(PublicEvent.starts_at >= start_date)
+        # Fim exclusivo: um intervalo intersecta [start_date, ...] se ends_at > start_date;
+        # sem ends_at, vale starts_at >= start_date (ADR-011).
+        statement = statement.where(
+            or_(
+                (PublicEvent.ends_at.is_not(None)) & (PublicEvent.ends_at > start_date),
+                (PublicEvent.ends_at.is_(None)) & (PublicEvent.starts_at >= start_date),
+            )
+        )
     if end_date:
         statement = statement.where(PublicEvent.starts_at <= end_date)
     if search:
@@ -175,6 +261,52 @@ def get_public_event(
     return _public_read(event)
 
 
+@router.post("/events/{event_id}/outbound-clicks", response_model=OutboundClickRead)
+def register_outbound_click(
+    event_id: UUID,
+    payload: OutboundClickCreate,
+    db: Session = Depends(get_db),
+) -> OutboundClickRead:
+    event = db.scalar(
+        select(PublicEvent).where(
+            PublicEvent.id == event_id,
+            PublicEvent.status == "aprovado",
+        )
+    )
+    if event is None:
+        raise HTTPException(status_code=404, detail="Evento não encontrado")
+    if not _is_valid_http_url(event.external_url):
+        raise HTTPException(
+            status_code=422,
+            detail="Este evento não possui link oficial disponível",
+        )
+
+    key = (event_id, payload.click_id)
+    incremented = False
+    if db.get(EventOutboundClick, key) is None:
+        db.add(EventOutboundClick(event_id=event_id, click_id=payload.click_id))
+        event.outbound_clicks_count = (event.outbound_clicks_count or 0) + 1
+        try:
+            db.commit()
+            incremented = True
+        except IntegrityError:
+            db.rollback()
+            event = db.scalar(
+                select(PublicEvent).where(
+                    PublicEvent.id == event_id,
+                    PublicEvent.status == "aprovado",
+                )
+            )
+            if event is None:
+                raise HTTPException(status_code=404, detail="Evento não encontrado")
+
+    return OutboundClickRead(
+        external_url=event.external_url.strip(),
+        outbound_clicks_count=event.outbound_clicks_count or 0,
+        incremented=incremented,
+    )
+
+
 @router.post("/events", response_model=EventRead, status_code=201)
 def create_public_event(
     payload: EventCreate,
@@ -200,6 +332,50 @@ def create_public_event(
     db.commit()
     db.refresh(event)
     return _public_read(event)
+
+
+@router.put("/events/{event_id}", response_model=EventRead)
+def update_public_event(
+    event_id: UUID,
+    payload: EventUpdate,
+    db: Session = Depends(get_db),
+    _: CurrentUser = Depends(require_event_manager),
+) -> EventRead:
+    event = db.scalar(
+        select(PublicEvent)
+        .where(PublicEvent.id == event_id, PublicEvent.status == "aprovado")
+        .options(
+            joinedload(PublicEvent.campus),
+            joinedload(PublicEvent.category),
+            joinedload(PublicEvent.author),
+        )
+    )
+    if event is None:
+        raise HTTPException(status_code=404, detail="Evento não encontrado")
+
+    event.title = payload.title
+    event.description = payload.description or ""
+    event.starts_at = payload.starts_at
+    event.ends_at = payload.ends_at
+    event.all_day = payload.all_day
+    event.start_date = payload.start_date if payload.all_day else None
+    event.end_date = payload.end_date if payload.all_day else None
+    event.location = payload.location
+    event.external_url = str(payload.external_url) if payload.external_url else None
+    event.campus_id = _campus_id(db, payload.campus)
+    event.category_id = _category_id(db, payload.category)
+    db.commit()
+    db.expire(event, ["campus", "category"])
+    updated = db.scalar(
+        select(PublicEvent)
+        .where(PublicEvent.id == event_id)
+        .options(
+            joinedload(PublicEvent.campus),
+            joinedload(PublicEvent.category),
+            joinedload(PublicEvent.author),
+        )
+    )
+    return _public_read(updated)
 
 
 @router.delete("/events/{event_id}", status_code=204)

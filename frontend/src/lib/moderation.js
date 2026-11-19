@@ -21,6 +21,9 @@ export const moderationApi = {
   suggestions: (status, search, page) => rpc('listar_sugestoes', {
     p_status: status, p_busca: search, p_offset: page * 20,
   }),
+  collectionReviews: (status, page) => rpc('listar_revisoes_coleta', {
+    p_status: status, p_offset: page * 20,
+  }),
   decide: (id, status, reason) => rpc('moderar_sugestao', {
     p_evento_id: id, p_status: status, p_justificativa: reason || null,
   }),
@@ -29,6 +32,13 @@ export const moderationApi = {
   }),
   changeRole: (user, role) => rpc('admin_definir_papel', {
     p_usuario_id: user.id, p_novo_papel: role, p_papel_atual: user.papel,
+  }),
+  categories: () => rpc('admin_listar_categorias', {}),
+  createCategory: (name, color = '#008bff') => rpc('admin_criar_categoria', {
+    p_nome: name, p_cor: color,
+  }),
+  deleteCategory: (id) => rpc('admin_excluir_categoria', {
+    p_categoria_id: id,
   }),
   notifications: async (userId, page = 0) => {
     const [{ data, error, count }, unread] = await Promise.all([

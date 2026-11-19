@@ -1,9 +1,11 @@
+import re
 from datetime import date, datetime, time, timedelta, timezone
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator, model_validator
 
 BRASILIA_TZ = timezone(timedelta(hours=-3))
+HEX_COLOR_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
 
 
 def _require_tz(value: datetime | None, label: str) -> datetime | None:
@@ -99,6 +101,42 @@ class EventRead(BaseModel):
     organizer_avatar: str | None = None
     source: str | None = None
     source_url: str | None = None
+    outbound_clicks_count: int = 0
+
+
+class OutboundClickCreate(BaseModel):
+    click_id: UUID
+
+
+class OutboundClickRead(BaseModel):
+    external_url: str
+    outbound_clicks_count: int
+    incremented: bool = False
+
+
+class CategoryCreate(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    name: str = Field(min_length=2, max_length=80)
+    color: str | None = Field(default="#008bff")
+
+    @field_validator("color", mode="before")
+    @classmethod
+    def normalize_color(cls, value: str | None) -> str:
+        if value is None or (isinstance(value, str) and not value.strip()):
+            return "#008bff"
+        cleaned = value.strip()
+        if not HEX_COLOR_RE.match(cleaned):
+            raise ValueError("Informe uma cor hexadecimal válida (ex.: #008bff)")
+        return cleaned.lower()
+
+
+class CategoryRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    name: str
+    color: str | None = "#008bff"
 
 
 class SavedEventStatus(BaseModel):

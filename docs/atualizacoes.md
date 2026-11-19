@@ -191,12 +191,14 @@ A [#81](https://github.com/unb-mds/2026-2-AgendaUnB/issues/81) prevê um aviso p
   "id": "66666666-6666-4666-8666-666666666666",
   "event_kind": "saved_public",
   "event_id": "77777777-7777-4777-8777-777777777777",
+  "title": "Palestra no campus",
+  "starts_at": "2026-11-18T17:00:00Z",
   "scheduled_at": "2026-11-17T17:00:00Z",
   "read_at": null
 }
 ```
 
-`GET /api/v1/me/reminders?limit=20&offset=0` lista avisos disparados para a conta. `PUT /api/v1/me/reminders/{id}/read` marca o próprio aviso como lido e mantém o primeiro `read_at` em retries. E-mail transacional permanece no fluxo de autenticação.
+`GET /api/v1/me/reminders?limit=20&offset=0` retorna um array de avisos disparados para a conta. `PUT /api/v1/me/reminders/{id}/read` retorna o ID e o primeiro `read_at`, inclusive em novas tentativas. O usuário consulta os avisos pelo sino. E-mail transacional permanece no fluxo de autenticação. [Contrato de lembretes](/api-specs#lembretes-da-agenda).
 
 ## Google Agenda e ICS
 

@@ -54,6 +54,10 @@ test('cadastro sem sessão confirma e controla intervalo de reenvio', async ({ p
   await expect(dialog.getByRole('alert')).toHaveText('As senhas não coincidem.');
   await confirmation.fill('Exemplo local 124!');
   await dialog.getByRole('button', { name: 'Criar conta' }).click();
+  await expect(dialog.getByRole('alert')).toContainText('Aceite os Termos de Uso');
+  expect(await page.evaluate(() => window.signupEmail)).toBeUndefined();
+  await dialog.getByRole('checkbox', { name: /Termos de Uso/i }).check();
+  await dialog.getByRole('button', { name: 'Criar conta' }).click();
   await expect(dialog.getByRole('heading')).toHaveText('Confirme seu e-mail');
   await expect(dialog.getByLabel('E-mail')).toHaveValue('PESSOA@example.com');
   expect(await page.evaluate(() => [window.signupEmail, window.signupReturn])).toEqual(['pessoa@example.com', '/auth/retorno']);
@@ -130,10 +134,18 @@ for (const mode of ['login', 'signup']) {
       },
     `);
     await page.goto(`/?auth=${mode}`);
-    await expect(page.getByRole('dialog').getByRole('checkbox')).toHaveCount(0);
+    if (mode === 'login') {
+      await expect(page.getByRole('dialog').getByRole('checkbox')).toHaveCount(0);
+    } else {
+      await expect(page.getByRole('dialog').getByRole('checkbox', { name: /Google Agenda|Calendar/i })).toHaveCount(0);
+      await expect(page.getByRole('dialog').getByRole('checkbox')).toHaveCount(1);
+    }
     await page.getByRole('button', { name: 'Continuar com Google' }).click();
     await expect(page).toHaveURL(/\/eventos$/);
+    const profileButton = page.getByRole('button', { name: /Menu do perfil/i });
+    await profileButton.click();
     await page.getByRole('button', { name: 'Sair da conta' }).click();
+    await expect(profileButton).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Sair da conta' })).toHaveCount(0);
   });
 }
@@ -239,6 +251,9 @@ for (const outcome of ['denied', 'email_mismatch', 'connected']) {
     } else {
       await expect(page.getByText(outcome === 'denied' ? /não foi concedido/ : /mesmo e-mail verificado/)).toBeVisible();
     }
+    const profileButton = page.getByRole('button', { name: /Menu do perfil/i });
+    await expect(profileButton).toBeVisible();
+    await profileButton.click();
     await expect(page.getByRole('button', { name: 'Sair da conta' })).toBeVisible();
   });
 }
