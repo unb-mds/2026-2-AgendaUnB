@@ -15,7 +15,7 @@ from sqlalchemy import select, update
 from src.database.models import AssessmentCandidate, Syllabus, SyllabusVersion
 from src.modules.syllabus.versions import private_version
 from src.modules.syllabus.extraction import extract_pages
-from src.modules.syllabus.minimization import minimize
+from src.modules.syllabus.minimization import minimize, minimize_with_count
 from src.modules.syllabus.processing_config import ProcessingConfig, ProcessingError
 
 MAX_TEXT_BYTES = 40000
@@ -81,6 +81,16 @@ def text_hash(pages):
     return hashlib.sha256(json.dumps(snapshot, ensure_ascii=False, separators=(",", ":")).encode("utf-8")).hexdigest()
 
 
+def prepare_pages(pages) -> tuple[list[dict], int]:
+    minimized_pages = []
+    count = 0
+    for page in checked_pages(pages):
+        text, masked = minimize_with_count(page["texto"])
+        minimized_pages.append({"pagina": page["pagina"], "texto": text})
+        count += masked
+    return checked_pages(minimized_pages), count
+
+
 def _prepare_child(send, content):
     logging.disable(logging.CRITICAL)
     try:
@@ -96,6 +106,7 @@ def _prepare_child(send, content):
 
 
 def extract_pdf_isolated(content, timeout):
+    """Extrai páginas localmente para a etapa privada de preparação."""
     context = multiprocessing.get_context("spawn")
     receive, send = context.Pipe(duplex=False)
     process = context.Process(target=_prepare_child, args=(send, content), daemon=True)
@@ -108,7 +119,7 @@ def extract_pdf_isolated(content, timeout):
         output = json.loads(receive.recv_bytes(maxlength=512000))
         if "error" in output:
             raise HTTPException(400, "Não foi possível preparar o PDF. Use texto selecionável ou a organização manual.")
-        return checked_pages([{"pagina": page["pagina"], "texto": minimize(page["texto"])} for page in output["pages"]])
+        return checked_pages(output["pages"])
     except (EOFError, OSError, ValueError, KeyError, TypeError):
         raise HTTPException(503, "A preparação do PDF está indisponível. Tente novamente ou organize manualmente.") from None
     finally:

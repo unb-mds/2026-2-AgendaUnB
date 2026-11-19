@@ -11,6 +11,7 @@ from starlette.concurrency import run_in_threadpool
 
 from src.database.models import Syllabus
 from src.modules.classes.services import followed_available_offering
+from src.modules.syllabus.preparation import prepare_pages
 from src.modules.syllabus.upload_validation import PdfValidationError, validate_pdf_structure
 
 logger = logging.getLogger("agenda_unb.syllabus")
@@ -116,6 +117,8 @@ def process_syllabus_upload(
     Registra somente texto minimizado privado, aguardando autorização.
     O PDF original nunca é enviado ao Storage ou ao provedor.
     """
+    pages, _ = prepare_pages(pages)
+
     # Serialize uploads for this user across API workers before counting the
     # rolling window. The lock lasts until the prepared text is committed.
     if offering_id is not None:
