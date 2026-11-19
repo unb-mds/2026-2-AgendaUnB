@@ -44,3 +44,51 @@ e preserva números rotulados como identificadores acadêmicos.
 
 A preservação de datas e títulos acompanha as orientações para os calendários
 de avaliação da UnB. [Orientações do DEG para planos de ensino](https://deg.unb.br/wp-content/uploads/orientacoes_ementas_programas_pe.pdf).
+
+## Exemplos sintéticos de antes e depois
+
+O teste autenticado segue uma turma de teste, envia o mesmo conteúdo em
+um PDF digital sintético e como texto colado, e lê a prévia com a sessão do
+dono. O PDF mantém `pagina: 1`, enquanto o texto colado usa `pagina: null`.
+Nos dois casos, `redactedCount` vale `2` e o hash corresponde às páginas
+sanitizadas. O acesso com a conta de outro estudante retorna `404`.
+
+**PDF sintético, texto extraído da página 1**
+
+```text
+Disciplina: Estrutura de Dados 1 | Prof. Pessoa Exemplo | RG: 12.345.678-X
+Prova 1: 20/11/2026 14:30 Sala 204
+```
+
+```text
+Disciplina: Estrutura de Dados 1 | Prof. [identificador removido] | RG: [identificador removido]
+Prova 1: 20/11/2026 14:30 Sala 204
+```
+
+**Texto colado em campo editável**
+
+```text
+Disciplina: Estrutura de Dados 1 | Prof. Pessoa Exemplo | CPF: 000.000.000-00
+Prova 1 - 10/11/2026 - 14:00.
+```
+
+```text
+Disciplina: Estrutura de Dados 1 | Prof. [identificador removido] | CPF: [identificador removido]
+Prova 1 - 10/11/2026 - 14:00.
+```
+
+## Impactos verificados
+
+- **Privacidade e LGPD:** nos cenários sintéticos, a preparação local reduz
+  os dados retidos no snapshot privado e o texto enviado ao provedor simulado.
+  Os logs e candidatos persistidos foram verificados com valores sintéticos.
+  A revisão humana continua necessária para reconhecer informações fora dos
+  formatos cobertos.
+- **Contrato:** a alteração na prévia é aditiva. Os `POST` mantêm `202` e
+  as páginas, permissões e regras de hash seguem o contrato existente.
+  A coluna de contagem e o novo código de falha exigem as duas migrações
+  S8-B04 antes de disponibilizar o backend.
+- **Extração:** `validate_candidates` produziu os mesmos candidatos de prova
+  e trabalho para as entradas de teste antes e depois da preparação, com
+  horários, datas, locais nos trechos de origem e referências de página.
+  A comparação usa uma resposta controlada do provedor.
