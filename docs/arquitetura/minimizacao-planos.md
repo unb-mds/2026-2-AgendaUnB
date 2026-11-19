@@ -16,11 +16,20 @@ seguem o [ADR-003](/arquitetura/adrs/adr-003-minimizar-dados-de-planos).
 | Perfil pessoal | Currículo Lattes, LinkedIn de pessoa e URL rotulada como site pessoal |
 | Endereço | `Endereço residencial: Rua Exemplo, 123` |
 
-As máscaras existentes e os formatos de cabeçalho cobertos pelos testes de
-preparação são o ponto de partida. As variantes da tabela são exemplos
-sintéticos para regressão. Um cabeçalho isolado, um campo ao lado de outro
-separado por barra vertical, uma linha tabular e um rótulo com valor na linha
-seguinte representam layouts distintos.
+O formulário de monitoria da graduação apresenta cargo com gênero separado
+por espaço, nome do monitor, matrícula, RG, CPF, endereço e telefone, inclusive
+em campos tabulares. O termo de monitoria da pós-graduação também inclui
+matrícula e nascimento com rótulos abreviados. O validador público do SIGAA
+confirma o uso de matrícula, SIAPE e CPF em cabeçalhos de documentos. [Formulário
+de monitoria](https://design.unb.br/wp-content/uploads/Form_inscri_monitoria_grad.pdf) ·
+[Termo de monitoria](https://ppgdsci.unb.br/images/FORMULARIOS/Termo_de_Compromisso_monitoria.pdf) ·
+[Validador de documentos do SIGAA](https://sigaa.unb.br/sigaa/public/autenticidade/form.jsf).
+
+Os valores da tabela e das fixtures são sintéticos. Os testes exercitam
+cabeçalhos, campos separados por barra vertical, tabelas e rótulos com valor
+na linha seguinte. Números ambíguos como RG, SIAPE e matrícula de nove dígitos
+exigem contexto. O CPF compacto sem rótulo exige dígitos verificadores válidos
+e preserva números rotulados como identificadores acadêmicos.
 
 ## Campos acadêmicos a preservar
 
@@ -32,3 +41,6 @@ seguinte representam layouts distintos.
 - Datas acadêmicas numéricas, por extenso ou em ISO, além de horários
   e intervalos, como 14:30 e das 08h00 às 10h00.
 - Locais acadêmicos, como Sala 204, Auditório Central e Bloco B.
+
+A preservação de datas e títulos acompanha as orientações para os calendários
+de avaliação da UnB. [Orientações do DEG para planos de ensino](https://deg.unb.br/wp-content/uploads/orientacoes_ementas_programas_pe.pdf).
