@@ -3,8 +3,6 @@ title: "Termos de Uso"
 description: "Regras de uso do Agenda UnB."
 ---
 
-# Termos de Uso
-
 **Versão 2026-11-18.**
 
 ## 1. O que é o Agenda UnB

@@ -3,8 +3,6 @@ title: "Privacidade e ciclo de vida dos dados"
 description: "Inventário de dados, direitos do titular, exclusão, descarte de PDFs e procedimento de incidente (S8-D01)."
 ---
 
-# Privacidade e ciclo de vida dos dados
-
 Registro técnico da [S8-D01 (#83)](https://github.com/unb-mds/2026-2-AgendaUnB/issues/83). Estado em **18/11/2026** na branch `feat/s8-d01-privacidade`. Os textos para o usuário são a [Política de Privacidade](/produto/politica-de-privacidade) e os [Termos de Uso](/produto/termos-de-uso).
 
 Este documento descreve o que está implementado nesta entrega, o que foi validado em banco/API/interface locais e o que depende de ambiente hospedado ou de branches irmãs ainda não mescladas à `dev`. Ele não constitui parecer jurídico.
