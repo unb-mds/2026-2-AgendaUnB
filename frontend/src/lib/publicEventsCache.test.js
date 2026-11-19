@@ -98,9 +98,34 @@ test('toUiEvent e toApiEvent convertem eventos públicos e privados mantendo o c
 
   assert.equal(allDayUi.diaInteiro, true);
   assert.equal(allDayUi.data, '2026-11-18');
+  assert.equal(allDayUi.dataFim, '2026-11-20');
+  assert.equal(allDayUi.startDate, '2026-11-18');
+  assert.equal(allDayUi.endDate, '2026-11-21');
   assert.equal(allDayUi.horario, 'Dia inteiro');
   assert.equal(allDayUi.fonte, 'agenda_unb_noticias');
   assert.equal(allDayUi.fonteUrl, 'https://noticias.unb.br/component/agenda/agenda/100');
+
+  const multiHourPersonalUi = toUiEvent({
+    id: '33333333-3333-4333-8333-333333333333',
+    title: 'Prova 2 de Cálculo',
+    description: 'Tipo de avaliação: Prova\n\nConteúdo: integrais',
+    starts_at: '2026-11-25T17:00:00Z',
+    ends_at: '2026-11-25T18:50:00Z',
+    all_day: false,
+    campus: 'Darcy Ribeiro (Plano Piloto)',
+    category: 'Acadêmico',
+    location: 'PAT AT-011',
+    origin: { syllabusId: 's-1', candidateId: 'c-1', page: 2, excerpt: 'Prova 2: 25/11' },
+  }, true);
+
+  assert.equal(multiHourPersonalUi.visibilidade, 'Privado');
+  assert.equal(multiHourPersonalUi.criadoPorMim, true);
+  assert.equal(multiHourPersonalUi.data, '2026-11-25');
+  assert.equal(multiHourPersonalUi.dataFim, '2026-11-25');
+  assert.equal(multiHourPersonalUi.horario, '14:00');
+  assert.equal(multiHourPersonalUi.horarioFim, '15:50');
+  assert.equal(multiHourPersonalUi.local, 'PAT AT-011');
+  assert.equal(multiHourPersonalUi.origem.candidateId, 'c-1');
 
   const apiPayload = toApiEvent({
     titulo: '  Reunião do Centro Acadêmico  ',
