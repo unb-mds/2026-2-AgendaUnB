@@ -32,12 +32,13 @@ export default function NavBar({ pageType = 'home', isDark, toggleTheme, onLogin
         : <><NavLink to="/eventos" className={({ isActive }) => isActive || location.pathname.startsWith('/evento/') ? 'active' : ''}>Eventos</NavLink><NavLink to="/plano-de-ensino">Plano de Ensino</NavLink></>}
       {canModerate && <NavLink to="/sugestoes">Sugestões</NavLink>}
       {profile?.papel === 'admin' && <NavLink to="/admin" className="nav-admin-link">Admin</NavLink>}
+      {user && <NavLink to="/configuracoes">Configurações</NavLink>}
     </div>
     <div className="nav-right">
       {toggleTheme && <button className="theme-toggle" onClick={toggleTheme} aria-label={isDark ? 'Ativar tema claro' : 'Ativar tema escuro'} title={isDark ? 'Tema claro' : 'Tema escuro'}>
         <span className="material-symbols-outlined" aria-hidden="true">{isDark ? 'brightness_7' : 'bedtime'}</span>
       </button>}
-      {user && profile?.papel === 'student' && <NotificationBell key={user.id} userId={user.id} />}
+      {user && <NotificationBell key={user.id} userId={user.id} showModeration={profile?.papel === 'student'} />}
       {user && <ProfileMenu user={user} profile={profile} avatar={avatar} signOut={signOut} />}
       {!user && pageType === 'home' && <><button className="nav-btn-account" onClick={onCreateAccountClick}>Criar conta</button><button className="nav-btn-account-login" onClick={onLoginClick}>Entrar</button></>}
       {!user && pageType !== 'home' && <Link className="nav-btn-account-login" to="/?auth=login">Entrar</Link>}

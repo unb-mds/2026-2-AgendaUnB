@@ -61,15 +61,25 @@ const teamMembers = [
 // ............................
 export default function App() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const authIntent = searchParams.get('auth');
   const { user, profile } = useAuth();
   const [authMode, setAuthMode] = useState(null);
+  const [accountDeletedBanner, setAccountDeletedBanner] = useState(() => searchParams.get('conta') === 'excluida');
   const [theme, setTheme] = useState(() => getStoredTheme());
 
   useEffect(() => {
     if (['login', 'signup', 'recover', 'confirm'].includes(authIntent)) setAuthMode(authIntent);
   }, [authIntent]);
+
+  useEffect(() => {
+    if (searchParams.get('conta') === 'excluida') {
+      setAccountDeletedBanner(true);
+      const next = new URLSearchParams(searchParams);
+      next.delete('conta');
+      setSearchParams(next, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   useEffect(() => {
     eventsApi.prefetchPublic();
@@ -134,6 +144,17 @@ export default function App() {
       />
 
         {authMode && <AuthDialog mode={authMode} setMode={setAuthMode} />}
+
+        {accountDeletedBanner && (
+          <div className="account-deleted-banner" role="status">
+            <p>
+              Sua conta foi excluída da Agenda UnB. Eventos já exportados permanecem na agenda “Agenda UnB” da sua conta Google até serem removidos lá.
+            </p>
+            <button type="button" className="manage-button" onClick={() => setAccountDeletedBanner(false)}>
+              Fechar
+            </button>
+          </div>
+        )}
 
         {/* HERO */}
         <section 
