@@ -38,7 +38,14 @@ export default function NavBar({ pageType = 'home', isDark, toggleTheme, onLogin
     </button>
     <div className="nav-items" id="main-nav-links" onClick={() => setMenuOpen(false)}>
       {pageType === 'home' ? <>{[['#eventos', 'Funcionalidades'], ['#organizer', 'Sobre'], ['#equipe', 'Equipe']].map(([hash, label]) =>
-        <Link key={hash} to={`/${hash}`} className={location.hash === hash ? 'active' : ''} aria-current={location.hash === hash ? 'location' : undefined}>{label}</Link>)}</>
+        <Link key={hash} to={`/${hash}`} className={location.hash === hash ? 'active' : ''} aria-current={location.hash === hash ? 'location' : undefined}
+          onClick={() => {
+            if (location.pathname === '/' && typeof document !== 'undefined') {
+              const target = document.getElementById(hash.slice(1));
+              const prefersReduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+              target?.scrollIntoView({ behavior: prefersReduced ? 'auto' : 'smooth', block: 'start' });
+            }
+          }}>{label}</Link>)}</>
         : <><NavLink to="/eventos" className={({ isActive }) => isActive || location.pathname.startsWith('/evento/') ? 'active' : ''}>Eventos</NavLink><NavLink to="/plano-de-ensino">Plano de Ensino</NavLink></>}
       {canModerate && <NavLink to="/sugestoes">Sugestões</NavLink>}
       {profile?.papel === 'admin' && <NavLink to="/admin" className="nav-admin-link">Admin</NavLink>}

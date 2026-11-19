@@ -71,7 +71,7 @@ body.light .nav-brand em { color: #006bc4; }
 }
 
 /* ── Section ── */
-.section { padding:5rem 1.5rem; max-width:1120px; margin:0 auto; position:relative; z-index:2; }
+.section { padding:5rem 1.5rem; max-width:1120px; margin:0 auto; position:relative; z-index:2; scroll-margin-top:88px; }
 .section-label {
   display: inline-block; font-size: 0.72rem; font-weight: 700;
   text-transform: uppercase; letter-spacing: 0.18em;
