@@ -312,7 +312,9 @@ test('configurações exibe versões, revoga Google Agenda, exporta JSON e exclu
   });
 
   await page.goto('/eventos');
-  await page.getByRole('navigation', { name: 'Navegação principal' }).getByRole('link', { name: 'Configurações' }).click();
+  const mainNav = page.getByRole('navigation', { name: 'Navegação principal' });
+  await mainNav.getByRole('button', { name: /Menu do perfil/i }).click();
+  await mainNav.getByRole('link', { name: 'Configurações' }).click();
   await expect(page).toHaveURL(/\/configuracoes$/);
   await expect(page.getByRole('heading', { name: 'Configurações e privacidade' })).toBeVisible();
   await expect(page.getByText('estudante@unb.br')).toBeVisible();

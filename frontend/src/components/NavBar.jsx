@@ -49,7 +49,6 @@ export default function NavBar({ pageType = 'home', isDark, toggleTheme, onLogin
         : <><NavLink to="/eventos" className={({ isActive }) => isActive || location.pathname.startsWith('/evento/') ? 'active' : ''}>Eventos</NavLink><NavLink to="/plano-de-ensino">Plano de Ensino</NavLink></>}
       {canModerate && <NavLink to="/sugestoes">Sugestões</NavLink>}
       {profile?.papel === 'admin' && <NavLink to="/admin" className="nav-admin-link">Admin</NavLink>}
-      {user && <NavLink to="/configuracoes">Configurações</NavLink>}
     </div>
     <div className="nav-right">
       {toggleTheme && <button className="theme-toggle" onClick={toggleTheme} aria-label={isDark ? 'Ativar tema claro' : 'Ativar tema escuro'} title={isDark ? 'Tema claro' : 'Tema escuro'}>
