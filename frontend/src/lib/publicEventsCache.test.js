@@ -98,9 +98,34 @@ test('toUiEvent e toApiEvent convertem eventos públicos e privados mantendo o c
 
   assert.equal(allDayUi.diaInteiro, true);
   assert.equal(allDayUi.data, '2026-11-18');
+  assert.equal(allDayUi.dataFim, '2026-11-20');
+  assert.equal(allDayUi.startDate, '2026-11-18');
+  assert.equal(allDayUi.endDate, '2026-11-21');
   assert.equal(allDayUi.horario, 'Dia inteiro');
   assert.equal(allDayUi.fonte, 'agenda_unb_noticias');
   assert.equal(allDayUi.fonteUrl, 'https://noticias.unb.br/component/agenda/agenda/100');
+
+  const multiHourPersonalUi = toUiEvent({
+    id: '33333333-3333-4333-8333-333333333333',
+    title: 'Prova 2 de Cálculo',
+    description: 'Tipo de avaliação: Prova\n\nConteúdo: integrais',
+    starts_at: '2026-11-25T17:00:00Z',
+    ends_at: '2026-11-25T18:50:00Z',
+    all_day: false,
+    campus: 'Darcy Ribeiro (Plano Piloto)',
+    category: 'Acadêmico',
+    location: 'PAT AT-011',
+    origin: { syllabusId: 's-1', candidateId: 'c-1', page: 2, excerpt: 'Prova 2: 25/11' },
+  }, true);
+
+  assert.equal(multiHourPersonalUi.visibilidade, 'Privado');
+  assert.equal(multiHourPersonalUi.criadoPorMim, true);
+  assert.equal(multiHourPersonalUi.data, '2026-11-25');
+  assert.equal(multiHourPersonalUi.dataFim, '2026-11-25');
+  assert.equal(multiHourPersonalUi.horario, '14:00');
+  assert.equal(multiHourPersonalUi.horarioFim, '15:50');
+  assert.equal(multiHourPersonalUi.local, 'PAT AT-011');
+  assert.equal(multiHourPersonalUi.origem.candidateId, 'c-1');
 
   const apiPayload = toApiEvent({
     titulo: '  Reunião do Centro Acadêmico  ',
@@ -118,4 +143,46 @@ test('toUiEvent e toApiEvent convertem eventos públicos e privados mantendo o c
   assert.equal(apiPayload.location, 'ICC Sul');
   assert.equal('external_url' in apiPayload, false);
   assert.ok(apiPayload.starts_at.endsWith('Z'));
+});
+
+test('toUiEvent usa fuso America/Sao_Paulo e toApiEvent trata dia inteiro e intervalos', () => {
+  // 2026-11-19T01:30:00Z corresponde a 18/11 às 22:30 em Brasília (-03:00)
+  const lateNightUi = toUiEvent({
+    id: '33333333-3333-4333-8333-333333333333',
+    title: 'Observação Astronômica',
+    starts_at: '2026-11-19T01:30:00Z',
+    ends_at: '2026-11-19T02:30:00Z',
+    outbound_clicks_count: 7,
+  });
+
+  assert.equal(lateNightUi.data, '2026-11-18');
+  assert.equal(lateNightUi.horario, '22:30');
+  assert.equal(lateNightUi.horarioFim, '23:30');
+  assert.equal(lateNightUi.interessadosCount, 7);
+
+  const allDayPayload = toApiEvent({
+    titulo: 'Semana Universitária',
+    data: '2026-11-18',
+    dataFim: '2026-11-20',
+    diaInteiro: true,
+  });
+  assert.equal(allDayPayload.all_day, true);
+  assert.equal(allDayPayload.start_date, '2026-11-18');
+  assert.equal(allDayPayload.end_date, '2026-11-21');
+
+  const timedRange = toApiEvent({
+    titulo: 'Oficina',
+    data: '2026-11-20',
+    horario: '14:00',
+    horarioFim: '16:00',
+  });
+  assert.equal(timedRange.all_day, false);
+  assert.ok(timedRange.ends_at.endsWith('Z'));
+
+  assert.throws(() => toApiEvent({
+    titulo: 'Inválido',
+    data: '2026-11-20',
+    horario: '14:00',
+    horarioFim: '13:00',
+  }));
 });
