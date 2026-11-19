@@ -8,6 +8,34 @@ const path = '/plano-de-ensino?plano=plan-1&etapa=3';
 const pages = [{ pagina: 1, texto: 'Prova em 23/11/2026 às 14:00.' }];
 const authorize = page => page.getByRole('button', { name: 'Autorizar envio', exact: true });
 
+for (const { width, redactedCount, notice } of [
+  { width: 360, redactedCount: 1, notice: 'A preparação automática mascarou 1 ocorrência de dados pessoais.' },
+  { width: 1365, redactedCount: 2, notice: 'A preparação automática mascarou 2 ocorrências de dados pessoais.' },
+  { width: 1365, redactedCount: 0 },
+  { width: 360 },
+]) {
+  test(`aviso e edição da prévia com contagem ${redactedCount ?? 'desconhecida'} em ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await setupSemester(page, { plans: [plan] });
+    await page.route('**/api/v1/syllabus/plan-1/text', route => route.fulfill({
+      json: { pages, provider, providerAvailable: true, redactedCount },
+    }));
+    await page.goto(path);
+    const editor = page.getByRole('textbox', { name: 'Texto da página 1' });
+    await expect(editor).toHaveValue(pages[0].texto);
+    const status = page.getByRole('status').filter({ hasText: /preparação automática mascarou/ });
+    if (notice) {
+      await expect(status).toHaveText(notice);
+    } else {
+      await expect(status).toHaveCount(0);
+    }
+    await editor.fill(pages[0].texto + ' Sala 204.');
+    await expect(editor).toHaveValue(pages[0].texto + ' Sala 204.');
+    if (notice) await expect(status).toHaveText(notice);
+    await expect(authorize(page)).toBeEnabled();
+  });
+}
+
 test('texto bruto mede capacidade em UTF-8 e fica disponível para recuperar o envio', async ({ page }) => {
   const secondClass = { ...makeOffer(1), id: 'class-2', class_number: '02' };
   await setupSemester(page, { offers: [makeOffer(1), secondClass] });
