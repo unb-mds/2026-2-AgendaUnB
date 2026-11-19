@@ -29,6 +29,7 @@ export default function SemesterTextReview({ plan, onClose }) {
   const authorization = workspace.authorizations[id] || {};
   const active = isProcessing(plan);
   const reprocess = !plan.authorizationRequired;
+  const redactedCount = data?.redactedCount ?? 0;
   const size = approvedTextSize(pages);
   const blocked = workspace.confirming || loading || !!error || active || authorization.busy || authorization.uncertain ||
     !data?.providerAvailable || !pages.some(page => page.texto.trim()) || size > MAX_APPROVED_TEXT_BYTES;
@@ -47,6 +48,11 @@ export default function SemesterTextReview({ plan, onClose }) {
       if (!blocked) workspace.authorize(id, pages, reprocess);
     }}>
       <p id="semester-privacy">O {data.provider} recebe apenas o texto abaixo.</p>
+      {redactedCount > 0 && <p role="status">
+        {redactedCount === 1
+          ? 'A preparação automática mascarou 1 ocorrência de dados pessoais.'
+          : `A preparação automática mascarou ${redactedCount} ocorrências de dados pessoais.`}
+      </p>}
       <fieldset disabled={active || authorization.busy || authorization.uncertain}>
         <legend className="sr-only">Texto a enviar</legend>
         {pages.map((page, index) => <label className="semester-field" key={page.pagina ?? index}>
