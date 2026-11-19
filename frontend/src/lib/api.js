@@ -218,6 +218,15 @@ export const eventsApi = {
     clearPublicCache();
     return created;
   },
+  updatePublic: async (id, event) => {
+    const updated = await request(`/events/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      auth: true,
+      body: JSON.stringify(event),
+    });
+    clearPublicCache();
+    return updated;
+  },
   deletePublic: async (id) => {
     const result = await request(`/events/${encodeURIComponent(id)}`, {
       method: 'DELETE',

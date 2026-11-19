@@ -360,7 +360,9 @@ function EventCardItem({
   onEdit,
   onRemove,
 }) {
-  const canEdit = visaoEventos === 'MEUS' && evento.criadoPorMim;
+  const canEdit = visaoEventos === 'MEUS'
+    ? Boolean(evento.criadoPorMim)
+    : Boolean(isProfessor || isAdmin);
   const canRemove = visaoEventos === 'MEUS'
     ? (evento.criadoPorMim || evento.salvoNaAgenda)
     : (isProfessor || isAdmin);
@@ -422,7 +424,7 @@ function EventCardItem({
         </div>
       </div>
 
-      {canRemove && (
+      {(canEdit || canRemove) && (
         <div
           onClick={(event) => event.stopPropagation()}
           style={{ position: 'absolute', top: '12px', right: '12px', display: 'flex', gap: '6px' }}
@@ -439,16 +441,18 @@ function EventCardItem({
               <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>edit</span>
             </button>
           )}
-          <button
-            type="button"
-            onClick={() => onRemove(evento)}
-            title={evento.salvoNaAgenda ? 'Remover dos meus eventos' : 'Excluir evento'}
-            aria-label={evento.salvoNaAgenda ? `Remover ${evento.titulo} dos meus eventos` : `Excluir ${evento.titulo}`}
-            className="event-card-delete"
-            style={{ position: 'static' }}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>{evento.salvoNaAgenda ? 'bookmark_remove' : 'delete'}</span>
-          </button>
+          {canRemove && (
+            <button
+              type="button"
+              onClick={() => onRemove(evento)}
+              title={evento.salvoNaAgenda ? 'Remover dos meus eventos' : 'Excluir evento'}
+              aria-label={evento.salvoNaAgenda ? `Remover ${evento.titulo} dos meus eventos` : `Excluir ${evento.titulo}`}
+              className="event-card-delete"
+              style={{ position: 'static' }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>{evento.salvoNaAgenda ? 'bookmark_remove' : 'delete'}</span>
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -550,11 +554,16 @@ export default function SegundaPagina() {
     { label: 'Noturno (18h - 06h)', value: 'Noturno' },
     { label: 'Dia inteiro', value: 'Dia inteiro' },
   ];
-  const visibilidadeOptions = [
-    ...((isProfessor || isAdmin) && !eventoEmEdicao ? [{ label: 'Público', value: 'Público' }] : []),
-    ...(profile?.papel === 'student' && !eventoEmEdicao ? [{ label: 'Sugerir evento', value: 'Sugestão' }] : []),
-    { label: 'Apenas para mim', value: 'Privado' },
-  ];
+  const editingPublic = Boolean(
+    eventoEmEdicao && eventoEmEdicao.visibilidade === 'Público' && !eventoEmEdicao.criadoPorMim,
+  );
+  const visibilidadeOptions = eventoEmEdicao
+    ? [editingPublic ? { label: 'Público', value: 'Público' } : { label: 'Apenas para mim', value: 'Privado' }]
+    : [
+      ...((isProfessor || isAdmin) ? [{ label: 'Público', value: 'Público' }] : []),
+      ...(profile?.papel === 'student' ? [{ label: 'Sugerir evento', value: 'Sugestão' }] : []),
+      { label: 'Apenas para mim', value: 'Privado' },
+    ];
 
   useEffect(() => {
     let active = true;
@@ -692,7 +701,12 @@ export default function SegundaPagina() {
         setIsModalOpen(false);
         return;
       }
-      if (eventoEmEdicao) {
+      if (editingPublic) {
+        if (!isProfessor && !isAdmin) {
+          throw new Error('Apenas professores e administradores podem editar eventos públicos.');
+        }
+        savedEvent = await eventsApi.updatePublic(eventoEmEdicao.id, payload);
+      } else if (eventoEmEdicao) {
         savedEvent = await eventsApi.updatePersonal(eventoEmEdicao.id, payload);
       } else if (visibilidade === 'Público') {
         savedEvent = await eventsApi.createPublic(payload);
@@ -700,26 +714,33 @@ export default function SegundaPagina() {
         savedEvent = await eventsApi.createPersonal(payload);
       }
 
-      const mappedEvent = toUiEvent(savedEvent, visibilidade !== 'Público');
-      if (visibilidade === 'Público' && visaoEventos !== 'Públicos') {
+      const isPersonalResult = editingPublic ? false : (eventoEmEdicao ? true : visibilidade !== 'Público');
+      const mappedEvent = toUiEvent(savedEvent, isPersonalResult);
+      if (!isPersonalResult && visaoEventos !== 'Públicos') {
         setVisaoEventos('Públicos');
         setEventos([mappedEvent]);
-      } else if (visibilidade !== 'Público' && visaoEventos !== 'MEUS') {
+      } else if (isPersonalResult && visaoEventos !== 'MEUS') {
         setVisaoEventos('MEUS');
         setEventos([mappedEvent]);
       } else {
         setEventos((current) => eventoEmEdicao
-          ? current.map((event) => event.id === mappedEvent.id ? mappedEvent : event)
+          ? current.map((event) => (
+            event.id === mappedEvent.id && event.visibilidade === mappedEvent.visibilidade
+              ? mappedEvent
+              : event
+          ))
           : [mappedEvent, ...current]);
       }
       resetModal();
       setIsModalOpen(false);
       setSuggestionSuccess(
-        eventoEmEdicao
-          ? 'Alterações no evento salvas com sucesso.'
-          : visibilidade === 'Público'
-            ? 'Evento público publicado na agenda.'
-            : 'Compromisso privado adicionado à sua agenda.',
+        editingPublic
+          ? 'Alterações no evento público salvas com sucesso.'
+          : eventoEmEdicao
+            ? 'Alterações no evento salvas com sucesso.'
+            : visibilidade === 'Público'
+              ? 'Evento público publicado na agenda.'
+              : 'Compromisso privado adicionado à sua agenda.',
       );
     } catch (error) {
       setErroEventos(error.message || 'Não foi possível salvar o evento.');
@@ -730,6 +751,9 @@ export default function SegundaPagina() {
   };
 
   const handleEditarEvento = (evento) => {
+    const isPublicEdit = evento.visibilidade === 'Público' && !evento.criadoPorMim;
+    if (isPublicEdit && !isProfessor && !isAdmin) return;
+    setErroEventos('');
     setEventoEmEdicao(evento);
     setTitulo(evento.titulo);
     setData(evento.data);
@@ -741,8 +765,8 @@ export default function SegundaPagina() {
     setLocal(evento.local);
     setArea(evento.area);
     setDescricao(evento.descricao);
-    setVisibilidade('Privado');
-    setLinkExterno('');
+    setVisibilidade(isPublicEdit ? 'Público' : 'Privado');
+    setLinkExterno(isPublicEdit ? (evento.linkExterno || '') : '');
     setIsModalOpen(true);
   };
 
@@ -1033,8 +1057,12 @@ export default function SegundaPagina() {
       </main>
 
       {isModalOpen && (
-        <Modal className="event-create-dialog" title={eventoEmEdicao ? 'Editar Evento Pessoal' : 'Novo Evento'} busy={savingEvent}
-          onClose={() => { setIsModalOpen(false); resetModal(); }}>
+        <Modal
+          className="event-create-dialog"
+          title={eventoEmEdicao ? (editingPublic ? 'Editar Evento Público' : 'Editar Evento Pessoal') : 'Novo Evento'}
+          busy={savingEvent}
+          onClose={() => { setIsModalOpen(false); resetModal(); }}
+        >
             <form onSubmit={handleAdicionarEvento} className="modal-form">
               {erroEventos && (
                 <EventError message={erroEventos} compact />
@@ -1111,7 +1139,16 @@ export default function SegundaPagina() {
                 </div>
                 <div>
                   <span className="modal-label">VISIBILIDADE *</span>
-                  <CustomSelect options={visibilidadeOptions} value={visibilidade} onChange={setVisibilidade} placeholder="Selecione..." ariaLabel="Visibilidade" dropUp />
+                  <CustomSelect
+                    options={visibilidadeOptions}
+                    value={visibilidade}
+                    onChange={setVisibilidade}
+                    placeholder="Selecione..."
+                    ariaLabel="Visibilidade"
+                    allowClear={!eventoEmEdicao}
+                    disabled={Boolean(eventoEmEdicao)}
+                    dropUp
+                  />
                 </div>
               </div>
               {visibilidade === 'Sugestão' && <p id="suggestion-help" className="management-muted">Seu evento será analisado por professores e administradores antes da publicação. Você receberá a confirmação e o resultado pelo sino de notificações.</p>}

@@ -94,7 +94,12 @@ export default function ProfileMenu({ user, profile, avatar, signOut }) {
               {roleLabel && <span className="management-tag profile-popover-role">{roleLabel}</span>}
             </div>
           </div>
-          {error && <p className="profile-popover-error" role="alert">{error}</p>}
+          {error && (
+            <p className="profile-popover-error" role="alert">
+              <span className="material-symbols-outlined" aria-hidden="true">error</span>
+              <span>{error}</span>
+            </p>
+          )}
           <div className="profile-popover-actions">
             <button
               type="button"
