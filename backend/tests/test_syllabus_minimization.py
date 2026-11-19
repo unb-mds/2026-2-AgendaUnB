@@ -48,3 +48,13 @@ def test_masks_phone_with_ddd_in_running_text(value):
 
 def test_masks_compact_whatsapp_when_labeled():
     assert minimize("WhatsApp: 61900000000 | Prova 1") == "WhatsApp: [telefone removido] | Prova 1"
+
+
+@pytest.mark.parametrize(("field", "expected"), [
+    ("CPF: 00000000000", "CPF: [identificador removido]"),
+    ("000.000.000-00", "[identificador removido]"),
+    ("R.G. nº: 12.345.678-X", "R.G. nº: [identificador removido]"),
+    ("RG 1234567", "RG [identificador removido]"),
+])
+def test_masks_identity_documents_without_touching_academic_numbers(field, expected):
+    assert minimize(f"{field} | Código 123456789 | Turma 01") == f"{expected} | Código 123456789 | Turma 01"
