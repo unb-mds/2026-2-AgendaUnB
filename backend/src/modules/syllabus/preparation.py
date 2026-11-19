@@ -55,6 +55,7 @@ class PreparationPreview(BaseModel):
     max_text_bytes: int = Field(alias="maxTextBytes")
     warning: str
     preparation_duration_ms: int | None = Field(alias="preparationDurationMs")
+    redacted_count: int | None = Field(default=None, alias="redactedCount", ge=0)
     text_revision: int = Field(alias="textRevision")
 
 
@@ -154,6 +155,7 @@ def preview(plan):
             "provider": "Google Gemini API", "providerAvailable": os.getenv("SYLLABUS_PROVIDER_TERMS_READY", "false").lower() == "true", "maxTextBytes": MAX_TEXT_BYTES,
             "warning": "A remoção automática de identificadores é limitada. Revise o texto exato. Não envie conteúdo pessoal, sensível ou confidencial. A autorização não substitui os termos do provedor.",
             "preparationDurationMs": plan.preparation_duration_ms,
+            "redactedCount": plan.redacted_count,
             "textRevision": plan.text_revision}
 
 

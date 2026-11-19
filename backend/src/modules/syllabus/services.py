@@ -117,7 +117,7 @@ def process_syllabus_upload(
     Registra somente texto minimizado privado, aguardando autorização.
     O PDF original nunca é enviado ao Storage ou ao provedor.
     """
-    pages, _ = prepare_pages(pages)
+    pages, redacted_count = prepare_pages(pages)
 
     # Serialize uploads for this user across API workers before counting the
     # rolling window. The lock lasts until the prepared text is committed.
@@ -148,6 +148,7 @@ def process_syllabus_upload(
         file_type=file_type,
         prepared_pages=pages,
         preparation_duration_ms=preparation_duration_ms,
+        redacted_count=redacted_count,
         status="pendente",
         extracted_events_count=0,
         error_message=None,
