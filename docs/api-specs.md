@@ -364,7 +364,7 @@ Este contrato substitui o fluxo de upload/extração S6 descrito acima.
 | --- | --- | --- |
 | `POST /api/v1/syllabus/upload` | Multipart PDF validado, até 10 MiB/dez páginas; metadados existentes | 202, texto preparado privado, `filePath: null`, `authorizationRequired: true`, `preparedTextAvailable: true`. O PDF é descartado e não vai ao Storage. |
 | `POST /api/v1/syllabus/text` | JSON `text` e `offering_id` obrigatórios; até 40.000 bytes UTF-8 | 202, preparação privada, `fileType: text`; página de origem nula. |
-| `GET /api/v1/syllabus/{id}/text` | Sessão do dono | 200 com `pages: [{pagina, texto}]`, `textHash`, `authorizationRequired`, `provider`, `providerAvailable`, `maxTextBytes`, `warning`, `preparationDurationMs`, `textRevision`. Resposta `no-store`. |
+| `GET /api/v1/syllabus/{id}/text` | Sessão do dono | 200 com `pages: [{pagina, texto}]`, `textHash`, `authorizationRequired`, `provider`, `providerAvailable`, `maxTextBytes`, `warning`, `preparationDurationMs`, `textRevision` e `redactedCount`. Resposta `no-store`. |
 | `POST /api/v1/syllabus/{id}/extractions` | JSON `pages`, `textHash`, `authorize: true`, `contentEligible: true`, `reprocess` opcional | 202, autorização registrada e elegibilidade para a fila persistente. Repetir o mesmo hash sem reprocessar não cria execução adicional. |
 
 O hash usa SHA-256 do JSON UTF-8 compacto, com `pagina`/`texto` nessa ordem em
@@ -377,6 +377,16 @@ Erros: 400 PDF inválido/protegido/sem texto; 401 sem sessão; 404 para plano al
 execução em andamento, preparação antiga sem texto ou limite acumulado atingido;
 503 indisponibilidade/bloqueio operacional do provedor. O corpo continua
 `{"detail": "mensagem sanitizada"}`. Não há persistência do PDF após falha.
+
+PDF e texto colado passam pelas mesmas regras locais antes da gravação do texto
+preparado. `redactedCount` é um inteiro não negativo com o total de trechos
+mascarados na preparação inicial, somado entre as páginas. É `null` nos planos
+preparados antes da contagem. O valor continua disponível após edição manual,
+fica fora de `pages` e do cálculo de `textHash` e não é enviado ao provedor.
+A autorização devolve `422` se a edição introduzir PII detectável. Um snapshot
+legado autorizado que ainda contenha PII detectável falha antes de chamar o
+provedor, com `errorCode: texto_com_dados_pessoais`. Nesse caso, o dono pode
+revisar o texto novamente e solicitar reprocessamento dentro dos limites do plano.
 
 Detalhe/listagem preservam estados anteriores. `authorizationRequired` distingue
 a revisão inicial da fila pronta; `preparedTextAvailable` identifica o protocolo

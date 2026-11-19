@@ -67,6 +67,7 @@
           "arquitetura/visao-geral",
           "arquitetura/modelo-de-dados",
           "arquitetura/dados-de-planos",
+          "arquitetura/minimizacao-planos",
           "arquitetura/banco-de-dados",
           "arquitetura/dados-de-eventos",
           "arquitetura/catalogo-de-turmas",
