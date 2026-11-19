@@ -156,6 +156,38 @@ def test_historic_approved_snapshot_is_blocked_without_mutating_it(api, monkeypa
                        json=approval(preview, reprocess=True)).status_code == 202
 
 
+def test_personal_data_reintroduced_by_edit_is_rejected_even_with_correct_hash(api, monkeypatch):
+    monkeypatch.setenv("SYLLABUS_PROVIDER_TERMS_READY", "true")
+    sid, preview = prepare(api)
+    sensitive = "pessoa@example.test"
+    edited = [{"pagina": None, "texto": f"{TEXT} | Contato: {sensitive}"}]
+    response = api[0].post(f"/api/v1/syllabus/{sid}/extractions",
+                           json=approval(preview, pages=edited, textHash=text_hash(edited)))
+    assert response.status_code == 422
+    assert "Remova os identificadores detectados" in response.json()["detail"]
+    assert sensitive not in response.text
+    assert api[0].get(f"/api/v1/syllabus/{sid}/text").json() == preview
+    assert not SyllabusWorker(api[1], None, None, ProcessingConfig()).claim()
+
+
+def test_redacted_count_distinguishes_old_records_from_zero_and_survives_edit(api, monkeypatch):
+    monkeypatch.setenv("SYLLABUS_PROVIDER_TERMS_READY", "true")
+    sid, preview = prepare(api, f"Prof. Pessoa Exemplo | {TEXT}")
+    assert preview["redactedCount"] == 1
+    edited = [{"pagina": None, "texto": TEXT}]
+    assert api[0].post(f"/api/v1/syllabus/{sid}/extractions",
+                       json=approval(preview, pages=edited, textHash=text_hash(edited))).status_code == 202
+    reviewed = api[0].get(f"/api/v1/syllabus/{sid}/text").json()
+    assert reviewed["redactedCount"] == 1 and reviewed["pages"] == edited
+
+    old_sid, clean = prepare(api, f"[identificador removido]\n{TEXT}")
+    assert clean["redactedCount"] == 0
+    with api[1]() as db:
+        db.get(Syllabus, UUID(old_sid)).redacted_count = None
+        db.commit()
+    assert api[0].get(f"/api/v1/syllabus/{old_sid}/text").json()["redactedCount"] is None
+
+
 def test_approved_text_is_exact_private_and_idempotent(api, monkeypatch):
     monkeypatch.setenv("SYLLABUS_PROVIDER_TERMS_READY", "true")
     sid, preview = prepare(api)
