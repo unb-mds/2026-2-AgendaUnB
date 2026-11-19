@@ -31,3 +31,9 @@ def test_masks_name_in_running_text():
 def test_masks_name_with_pdf_and_table_delimiters(separator):
     source = f"Monitor(a){separator}Álvaro D’Ávila\tSala 204"
     assert minimize(source) == f"Monitor(a){separator}[identificador removido]\tSala 204"
+
+
+def test_masks_email_without_removing_wrappers_or_punctuation():
+    assert minimize("Contato <ana+turma@dept.example.test>, Prova 1.") == (
+        "Contato <[email removido]>, Prova 1."
+    )

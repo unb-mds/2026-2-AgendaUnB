@@ -28,7 +28,7 @@ RULES = (
     (re.compile(rf"(?<!\w)(?i:prof(?:a|ª)?\.|dr(?:a|ª)?\.)"
                 rf"(?:{FIELD}|{SPACE}+)(?P<value>{NAME})(?!\w|@)"), IDENTIFIER),
     (re.compile(r"^(?:matr[ií]cula|cpf|nascimento)\s*[:=].*$", re.I | re.M), IDENTIFIER),
-    (re.compile(r"[\w.+-]+@[\w.-]+\.[a-zA-Z]{2,}"), EMAIL),
+    (re.compile(r"(?<![\w.+%-])[\w.+%'-]{1,64}@(?:[a-z\d-]{1,63}\.){1,12}[a-z]{2,63}(?![\w-])", re.I), EMAIL),
     (re.compile(r"(?<!\d)(?:\d{3}[.]\d{3}[.]\d{3}-\d{2}|\d{9,11})(?!\d)"), IDENTIFIER),
     (re.compile(r"(?:\+55\s*)?\(?\d{2}\)?[ -]\d{4,5}-\d{4}"), PHONE),
 )
