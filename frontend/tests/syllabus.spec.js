@@ -26,6 +26,8 @@ test('oito planos e 60 avaliações: vínculo, upload concorrente, autorização
   let maxUploads = 0;
   let duringProcessing = false;
   let authorized = 0;
+  let thirdUploadStarted;
+  const overlappingUpload = new Promise(resolve => { thirdUploadStarted = resolve; });
   const started = performance.now();
   const hash = createHash('sha256').update(JSON.stringify(textPayload.pages)).digest('hex');
   await page.route('**/api/v1/syllabus/upload', async route => {
@@ -37,6 +39,9 @@ test('oito planos e 60 avaliações: vínculo, upload concorrente, autorização
     duringProcessing ||= [...data.values()].some(plan => plan.status === 'processando');
     running.add(index);
     maxUploads = Math.max(maxUploads, running.size);
+    // Mantenha o segundo envio aberto até o terceiro chegar, mesmo em CI lento.
+    if (index === 2) await overlappingUpload;
+    if (index === 3) thirdUploadStarted();
     await new Promise(resolve => setTimeout(resolve, 650));
     const plan = pendingText(index);
     data.set(plan.id, plan);
@@ -86,6 +91,7 @@ test('oito planos e 60 avaliações: vínculo, upload concorrente, autorização
     await chooseUploadClass(page, index);
     await files(page).setInputFiles(makePdf(index));
   }
+  await expect.poll(() => maxUploads).toBe(2);
   await page.getByRole('button', { name: 'Ver todos os planos' }).click();
   for (let index = 2; index <= 8; index++) {
     await queue(page).getByRole('button', { name: `Autorizar texto: plano-${index}.pdf`, exact: true }).click();
