@@ -100,3 +100,13 @@ def test_counts_link_with_embedded_contact_once():
 def test_masks_residential_address_and_preserves_academic_address(source, expected):
     assert minimize(source) == expected
     assert minimize_with_count(expected) == (expected, 0)
+
+
+@pytest.mark.parametrize(("source", "expected"), [
+    ("Professor(a) responsável: Prof. João Silva", "Professor(a) responsável: Prof. [identificador removido]"),
+    ("Docente: joão da silva | Cálculo II", "Docente: [identificador removido] | Cálculo II"),
+    ("Professores João Silva", "Professores [identificador removido]"),
+    ("Professor de Matemática", "Professor de Matemática"),
+])
+def test_handles_role_variants_and_lowercase_structured_names(source, expected):
+    assert minimize(source) == expected

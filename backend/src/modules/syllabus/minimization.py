@@ -17,11 +17,19 @@ ACADEMIC_LABEL = (
     r"avalia(?:ç|c)[aã]o|provas?|trabalhos?|p[1-9]|datas?|hor[aá]rios?|"
     r"salas?|audit[oó]rios?|blocos?|laborat[oó]rios?|campus|local"
 )
-CONTACT_LABEL = r"e-?mail|telefone|whats(?:app)?|celular|cpf|rg|siape|matr[ií]cula"
+CONTACT_LABEL = r"e-?mail|telefone|whats(?:app)?|celular|cpf|rg|siape|matr[ií]cula|contatos?"
 NAME_WORD = r"[A-ZÀ-ÖØ-Þ][^\W\d_]*(?:[’'-][^\W\d_]+)*"
 NAME_PART = rf"(?!(?i:{ACADEMIC_LABEL}|{CONTACT_LABEL}|nascimento|comparecer[aá])\b){NAME_WORD}"
 NAME = rf"{NAME_PART}(?:{SPACE}+(?:(?i:da|das|de|do|dos|e|d[’']){SPACE}+)?{NAME_PART}){{0,11}}"
-FULL_ROLE = r"professor(?:\(a\)|[ao])?s?|docente\b(?:\(s\))?|monitor(?:\(a\)|[ao])?s?|alun(?:[oa]\(a\)|\(a\)|[oa])s?|discente(?:\(s\)|s)?|coordenador(?:\(a\)|[ao])?s?|nome\s+completo"
+FULL_ROLE = (
+    r"professor(?:\(a\)|a?s?|es|as)|docente(?:\(s\)|s)?|monitor(?:\(a\)|a?s?|es|as)|"
+    r"alun(?:[oa](?:\(a\))?|\(a\))s?|discente(?:\(s\)|s)?|"
+    rf"coordenador(?:\(a\)|a?s?|es|as)|nome{SPACE}+completo"
+)
+SHORT_ROLE = r"prof(?:a|ª|s)?\.|dr(?:a|ª)?\."
+RESPONSIBLE = rf"(?:{SPACE}+respons[aá]ve(?:l|is))?"
+NAME_FIELD_END = rf"(?={SPACE}*(?:[\r\n\t|;,]|$))"
+LOWERCASE_NAME = rf"(?i:{NAME}){NAME_FIELD_END}"
 PHONE_LABEL = r"telefones?|tel\.?|celular|fone|whats(?:app)?"
 DDD = r"(?:\([1-9]\d\)|[1-9]\d)"
 PHONE_SEP = r"[^\S\r\n\t]*"
@@ -67,8 +75,10 @@ RULES = (
                 rf"(?P<value>{WEB_SCHEME}(?:[a-z\d-]+\.)+[a-z]{{2,}}(?:[/#?]{URL_END})?)", re.I), IDENTIFIER),
     (re.compile(rf"(?<![\w./@]){WEB_SCHEME}{WHATSAPP_LINK}(?:{URL_END})?", re.I), PHONE),
     (re.compile(rf"(?<!\w){HOME_LABEL}\b{VALUE_SEPARATOR}(?P<value>{HOME_VALUE})", re.I), IDENTIFIER),
-    (re.compile(rf"(?<!\w)(?i:{FULL_ROLE})(?!\w){NAME_SEPARATOR}(?P<value>{NAME})(?!\w|@)"), IDENTIFIER),
-    (re.compile(rf"(?<!\w)(?i:prof(?:a|ª)?\.|dr(?:a|ª)?\.)"
+    (re.compile(rf"(?<!\w)(?i:(?:{FULL_ROLE}){RESPONSIBLE})(?!\w){NAME_SEPARATOR}"
+                rf"(?:(?i:{SHORT_ROLE}){SPACE}+)*(?P<value>{LOWERCASE_NAME}|{NAME})(?!\w|@)"), IDENTIFIER),
+    (re.compile(rf"(?m)^{SPACE}*(?i:{FULL_ROLE})(?!\w){SPACE}+(?P<value>{NAME}){NAME_FIELD_END}"), IDENTIFIER),
+    (re.compile(rf"(?<!\w)(?i:{SHORT_ROLE})"
                 rf"(?:{FIELD}|{SPACE}+)(?P<value>{NAME})(?!\w|@)"), IDENTIFIER),
     (re.compile(rf"(?<!\w){BIRTH_LABEL}(?!\w){VALUE_SEPARATOR}(?P<value>{BIRTH_DATE}){END_NUMBER}",
                 re.I), IDENTIFIER),
