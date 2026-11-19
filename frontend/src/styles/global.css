@@ -496,21 +496,21 @@ body.light .modal-btn-google:hover {
   --accent-color: #008bff;
   --border-color: rgba(255, 255, 255, 0.15);
   --shadow-light: 0 8px 24px rgba(0,0,0,0.06);
-  --shadow-dark: 0 10px 30px rgba(0,0,0,0.3);
-  --shadow-strong: 0 10px 30px rgba(0,0,0,0.5);
-  --gradient-dark: linear-gradient(to bottom right, #1e293b, #0f172a);
+  --shadow-dark: 0 10px 28px rgba(0,0,0,0.2);
+  --shadow-strong: 0 12px 28px rgba(0,0,0,0.2);
+  --gradient-dark: #121b2e;
 }
 
 body.light {
   --bg-color: #f0f4f8;
   --card-bg: #ffffff;
   --text-color: #1a1a2e;
-  --text-muted: #64748b;
+  --text-muted: #526278;
   --danger-color: #e84118;
   --border-color: rgba(0, 0, 0, 0.15);
   --shadow-dark: 0 8px 24px rgba(0,0,0,0.06);
   --shadow-strong: 0 10px 25px rgba(0,0,0,0.15);
-  --gradient-dark: linear-gradient(to bottom right, #f1f5f9, #e2e8f0);
+  --gradient-dark: #e8eef5;
 }
 
 /* =========================================
@@ -530,10 +530,14 @@ body.light .custom-input { color-scheme: light; }
 /* Tags de Evento */
 .event-tag {
   font-size: 0.75rem; padding: 4px 10px; border-radius: 12px;
-  background: rgba(255, 255, 255, 0.1); color: var(--text-muted); 
+  background: rgba(255, 255, 255, 0.1); color: var(--text-muted);
   font-weight: 500; display: inline-flex; align-items: center; gap: 4px;
 }
-body.light .event-tag { background: rgba(0, 0, 0, 0.05); }
+body.light .event-tag { background: rgba(0, 0, 0, 0.06); color: #334155; }
+.event-tag--personal { background: #005fd2; color: #ffffff; font-weight: 600; }
+body.light .event-tag--personal { background: #005fd2; color: #ffffff; }
+.event-tag--saved { background: #2d3a54; color: #f8fafc; font-weight: 600; }
+body.light .event-tag--saved { background: #1e293b; color: #ffffff; }
 
 /* Cards de Evento */
 .event-card {
@@ -546,19 +550,24 @@ body.light .event-tag { background: rgba(0, 0, 0, 0.05); }
   color: var(--text-color);
 }
 .event-card:hover { transform: translateY(-3px); border-color: var(--accent-color); }
+.event-card:focus-visible, .event-card-delete:focus-visible, .filter-pill:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
 .event-card-icon {
   height: 64px; min-height: 64px; background: var(--gradient-dark);
   display: flex; align-items: center; justify-content: center;
   border-bottom: 1px solid var(--border-color);
 }
 .event-card-icon span { font-size: 2rem; color: var(--accent-color); opacity: 0.9; }
-.event-card-body { padding: 1.25rem; flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-.event-card-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 6px; color: var(--text-color); line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.event-card-date { display: flex; align-items: center; gap: 6px; color: #008bff; font-weight: 600; font-size: 0.85rem; margin-bottom: 12px; }
-.event-card-desc { font-size: 0.88rem; color: var(--text-muted); margin-bottom: 0; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; flex-shrink: 1; }
-.event-card-footer { display: flex; flex-wrap: nowrap; gap: 8px; margin-top: auto; padding-top: 16px; overflow: hidden; }
+.event-card-body { padding: 1.25rem; flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+.event-card-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 6px; color: var(--text-color); line-height: 1.35; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.event-card-date { display: flex; align-items: center; gap: 6px; color: #4db3ff; font-weight: 600; font-size: 0.85rem; margin-bottom: 12px; overflow-wrap: anywhere; }
+body.light .event-card-date { color: #005fd2; }
+.event-card-desc { font-size: 0.88rem; color: var(--text-muted); margin-bottom: 0; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; flex-shrink: 1; overflow-wrap: anywhere; }
+.event-card-footer { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 16px; }
 .event-card-footer .event-tag {
-  overflow: hidden; max-width: 50%; flex-shrink: 1; min-width: 0;
+  overflow: hidden; max-width: 100%; flex-shrink: 1; min-width: 0;
 }
 .event-tag-text {
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -571,9 +580,9 @@ body.light .event-tag { background: rgba(0, 0, 0, 0.05); }
 
 /* Botoes e Filtros */
 .btn-primary {
-  padding: 0 24px; border-radius: 24px; background: linear-gradient(135deg, rgb(0, 95, 210), rgb(0, 139, 255));
+  padding: 0 24px; border-radius: 24px; background: #005fd2;
   color: #fff; border: none; font-weight: 600; font-size: 1rem; cursor: pointer; display: flex; align-items: center; gap: 8px;
-  box-shadow: 0 4px 15px rgba(0, 139, 255, 0.4); height: 56px; transition: transform 0.2s;
+  box-shadow: 0 4px 15px rgba(0, 139, 255, 0.25); height: 56px; transition: transform 0.2s, background-color 0.2s;
 }
 .btn-primary:hover { transform: translateY(-2px); }
 .events-page { --events-control-height: 49px; }
@@ -691,6 +700,15 @@ body.light .event-error-signup:hover { background: #008cffbb; }
   line-height: 1.4;
 }
 .calendar-event:hover { border-color: var(--accent-color); }
+.calendar-event-meta { display: flex; align-items: center; justify-content: space-between; gap: 4px; flex-wrap: wrap; }
+.calendar-event-title { font-weight: 600; overflow-wrap: anywhere; }
+.calendar-event-badge {
+  font-size: 0.68rem; font-weight: 700; padding: 2px 7px; border-radius: 999px;
+  letter-spacing: 0.03em; text-transform: uppercase;
+}
+.calendar-event--personal .calendar-event-badge { background: #005fd2; color: #ffffff; }
+.calendar-event--saved .calendar-event-badge { background: #2d3a54; color: #f8fafc; }
+body.light .calendar-event--saved .calendar-event-badge { background: #1e293b; color: #ffffff; }
 .calendar-event-time { color: var(--text-muted); font-size: 0.78rem; font-variant-numeric: tabular-nums; }
 .calendar-event:focus-visible, .calendar-nav-button:focus-visible, .calendar-scroll:focus-visible {
   outline: 2px solid var(--text-color);
@@ -784,6 +802,22 @@ body.light .custom-picker-option:hover { background: rgba(0, 140, 255, 0.316); }
 .custom-picker-option.active { background: rgba(0, 140, 255, 0.775); color: #fff; }
 body.light .custom-picker-option.active,
 body.light .custom-picker-option.active:hover { background: #006bc4; color: #fff; }
+.custom-picker-option-multi { display: flex; align-items: center; gap: 10px; }
+.custom-picker-option-multi.active,
+.custom-picker-option-multi.active:hover { background: rgba(0, 139, 255, 0.14); color: var(--text-color); }
+body.light .custom-picker-option-multi.active,
+body.light .custom-picker-option-multi.active:hover { background: rgba(0, 107, 196, 0.1); color: var(--text-color); }
+.custom-select-popup > .custom-picker-option-clear { border-bottom: 1px solid var(--border-color); margin-bottom: 2px; }
+.custom-select-checkbox {
+  width: 16px; height: 16px; border-radius: 4px; flex-shrink: 0;
+  display: inline-grid; place-items: center;
+  border: 1.5px solid var(--text-muted); background: transparent;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.custom-select-checkbox .material-symbols-outlined { font-size: 13px; font-weight: 700; line-height: 1; }
+.custom-select-checkbox.checked { background: #008bff; border-color: #008bff; color: #fff; }
+body.light .custom-select-checkbox.checked { background: #006bc4; border-color: #006bc4; color: #fff; }
+.custom-select-option-label { min-width: 0; flex: 1; }
 
 .custom-select { position: relative; min-width: 0; max-width: 100%; }
 .custom-select[data-open="true"] { z-index: 1000; }
@@ -801,7 +835,7 @@ body.light .custom-picker-option.active:hover { background: #006bc4; color: #fff
 .custom-select-chevron { font-size: 1.2rem; flex-shrink: 0; }
 .custom-select-popup { inset-block-start: calc(100% + 8px); width: 100%; max-height: 220px; overflow: auto; }
 .custom-select-popup:not(:empty) { padding-block: 4px; }
-.custom-select:has(.filter-pill) .custom-select-popup { min-width: 180px; }
+.custom-select:has(.filter-pill) .custom-select-popup { min-width: max(220px, 100%); }
 .custom-select-up { inset-block: auto calc(100% + 8px); }
 .custom-select-popup > button {
   flex: 0 0 auto;
@@ -823,11 +857,27 @@ body.light .custom-picker-option.active:hover { background: #006bc4; color: #fff
   transition: all 0.2s;
   min-width: 160px;
 }
-.filter-pill:hover {
+.filter-pill:hover,
+.filter-pill.has-selection {
   border-color: var(--accent-color);
+}
+@media (max-width: 600px) {
+  .events-filters-label {
+    flex-basis: 100%;
+    margin-right: 0 !important;
+    margin-bottom: 2px;
+  }
+  .events-filters-bar > div {
+    width: 100% !important;
+    flex: 1 1 100%;
+  }
+  .events-filters-bar .filter-pill {
+    width: 100%;
+  }
 }
 
 /* Time Picker Items */
+.time-picker-col::-webkit-scrollbar { width: 0px; background: transparent; }
 .time-picker-item:hover {
   background: rgba(0, 140, 255, 0.49) !important;
 }
@@ -900,6 +950,8 @@ body.light .time-picker-item:hover {
   line-height: 1.15;
   color: #fff;
   margin-bottom: 2rem;
+  overflow-wrap: anywhere;
+  min-width: 0;
 }
 
 /* Organizer Box */
@@ -916,7 +968,7 @@ body.light .time-picker-item:hover {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: linear-gradient(135deg, rgb(0,139,255), rgba(0,95,210,1));
+  background: #005fd2;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -949,10 +1001,12 @@ body.light .time-picker-item:hover {
 
 /* Body / Description */
 .event-body {
-  color: rgba(255,255,255,0.75);
+  color: #e2e8f0;
   font-size: 1.05rem;
   line-height: 1.8;
-  text-align: justify;
+  text-align: left;
+  overflow-wrap: anywhere;
+  min-width: 0;
 }
 
 .event-body p {
@@ -987,7 +1041,7 @@ body.light .time-picker-item:hover {
   padding: 32px 28px;
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+  box-shadow: 0 16px 32px rgba(0,0,0,0.2);
 }
 
 .event-info-line {
@@ -998,6 +1052,8 @@ body.light .time-picker-item:hover {
   font-weight: 500;
   color: #fff;
   margin-bottom: 1.2rem;
+  overflow-wrap: anywhere;
+  min-width: 0;
 }
 
 .event-info-line .icon-blue {
@@ -1091,6 +1147,17 @@ body.light .time-picker-item:hover {
   .event-side-col {
     width: 100%;
     position: static;
+  }
+}
+@media (max-width: 480px) {
+  .events-page {
+    padding: 6.5rem 1rem 2rem !important;
+  }
+  .event-page-content {
+    padding: 0 1rem;
+  }
+  .event-action-card {
+    padding: 22px 18px;
   }
 }
 

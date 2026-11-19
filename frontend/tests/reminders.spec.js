@@ -70,6 +70,7 @@ test('a leitura persiste no retorno e a troca de conta limpa a central', async (
   await privateRow.getByRole('button', { name: 'Marcar como lido' }).click();
   await expect(privateRow.getByText('Lido', { exact: true })).toBeVisible();
 
+  await page.getByRole('button', { name: /Menu do perfil/i }).click();
   await page.getByRole('button', { name: 'Sair da conta' }).click();
   await expect(bell).toHaveCount(0);
   await page.evaluate(() => window.changeReminderAccount('ana'));

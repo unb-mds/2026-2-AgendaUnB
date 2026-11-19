@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext'
 import { eventsApi } from './lib/api'
+import { getStoredTheme, setStoredTheme } from './lib/preferences'
 import NavBar from './components/NavBar'
 import AuthDialog from './components/AuthDialog'
 import './styles/global.css'
@@ -65,7 +66,7 @@ export default function App() {
   const { user, profile } = useAuth();
   const [authMode, setAuthMode] = useState(null);
   const [accountDeletedBanner, setAccountDeletedBanner] = useState(() => searchParams.get('conta') === 'excluida');
-  const [theme, setTheme] = useState(() => document.body.classList.contains('light') ? 'light' : 'dark');
+  const [theme, setTheme] = useState(() => getStoredTheme());
 
   useEffect(() => {
     if (['login', 'signup', 'recover', 'confirm'].includes(authIntent)) setAuthMode(authIntent);
@@ -87,10 +88,9 @@ export default function App() {
   const heroRef = useRef(null)
   const videoRef = useRef(null)
 
-  // Sincroniza a classe do body com o tema
+  // Sincroniza a classe do body com o tema persistido
   useEffect(() => {
-    document.body.classList.remove('light', 'dark')
-    document.body.classList.add(theme)
+    setStoredTheme(theme);
   }, [theme])
 
   const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark')

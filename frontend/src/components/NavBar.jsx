@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import NotificationBell from './NotificationBell';
+import ProfileMenu from './ProfileMenu';
 
 export default function NavBar({ pageType = 'home', isDark, toggleTheme, onLoginClick, onCreateAccountClick }) {
   const { user, profile, signOut } = useAuth();
@@ -38,10 +39,9 @@ export default function NavBar({ pageType = 'home', isDark, toggleTheme, onLogin
         <span className="material-symbols-outlined" aria-hidden="true">{isDark ? 'brightness_7' : 'bedtime'}</span>
       </button>}
       {user && <NotificationBell key={user.id} userId={user.id} showModeration={profile?.papel === 'student'} />}
-      {user && <button className="nav-avatar" title="Sair da conta" aria-label="Sair da conta" onClick={signOut}>
-        {avatar ? <img src={avatar} referrerPolicy="no-referrer" alt="" /> : (profile?.nome_completo?.[0] || user.email?.[0] || 'U').toUpperCase()}
-      </button>}
+      {user && <ProfileMenu user={user} profile={profile} avatar={avatar} signOut={signOut} />}
       {!user && pageType === 'home' && <><button className="nav-btn-account" onClick={onCreateAccountClick}>Criar conta</button><button className="nav-btn-account-login" onClick={onLoginClick}>Entrar</button></>}
+      {!user && pageType !== 'home' && <Link className="nav-btn-account-login" to="/?auth=login">Entrar</Link>}
     </div>
   </nav>;
 }

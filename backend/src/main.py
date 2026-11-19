@@ -63,10 +63,17 @@ async def handle_validation_error(request: Request, exc: RequestValidationError)
         "title": "Título",
         "description": "Descrição",
         "starts_at": "Data e horário",
+        "ends_at": "Horário de término",
+        "start_date": "Data inicial",
+        "end_date": "Data final",
+        "all_day": "Dia inteiro",
         "campus": "Campus",
         "category": "Área / Categoria",
         "location": "Local",
         "external_url": "Link externo",
+        "click_id": "Identificador do clique",
+        "name": "Nome da categoria",
+        "color": "Cor da categoria",
     }
     messages = []
     for error in exc.errors():
