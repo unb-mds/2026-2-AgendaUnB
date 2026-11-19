@@ -33,10 +33,10 @@ NAME_FIELD_END = rf"(?={SPACE}*(?:[\r\n\t|;,]|$))"
 LOWERCASE_NAME = rf"(?i:{NAME}){NAME_FIELD_END}"
 PHONE_LABEL = r"telefones?|tel\.?|celular|fone|whats(?:app)?"
 DDD = r"(?:\([1-9]\d\)|[1-9]\d)"
-PHONE_SEP = r"[^\S\r\n\t]*"
-PHONE_NUMBER = rf"(?:9?\d{{4}})[ .-]\d{{4}}"
-FORMATTED_PHONE = rf"(?:\+55{PHONE_SEP})?{DDD}(?:{PHONE_SEP}|[.-]){PHONE_NUMBER}"
-LABELED_PHONE = rf"(?:\+?55{PHONE_SEP})?(?:{DDD}[ .-]?)?9?\d{{4}}[ .-]?\d{{4}}"
+PHONE_SEPARATOR = rf"(?:{SPACE}*[-.‐‑–—]{SPACE}*|{SPACE}+)"
+PHONE_NUMBER = rf"9?\d{{4}}{PHONE_SEPARATOR}\d{{4}}"
+FORMATTED_PHONE = rf"(?:(?:\+55{PHONE_SEPARATOR}?)?{DDD}{PHONE_SEPARATOR}?{PHONE_NUMBER}|\+55[1-9]\d9?\d{{8}})"
+LABELED_PHONE = rf"(?:\+?55{PHONE_SEPARATOR}?)?(?:{DDD}{PHONE_SEPARATOR}?)?9?\d{{4}}{PHONE_SEPARATOR}?\d{{4}}"
 CPF_FORMATTED = r"\d{3}\.\d{3}\.\d{3}-\d{2}"
 CPF_VALUE = rf"(?:{CPF_FORMATTED}|\d{{3}}{SPACE}+\d{{3}}{SPACE}+\d{{3}}{SPACE}+\d{{2}}|\d{{11}})"
 BARE_CPF = re.compile(r"(?<![\w/])[0-9]{11}(?!\w|[./-]\d)")
@@ -83,7 +83,8 @@ RULES = (
     (re.compile(rf"(?<!\w){HOME_LABEL}\b{VALUE_SEPARATOR}(?P<value>{HOME_VALUE})", re.I), IDENTIFIER),
     (re.compile(rf"(?<!\w)(?i:(?:{FULL_ROLE}){RESPONSIBLE})(?!\w){NAME_SEPARATOR}"
                 rf"(?:(?i:{SHORT_ROLE}){SPACE}+)*(?P<value>{LOWERCASE_NAME}|{NAME})(?!\w|@)"), IDENTIFIER),
-    (re.compile(rf"(?m)^{SPACE}*(?i:{FULL_ROLE})(?!\w){SPACE}+(?P<value>{NAME}){NAME_FIELD_END}"), IDENTIFIER),
+    (re.compile(rf"(?m)^{SPACE}*(?i:{FULL_ROLE})(?!\w)(?:{SPACE}*\r?\n{SPACE}*|{SPACE}+)"
+                rf"(?P<value>{NAME}){NAME_FIELD_END}"), IDENTIFIER),
     (re.compile(rf"(?<!\w)(?i:{FULL_ROLE})(?!\w){SPACE}+(?P<value>{NAME_PART}(?:{NAME_TAIL}){{1,11}})"
                 r"(?!\w|@)"), IDENTIFIER),
     (re.compile(rf"(?<!\w)(?i:{SHORT_ROLE})"
