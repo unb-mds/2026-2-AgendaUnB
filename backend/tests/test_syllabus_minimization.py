@@ -41,6 +41,7 @@ def test_masks_email_without_removing_wrappers_or_punctuation():
 
 @pytest.mark.parametrize("value", [
     "+55 (61) 90000-0000", "(61) 3000-0000", "61 90000 0000", "61.90000.0000",
+    "+5561900000000", "+55 (61) 90000‑0000", "61 – 90000-0000",
 ])
 def test_masks_phone_with_ddd_in_running_text(value):
     assert minimize(f"Ligue para {value}, sala 204.") == "Ligue para [telefone removido], sala 204."
@@ -123,6 +124,10 @@ def test_masks_professor_with_full_role_in_running_text():
     assert minimize("Consulte a professora Ana Silva antes da prova.") == (
         "Consulte a professora [identificador removido] antes da prova."
     )
+
+
+def test_masks_name_after_role_exported_as_a_separate_pdf_line():
+    assert minimize("Docente\n  Ana Silva\nProva 1") == "Docente\n  [identificador removido]\nProva 1"
 
 
 def test_masks_dotted_rg_without_optional_digit():
