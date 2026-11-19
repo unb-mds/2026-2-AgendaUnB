@@ -37,12 +37,18 @@ END_NUMBER = r"(?!\w|[./-]\d)"
 # A forma com barra da UnB tem ano de ingresso em dois dígitos.
 UNB_MATRICULA = rf"\d{{2}}{SPACE}*/{SPACE}*\d{{7}}"
 MATRICULA = rf"(?:{UNB_MATRICULA}|\d{{9}})"
+BIRTH_LABEL = rf"(?:(?:data{SPACE}+(?:de{SPACE}+)?)?nascimento|nascid[ao]{SPACE}+em)"
+BIRTH_DATE = (
+    rf"(?:\d{{4}}-\d{{2}}-\d{{2}}|\d{{1,2}}[/.-]\d{{1,2}}[/.-](?:\d{{4}}|\d{{2}})"
+    rf"|\d{{1,2}}{SPACE}+de{SPACE}+[a-zç]+{SPACE}+de{SPACE}+\d{{4}})"
+)
 
 RULES = (
     (re.compile(rf"(?<!\w)(?i:{FULL_ROLE})(?!\w){NAME_SEPARATOR}(?P<value>{NAME})(?!\w|@)"), IDENTIFIER),
     (re.compile(rf"(?<!\w)(?i:prof(?:a|ª)?\.|dr(?:a|ª)?\.)"
                 rf"(?:{FIELD}|{SPACE}+)(?P<value>{NAME})(?!\w|@)"), IDENTIFIER),
-    (re.compile(r"^nascimento\s*[:=].*$", re.I | re.M), IDENTIFIER),
+    (re.compile(rf"(?<!\w){BIRTH_LABEL}(?!\w){VALUE_SEPARATOR}(?P<value>{BIRTH_DATE}){END_NUMBER}",
+                re.I), IDENTIFIER),
     (re.compile(r"(?<![\w.+%-])[\w.+%'-]{1,64}@(?:[a-z\d-]{1,63}\.){1,12}[a-z]{2,63}(?![\w-])", re.I), EMAIL),
     (re.compile(rf"(?<![\w+\d(]){FORMATTED_PHONE}(?![\w\d]|[.-]\d)"), PHONE),
     (re.compile(rf"(?<!\w)(?:{PHONE_LABEL})(?!\w)(?:{NAME_SEPARATOR}|{SPACE}+)"
