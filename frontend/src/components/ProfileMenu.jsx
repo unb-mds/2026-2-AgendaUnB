@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 const ROLE_LABELS = {
   admin: 'Administrador',
@@ -100,15 +100,23 @@ export default function ProfileMenu({ user, profile, avatar, signOut }) {
               <span>{error}</span>
             </p>
           )}
-          <div className="profile-popover-actions">
+          <div className="profile-popover-menu">
+            <Link
+              to="/configuracoes"
+              className={`profile-menu-item${location.pathname === '/configuracoes' ? ' active' : ''}`}
+              onClick={() => setOpen(false)}
+            >
+              <span className="material-symbols-outlined" aria-hidden="true">settings</span>
+              <span>Configurações</span>
+            </Link>
             <button
               type="button"
-              className="profile-logout-btn"
+              className="profile-menu-item profile-logout-item"
               disabled={signingOut}
               onClick={handleSignOut}
             >
               <span className="material-symbols-outlined" aria-hidden="true">logout</span>
-              {signingOut ? 'Saindo…' : 'Sair da conta'}
+              <span>{signingOut ? 'Saindo…' : 'Sair da conta'}</span>
             </button>
           </div>
         </section>
