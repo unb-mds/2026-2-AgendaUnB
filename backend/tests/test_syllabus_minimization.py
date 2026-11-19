@@ -52,6 +52,7 @@ def test_masks_compact_whatsapp_when_labeled():
 
 @pytest.mark.parametrize(("field", "expected"), [
     ("CPF: 00000000000", "CPF: [identificador removido]"),
+    ("CPF: 000 000 000 00", "CPF: [identificador removido]"),
     ("000.000.000-00", "[identificador removido]"),
     ("R.G. nº: 12.345.678-X", "R.G. nº: [identificador removido]"),
     ("RG 1234567", "RG [identificador removido]"),
@@ -140,3 +141,9 @@ def test_preserves_academic_fields_exactly_alongside_personal_data(academic):
     expected = f"{academic}\t| E-mail: [email removido] |\t{academic}"
     assert minimize_with_count(source) == (expected, 1)
     assert minimize_with_count(expected) == (expected, 0)
+
+
+def test_bare_cpf_requires_check_digits_and_respects_academic_identifier_context():
+    assert minimize("00000000191 | Turma 00000000191 | Código da disciplina: 00000000191 | 12345678900") == (
+        "[identificador removido] | Turma 00000000191 | Código da disciplina: 00000000191 | 12345678900"
+    )

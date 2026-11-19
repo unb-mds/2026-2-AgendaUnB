@@ -38,7 +38,12 @@ PHONE_NUMBER = rf"(?:9?\d{{4}})[ .-]\d{{4}}"
 FORMATTED_PHONE = rf"(?:\+55{PHONE_SEP})?{DDD}(?:{PHONE_SEP}|[.-]){PHONE_NUMBER}"
 LABELED_PHONE = rf"(?:\+?55{PHONE_SEP})?(?:{DDD}[ .-]?)?9?\d{{4}}[ .-]?\d{{4}}"
 CPF_FORMATTED = r"\d{3}\.\d{3}\.\d{3}-\d{2}"
-CPF_VALUE = rf"(?:{CPF_FORMATTED}|\d{{11}})"
+CPF_VALUE = rf"(?:{CPF_FORMATTED}|\d{{3}}{SPACE}+\d{{3}}{SPACE}+\d{{3}}{SPACE}+\d{{2}}|\d{{11}})"
+BARE_CPF = re.compile(r"(?<![\w/])[0-9]{11}(?!\w|[./-]\d)")
+ACADEMIC_NUMBER_LABEL = re.compile(
+    rf"\b(?:c[oó]digo(?:{SPACE}+(?:d[aeo]{SPACE}+)?(?:disciplina|turma))?|turma|disciplina)"
+    rf"{SPACE}*(?:[:=]{SPACE}*)?$", re.I,
+)
 RG_VALUE = r"(?:\d{1,2}\.\d{3}\.\d{3}(?:-?[\dX])?|\d{7,9}(?:-?[\dX])?|\d{6,8}-[\dX])"
 NUMBER_LABEL = rf"(?:{SPACE}+(?:n[º°.]|n[uú]mero))?"
 VALUE_SEPARATOR = rf"(?:{NAME_SEPARATOR}|{SPACE}+)"
@@ -101,6 +106,17 @@ RULES = (
 )
 
 
+def _valid_cpf(number: str) -> bool:
+    digits = [int(digit) for digit in number]
+    if len(set(digits)) == 1:
+        return False
+    for length in (9, 10):
+        total = sum(digit * weight for digit, weight in zip(digits, range(length + 1, 1, -1)))
+        if (total * 10 % 11) % 10 != digits[length]:
+            return False
+    return True
+
+
 def minimize_with_count(text: str) -> tuple[str, int]:
     # Encontre os trechos no original, sem reconhecer partes das próprias máscaras.
     spans = []
@@ -108,6 +124,10 @@ def minimize_with_count(text: str) -> tuple[str, int]:
         for match in pattern.finditer(text):
             start, end = match.span("value" if "value" in pattern.groupindex else 0)
             spans.append((start, end, placeholder))
+    for match in BARE_CPF.finditer(text):
+        start, end = match.span()
+        if _valid_cpf(match[0]) and not ACADEMIC_NUMBER_LABEL.search(text, max(0, start - 64), start):
+            spans.append((start, end, IDENTIFIER))
 
     selected = []
     for start, end, placeholder in sorted(spans, key=lambda span: (span[0], -span[1])):
