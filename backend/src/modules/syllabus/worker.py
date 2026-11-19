@@ -329,6 +329,8 @@ def main():
         parser.exit(2, "Gemini aguarda validação de termos e elegibilidade S7-B02.\n")
     worker = SyllabusWorker(SessionLocal, None, GeminiProvider(config), config, pace=True)
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("httpcore").setLevel(logging.WARNING)
     processed = 0
     try:
         while True:

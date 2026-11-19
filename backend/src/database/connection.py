@@ -12,6 +12,8 @@ if not database_url:
     raise RuntimeError("DATABASE_URL não foi definida em backend/.env")
 
 require_database_tls(database_url, os.getenv("APP_ENV", "local"))
+# hide_parameters: mensagens de erro e logs do SQLAlchemy não incluem os valores
+# das consultas (títulos, descrições, e-mails, texto de planos).
 engine = create_engine(database_url, pool_pre_ping=True, hide_parameters=True)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
