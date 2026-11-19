@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext'
 import { eventsApi } from './lib/api'
 import { getStoredTheme, setStoredTheme } from './lib/preferences'
@@ -61,6 +61,7 @@ const teamMembers = [
 // ............................
 export default function App() {
   const navigate = useNavigate();
+  const { hash, key: locationKey } = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const authIntent = searchParams.get('auth');
   const { user, profile } = useAuth();
@@ -84,6 +85,18 @@ export default function App() {
   useEffect(() => {
     eventsApi.prefetchPublic();
   }, []);
+
+  useEffect(() => {
+    if (!hash) return undefined;
+    const target = document.getElementById(hash.slice(1));
+    if (!target) return undefined;
+    const prefersReduced = typeof window !== 'undefined'
+      && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const frame = requestAnimationFrame(() => {
+      target.scrollIntoView({ behavior: prefersReduced ? 'auto' : 'smooth', block: 'start' });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [hash, locationKey]);
 
   const heroRef = useRef(null)
   const videoRef = useRef(null)
