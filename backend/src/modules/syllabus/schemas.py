@@ -23,6 +23,7 @@ class SyllabusUploadResponse(BaseModel):
     created_at: datetime = Field(alias="createdAt")
     authorization_required: bool = Field(default=True, alias="authorizationRequired")
     prepared_text_available: bool = Field(default=False, alias="preparedTextAvailable")
+    redacted_count: int | None = Field(default=None, alias="redactedCount", ge=0)
     message: str = "Texto preparado. Revise e autorize o trecho antes de enviar ao Gemini."
 
 
@@ -86,6 +87,7 @@ class SyllabusDetailResponse(SyllabusListItem):
     authorization_required: bool = Field(default=True, alias="authorizationRequired")
     preparation_duration_ms: int | None = Field(default=None, alias="preparationDurationMs")
     review_duration_ms: int | None = Field(default=None, alias="reviewDurationMs")
+    redacted_count: int | None = Field(default=None, alias="redactedCount", ge=0)
 
 
 class SyllabusListResponse(BaseModel):

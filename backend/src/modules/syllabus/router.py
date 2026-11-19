@@ -623,6 +623,7 @@ def get_syllabus_status(
         authorizationRequired=syllabus.authorization_required if is_owner else False,
         preparedTextAvailable=bool(syllabus.prepared_pages) if is_owner else False,
         preparationDurationMs=syllabus.preparation_duration_ms if is_owner else None,
+        redactedCount=syllabus.redacted_count if is_owner else None,
         reviewDurationMs=duration_ms(syllabus.created_at, syllabus.authorized_at) if is_owner else None,
         disciplina=syllabus.disciplina,
         turma=syllabus.turma,
