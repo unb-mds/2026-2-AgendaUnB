@@ -8,10 +8,11 @@ EMAIL = "[email removido]"
 PHONE = "[telefone removido]"
 
 SPACE = r"[^\S\r\n\t]"
-FIELD = rf"{SPACE}*[:=·–—-]{SPACE}*"
-# Duas colunas podem ser separadas por espaços ou tabs. Exportações de PDF
-# também podem quebrar uma linha imediatamente após o rótulo.
-NAME_SEPARATOR = rf"(?:{FIELD}(?:\r?\n{SPACE}*)?|{SPACE}*[\t|]{SPACE}*|{SPACE}{{2,}})"
+FIELD = rf"{SPACE}*[:=·–—-][^\S\r\n]*"
+# A extração de PDF pode usar tabulação, barras de tabela ou quebra de linha.
+FIELD_SEPARATOR = (
+    rf"(?:{FIELD}(?:\r?\n{SPACE}*)?|{SPACE}*(?:\t+|\||\r?\n){SPACE}*|{SPACE}{{2,}})"
+)
 ACADEMIC_LABEL = (
     r"disciplinas?|mat[eé]rias?|turmas?|c[oó]digo|semestre|per[ií]odo|"
     r"avalia(?:ç|c)[aã]o|provas?|trabalhos?|p[1-9]|datas?|hor[aá]rios?|"
@@ -22,16 +23,15 @@ NAME_WORD = r"(?:[A-ZÀ-ÖØ-Þ]\.|[A-ZÀ-ÖØ-Þ][^\W\d_]*(?:[’'-][^\W\d_]+)*
 NAME_PART = rf"(?!(?i:{ACADEMIC_LABEL}|{CONTACT_LABEL}|nascimento|comparecer[aá])\b){NAME_WORD}"
 NAME_TAIL = rf"{SPACE}+(?:(?i:da|das|de|do|dos|e){SPACE}+)?{NAME_PART}"
 NAME = rf"{NAME_PART}(?:{NAME_TAIL}){{0,11}}"
-FULL_ROLE = (
-    r"professor(?:\(a\)|a?s?|es|as)|docente(?:\(s\)|s)?|monitor(?:\(a\)|a?s?|es|as)|"
-    r"alun(?:[oa](?:\(a\))?|\(a\))s?|discente(?:\(s\)|s)?|"
-    rf"coordenador(?:\(a\)|a?s?|es|as)|nome{SPACE}+completo"
-)
+GENDER_OR_PLURAL = rf"(?:{SPACE}*\(a\)|a?s?|es|as)"
+STUDENT_ROLE = rf"(?:alun(?:[oa](?:{SPACE}*\(a\))?|{SPACE}*\(a\))s?|discente(?:\(s\)|s)?)"
+ROLE = rf"(?:professor|monitor|coordenador){GENDER_OR_PLURAL}|docente(?:\(s\)|s)?|{STUDENT_ROLE}"
+FULL_ROLE = rf"(?:(?:nome{SPACE}+d[oa]{SPACE}+)?(?:{ROLE})|nome{SPACE}+completo)"
 SHORT_ROLE = r"prof(?:a|ª|s)?\.|dr(?:a|ª)?\."
 RESPONSIBLE = rf"(?:{SPACE}+respons[aá]ve(?:l|is))?"
 NAME_FIELD_END = rf"(?={SPACE}*(?:[\r\n\t|;,]|$))"
 LOWERCASE_NAME = rf"(?i:{NAME}){NAME_FIELD_END}"
-PHONE_LABEL = r"telefones?|tel\.?|celular|fone|whats(?:app)?"
+PHONE_LABEL = r"telefones?|tel\.?|cel(?:ular)?\.?|fone|whats(?:app)?"
 DDD = r"(?:\([1-9]\d\)|[1-9]\d)"
 PHONE_SEPARATOR = rf"(?:{SPACE}*[-.‐‑–—]{SPACE}*|{SPACE}+)"
 PHONE_NUMBER = rf"9?\d{{4}}{PHONE_SEPARATOR}\d{{4}}"
@@ -46,11 +46,12 @@ ACADEMIC_NUMBER_LABEL = re.compile(
 )
 RG_VALUE = r"(?:\d{1,2}\.\d{3}\.\d{3}(?:-?[\dX])?|\d{7,9}(?:-?[\dX])?|\d{6,8}-[\dX])"
 NUMBER_LABEL = rf"(?:{SPACE}+(?:n[º°.]|n[uú]mero))?"
-VALUE_SEPARATOR = rf"(?:{NAME_SEPARATOR}|{SPACE}+)"
+VALUE_SEPARATOR = rf"(?:{FIELD_SEPARATOR}|{SPACE}+)"
 END_NUMBER = r"(?!\w|[./-]\d)"
 # A forma com barra da UnB tem ano de ingresso em dois dígitos.
 UNB_MATRICULA = rf"\d{{2}}{SPACE}*/{SPACE}*\d{{7}}"
 MATRICULA = rf"(?:{UNB_MATRICULA}|\d{{9}})"
+MATRICULA_LABEL = rf"matr[ií]cula(?:{SPACE}+(?:unb|(?:d[oa]{SPACE}+)?{STUDENT_ROLE}))?"
 BIRTH_LABEL = rf"(?:(?:data{SPACE}+(?:de{SPACE}+)?)?nascimento|nascid[ao]{SPACE}+em)"
 BIRTH_DATE = (
     rf"(?:\d{{4}}-\d{{2}}-\d{{2}}|\d{{1,2}}[/.-]\d{{1,2}}[/.-](?:\d{{4}}|\d{{2}})"
@@ -74,6 +75,7 @@ HOME_VALUE = (
     rf"\w(?:(?!{ADDRESS_END}){ADDRESS_PART}){{2,199}}?(?<!\s)"
     rf"(?={ADDRESS_END}|{SPACE}*(?:[\r\n\t|;]|$))"
 )
+STREET_WITH_NUMBER = rf"(?=(?:rua|av(?:enida)?\.?|travessa|alameda|quadra){SPACE}+{ADDRESS_PART}{{0,80}}\d)"
 
 RULES = (
     (re.compile(rf"(?<![\w./@]){WEB_SCHEME}{PERSONAL_PROFILE}{URL_END}", re.I), IDENTIFIER),
@@ -81,7 +83,8 @@ RULES = (
                 rf"(?P<value>{WEB_SCHEME}(?:[a-z\d-]+\.)+[a-z]{{2,}}(?:[/#?]{URL_END})?)", re.I), IDENTIFIER),
     (re.compile(rf"(?<![\w./@]){WEB_SCHEME}{WHATSAPP_LINK}(?:{URL_END})?", re.I), PHONE),
     (re.compile(rf"(?<!\w){HOME_LABEL}\b{VALUE_SEPARATOR}(?P<value>{HOME_VALUE})", re.I), IDENTIFIER),
-    (re.compile(rf"(?<!\w)(?i:(?:{FULL_ROLE}){RESPONSIBLE})(?!\w){NAME_SEPARATOR}"
+    (re.compile(rf"(?<!\w)endere[cç]o\b{FIELD_SEPARATOR}{STREET_WITH_NUMBER}(?P<value>{HOME_VALUE})", re.I), IDENTIFIER),
+    (re.compile(rf"(?<!\w)(?i:{FULL_ROLE}{RESPONSIBLE})(?!\w){FIELD_SEPARATOR}"
                 rf"(?:(?i:{SHORT_ROLE}){SPACE}+)*(?P<value>{LOWERCASE_NAME}|{NAME})(?!\w|@)"), IDENTIFIER),
     (re.compile(rf"(?m)^{SPACE}*(?i:{FULL_ROLE})(?!\w)(?:{SPACE}*\r?\n{SPACE}*|{SPACE}+)"
                 rf"(?P<value>{NAME}){NAME_FIELD_END}"), IDENTIFIER),
@@ -93,14 +96,14 @@ RULES = (
                 re.I), IDENTIFIER),
     (re.compile(r"(?<![\w.+%-])[\w.+%'-]{1,64}@(?:[a-z\d-]{1,63}\.){1,12}[a-z]{2,63}(?![\w-])", re.I), EMAIL),
     (re.compile(rf"(?<![\w+\d(]){FORMATTED_PHONE}(?![\w\d]|[.-]\d)"), PHONE),
-    (re.compile(rf"(?<!\w)(?:{PHONE_LABEL})(?!\w)(?:{NAME_SEPARATOR}|{SPACE}+)"
+    (re.compile(rf"(?<!\w)(?:{PHONE_LABEL})(?!\w){VALUE_SEPARATOR}"
                 rf"(?P<value>{LABELED_PHONE})(?![\w\d]|[./-]\d)", re.I), PHONE),
     (re.compile(rf"(?<!\w){CPF_FORMATTED}(?!\w)"), IDENTIFIER),
     (re.compile(rf"(?<!\w)cpf{NUMBER_LABEL}{VALUE_SEPARATOR}(?P<value>{CPF_VALUE}){END_NUMBER}", re.I), IDENTIFIER),
     (re.compile(rf"(?<!\w)(?:r\.?g\.?|registro geral){NUMBER_LABEL}{VALUE_SEPARATOR}"
                 rf"(?P<value>{RG_VALUE}){END_NUMBER}", re.I), IDENTIFIER),
     (re.compile(rf"(?<![\w/]){UNB_MATRICULA}{END_NUMBER}"), IDENTIFIER),
-    (re.compile(rf"(?<!\w)matr[ií]cula(?:{SPACE}+unb)?{NUMBER_LABEL}{VALUE_SEPARATOR}"
+    (re.compile(rf"(?<!\w){MATRICULA_LABEL}{NUMBER_LABEL}{VALUE_SEPARATOR}"
                 rf"(?P<value>{MATRICULA}){END_NUMBER}", re.I), IDENTIFIER),
     (re.compile(rf"(?<!\w)(?:matr[ií]cula{SPACE}+)?siape{NUMBER_LABEL}{VALUE_SEPARATOR}"
                 rf"(?P<value>\d{{6,8}}){END_NUMBER}", re.I), IDENTIFIER),
