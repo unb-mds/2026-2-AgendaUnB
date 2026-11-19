@@ -126,3 +126,17 @@ def test_masks_professor_with_full_role_in_running_text():
 
 def test_masks_dotted_rg_without_optional_digit():
     assert minimize("| RG | 12.345.678 | Prova 1") == "| RG | [identificador removido] | Prova 1"
+
+
+@pytest.mark.parametrize("academic", [
+    "Estrutura de Dados 1", "Matemática Discreta 2", "Cálculo Diferencial e Integral II",
+    "CIC0004", "Turma 01", "2026.2", "2026/2", "Código 123456789",
+    "Prova 1", "P1", "Trabalho Final", "20/11/2026", "20-11-26", "20.11.2026",
+    "20 de novembro de 2026", "2026-11-20", "2026-11-20T14:30-03:00", "14:30",
+    "das 08h00 às 10h00", "Sala 204", "Auditório Central", "Bloco B",
+])
+def test_preserves_academic_fields_exactly_alongside_personal_data(academic):
+    source = f"{academic}\t| E-mail: pessoa@example.test |\t{academic}"
+    expected = f"{academic}\t| E-mail: [email removido] |\t{academic}"
+    assert minimize_with_count(source) == (expected, 1)
+    assert minimize_with_count(expected) == (expected, 0)
