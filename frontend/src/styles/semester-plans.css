@@ -121,6 +121,7 @@ body.light .semester-panel :is(select, input[type="date"], input[type="time"]) {
 .semester-panel .semester-field { display: grid; gap: 5px; font-size: .875rem; min-width: 0; }
 .semester-raw, .semester-queue-list, .semester-preview form { display: grid; gap: 10px; }
 .semester-raw { margin-block-start: 16px; padding-block: 16px; border-block-start: 1px solid var(--semester-line); }
+.semester-upload-consent { margin-block: 12px; font-size: .875rem; }
 .semester-panel .custom-select-trigger { padding: 10px 12px; font: inherit; }
 .semester-panel .custom-select-trigger, .semester-panel .custom-select-popup { background: var(--semester-field); }
 .semester-panel .custom-select-placeholder, .semester-panel .custom-select-chevron { color: var(--semester-muted); }

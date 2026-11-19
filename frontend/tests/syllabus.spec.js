@@ -82,10 +82,8 @@ test('oito planos e 60 avaliações: vínculo, upload concorrente, autorização
 
   await chooseUploadClass(page, 1);
   await files(page).setInputFiles(makePdf(1));
-  await queue(page).getByRole('button', { name: 'Autorizar texto: plano-1.pdf', exact: true }).click();
-  expect(authorized).toBe(0);
-  await page.getByRole('button', { name: 'Autorizar envio', exact: true }).click();
   await expect(queue(page).getByRole('button', { name: 'Processando: plano-1.pdf', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Confirmar e extrair', exact: true })).toHaveCount(0);
 
   for (let index = 2; index <= 8; index++) {
     await chooseUploadClass(page, index);
@@ -94,8 +92,6 @@ test('oito planos e 60 avaliações: vínculo, upload concorrente, autorização
   await expect.poll(() => maxUploads).toBe(2);
   await page.getByRole('button', { name: 'Ver todos os planos' }).click();
   for (let index = 2; index <= 8; index++) {
-    await queue(page).getByRole('button', { name: `Autorizar texto: plano-${index}.pdf`, exact: true }).click();
-    await page.getByRole('button', { name: 'Autorizar envio', exact: true }).click();
     await expect(queue(page).getByRole('button', { name: `Processando: plano-${index}.pdf`, exact: true })).toBeVisible();
   }
   expect(authorized).toBe(8);
@@ -182,7 +178,7 @@ test('arquivo inválido não bloqueia outro e oferta retirada não pode ser asso
     return route.fulfill({ status: 400, json: { detail: 'O PDF não contém texto extraível.' } });
   });
   await page.goto('/plano-de-ensino');
-  const addPlans = queue(page).getByRole('button', { name: 'Adicionar planos' });
+  const addPlans = queue(page).getByRole('button', { name: 'Enviar PDF e extrair' });
   await expect(addPlans).toBeDisabled();
   await expect(queue(page).getByText('Selecione uma turma antes de enviar um plano.')).toBeVisible();
   await files(page).setInputFiles(makePdf(2));
@@ -288,7 +284,7 @@ for (const width of [360, 768, 1365]) for (const theme of ['light', 'dark']) {
     if (width < 820) {
       await page.getByRole('button', { name: 'Recolher fila de planos' }).press('Enter');
       await expect(page.getByRole('button', { name: 'Autorizar texto: plano-2.pdf' })).toBeHidden();
-      await expect(page.getByRole('button', { name: 'Adicionar planos' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Enviar PDF e extrair' })).toBeVisible();
       await page.getByRole('button', { name: 'Expandir fila de planos' }).press('Enter');
     }
     await page.screenshot({ path: info.outputPath('semester.png'), fullPage: true });

@@ -12,7 +12,7 @@ Planos de ensino podem conter informações pessoais ou confidenciais além do c
 
 ## Decisão
 
-Extrair o texto localmente na preparação, descartar o PDF original imediatamente e exigir revisão e autorização explícita do usuário sobre o trecho exato antes de qualquer envio externo:
+Extrair o texto localmente na preparação e descartar o PDF original imediatamente. A autorização para novos planos é dada no envio e registrada sobre as páginas sanitizadas antes de qualquer envio externo. Planos pendentes ainda podem ser consultados e editados antes da autorização.
 
 1. **Preparação e descarte imediato do PDF:**
    - `POST /api/v1/syllabus/upload` aceita PDF digital de até 10 MiB (`MAX_UPLOAD_SIZE_BYTES`, lido com limite `MAX_UPLOAD_SIZE_BYTES + 1` para rejeitar excessos sem carregar em memória) e no máximo 10 páginas (`MAX_PDF_PAGES`).
@@ -21,7 +21,7 @@ Extrair o texto localmente na preparação, descartar o PDF original imediatamen
 2. **Minimização e autorização explícita:**
    - PDF e texto colado passam pelo mesmo pipeline de [minimização](/arquitetura/minimizacao-planos), antes de gravar o texto preparado. A prévia do dono em `GET /api/v1/syllabus/{id}/text` usa `Cache-Control: no-store` e informa o número de trechos mascarados na preparação inicial. O estudante continua responsável por revisar o conteúdo exato.
    - A autorização verifica novamente as regras de minimização. O worker também bloqueia snapshots antigos com identificadores detectáveis, preserva o texto autorizado e orienta o estudante a revisar e autorizar uma nova análise.
-   - A submissão à fila (`POST /api/v1/syllabus/{id}/extractions`) exige duas declarações desmarcadas por padrão (`authorize: true` e `contentEligible: true`) e `textHash` (SHA-256 canônico do JSON UTF-8 sem espaços contendo `[{"pagina": ..., "texto": ...}]`, implementado de forma idêntica em `frontend/src/lib/approvedText.js` e no servidor). Qualquer edição de texto na interface revoga ambas as confirmações.
+   - A submissão à fila (`POST /api/v1/syllabus/{id}/extractions`) exige `authorize: true`, `contentEligible: true` e `textHash`. A interface registra a autorização após a preparação se o provedor estiver disponível. Nos planos pendentes, **Confirmar e extrair** autoriza a versão atual, incluindo edições. O SHA-256 canônico do JSON UTF-8 sem espaços contendo `[{"pagina": ..., "texto": ...}]` é calculado de forma idêntica em `frontend/src/lib/approvedText.js` e no servidor.
 3. **Isolamento, RLS e proteção de logs:**
    - Migrações `20261109113000_privacidade_e_revisao_planos.sql` e `20261110120000_texto_revisado_e_autorizacao_s7.sql` restringem `SELECT` de planos, textos preparados e versões privadas ao próprio dono, fecham upload direto do cliente ao bucket `syllabus_files` (preservando objetos históricos privados), bloqueiam alteração de autoria e tornam o snapshot em `processando` imutável por trigger (inclusive para conexões privilegiadas).
    - Logs de aplicação e erros devolvidos ao cliente não registram PDF, texto integral, parâmetros SQL ou resposta bruta do provedor. O cadastro manual em Meus Eventos permanece disponível para PDFs escaneados, limites excedidos ou conteúdo inadequado ao provedor.
