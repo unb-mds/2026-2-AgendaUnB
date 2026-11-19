@@ -42,8 +42,20 @@ BIRTH_DATE = (
     rf"(?:\d{{4}}-\d{{2}}-\d{{2}}|\d{{1,2}}[/.-]\d{{1,2}}[/.-](?:\d{{4}}|\d{{2}})"
     rf"|\d{{1,2}}{SPACE}+de{SPACE}+[a-zç]+{SPACE}+de{SPACE}+\d{{4}})"
 )
+WEB_SCHEME = r"(?:https?://)?(?:www\.)?"
+URL_END = r"""[^\s<>"'|()\[\]]*[^\s<>"'|()\[\].,;!?]"""
+PERSONAL_PROFILE = (
+    r"(?:lattes\.cnpq\.br/|buscatextual\.cnpq\.br/buscatextual/visualizacv\.do\?"
+    r"|(?:[a-z]{2,3}\.)?linkedin\.com/(?:in|pub)/)"
+)
+PERSONAL_SITE = rf"(?:site|link|blog|p[aá]gina|perfil){SPACE}+(?:pessoal|particular)"
+WHATSAPP_LINK = r"(?:wa\.me/\d|(?:api\.|web\.)?whatsapp\.com/send\?)"
 
 RULES = (
+    (re.compile(rf"(?<![\w./@]){WEB_SCHEME}{PERSONAL_PROFILE}{URL_END}", re.I), IDENTIFIER),
+    (re.compile(rf"(?<!\w){PERSONAL_SITE}{VALUE_SEPARATOR}"
+                rf"(?P<value>{WEB_SCHEME}(?:[a-z\d-]+\.)+[a-z]{{2,}}(?:[/#?]{URL_END})?)", re.I), IDENTIFIER),
+    (re.compile(rf"(?<![\w./@]){WEB_SCHEME}{WHATSAPP_LINK}(?:{URL_END})?", re.I), PHONE),
     (re.compile(rf"(?<!\w)(?i:{FULL_ROLE})(?!\w){NAME_SEPARATOR}(?P<value>{NAME})(?!\w|@)"), IDENTIFIER),
     (re.compile(rf"(?<!\w)(?i:prof(?:a|ª)?\.|dr(?:a|ª)?\.)"
                 rf"(?:{FIELD}|{SPACE}+)(?P<value>{NAME})(?!\w|@)"), IDENTIFIER),

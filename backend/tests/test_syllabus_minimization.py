@@ -75,3 +75,18 @@ def test_masks_birth_date_only_in_personal_context(date):
     assert minimize(f"Data de nascimento: {date} | Avaliação em {date}") == (
         f"Data de nascimento: [identificador removido] | Avaliação em {date}"
     )
+
+
+def test_masks_personal_links_and_preserves_institutional_links():
+    source = ("Lattes https://lattes.cnpq.br/0000000000000000; www.linkedin.com/in/pessoa-exemplo. "
+              "Site pessoal: https://pessoa.example.test/card | https://unb.br/disciplinas")
+    assert minimize(source) == (
+        "Lattes [identificador removido]; [identificador removido]. "
+        "Site pessoal: [identificador removido] | https://unb.br/disciplinas"
+    )
+
+
+def test_counts_link_with_embedded_contact_once():
+    cleaned, count = minimize_with_count("WhatsApp https://api.whatsapp.com/send?phone=5561900000000")
+    assert cleaned == "WhatsApp [telefone removido]"
+    assert count == 1
