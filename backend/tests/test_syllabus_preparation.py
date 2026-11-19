@@ -193,6 +193,36 @@ def test_personal_data_reintroduced_by_edit_is_rejected_even_with_correct_hash(a
     assert not SyllabusWorker(api[1], None, None, ProcessingConfig()).claim()
 
 
+def test_private_processing_omits_masked_values_from_provider_logs_and_candidates(api, monkeypatch, caplog):
+    monkeypatch.setenv("SYLLABUS_PROVIDER_TERMS_READY", "true")
+    sensitive = ("Pessoa Exemplo", "pessoa@example.test")
+    raw = f"{TEXT} | Profa. {sensitive[0]} | E-mail: {sensitive[1]}"
+    sid, preview = prepare(api, raw)
+    received = []
+    expected = {"titulo": "Prova 1", "tipo": "prova", "data_sugerida": "2026-11-10",
+                "hora_sugerida": "14:00", "pagina_origem": None, "trecho_origem": TEXT}
+
+    class Provider:
+        def extract(self, pages):
+            received.extend(page.texto for page in pages)
+            # Uma resposta que repete valores ausentes da fonte não tem procedência.
+            return json.dumps({"candidatos": [{**expected, "trecho_origem": raw}, expected]})
+
+    worker = SyllabusWorker(api[1], None, Provider(), ProcessingConfig(), runner=process_document)
+    assert not worker.run_once()
+    assert received == []
+    assert api[0].post(f"/api/v1/syllabus/{sid}/extractions", json=approval(preview)).status_code == 202
+    with caplog.at_level("INFO", logger="agenda_unb.syllabus.worker"):
+        assert worker.run_once()
+    assert received == [preview["pages"][0]["texto"]]
+    assert "syllabus_completed" in caplog.text
+    with api[1]() as db:
+        stored = db.scalars(select(AssessmentCandidate)).one()
+        assert stored.titulo == expected["titulo"]
+        assert stored.trecho_origem == TEXT
+        assert all(value not in "".join(received) + caplog.text + stored.trecho_origem for value in sensitive)
+
+
 def test_redacted_count_distinguishes_old_records_from_zero_and_survives_edit(api, monkeypatch):
     monkeypatch.setenv("SYLLABUS_PROVIDER_TERMS_READY", "true")
     sid, preview = prepare(api, f"Prof. Pessoa Exemplo | {TEXT}")
