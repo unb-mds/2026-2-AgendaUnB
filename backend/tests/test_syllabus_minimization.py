@@ -58,3 +58,13 @@ def test_masks_compact_whatsapp_when_labeled():
 ])
 def test_masks_identity_documents_without_touching_academic_numbers(field, expected):
     assert minimize(f"{field} | Código 123456789 | Turma 01") == f"{expected} | Código 123456789 | Turma 01"
+
+
+@pytest.mark.parametrize(("field", "expected"), [
+    ("Matrícula UnB: 260000000", "Matrícula UnB: [identificador removido]"),
+    ("Matrícula: 26/0000000", "Matrícula: [identificador removido]"),
+    ("26 / 0000000", "[identificador removido]"),
+    ("SIAPE: 1234567", "SIAPE: [identificador removido]"),
+])
+def test_masks_institutional_person_identifiers(field, expected):
+    assert minimize(f"Período 2026/2 | {field} | CIC0004") == f"Período 2026/2 | {expected} | CIC0004"

@@ -34,12 +34,15 @@ RG_VALUE = r"(?:\d{1,2}\.\d{3}\.\d{3}-?[\dX]|\d{7,9}(?:-?[\dX])?|\d{6,8}-[\dX])"
 NUMBER_LABEL = rf"(?:{SPACE}+(?:n[º°.]|n[uú]mero))?"
 VALUE_SEPARATOR = rf"(?:{NAME_SEPARATOR}|{SPACE}+)"
 END_NUMBER = r"(?!\w|[./-]\d)"
+# A forma com barra da UnB tem ano de ingresso em dois dígitos.
+UNB_MATRICULA = rf"\d{{2}}{SPACE}*/{SPACE}*\d{{7}}"
+MATRICULA = rf"(?:{UNB_MATRICULA}|\d{{9}})"
 
 RULES = (
     (re.compile(rf"(?<!\w)(?i:{FULL_ROLE})(?!\w){NAME_SEPARATOR}(?P<value>{NAME})(?!\w|@)"), IDENTIFIER),
     (re.compile(rf"(?<!\w)(?i:prof(?:a|ª)?\.|dr(?:a|ª)?\.)"
                 rf"(?:{FIELD}|{SPACE}+)(?P<value>{NAME})(?!\w|@)"), IDENTIFIER),
-    (re.compile(r"^(?:matr[ií]cula|nascimento)\s*[:=].*$", re.I | re.M), IDENTIFIER),
+    (re.compile(r"^nascimento\s*[:=].*$", re.I | re.M), IDENTIFIER),
     (re.compile(r"(?<![\w.+%-])[\w.+%'-]{1,64}@(?:[a-z\d-]{1,63}\.){1,12}[a-z]{2,63}(?![\w-])", re.I), EMAIL),
     (re.compile(rf"(?<![\w+\d(]){FORMATTED_PHONE}(?![\w\d]|[.-]\d)"), PHONE),
     (re.compile(rf"(?<!\w)(?:{PHONE_LABEL})(?!\w)(?:{NAME_SEPARATOR}|{SPACE}+)"
@@ -48,6 +51,11 @@ RULES = (
     (re.compile(rf"(?<!\w)cpf{NUMBER_LABEL}{VALUE_SEPARATOR}(?P<value>{CPF_VALUE}){END_NUMBER}", re.I), IDENTIFIER),
     (re.compile(rf"(?<!\w)(?:r\.?g\.?|registro geral){NUMBER_LABEL}{VALUE_SEPARATOR}"
                 rf"(?P<value>{RG_VALUE}){END_NUMBER}", re.I), IDENTIFIER),
+    (re.compile(rf"(?<![\w/]){UNB_MATRICULA}{END_NUMBER}"), IDENTIFIER),
+    (re.compile(rf"(?<!\w)matr[ií]cula(?:{SPACE}+unb)?{NUMBER_LABEL}{VALUE_SEPARATOR}"
+                rf"(?P<value>{MATRICULA}){END_NUMBER}", re.I), IDENTIFIER),
+    (re.compile(rf"(?<!\w)(?:matr[ií]cula{SPACE}+)?siape{NUMBER_LABEL}{VALUE_SEPARATOR}"
+                rf"(?P<value>\d{{6,8}}){END_NUMBER}", re.I), IDENTIFIER),
 )
 
 
