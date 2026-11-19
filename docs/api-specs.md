@@ -159,6 +159,19 @@ As operações exigem autenticação. Planos privados ficam restritos ao autor; 
 
 O histórico e o detalhe retornam `ano` e `semestre`. Planos antigos podem ter esses campos, `fileName` e `filePath` nulos. O upload aplica a cota de 10 envios em cinco dias (429 ao exceder) e valida o PDF antes de gravar. O cliente autenticado consulta os próprios planos e PDFs, enquanto o backend grava o arquivo e o registro de acompanhamento.
 
+### Conta e privacidade — S8-D01
+
+| Método | Rota | Acesso | Resposta |
+| --- | --- | --- | --- |
+| `GET` | `/api/v1/me/legal-documents` | Autenticado | 200 com a versão vigente e a aceita de cada documento |
+| `PUT` | `/api/v1/me/legal-acceptances/{terms\|privacy}` | Autenticado | 204; 409 se a versão enviada não é a vigente |
+| `GET` | `/api/v1/me/consents` | Autenticado | 200 com os consentimentos opcionais registrados |
+| `DELETE` | `/api/v1/me/consents/{purpose}` | Autenticado | 204; revoga consentimento opcional (ex.: `google_agenda`) |
+| `GET` | `/api/v1/me/data-export` | Autenticado | 200 com o JSON dos dados da conta, para download |
+| `DELETE` | `/api/v1/me` | Autenticado | 204; 422 sem a frase de confirmação; 409 para o último administrador |
+
+Detalhes em [Privacidade e ciclo de vida dos dados](/processo/privacidade#direitos-do-titular-na-api-e-na-interface).
+
 ### Saúde — R1
 
 `GET /health`: público, sem parâmetros ou corpo, retorna 200 com `{ "status": "ok" }`. Não consulta banco nem Auth; não é uma verificação de prontidão de todas as dependências.
@@ -276,6 +289,17 @@ Erros SQL explícitos incluem `42501` (permissão), `22023` (filtro, papel ou de
 O SDK consulta `notificacoes` diretamente, filtrando `usuario_id`, com contagem exata, ordem `criado_em` decrescente e ID crescente, e intervalo inclusivo `page*20` a `page*20+19`. Uma segunda consulta conta não lidas (`lida_em IS NULL`). O wrapper retorna `{items, total, unread}`.
 
 Cada item tem `id`, `usuario_id`, `evento_id`, `tipo` (`submissao/aprovacao/recusa`), `titulo_evento`, `justificativa`, `criado_em` e `lida_em`. O banco permite ao destinatário apenas leitura e atualização de `lida_em`; a interface marca IDs próprios ainda não lidos com timestamp ISO. RLS e permissões de coluna fazem a proteção, não apenas o filtro do cliente. Triggers geram avisos na mesma transação da submissão/decisão. Não são lembretes programados.
+
+## Lembretes da agenda
+
+| Rota | Resultado |
+| --- | --- |
+| `GET /api/v1/me/reminders?limit=20&offset=0` | **200** com um array de lembretes disparados da sessão, ordenado por disparo e ID decrescentes. `limit` aceita de 1 a 100. `offset` é um inteiro de 0 a 2147483647. |
+| `PUT /api/v1/me/reminders/{id}/read` | **200** com `{id, read_at}`. A primeira leitura permanece em novas tentativas. O mesmo **404** é usado para IDs alheios, pendentes e inexistentes. |
+
+Cada item traz `id`, `event_kind` (`personal` ou `saved_public`), `event_id`, `title`, `starts_at`, `scheduled_at` e `read_at`. `starts_at` é o início usado no agendamento. `title` pode ser nulo quando o título atual está indisponível para aquela conta. `read_at` nulo indica aviso não lido.
+
+As duas rotas exigem uma sessão válida e um perfil com e-mail confirmado. Retornam **401** sem sessão, **403** para perfil indisponível ou com e-mail pendente de confirmação e **422** para parâmetros inválidos. Respostas de sucesso incluem `Cache-Control: no-store`. O scheduler opera no banco, conforme o [guia de implantação](/implantacao#publicacao-jobs-e-recuperacao).
 
 ## Verificação e manutenção
 

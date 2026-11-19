@@ -331,3 +331,10 @@ Este arquivo foi redigido com auxílio da I.A. A estrutura e o texto das entrada
 - **O que entrou:** HTML e metadados para páginas públicas, guias com fontes oficiais da UnB, sitemap de eventos aprovados e regras de indexação.
 - **Verificações:** build e 25 testes do frontend, HTTP local dos guias e testes da função com respostas simuladas do Supabase. A validação do roteamento e do cache na Vercel fica para a homologação.
 - **Decisão:** a marcação estruturada de eventos depende de endereços completos no catálogo. As páginas públicas usam o campo de local disponível e não inferem um endereço.
+
+### 18/11/2026 — Lembretes persistentes (#81)
+
+- **Ferramenta** — Codex, com pytest, Supabase local e Chromium.
+- **Pedido** — Concluir o job, os contratos e a central de lembretes em commits separados.
+- **Entrega** — Migração incremental para a corrida de reagendamento, SQL de ativação do Supabase Cron, rotas autenticadas e estados de leitura no sino.
+- **Verificação** — Testes SQL e HTTP, reinício do banco com job real e retorno à sessão no navegador com duas contas sintéticas. [Evidências locais e pendências](/arquitetura/dados-de-eventos#aceite-local-da-s8-b03).
