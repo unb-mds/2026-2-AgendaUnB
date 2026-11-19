@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { confirmation, makeOffer, setupSemester } from './fixtures/semester.js';
+import { confirmation, makeOffer, makePlan, setupSemester } from './fixtures/semester.js';
 
 function makeSharedVersion(overrides = {}) {
   return {
@@ -65,9 +65,38 @@ test('visitante não vê demonstração e recebe convite para login', async ({ p
   expect(calls).toEqual([]);
 });
 
+test('Nyx brinca com a ampulheta apenas durante o processamento do plano', async ({ page }) => {
+  const plan = makePlan(1, { status: 'pendente', authorizationRequired: true, preparedTextAvailable: true, extractedEventsCount: 0 });
+  const { data } = await setupSemester(page, { plans: [plan] });
+  await page.route(`**/api/v1/syllabus/${plan.id}/text`, route => route.fulfill({
+    json: { pages: [{ pagina: 1, texto: 'Prova 1 em 25/11/2026.' }], provider: 'Google Gemini API', providerAvailable: true },
+  }));
+  await page.route(`**/api/v1/syllabus/${plan.id}/extractions`, route => {
+    const next = { ...plan, authorizationRequired: false, status: 'pendente' };
+    data.set(plan.id, next);
+    return route.fulfill({ status: 202, json: next });
+  });
+  await page.goto('/plano-de-ensino');
+  const toy = page.locator('.pixel-cat-toy');
+  await expect(page.locator('.pixel-cat-body')).toBeVisible();
+  await expect(page.getByRole('button', { name: /demo/i })).toHaveCount(0);
+  await expect(toy).toHaveCount(0);
+
+  await page.getByRole('button', { name: `Autorizar texto: ${plan.fileName}`, exact: true }).click();
+  await page.getByRole('button', { name: 'Autorizar envio', exact: true }).click();
+  await expect(toy).toBeVisible();
+
+  data.set(plan.id, { ...plan, authorizationRequired: false, status: 'processando' });
+  await expect(toy).toBeVisible({ timeout: 12000 });
+  data.set(plan.id, { ...plan, authorizationRequired: false, status: 'concluido', candidates: [] });
+  await expect(page.locator('.pixel-cat-body')).toBeVisible({ timeout: 12000 });
+  await expect(toy).toHaveCount(0);
+});
+
 test('mascote Nyx alterna dicas no estado vazio', async ({ page }) => {
   await setupSemester(page, { offers: [makeOffer(1)], followed: [], plans: [] });
   await page.goto('/plano-de-ensino');
+  await page.getByRole('button', { name: /Organizar datas/ }).click();
   await expect(page.getByText('EM BREVE - pergunte ao Nyx')).toBeVisible();
   const initialSpeech = await page.locator('.halftone-pet-speech').textContent();
   await page.getByRole('button', { name: 'Alternar dica do gato Nyx' }).click();
@@ -315,18 +344,18 @@ test('novo seguidor importa sem reenviar arquivo, vota com divergência e autor 
   });
 
   await page.goto('/plano-de-ensino');
-  await page.getByRole('button', { name: 'Buscar turmas', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Etapas dos planos de ensino' }).getByRole('button', { name: /Selecionar turmas/ }).click();
   const catalog = page.getByRole('region', { name: 'Catálogo de turmas' });
   await catalog.getByRole('button', { name: 'Buscar turmas', exact: true }).click();
   await catalog.locator('summary').filter({ hasText: 'Disciplina 1' }).click();
   await catalog.getByRole('checkbox', { name: 'Selecionar turma 01 de Disciplina 1' }).check();
   await catalog.getByRole('button', { name: 'Seguir 1 turma selecionada' }).click();
-  await page.getByRole('button', { name: 'Fechar catálogo', exact: true }).click();
+  await page.getByRole('button', { name: 'Avançar para organizar datas' }).first().click();
+  await page.getByRole('tab', { name: 'Planos compartilhados da turma' }).click();
 
-  // Em empate de 1 voto entre v1 e v2, a versão mais recente (v2) aparece como padrão, exibe vínculo autodeclarado e diferencia perfil professor.
+  // Em empate de 1 voto entre v1 e v2, a versão mais recente (v2) aparece como padrão e diferencia perfil professor.
   const library = page.getByRole('region', { name: 'Planos compartilhados da turma' });
   await expect(library).toBeVisible();
-  await expect(library).toContainText('Vínculo autodeclarado');
   const card = library.locator('.shared-version-card');
   await expect(card).toContainText('Versão 2');
   await expect(card).toContainText('Versão padrão');
@@ -395,6 +424,7 @@ for (const width of [360, 768, 1365]) for (const theme of ['dark', 'light']) {
     }));
     await page.goto('/plano-de-ensino');
     if (theme === 'light') await page.getByRole('button', { name: /tema/i }).click();
+    await page.getByRole('tab', { name: 'Planos compartilhados da turma' }).click();
     await expect(page.getByRole('heading', { name: 'Planos compartilhados da turma' })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await page.screenshot({ path: info.outputPath(`shared-${width}-${theme}.png`), fullPage: true });

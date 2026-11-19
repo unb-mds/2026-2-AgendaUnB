@@ -1,5 +1,12 @@
 """Pré-requisitos do worker; não substituem a suíte comportamental de RLS."""
+import os
+import sys
+from collections.abc import Mapping
+from decimal import Decimal
+
 from sqlalchemy import text
+
+from src.modules.syllabus.processing_config import ProcessingConfig
 
 
 def privacy_checks(connection) -> dict[str, bool]:
@@ -64,3 +71,98 @@ def privacy_checks(connection) -> dict[str, bool]:
           and tgrelid='public.planos_ensino'::regclass and tgname='planos_preserva_texto_autorizado') as approved_snapshot_trigger
     """)).mappings().one()
     return {name: bool(value) for name, value in result.items()}
+
+
+def check_local_syllabus_readiness(
+    connection, env: Mapping[str, str] | None = None
+) -> tuple[int, list[str]]:
+    """Valida políticas RLS e parâmetros locais da extração de planos sem expor segredos."""
+    env = os.environ if env is None else env
+    worker_enabled = env.get("SYLLABUS_WORKER_ENABLED", "false").lower() == "true"
+    privacy_ready = env.get("SYLLABUS_PRIVACY_READY", "false").lower() == "true"
+    terms_ready = env.get("SYLLABUS_PROVIDER_TERMS_READY", "false").lower() == "true"
+    has_api_key = bool(env.get("GEMINI_API_KEY", "").strip().strip('"').strip("'"))
+
+    checks = privacy_checks(connection)
+    if checks.get("postgresql") is False:
+        if worker_enabled:
+            return 1, ["O worker de planos exige PostgreSQL com migrações e políticas RLS aplicadas."]
+        return 0, ["[INFO] Banco não-PostgreSQL configurado; verificação de políticas RLS ignorada."]
+
+    missing = [name for name, passed in checks.items() if not passed]
+    if missing:
+        return 1, [
+            f"Pré-requisitos de privacidade de planos ausentes: {', '.join(missing)}.",
+            "Revise as migrações pendentes. No ambiente local, execute make db-migrate.",
+        ]
+
+    try:
+        model = env.get("GEMINI_MODEL", ProcessingConfig.model).strip()
+        if model != ProcessingConfig.model and not all(
+            env.get(name)
+            for name in ("GEMINI_INPUT_USD_PER_MILLION", "GEMINI_OUTPUT_USD_PER_MILLION")
+        ):
+            raise ValueError("Ao alterar GEMINI_MODEL, configure os dois preços por milhão de tokens.")
+        config = ProcessingConfig(
+            model=model,
+            api_key=env.get("GEMINI_API_KEY", "").strip().strip('"').strip("'"),
+            provider_terms_ready=terms_ready,
+            timeout_seconds=float(env.get("SYLLABUS_AI_TIMEOUT_SECONDS", "12")),
+            attempt_timeout_seconds=float(env.get("SYLLABUS_ATTEMPT_TIMEOUT_SECONDS", "18")),
+            max_attempts=int(env.get("SYLLABUS_MAX_ATTEMPTS", "2")),
+            rate_limit_delay_seconds=int(env.get("SYLLABUS_RATE_LIMIT_DELAY_SECONDS", "65")),
+            min_interval_seconds=float(env.get("SYLLABUS_MIN_INTERVAL_SECONDS", "4.0")),
+            max_file_cost_usd=Decimal(env.get("SYLLABUS_MAX_FILE_COST_USD", "0.06")),
+            input_usd_per_million=Decimal(env.get("GEMINI_INPUT_USD_PER_MILLION", "0.30")),
+            output_usd_per_million=Decimal(env.get("GEMINI_OUTPUT_USD_PER_MILLION", "2.50")),
+        )
+    except (ValueError, ArithmeticError) as exc:
+        return 1, [f"Configuração de processamento de planos inválida: {exc}"]
+
+    messages = ["Políticas de privacidade e RLS de planos compatíveis."]
+    if worker_enabled and privacy_ready and terms_ready and has_api_key:
+        messages.append(f"[OK] Extração de planos com Gemini pronta (modelo: {config.model}).")
+    elif has_api_key:
+        missing_flags = [
+            name
+            for name, ready in (
+                ("SYLLABUS_WORKER_ENABLED", worker_enabled),
+                ("SYLLABUS_PRIVACY_READY", privacy_ready),
+                ("SYLLABUS_PROVIDER_TERMS_READY", terms_ready),
+            )
+            if not ready
+        ]
+        messages.append(
+            f"[AVISO] GEMINI_API_KEY definida, mas faltam flags em true no .env: {', '.join(missing_flags)}."
+        )
+    elif worker_enabled:
+        messages.append(
+            "[AVISO] SYLLABUS_WORKER_ENABLED=true, mas GEMINI_API_KEY está vazia no .env; worker ficará inativo."
+        )
+    else:
+        messages.append("[INFO] Worker Gemini desativado no .env (modo manual/sem chave).")
+    return 0, messages
+
+
+def main() -> int:
+    """Executa o preflight local de privacidade e configuração da extração de planos."""
+    from sqlalchemy.exc import SQLAlchemyError
+    from src.database.connection import engine
+
+    try:
+        with engine.connect() as connection:
+            code, messages = check_local_syllabus_readiness(connection)
+    except SQLAlchemyError:
+        print("Banco inacessível. Confira DATABASE_URL e inicie o Supabase local.", file=sys.stderr)
+        return 1
+    finally:
+        engine.dispose()
+
+    stream = sys.stderr if code != 0 else sys.stdout
+    for message in messages:
+        print(message, file=stream)
+    return code
+
+
+if __name__ == "__main__":
+    sys.exit(main())
