@@ -50,7 +50,7 @@ from src.modules.syllabus.services import process_syllabus_upload, validate_pdf_
 from src.modules.syllabus.timing import duration_ms
 from src.modules.syllabus.processing_config import ProcessingConfig
 from src.modules.syllabus.preparation import (
-    TextInput, ExtractionAuthorization, PreparationPreview, extract_pdf_isolated,
+    TextInput, ExtractionAuthorization, PreparationPreview, checked_pages, extract_pdf_isolated,
     owned_plan, preview, authorize,
 )
 from src.modules.syllabus.services import UPLOAD_VALIDATION_TIMEOUT_SECONDS
@@ -508,9 +508,9 @@ def prepare_syllabus_text(payload: TextInput, current_user: CurrentUser = Depend
                           db: Session = Depends(get_db)):
     offer = followed_available_offering(db, payload.offering_id, current_user.id)
     started = time.monotonic()
+    pages = checked_pages([{"pagina": None, "texto": payload.text}])
     plan = process_syllabus_upload(user_id=current_user.id, filename="texto-revisado.txt",
-        file_size=len(payload.text.encode("utf-8", errors="surrogatepass")),
-        pages=[{"pagina": None, "texto": payload.text}], file_type="text", db=db,
+        file_size=len(pages[0]["texto"].encode("utf-8")), pages=pages, file_type="text", db=db,
         preparation_duration_ms=round((time.monotonic()-started)*1000),
         offering_id=offer.id, disciplina=offer.subject.name, turma=offer.class_number, ano=offer.year, semestre=offer.semester)
     return SyllabusUploadResponse.model_validate(plan)

@@ -10,6 +10,7 @@ pytestmark = pytest.mark.usefixtures("published_offering")
 from sqlalchemy import select
 
 from src.database.models import AssessmentCandidate, PersonalEvent, Profile, Syllabus
+from src.modules.syllabus.preparation import text_hash
 from src.modules.syllabus.processing_config import ProcessingConfig
 from src.modules.syllabus.processing_task import process_document
 from src.modules.syllabus.worker import SyllabusWorker
@@ -68,6 +69,32 @@ def test_pdf_prepares_page_references_without_using_storage(api):
     assert [page["pagina"] for page in preview["pages"]] == [1, 2]
     with sessions() as db:
         assert db.get(Syllabus, UUID(response.json()["id"])).file_path is None
+
+
+@pytest.mark.parametrize("source_type", ["text", "pdf"])
+def test_review_and_private_snapshot_use_the_same_sanitized_academic_text(api, source_type):
+    raw = "Disciplina: Estrutura de Dados 1 | Prof. Pessoa Exemplo | CPF: 000.000.000-00"
+    redacted = ("Disciplina: Estrutura de Dados 1 | Prof. [identificador removido] "
+                "| CPF: [identificador removido]")
+    if source_type == "text":
+        sid, preview = prepare(api, raw + "\n" + TEXT)
+        expected = [{"pagina": None, "texto": redacted + "\n" + TEXT}]
+    else:
+        response = api[0].post("/api/v1/syllabus/upload",
+            data={"offering_id": "70000000-0000-4000-8000-000000000071"},
+            files={"file": ("sintetico.pdf", make_pdf([raw, TEXT]), "application/pdf")})
+        assert response.status_code == 202
+        sid = response.json()["id"]
+        preview = api[0].get(f"/api/v1/syllabus/{sid}/text").json()
+        expected = [{"pagina": 1, "texto": redacted + "\n"}, {"pagina": 2, "texto": TEXT + "\n"}]
+
+    assert preview["pages"] == expected
+    assert preview["textHash"] == text_hash(expected)
+    assert preview["authorizationRequired"] is True
+    with api[1]() as db:
+        plan = db.get(Syllabus, UUID(sid))
+        assert plan.prepared_pages == expected
+        assert plan.approved_pages is None
 
 
 @pytest.mark.parametrize("changes,status", [
@@ -215,7 +242,6 @@ def test_other_assessment_types_are_rejected():
 
 
 def test_snapshot_hash_is_stable_after_jsonb_reorders_keys():
-    from src.modules.syllabus.preparation import text_hash
     assert text_hash([{"pagina":1,"texto":TEXT}]) == text_hash([{"texto":TEXT,"pagina":1}])
 
 
