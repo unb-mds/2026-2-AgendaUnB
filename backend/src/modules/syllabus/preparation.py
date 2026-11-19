@@ -92,6 +92,10 @@ def prepare_pages(pages) -> tuple[list[dict], int]:
     return checked_pages(minimized_pages), count
 
 
+def contains_personal_data(pages: list[dict]) -> bool:
+    return any(minimize(page["texto"]) != page["texto"] for page in pages)
+
+
 def _prepare_child(send, content):
     logging.disable(logging.CRITICAL)
     try:
@@ -169,7 +173,7 @@ def authorize(db, plan, payload, config):
     digest = text_hash(pages)
     if digest != payload.text_hash:
         raise HTTPException(409, "O texto aprovado não corresponde ao hash informado. Revise novamente.")
-    if any(minimize(page["texto"]) != page["texto"] for page in pages):
+    if contains_personal_data(pages):
         raise HTTPException(422, "Remova os identificadores detectados antes de autorizar o envio.")
     if not config.provider_terms_ready:
         raise HTTPException(503, "A análise com Gemini ainda não está disponível. Use a organização manual.")

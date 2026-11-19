@@ -119,6 +119,43 @@ def test_terms_gate_blocks_approval(api, monkeypatch):
     assert api[0].post(f"/api/v1/syllabus/{sid}/extractions", json=approval(preview)).status_code == 503
 
 
+def test_historic_approved_snapshot_is_blocked_without_mutating_it(api, monkeypatch, caplog):
+    monkeypatch.setenv("SYLLABUS_PROVIDER_TERMS_READY", "true")
+    sid, preview = prepare(api)
+    response = api[0].post(f"/api/v1/syllabus/{sid}/extractions", json=approval(preview))
+    assert response.status_code == 202
+
+    # Simula autorização anterior à cobertura de RG, com hash válido para aquele texto.
+    sensitive = "12.345.678-X"
+    historic = [{"pagina": None, "texto": f"RG: {sensitive}\n{TEXT}"}]
+    with api[1]() as db:
+        plan = db.get(Syllabus, UUID(sid))
+        plan.approved_pages = historic
+        plan.approved_hash = text_hash(historic)
+        db.commit()
+
+    calls = []
+
+    def provider_runner(*args):
+        calls.append(args)
+        return process_document(*args)
+
+    worker = SyllabusWorker(api[1], None, None, ProcessingConfig(), runner=provider_runner)
+    with caplog.at_level("INFO", logger="agenda_unb.syllabus.worker"):
+        assert worker.run_once()
+    assert calls == []
+    assert "texto_com_dados_pessoais" in caplog.text
+    assert sensitive not in caplog.text
+    with api[1]() as db:
+        plan = db.get(Syllabus, UUID(sid))
+        assert plan.status == "falha"
+        assert plan.erro_codigo == "texto_com_dados_pessoais"
+        assert plan.approved_pages == historic
+        assert not db.scalars(select(AssessmentCandidate)).all()
+    assert api[0].post(f"/api/v1/syllabus/{sid}/extractions",
+                       json=approval(preview, reprocess=True)).status_code == 202
+
+
 def test_approved_text_is_exact_private_and_idempotent(api, monkeypatch):
     monkeypatch.setenv("SYLLABUS_PROVIDER_TERMS_READY", "true")
     sid, preview = prepare(api)
