@@ -64,7 +64,6 @@ test('oito planos e 60 avaliações: vínculo, upload concorrente, autorização
   });
 
   await page.goto('/plano-de-ensino');
-  await page.getByRole('button', { name: 'Buscar turmas', exact: true }).click();
   const catalog = page.getByRole('region', { name: 'Catálogo de turmas' });
   await catalog.getByRole('button', { name: 'Buscar turmas', exact: true }).click();
   for (const offer of offers) {
@@ -73,7 +72,7 @@ test('oito planos e 60 avaliações: vínculo, upload concorrente, autorização
   }
   await catalog.getByRole('button', { name: /Seguir 8/ }).click();
   await expect(catalog.getByText('8 turmas adicionadas à sua lista.')).toBeVisible();
-  await page.getByRole('button', { name: 'Fechar catálogo', exact: true }).click();
+  await page.getByRole('button', { name: 'Avançar para organizar datas' }).first().click();
 
   await chooseUploadClass(page, 1);
   await files(page).setInputFiles(makePdf(1));
@@ -188,6 +187,7 @@ test('arquivo inválido não bloqueia outro e oferta retirada não pode ser asso
   await expect(queue(page).getByRole('alert').first()).toContainText('Escolha um arquivo no formato PDF');
   await expect(queue(page).getByText('O PDF não contém texto extraível.')).toBeVisible();
   await expect(queue(page).getByText('plano-1.pdf', { exact: true })).toBeVisible();
+  await queue(page).getByRole('tab', { name: 'Colar texto' }).click();
   await expect(queue(page).getByRole('textbox', { name: 'Texto do plano' })).toBeVisible();
   expect(calls).toBe(1);
 });

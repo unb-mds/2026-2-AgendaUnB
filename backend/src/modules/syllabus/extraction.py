@@ -11,7 +11,7 @@ from pypdf import PdfReader
 
 from src.modules.syllabus.processing_config import ProcessingConfig, ProcessingError
 
-VERSION = "syllabus-v3-approved-text"
+VERSION = "syllabus-v4-structured-titles"
 Kind = Literal["prova", "trabalho"]
 AmbiguousField = Literal["titulo", "tipo", "data", "hora"]
 
@@ -156,45 +156,102 @@ def extract_pages(content: bytes, config: ProcessingConfig) -> list[TextPage]:
 MONTHS = "janeiro fevereiro março abril maio junho julho agosto setembro outubro novembro dezembro".split()
 SHORT_MONTHS = "jan fev mar abr mai jun jul ago set out nov dez".split()
 
+_TIME_EXPR = r"(\d{1,2})\s*(?::\s*(\d{2})|h(?:(?:\s*(\d{2}))?(?:\s*min\b)?|s\b|rs\b|oras?\b)(?![a-z]))"
+_TIME_RE = re.compile(rf"(?<![\d:]){_TIME_EXPR}(?![\d:])", re.IGNORECASE)
+_DURATION_LENGTH_RE = re.compile(
+    r"\b(?:dura[çc][ãa]o(?:\s+de)?|prazo(?:\s+de)?|em\s+at[eé]|por)\s+\d{1,2}\s*(?:h\b|hs\b|horas?\b)",
+    re.IGNORECASE,
+)
+_DURATION_RANGE_RE = re.compile(
+    rf"(?<![\d:])(?:das?\s+|de\s+)?{_TIME_EXPR}\s*(?:[àa]s?|at[eé](?:\s+[àa]s?)?)\s*{_TIME_EXPR}(?![\d:])",
+    re.IGNORECASE,
+)
+_BARE_START_DURATION_RE = re.compile(
+    rf"\bdas?\s+(\d{{1,2}})\s*(?:[àa]s?|at[eé](?:\s+[àa]s?)?)\s*{_TIME_EXPR}(?![\d:])",
+    re.IGNORECASE,
+)
+_STRUCTURED_TITLE_RE = re.compile(
+    r"^(prova|avalia[çc][ãa]o|exame|trabalho|entrega|projeto|semin[áa]rio)(?:\s+(\d+))?\s*[-–—:]\s*(.+)$",
+    re.IGNORECASE,
+)
+_STRUCTURED_PREFIX_BY_KIND = {
+    "prova": {"prova", "avaliação", "avaliacao", "exame"},
+    "trabalho": {"trabalho", "entrega", "projeto", "seminário", "seminario"},
+}
+_VERBOSE_TITLE_VERB_RE = re.compile(
+    r"\b(?:ser[áa]\s+(?:realizada?|aplicada?|feita|a\s+de)|ocorrer[áa]|acontecer[áa]|foi\s+definid[ao]|marcad[ao]\s+para|est[áa]\s+agendad[ao]|encerrando\s+o\s+ciclo|teremos\s+a\s+(?:prova|avalia[çc][ãa]o))\b",
+    re.IGNORECASE,
+)
+_SUBJECT_AFTER_ASSESSMENT_RE = re.compile(
+    r"\b(?:avalia[çc][ãa]o|prova|exame|trabalho)(?:\s+(?:te[óo]ric[ao]|pr[áa]tic[ao]|escrit[ao]|regular|final|parcial|substitutiva|individual))*\s+(?:ser[áa]\s+(?:a\s+)?)?(?:de|da|do|sobre)\s+(.+)",
+    re.IGNORECASE,
+)
+_TRAILING_CLAUSE_RE = re.compile(
+    r"\s*(?:,|;|\.|(?:\b(?:ser[áa]|ocorrer[áa]|acontecer[áa]|foi\s+definid[ao]|marcad[ao]|agendad[ao]|que\s+ocorrer[áa]|no\s+dia|em\s+\d|na\s+(?:segunda|ter[çc]a|quarta|quinta|sexta|s[áa]bado|domingo|sala)|no\s+(?:audit[óo]rio|laborat[óo]rio|bloco)|das?\s+\d|[àa]s?\s+\d))).*$",
+    re.IGNORECASE,
+)
+_EXPLICIT_FIXED_LABEL_RE = re.compile(r"\b(?:prova\s+\d+|trabalho\s+\d+|p[1-9]\b|t[1-9]\b)", re.IGNORECASE)
+_ADMIN_POLICY_RE = re.compile(
+    r"\b(?:pedidos?\s+de\s+segunda\s+chamada|protocolados?\s+na\s+secretaria|justificativa\s+documental|revis[ãa]o\s+de\s+men[çc][ãa]o)\b",
+    re.IGNORECASE,
+)
+
 
 def extract_reference_year(pages: list[TextPage]) -> int | None:
     for page in pages:
-        match = re.search(r"\b(20\d{2})\s*[/.]\s*[12]\b", page.texto)
+        match = re.search(r"\b(20\d{2})\s*[/.-]\s*[12]\b", page.texto)
         if match:
             return int(match[1])
     for page in pages:
-        match = re.search(r"(?<!\d)(?:\d{1,2})[/-](?:\d{1,2})[/-](20\d{2})(?!\d)", page.texto)
+        match = re.search(
+            r"\b(?:semestre|ano\s+letivo|per[ií]odo(?:\s+letivo)?)\b[^.\n]{0,40}\b(20\d{2})\b",
+            page.texto,
+            re.IGNORECASE,
+        )
         if match:
             return int(match[1])
+    for page in pages:
+        dates = dates_in_evidence(page.texto)
+        if dates:
+            return min(d.year for d in dates)
     return None
 
 
 def dates_in_evidence(value: str, *, default_year: int | None = None) -> set[date]:
     found = set()
+    lowered = value.casefold()
     triples = [(int(y), int(m), int(d)) for d, m, y in
-               re.findall(r"(?<!\d)(\d{1,2})[/-](\d{1,2})[/-](\d{4})(?!\d)", value)]
+               re.findall(r"(?<!\d)(\d{1,2})[/-](\d{1,2})[/-](\d{4})(?!\d)", lowered)]
     triples += [(int(y), int(m), int(d)) for d, m, y in
-                re.findall(r"(?<!\d)(\d{1,2})\.(\d{1,2})\.(\d{4})(?!\d)", value)]
+                re.findall(r"(?<!\d)(\d{1,2})\.(\d{1,2})\.(\d{4})(?!\d)", lowered)]
     triples += [(int(y), int(m), int(d)) for y, m, d in
-                re.findall(r"(?<!\d)(\d{4})-(\d{2})-(\d{2})(?!\d)", value)]
+                re.findall(r"(?<!\d)(\d{4})-(\d{2})-(\d{2})(?!\d)", lowered)]
     triples += [(2000 + int(y), int(m), int(d)) for d, m, y in
-                re.findall(r"(?<!\d)(\d{1,2})[/-](\d{1,2})[/-](\d{2})(?!\d)", value)]
+                re.findall(r"(?<!\d)(\d{1,2})[/-](\d{1,2})[/-](\d{2})(?!\d)", lowered)]
     triples += [(2000 + int(y), int(m), int(d)) for d, m, y in
-                re.findall(r"(?<!\d)(\d{1,2})\.(\d{1,2})\.(\d{2})(?!\d)", value)]
+                re.findall(r"(?<!\d)(\d{1,2})\.(\d{1,2})\.(\d{2})(?!\d)", lowered)]
     for index, month in enumerate(MONTHS, 1):
         month_pattern = "mar[cç]o" if month == "março" else month
         triples += [(int(y), index, int(d)) for d, y in re.findall(
-            rf"(?<!\d)(\d{{1,2}})\s+de\s+{month_pattern}\s+de\s+(\d{{4}})(?!\d)", value.casefold())]
+            rf"(?<!\d)(\d{{1,2}})[/\s-]+(?:de\s+)?{month_pattern}\b(?:,?\s*(?:de\s+)?|[/\s-]+)((?:19|20)\d{{2}})(?!\d)", lowered)]
+        triples += [(2000 + int(y), index, int(d)) for d, y in re.findall(
+            rf"(?<!\d)(\d{{1,2}})[/\s-]+(?:de\s+)?{month_pattern}\b(?:[/\-]|\s+de\s+)(\d{{2}})(?![\d:]|\s*h\b)", lowered)]
     for index, short_month in enumerate(SHORT_MONTHS, 1):
         triples += [(int(y), index, int(d)) for d, y in re.findall(
-            rf"(?<!\d)(\d{{1,2}})[/\s-]+(?:de\s+)?{short_month}[/\s-]+(?:de\s+)?(\d{{4}})(?!\d)", value.casefold())]
+            rf"(?<!\d)(\d{{1,2}})[/\s-]+(?:de\s+)?{short_month}\b\.?(?:,?\s*(?:de\s+)?|[/\s-]+)((?:19|20)\d{{2}})(?!\d)", lowered)]
+        triples += [(2000 + int(y), index, int(d)) for d, y in re.findall(
+            rf"(?<!\d)(\d{{1,2}})[/\s-]+(?:de\s+)?{short_month}\b\.?(?:[/\-]|\s+de\s+)(\d{{2}})(?![\d:]|\s*h\b)", lowered)]
     if default_year is not None:
         triples += [(default_year, int(m), int(d)) for d, m in
-                    re.findall(r"(?<!\d)(\d{1,2})/(\d{1,2})(?![/\d])", value)]
+                    re.findall(r"(?<!\d)(\d{1,2})/(\d{1,2})(?![/\d])", lowered)]
+        year_ahead = r"(?!(?:(?:,?\s*(?:de\s+)?|[/\s-]+)(?:19|20)\d{2}\b|(?:[/\-]|\s+de\s+)\d{2}(?![\d:]|\s*h\b)))"
         for index, month in enumerate(MONTHS, 1):
             month_pattern = "mar[cç]o" if month == "março" else month
             triples += [(default_year, index, int(d)) for d in re.findall(
-                rf"(?<!\d)(\d{{1,2}})\s+de\s+{month_pattern}(?!\s+de\s+\d)(?!\d)", value.casefold())]
+                rf"(?<!\d)(\d{{1,2}})\s+(?:de\s+)?{month_pattern}\b{year_ahead}", lowered)]
+        for index, short_month in enumerate(SHORT_MONTHS, 1):
+            triples += [(default_year, index, int(d)) for d in re.findall(
+                rf"(?<!\d)(\d{{1,2}})\s+(?:de\s+)?{short_month}\b\.?(?!\.){year_ahead}", lowered)]
     for year, month, day in triples:
         try:
             found.add(date(year, month, day))
@@ -203,14 +260,110 @@ def dates_in_evidence(value: str, *, default_year: int | None = None) -> set[dat
     return found
 
 
+def _parse_time(hour_s: str, min1: str | None, min2: str | None) -> time | None:
+    try:
+        return time(int(hour_s), int(min1 or min2 or 0))
+    except ValueError:
+        return None
+
+
 def times_in_evidence(value: str) -> set[time]:
+    cleaned = _DURATION_LENGTH_RE.sub(" ", value)
     found = set()
-    for match in re.finditer(r"(?<![\d:])(\d{1,2})\s*(?::\s*(\d{2})|h(?:\s*(\d{2}))?)(?![\d:])", value):
-        try:
-            found.add(time(int(match[1]), int(match[2] or match[3] or 0)))
-        except ValueError:
-            pass
+    for match in _TIME_RE.finditer(cleaned):
+        parsed = _parse_time(match[1], match[2], match[3])
+        if parsed is not None:
+            found.add(parsed)
     return found
+
+
+def resolve_evidence_hours(value: str) -> tuple[set[time], time | None]:
+    """Retorna (todos os horários encontrados, horário inicial inequívoco ou None)."""
+    cleaned = _DURATION_LENGTH_RE.sub(" ", value)
+    hours = times_in_evidence(cleaned)
+    if not re.search(r"\bou\b", cleaned.casefold()):
+        bare_matches = list(_BARE_START_DURATION_RE.finditer(cleaned))
+        if len(bare_matches) == 1:
+            bm = bare_matches[0]
+            start_t = _parse_time(bm[1], None, None)
+            end_t = _parse_time(bm[2], bm[3], bm[4])
+            if start_t is not None and end_t is not None and start_t < end_t and hours == {end_t}:
+                return {start_t, end_t}, start_t
+    if len(hours) <= 1:
+        return hours, next(iter(hours), None)
+    if len(hours) == 2 and not re.search(r"\bou\b", cleaned.casefold()):
+        matches = list(_DURATION_RANGE_RE.finditer(cleaned))
+        if len(matches) == 1:
+            m = matches[0]
+            start_t = _parse_time(m[1], m[2], m[3])
+            end_t = _parse_time(m[4], m[5], m[6])
+            if start_t is not None and end_t is not None and start_t < end_t and {start_t, end_t} == hours:
+                return hours, start_t
+    return hours, None
+
+
+def _title_grounded_in_evidence(
+    titulo: str,
+    trecho_origem: str,
+    tipo: Kind,
+    page_source: str = "",
+) -> bool:
+    if _evidence_in_source(titulo, trecho_origem, max_gap=4, allow_same_line=False):
+        return True
+    match = _STRUCTURED_TITLE_RE.match(titulo.strip())
+    if not match:
+        return False
+    prefix = match.group(1).casefold()
+    if prefix not in _STRUCTURED_PREFIX_BY_KIND[tipo]:
+        return False
+    tail = match.group(3).strip()
+    if not _tokens(tail):
+        return False
+    if _evidence_in_source(tail, trecho_origem, max_gap=4, allow_same_line=False):
+        return True
+    return bool(page_source) and _evidence_in_source(tail, page_source, max_gap=4, allow_same_line=False)
+
+
+def _clean_verbose_title(titulo: str, tipo: Kind) -> str:
+    """Se o modelo copiou uma frase narrativa inteira como título, extrai 'Prova/Trabalho - <Matéria>'."""
+    text = titulo.strip()
+    if len(text) < 42 and not _VERBOSE_TITLE_VERB_RE.search(text):
+        return text
+    if not _VERBOSE_TITLE_VERB_RE.search(text):
+        return text
+    match = _SUBJECT_AFTER_ASSESSMENT_RE.search(text)
+    if not match:
+        return text
+    subject = _TRAILING_CLAUSE_RE.sub("", match.group(1)).strip(" -–—:,.")
+    if not subject or len(subject) < 2:
+        return text
+    label = "Prova" if tipo == "prova" else "Trabalho"
+    return f"{label} - {subject}"
+
+
+def _sort_and_index_candidates(candidates: list[CandidateData]) -> list[CandidateData]:
+    """Ordena cronologicamente e padroniza a numeração 'Prova X - <Tema>' sem sobrescrever rótulos fixos do texto."""
+    indexed = list(enumerate(candidates))
+    indexed.sort(key=lambda pair: (
+        pair[1].data_sugerida is None,
+        pair[1].data_sugerida or date.max,
+        pair[1].hora_sugerida is None,
+        pair[1].hora_sugerida or time.max,
+        pair[0],
+    ))
+    ordered = [item for _, item in indexed]
+    counters = {"prova": 0, "trabalho": 0}
+    for item in ordered:
+        match = _STRUCTURED_TITLE_RE.match(item.titulo.strip())
+        if not match:
+            continue
+        if _EXPLICIT_FIXED_LABEL_RE.search(item.trecho_origem):
+            continue
+        prefix = "Prova" if item.tipo == "prova" else "Trabalho"
+        tail = match.group(3).strip()
+        counters[item.tipo] += 1
+        item.titulo = f"{prefix} {counters[item.tipo]} - {tail}"
+    return ordered
 
 
 def validate_candidates(raw: str, pages: list[TextPage], *, default_year: int | None = None) -> ExtractionResult:
@@ -231,14 +384,21 @@ def validate_candidates(raw: str, pages: list[TextPage], *, default_year: int | 
         if not _evidence_in_source(item.trecho_origem, sources[item.pagina_origem]):
             first_failure_reason = first_failure_reason or "evidence_mismatch"
             continue
-        if not _evidence_in_source(item.titulo, item.trecho_origem, max_gap=4, allow_same_line=False):
+        if not _title_grounded_in_evidence(item.titulo, item.trecho_origem, item.tipo, sources[item.pagina_origem]):
             first_failure_reason = first_failure_reason or "title_mismatch"
             continue
-        # Defesa conservadora: rótulos de aula/bibliografia não viram provas.
+        item.titulo = _clean_verbose_title(item.titulo, item.tipo)
+        # Defesa conservadora: rótulos de aula/bibliografia/regras administrativas não viram provas.
         title = normalize(item.titulo)
         if re.match(r"^(aula|bibliografia|refer[eê]ncias?|leitura|feriado|crit[eé]rios?|sistema|m[eé]todo)\b", title):
             continue
-        marker = r"\b(provas?|exames?|p[1-9]|pf|avalia(?:ç|c)[ãa]o)\b" if item.tipo == "prova" else r"\btrabalhos?\b"
+        if item.data_sugerida is None and _ADMIN_POLICY_RE.search(item.trecho_origem):
+            continue
+        marker = (
+            r"\b(provas?|exames?|p[1-9]|pf|ps|substitutiva|avalia(?:ç|c)[ãa]o|avalia(?:ç|c)[õo]es)\b"
+            if item.tipo == "prova"
+            else r"\b(trabalhos?|t[1-9]|entregas?\s+avaliativas?|projetos?\s+(?:final|avaliativos?)|semin[áa]rios?\s+avaliativos?|relat[óo]rios?\s+avaliativos?)\b"
+        )
         if not (re.search(marker, title) or re.search(marker, evidence)):
             continue
         ambiguous = set(item.campos_ambiguos)
@@ -250,11 +410,11 @@ def validate_candidates(raw: str, pages: list[TextPage], *, default_year: int | 
             ambiguous.add("data")
         if item.data_sugerida is None:
             ambiguous.add("data")
-        hours = times_in_evidence(evidence)
-        if len(hours) > 1:
+        hours, unambiguous_start = resolve_evidence_hours(evidence)
+        if len(hours) > 1 and unambiguous_start is None:
             ambiguous.add("hora")
         if item.hora_sugerida is not None:
-            if item.data_sugerida is None or hours != {item.hora_sugerida} or "hora" in ambiguous:
+            if item.data_sugerida is None or "hora" in ambiguous or item.hora_sugerida != unambiguous_start:
                 item.hora_sugerida = None
                 ambiguous.add("hora")
         item.campos_ambiguos = sorted(ambiguous)
@@ -264,4 +424,5 @@ def validate_candidates(raw: str, pages: list[TextPage], *, default_year: int | 
             result.candidates.append(item)
     if output.candidatos and not result.candidates and first_failure_reason is not None:
         raise ProcessingError("falha_ia", reason=first_failure_reason)
+    result.candidates = _sort_and_index_candidates(result.candidates)
     return result

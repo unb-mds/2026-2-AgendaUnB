@@ -21,6 +21,7 @@ test('texto bruto mede capacidade em UTF-8 e fica disponível para recuperar o e
   await expect(select).toBeEnabled();
   await select.press('Enter');
   await page.getByRole('button', { name: /FGA0101 · Turma 02/ }).press('Enter');
+  await page.getByRole('tab', { name: 'Colar texto' }).click();
   const input = page.getByLabel('Texto do plano', { exact: true });
   const submit = page.getByRole('button', { name: 'Preparar texto para revisão' });
   await input.fill('é'.repeat(20001));

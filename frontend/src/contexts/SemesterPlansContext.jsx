@@ -117,6 +117,45 @@ function SemesterPlansSession({ children, userId }) {
     setUploads(current => [...current, { id: crypto.randomUUID(), name: 'Texto colado', text, offer, status: 'queued' }]);
   };
   const remove = id => setUploads(current => current.filter(item => item.id !== id || item.status === 'sending'));
+  const resetUploads = useCallback(() => {
+    setUploads(current => current.filter(item => item.status === 'sending'));
+    setUploadNotice({});
+    setRawText({ text: '' });
+  }, []);
+  const resetSend = useCallback(async (planIds = []) => {
+    resetUploads();
+    const uniqueIds = [...new Set(planIds.filter(Boolean))];
+    if (!uniqueIds.length) return { deleted: [], failed: [] };
+    const signal = session.current?.signal;
+    const settled = await Promise.allSettled(
+      uniqueIds.map(async id => {
+        requests.current.get(`read:${id}`)?.abort();
+        await syllabusApi.remove(id, signal);
+        return id;
+      }),
+    );
+    const deleted = [];
+    const failed = [];
+    settled.forEach((outcome, index) => {
+      if (outcome.status === 'fulfilled') deleted.push(outcome.value);
+      else failed.push({ id: uniqueIds[index], error: outcome.reason });
+    });
+    if (deleted.length) {
+      const removed = new Set(deleted);
+      const omitKeys = obj => Object.fromEntries(Object.entries(obj).filter(([key]) => !removed.has(key)));
+      setPlans(omitKeys);
+      setRecent(current => current.filter(plan => !removed.has(plan.id)));
+      setProcessing(current => current.filter(id => !removed.has(id)));
+      setTexts(omitKeys);
+      setAuthorizations(omitKeys);
+      setPlanErrors(omitKeys);
+      setResults(omitKeys);
+      setDrafts(current => Object.fromEntries(
+        Object.entries(current).filter(([key]) => !deleted.some(id => key.startsWith(`${id}:`))),
+      ));
+    }
+    return { deleted, failed };
+  }, [resetUploads]);
   const retryUpload = id => setUploads(current => current.map(item => item.id === id && item.status === 'failed'
     ? { ...item, error: '', status: 'queued' } : item));
   const onPrepared = useCallback(plan => {
@@ -310,7 +349,7 @@ function SemesterPlansSession({ children, userId }) {
   }
 
   return <Context.Provider value={{
-    uploads, rawText, setRawText, addFiles, addText, remove, retryUpload, uploadNotice, acknowledgeUpload, retryUncertainUpload,
+    uploads, rawText, setRawText, addFiles, addText, remove, resetUploads, resetSend, retryUpload, uploadNotice, acknowledgeUpload, retryUncertainUpload,
     plans, recent, planErrors, loadPlan, observe, drafts, changeDrafts, texts, setText, authorizations, authorize,
     checkAuthorization, results, confirming, confirm, reconcile,
   }}>{children}</Context.Provider>;
