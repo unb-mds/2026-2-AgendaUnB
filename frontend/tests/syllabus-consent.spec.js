@@ -53,6 +53,7 @@ test('texto bruto mede capacidade em UTF-8 e fica disponível para recuperar o e
   await expect(select).toBeEnabled();
   await select.press('Enter');
   await page.getByRole('button', { name: /FGA0101 · Turma 02/ }).press('Enter');
+  await page.getByRole('tab', { name: 'Colar texto' }).click();
   const input = page.getByLabel('Texto do plano', { exact: true });
   const submit = page.getByRole('button', { name: 'Enviar texto e extrair', exact: true });
   await input.fill('é'.repeat(20001));
@@ -135,6 +136,7 @@ test('texto colado autoriza o snapshot sanitizado no próprio envio', async ({ p
     return route.fulfill({ status: 202, json: next });
   });
   await page.goto('/plano-de-ensino?oferta=class-1');
+  await page.getByRole('tab', { name: 'Colar texto' }).click();
   await page.getByLabel('Texto do plano', { exact: true }).fill(preparedPages[0].texto + ' | E-mail: pessoa@example.test');
   expect(writes).toEqual([]);
   await page.getByRole('button', { name: 'Enviar texto e extrair', exact: true }).click();
@@ -164,6 +166,7 @@ test('envio preserva o plano para nova tentativa quando o provedor está indispo
     return route.abort();
   });
   await page.goto('/plano-de-ensino?oferta=class-1');
+  await page.getByRole('tab', { name: 'Colar texto' }).click();
   await page.getByLabel('Texto do plano', { exact: true }).fill(pages[0].texto);
   await page.getByRole('button', { name: 'Enviar texto e extrair', exact: true }).click();
   await expect(page.getByText('A extração está indisponível no momento.')).toBeVisible();
