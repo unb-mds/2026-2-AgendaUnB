@@ -28,17 +28,26 @@ PHONE_SEP = r"[^\S\r\n\t]*"
 PHONE_NUMBER = rf"(?:9?\d{{4}})[ .-]\d{{4}}"
 FORMATTED_PHONE = rf"(?:\+55{PHONE_SEP})?{DDD}(?:{PHONE_SEP}|[.-]){PHONE_NUMBER}"
 LABELED_PHONE = rf"(?:\+?55{PHONE_SEP})?(?:{DDD}[ .-]?)?9?\d{{4}}[ .-]?\d{{4}}"
+CPF_FORMATTED = r"\d{3}\.\d{3}\.\d{3}-\d{2}"
+CPF_VALUE = rf"(?:{CPF_FORMATTED}|\d{{11}})"
+RG_VALUE = r"(?:\d{1,2}\.\d{3}\.\d{3}-?[\dX]|\d{7,9}(?:-?[\dX])?|\d{6,8}-[\dX])"
+NUMBER_LABEL = rf"(?:{SPACE}+(?:n[º°.]|n[uú]mero))?"
+VALUE_SEPARATOR = rf"(?:{NAME_SEPARATOR}|{SPACE}+)"
+END_NUMBER = r"(?!\w|[./-]\d)"
 
 RULES = (
     (re.compile(rf"(?<!\w)(?i:{FULL_ROLE})(?!\w){NAME_SEPARATOR}(?P<value>{NAME})(?!\w|@)"), IDENTIFIER),
     (re.compile(rf"(?<!\w)(?i:prof(?:a|ª)?\.|dr(?:a|ª)?\.)"
                 rf"(?:{FIELD}|{SPACE}+)(?P<value>{NAME})(?!\w|@)"), IDENTIFIER),
-    (re.compile(r"^(?:matr[ií]cula|cpf|nascimento)\s*[:=].*$", re.I | re.M), IDENTIFIER),
+    (re.compile(r"^(?:matr[ií]cula|nascimento)\s*[:=].*$", re.I | re.M), IDENTIFIER),
     (re.compile(r"(?<![\w.+%-])[\w.+%'-]{1,64}@(?:[a-z\d-]{1,63}\.){1,12}[a-z]{2,63}(?![\w-])", re.I), EMAIL),
     (re.compile(rf"(?<![\w+\d(]){FORMATTED_PHONE}(?![\w\d]|[.-]\d)"), PHONE),
     (re.compile(rf"(?<!\w)(?:{PHONE_LABEL})(?!\w)(?:{NAME_SEPARATOR}|{SPACE}+)"
                 rf"(?P<value>{LABELED_PHONE})(?![\w\d]|[./-]\d)", re.I), PHONE),
-    (re.compile(r"(?<!\d)(?:\d{3}[.]\d{3}[.]\d{3}-\d{2}|\d{9,11})(?!\d)"), IDENTIFIER),
+    (re.compile(rf"(?<!\w){CPF_FORMATTED}(?!\w)"), IDENTIFIER),
+    (re.compile(rf"(?<!\w)cpf{NUMBER_LABEL}{VALUE_SEPARATOR}(?P<value>{CPF_VALUE}){END_NUMBER}", re.I), IDENTIFIER),
+    (re.compile(rf"(?<!\w)(?:r\.?g\.?|registro geral){NUMBER_LABEL}{VALUE_SEPARATOR}"
+                rf"(?P<value>{RG_VALUE}){END_NUMBER}", re.I), IDENTIFIER),
 )
 
 
