@@ -22,8 +22,18 @@ export default function NavBar({ pageType = 'home', isDark, toggleTheme, onLogin
     return () => { document.removeEventListener('keydown', close); document.removeEventListener('pointerdown', close); };
   }, [menuOpen]);
   const avatar = profile?.avatar_url || user?.user_metadata?.avatar_url || user?.user_metadata?.picture;
+  const handleBrandClick = () => {
+    setMenuOpen(false);
+    if (location.pathname === '/' && typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
   return <nav ref={nav} className={`nav app-nav ${pageType === 'home' ? 'home-nav' : ''} ${menuOpen ? 'menu-open' : ''}`} aria-label="Navegação principal">
-    <button ref={menuButton} className="manage-icon-button nav-menu-toggle" aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'} aria-expanded={menuOpen} aria-controls="main-nav-links" onClick={() => setMenuOpen(v => !v)}>
+    <Link to="/" className="nav-brand-link" aria-label="Agenda UnB — Ir para a página inicial" title="Página inicial" onClick={handleBrandClick}>
+      <img className="nav-brand-icon" src="/Logo-AgendaUnB1.png" alt="" width={22} height={22} />
+      <span className="nav-brand">AGENDA<em>UNB</em></span>
+    </Link>
+    <button ref={menuButton} type="button" className="manage-icon-button nav-menu-toggle" aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'} aria-expanded={menuOpen} aria-controls="main-nav-links" onClick={() => setMenuOpen(v => !v)}>
       <span className="material-symbols-outlined" aria-hidden="true">{menuOpen ? 'close' : 'menu'}</span>
     </button>
     <div className="nav-items" id="main-nav-links" onClick={() => setMenuOpen(false)}>
