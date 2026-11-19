@@ -33,6 +33,15 @@ O campo **verificado** é o mais importante. Sem ele, a entrada declara o uso ma
 
 ## Entradas
 
+### 18/11/2026 — S8-F02: eventos, moderação, agenda, filtros múltiplos e melhorias de uso (#80)
+
+- **Quem:** Gabriel Escramin (solicitante).
+- **Ferramenta:** Google Antigravity (Gemini), Impeccable (`critique`, `polish`, `harden`, `colorize`), Vite e `node --test`.
+- **O que foi pedido:** Concluir na branch `feat/s8-f02-eventos-e-melhorias` as entregas de banco, API, interface de calendário/detalhes/moderação, filtros combináveis com múltipla seleção, edição pública por professor/admin, menu de logout e acabamento visual da issue #80 (`S8-F02`).
+- **O que entrou no repositório:** Migração `supabase/migrations/20261117200000_s8_f02_eventos_moderacao_categorias.sql` (`localizacao` em `eventos_pessoais`, redirecionamento deduplicado em `registrar_redirecionamento_evento`, gestão admin de categorias e projeção de intervalos/dia inteiro); endpoints FastAPI em `backend/src/modules/events/router.py` e `schemas.py` (`all_day`, `ends_at`, `POST /events/{id}/outbound-clicks`, `PUT /events/{id}` para `professor`/`admin` e CRUD admin em `/api/v1/categories`) com testes em `backend/tests/test_events_api.py`; calendário multi-dia em `America/Sao_Paulo` (`calendar.js`, `EventCalendar.jsx`), ações independentes em `PaginaDeEvento.jsx`, fila de coleta em `SuggestionsPage.jsx`, gestão de categorias em `AdminPage.jsx`, filtros múltiplos com checkbox (`CustomSelect.jsx`, `preferences.js`), edição de eventos públicos restrita a `professor`/`admin` e remoção do botão de voltar em `SecondPage.jsx`, `ProfileMenu.jsx` com logout na `NavBar.jsx`, polimento de contraste/responsividade em `global.css` e `management.css`, e atualização de `docs/api-specs.md`, `docs/sprints/sprint-8.md` e `docs/matriz-release-2.md`.
+- **O que foi verificado:** Build de produção do frontend (`npm --prefix frontend run build`) e **50/50** testes unitários em `frontend/src/lib/*.test.js` (`npm --prefix frontend test`) aprovados após as últimas alterações; detector mecânico `impeccable detect --json` sem novos achados nos componentes e páginas alterados (restando apenas o aviso pré-existente da fonte `Inter`, definida no `DESIGN.md`); checagem de sintaxe Python (`python -m py_compile`) nos arquivos alterados do backend. A execução da suíte `pytest` com as dependências da `.venv`, a aplicação da migração no PostgreSQL de destino e a homologação manual dos critérios de aceite ficaram pendentes para a etapa final de PR.
+- **O que foi rejeitado ou corrigido:** A barra de botões rápidos `"Campi UnB"` e a aba separada `"Histórico"` (RF18) adicionadas inicialmente em `SecondPage.jsx` foram removidas por decisão do solicitante, mantendo os cinco campi no seletor `Qualquer campus` e deixando a visualização do RF18 vinculada à integração com a `#79` (`S8-B02`). Nos ajustes de qualidade e UI, foram removidos `side-tab` (`borderLeft`), gradientes lineares e badges/botões translúcidos com borda colorida (substituídos por cores sólidas de alto contraste, inclusive no botão `"Sair da conta"`), equalizados os filtros em `<= 600px` e preservados `linkExterno` e visibilidade na edição de eventos públicos.
+
 ### 17/11/2026 — S8-B01: endpoints de compartilhamento, versões, procedência e votos (#77)
 
 - **Quem:** Thomaz Marra (solicitante).
@@ -322,3 +331,10 @@ Este arquivo foi redigido com auxílio da I.A. A estrutura e o texto das entrada
 - **O que entrou:** HTML e metadados para páginas públicas, guias com fontes oficiais da UnB, sitemap de eventos aprovados e regras de indexação.
 - **Verificações:** build e 25 testes do frontend, HTTP local dos guias e testes da função com respostas simuladas do Supabase. A validação do roteamento e do cache na Vercel fica para a homologação.
 - **Decisão:** a marcação estruturada de eventos depende de endereços completos no catálogo. As páginas públicas usam o campo de local disponível e não inferem um endereço.
+
+### 18/11/2026 — Lembretes persistentes (#81)
+
+- **Ferramenta** — Codex, com pytest, Supabase local e Chromium.
+- **Pedido** — Concluir o job, os contratos e a central de lembretes em commits separados.
+- **Entrega** — Migração incremental para a corrida de reagendamento, SQL de ativação do Supabase Cron, rotas autenticadas e estados de leitura no sino.
+- **Verificação** — Testes SQL e HTTP, reinício do banco com job real e retorno à sessão no navegador com duas contas sintéticas. [Evidências locais e pendências](/arquitetura/dados-de-eventos#aceite-local-da-s8-b03).

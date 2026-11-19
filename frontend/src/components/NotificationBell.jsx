@@ -2,17 +2,19 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Feedback, Icon, Pagination } from './ManagementUI';
 import { formatDate, moderationApi } from '../lib/moderation';
+import ReminderList from './ReminderList';
 
 const TYPES = {
   submissao: { title: 'Sugestão enviada', icon: 'schedule', description: 'Seu evento está em análise por professores e administradores.' },
   aprovacao: { title: 'Sugestão aprovada', icon: 'check_circle', description: 'Seu evento foi publicado na agenda da comunidade.' },
   recusa: { title: 'Sugestão recusada', icon: 'chat', description: 'Confira o feedback para entender a decisão.' },
 };
-export default function NotificationBell({ userId }) {
+export default function NotificationBell({ userId, showModeration }) {
   const panelId = useId();
   const containerRef = useRef(null);
   const buttonRef = useRef(null);
   const [open, setOpen] = useState(false);
+  const [section, setSection] = useState('reminders');
   const [page, setPage] = useState(0);
   const [result, setResult] = useState({ items: [], total: 0, unread: 0 });
   const [loading, setLoading] = useState(true);
@@ -39,6 +41,7 @@ export default function NotificationBell({ userId }) {
     };
   }, [open]);
   useEffect(() => {
+    if (!showModeration) return;
     let active = true;
     const load = async (quiet = false) => {
       const version = ++sequence.current;
@@ -54,7 +57,7 @@ export default function NotificationBell({ userId }) {
     const timer = setInterval(refresh, 30000);
     window.addEventListener('suggestion-submitted', refresh); window.addEventListener('focus', refresh);
     return () => { active = false; clearInterval(timer); window.removeEventListener('suggestion-submitted', refresh); window.removeEventListener('focus', refresh); };
-  }, [userId, page, open, revision]);
+  }, [userId, page, open, revision, showModeration]);
   const markRead = async ids => {
     if (busy) return;
     setBusy(true);
@@ -62,14 +65,23 @@ export default function NotificationBell({ userId }) {
     catch (err) { setError(err.message); }
     finally { setBusy(false); }
   };
+  const unread = showModeration ? result.unread : 0;
+  const showReminders = !showModeration || section === 'reminders';
   return <div className="notification-anchor" ref={containerRef}>
-    <button ref={buttonRef} className="manage-icon-button notification-bell" aria-label={`Notificações${result.unread ? `: ${result.unread} não lidas` : ''}`}
-      aria-haspopup="dialog" aria-controls={panelId} aria-expanded={open} onClick={() => setOpen(value => !value)} title="Notificações">
-      <Icon>notifications</Icon>{result.unread > 0 && <span className="notification-count" aria-hidden="true">{result.unread > 99 ? '99+' : result.unread}</span>}
+    <button ref={buttonRef} className="manage-icon-button notification-bell" aria-label={`Notificações${unread ? `, avisos de sugestões não lidos (${unread})` : ''}`}
+      aria-haspopup="dialog" aria-controls={open ? panelId : undefined} aria-expanded={open} onClick={() => setOpen(value => !value)} title="Notificações">
+      <Icon>notifications</Icon>{unread > 0 && <span className="notification-count" aria-hidden="true">{unread > 99 ? '99+' : unread}</span>}
     </button>
     {open && <section id={panelId} className="notification-popover" role="dialog" aria-label="Notificações">
       <header className="notification-popover-header"><h2>Notificações</h2></header>
+      {showModeration && <div className="management-tabs notification-sections" role="group" aria-label="Tipo de notificação">
+        <button type="button" className={showReminders ? 'active' : ''} aria-pressed={showReminders}
+          onClick={() => setSection('reminders')}>Lembretes</button>
+        <button type="button" className={showReminders ? '' : 'active'} aria-pressed={!showReminders}
+          onClick={() => setSection('suggestions')}>Sugestões{unread > 0 && <span className="management-count">({unread})</span>}</button>
+      </div>}
       <div className="notification-popover-body">
+      {showReminders ? <ReminderList /> : <>
       <Feedback error={error} onRetry={() => setRevision(v => v + 1)} />
       {loading ? <div className="notification-empty" role="status">Carregando notificações…</div> : <>
         {!!result.items.some(item => !item.lida_em) && <button className="manage-button notification-mark" disabled={busy}
@@ -86,6 +98,7 @@ export default function NotificationBell({ userId }) {
           </div>
         </li>)}</ul>
         <Pagination page={page} total={result.total} onPage={setPage} busy={loading} />
+      </>}
       </>}
       </div>
     </section>}

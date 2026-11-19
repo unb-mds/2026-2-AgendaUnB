@@ -93,8 +93,13 @@ antes do deploy da API que contém o callback. Em cada ambiente:
    demonstrar retomada da fila e medir o tempo até o resultado. A agenda
    configurada processa até um item por execução, a cada 30 minutos, e pode
    atrasar. Serve para prova de execução e persistência, com capacidade e
-   latência de produção ainda por validar. Lembretes dependem da #81.
-5. Em incidente, desativar os jobs afetados e selecionar os deploys anteriores
+   latência de produção ainda por validar.
+5. Para a #81, confirmar que o banco alvo recebeu as migrações de lembretes.
+   Ativar o job `agenda-unb-lembretes` com o arquivo versionado e verificar as
+   execuções no Supabase Cron. Homologação usa um projeto Supabase distinto e
+   contas sintéticas. Registrar o SHA da API e da SPA, as migrações aplicadas e
+   as execuções do job antes da promoção. [Operação dos lembretes](/arquitetura/dados-de-eventos#agendador).
+6. Em incidente, desativar os jobs afetados e selecionar os deploys anteriores
    da API e da SPA compatíveis com o schema aplicado. Conferir os IDs,
    restaurar o deploy da API no Render e o da SPA na Vercel, repetir consultas,
    Auth e preflight, e só então retomar os jobs. Preferir correção incremental
