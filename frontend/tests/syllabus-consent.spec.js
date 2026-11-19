@@ -6,7 +6,8 @@ const plan = makePlan(1, { status: 'pendente', authorizationRequired: true, prep
 const provider = 'Google Gemini API';
 const path = '/plano-de-ensino?plano=plan-1&etapa=3';
 const pages = [{ pagina: 1, texto: 'Prova em 23/11/2026 às 14:00.' }];
-const authorize = page => page.getByRole('button', { name: 'Autorizar envio', exact: true });
+const authorize = page => page.getByRole('button', { name: 'Confirmar e extrair', exact: true });
+const openEditor = page => page.getByRole('button', { name: 'Ver e editar texto' }).click();
 
 for (const { width, redactedCount, notice } of [
   { width: 360, redactedCount: 1, notice: 'A preparação automática mascarou 1 ocorrência de dados pessoais.' },
@@ -20,15 +21,18 @@ for (const { width, redactedCount, notice } of [
     await page.route('**/api/v1/syllabus/plan-1/text', route => route.fulfill({
       json: { pages, provider, providerAvailable: true, redactedCount },
     }));
-    await page.goto(path);
+    await page.goto(path, { waitUntil: 'domcontentloaded' });
+    await expect(page.getByRole('button', { name: 'Ver e editar texto' })).toBeVisible({ timeout: 15000 });
     const editor = page.getByRole('textbox', { name: 'Texto da página 1' });
-    await expect(editor).toHaveValue(pages[0].texto);
+    await expect(editor).toHaveCount(0);
     const status = page.getByRole('status').filter({ hasText: /preparação automática mascarou/ });
     if (notice) {
       await expect(status).toHaveText(notice);
     } else {
       await expect(status).toHaveCount(0);
     }
+    await openEditor(page);
+    await expect(editor).toHaveValue(pages[0].texto);
     await editor.fill(pages[0].texto + ' Sala 204.');
     await expect(editor).toHaveValue(pages[0].texto + ' Sala 204.');
     if (notice) await expect(status).toHaveText(notice);
@@ -50,7 +54,7 @@ test('texto bruto mede capacidade em UTF-8 e fica disponível para recuperar o e
   await select.press('Enter');
   await page.getByRole('button', { name: /FGA0101 · Turma 02/ }).press('Enter');
   const input = page.getByLabel('Texto do plano', { exact: true });
-  const submit = page.getByRole('button', { name: 'Preparar texto para revisão' });
+  const submit = page.getByRole('button', { name: 'Enviar texto e extrair', exact: true });
   await input.fill('é'.repeat(20001));
   await expect(submit).toBeDisabled();
   await expect(page.getByRole('progressbar', { name: 'Capacidade do texto usada' })).toHaveAttribute('aria-valuetext', '101% — limite excedido');
@@ -78,10 +82,11 @@ test('prévia inválida permite tentar novamente; provedor indisponível bloquei
   await setupSemester(page, { plans: [plan] });
   await page.route('**/api/v1/syllabus/plan-1/text', route => route.fulfill({ json: { pages: [null] } }));
   await page.goto(path);
-  await expect(page.getByRole('alert')).toContainText('O serviço retornou um texto inválido');
+  await expect(page.getByRole('alert')).toContainText('O serviço retornou um texto inválido', { timeout: 15000 });
   await expect(authorize(page)).toHaveCount(0);
   await page.route('**/api/v1/syllabus/plan-1/text', route => route.fulfill({ json: { pages, provider, providerAvailable: false } }));
   await page.getByRole('button', { name: 'Tentar novamente' }).click();
+  await openEditor(page);
   await expect(page.getByLabel('Texto da página 1')).toHaveValue(pages[0].texto);
   await expect(authorize(page)).toBeDisabled();
   await expect(page.getByText('A extração está indisponível no momento.')).toBeVisible();
@@ -99,8 +104,10 @@ test('clique explícito consente com a versão editada e bloqueia envio duplo', 
   });
   await page.goto(path);
   const edited = [{ pagina: 1, texto: pages[0].texto + '  ' }];
+  await openEditor(page);
   await page.getByLabel('Texto da página 1').fill(edited[0].texto);
-  await expect(page.getByText(/Ao autorizar, você declara que revisou/)).toBeVisible();
+  await page.getByRole('button', { name: 'Ocultar texto' }).click();
+  await expect(page.getByText(/Ao confirmar, você autoriza o envio/)).toBeVisible();
   expect(writes).toEqual([]);
   await authorize(page).evaluate(button => { button.click(); button.click(); });
   await expect(page.getByText('Analisando seu plano', { exact: true })).toBeVisible();
@@ -108,6 +115,61 @@ test('clique explícito consente com a versão editada e bloqueia envio duplo', 
     pages: edited, textHash: createHash('sha256').update(JSON.stringify(edited)).digest('hex'),
     authorize: true, contentEligible: true, reprocess: false,
   }]);
+});
+
+test('texto colado autoriza o snapshot sanitizado no próprio envio', async ({ page }) => {
+  const { data } = await setupSemester(page);
+  const preparedPages = [{ pagina: null, texto: 'Prova 1 em 23/11/2026.' }];
+  const writes = [];
+  const prepared = { ...plan, redactedCount: 1 };
+  await page.route('**/api/v1/syllabus/text', route => {
+    data.set(plan.id, prepared);
+    return route.fulfill({ status: 202, json: prepared });
+  });
+  await page.route('**/api/v1/syllabus/plan-1/text', route =>
+    route.fulfill({ json: { pages: preparedPages, provider, providerAvailable: true } }));
+  await page.route('**/api/v1/syllabus/plan-1/extractions', route => {
+    writes.push(route.request().postDataJSON());
+    const next = { ...prepared, authorizationRequired: false, status: 'processando' };
+    data.set(plan.id, next);
+    return route.fulfill({ status: 202, json: next });
+  });
+  await page.goto('/plano-de-ensino?oferta=class-1');
+  await page.getByLabel('Texto do plano', { exact: true }).fill(preparedPages[0].texto + ' | E-mail: pessoa@example.test');
+  expect(writes).toEqual([]);
+  await page.getByRole('button', { name: 'Enviar texto e extrair', exact: true }).click();
+  await expect(page.getByText('Analisando seu plano', { exact: true })).toBeVisible();
+  await expect(authorize(page)).toHaveCount(0);
+  const notice = page.getByRole('status').filter({ hasText: 'Dados pessoais detectados foram removidos antes da análise.' });
+  await expect(notice).toBeVisible();
+  expect(writes).toEqual([{
+    pages: preparedPages, textHash: createHash('sha256').update(JSON.stringify(preparedPages)).digest('hex'),
+    authorize: true, contentEligible: true, reprocess: false,
+  }]);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await expect(notice).toBeVisible({ timeout: 15000 });
+});
+
+test('envio preserva o plano para nova tentativa quando o provedor está indisponível', async ({ page }) => {
+  const { data } = await setupSemester(page);
+  await page.route('**/api/v1/syllabus/text', route => {
+    data.set(plan.id, plan);
+    return route.fulfill({ status: 202, json: plan });
+  });
+  await page.route('**/api/v1/syllabus/plan-1/text', route =>
+    route.fulfill({ json: { pages, provider, providerAvailable: false } }));
+  const requests = [];
+  await page.route('**/api/v1/syllabus/plan-1/extractions', route => {
+    requests.push(route.request());
+    return route.abort();
+  });
+  await page.goto('/plano-de-ensino?oferta=class-1');
+  await page.getByLabel('Texto do plano', { exact: true }).fill(pages[0].texto);
+  await page.getByRole('button', { name: 'Enviar texto e extrair', exact: true }).click();
+  await expect(page.getByText('A extração está indisponível no momento.')).toBeVisible();
+  await expect(authorize(page)).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Ver e editar texto' })).toBeVisible();
+  expect(requests).toEqual([]);
 });
 
 for (const status of ['processando', 'concluido']) {
