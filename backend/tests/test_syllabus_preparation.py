@@ -10,7 +10,8 @@ pytestmark = pytest.mark.usefixtures("published_offering")
 from sqlalchemy import select
 
 from src.database.models import AssessmentCandidate, PersonalEvent, Profile, Syllabus
-from src.modules.syllabus.preparation import text_hash
+from src.modules.syllabus.extraction import TextPage, validate_candidates
+from src.modules.syllabus.preparation import minimize, text_hash
 from src.modules.syllabus.processing_config import ProcessingConfig
 from src.modules.syllabus.processing_task import process_document
 from src.modules.syllabus.worker import SyllabusWorker
@@ -154,6 +155,28 @@ def test_historic_approved_snapshot_is_blocked_without_mutating_it(api, monkeypa
         assert not db.scalars(select(AssessmentCandidate)).all()
     assert api[0].post(f"/api/v1/syllabus/{sid}/extractions",
                        json=approval(preview, reprocess=True)).status_code == 202
+
+
+@pytest.mark.parametrize("page", [1, None])
+def test_minimization_preserves_assessment_extraction(page):
+    exam = "Prova 1 | 10/11/2026 | 14:30 | Sala 204"
+    assignment = "Trabalho Final | 2026-11-24 | 10h00 | Auditório Central"
+    raw = f"Disciplina: Cálculo Diferencial e Integral II\n{exam} | Prof. Ana Silva\n{assignment} | RG: 12.345.678-X"
+    mock_response = json.dumps({"candidatos": [
+        {"titulo": "Prova 1", "tipo": "prova", "data_sugerida": "2026-11-10",
+         "hora_sugerida": "14:30", "pagina_origem": page, "trecho_origem": exam},
+        {"titulo": "Trabalho Final", "tipo": "trabalho", "data_sugerida": "2026-11-24",
+         "hora_sugerida": "10:00", "pagina_origem": page, "trecho_origem": assignment},
+    ]})
+    baseline = validate_candidates(mock_response, [TextPage(page, raw)])
+    sanitized = validate_candidates(mock_response, [TextPage(page, minimize(raw))])
+    assert sanitized == baseline
+    assert sanitized.unsupported_dates == 0
+    assert [(item.titulo, str(item.data_sugerida), str(item.hora_sugerida),
+             item.pagina_origem, item.trecho_origem) for item in sanitized.candidates] == [
+        ("Prova 1", "2026-11-10", "14:30:00", page, exam),
+        ("Trabalho Final", "2026-11-24", "10:00:00", page, assignment),
+    ]
 
 
 def test_personal_data_reintroduced_by_edit_is_rejected_even_with_correct_hash(api, monkeypatch):
