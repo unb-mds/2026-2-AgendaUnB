@@ -1,8 +1,11 @@
-# Minimização de dados pessoais em planos de ensino
+---
+title: "Minimização de dados pessoais em planos de ensino"
+description: "Padrões, preservação de conteúdo acadêmico e evidências da S8-B04."
+---
 
-Na S8-B04, a mesma preparação determinística deve tratar PDFs com texto
-selecionável e textos colados. O [ADR-003](adrs/adr-003-minimizar-dados-de-planos.md)
-define o descarte do PDF e a autorização sobre o texto revisado.
+A preparação determinística trata PDFs com texto selecionável e textos colados
+no mesmo fluxo. O descarte do PDF e a autorização sobre o texto revisado
+seguem o [ADR-003](/arquitetura/adrs/adr-003-minimizar-dados-de-planos).
 
 | Categoria | Formatos de referência e casos sintéticos |
 | --- | --- |
