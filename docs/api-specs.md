@@ -275,6 +275,17 @@ O SDK consulta `notificacoes` diretamente, filtrando `usuario_id`, com contagem 
 
 Cada item tem `id`, `usuario_id`, `evento_id`, `tipo` (`submissao/aprovacao/recusa`), `titulo_evento`, `justificativa`, `criado_em` e `lida_em`. O banco permite ao destinatário apenas leitura e atualização de `lida_em`; a interface marca IDs próprios ainda não lidos com timestamp ISO. RLS e permissões de coluna fazem a proteção, não apenas o filtro do cliente. Triggers geram avisos na mesma transação da submissão/decisão. Não são lembretes programados.
 
+## Lembretes da agenda
+
+| Rota | Resultado |
+| --- | --- |
+| `GET /api/v1/me/reminders?limit=20&offset=0` | **200** com um array de lembretes disparados da sessão, ordenado por disparo e ID decrescentes. `limit` aceita de 1 a 100. `offset` é um inteiro de 0 a 2147483647. |
+| `PUT /api/v1/me/reminders/{id}/read` | **200** com `{id, read_at}`. A primeira leitura permanece em novas tentativas. O mesmo **404** é usado para IDs alheios, pendentes e inexistentes. |
+
+Cada item traz `id`, `event_kind` (`personal` ou `saved_public`), `event_id`, `title`, `starts_at`, `scheduled_at` e `read_at`. `starts_at` é o início usado no agendamento. `title` pode ser nulo quando o título atual está indisponível para aquela conta. `read_at` nulo indica aviso não lido.
+
+As duas rotas exigem uma sessão válida e um perfil com e-mail confirmado. Retornam **401** sem sessão, **403** para perfil indisponível ou com e-mail pendente de confirmação e **422** para parâmetros inválidos. Respostas de sucesso incluem `Cache-Control: no-store`. O scheduler opera no banco, conforme o [guia de implantação](/implantacao#publicacao-jobs-e-recuperacao).
+
 ## Verificação e manutenção
 
 Conferir inventário com `app.openapi()` e revisar manualmente handlers, permissões e SQL. Os testes de eventos, sugestões e salvos usam SQLite e substituem dependências de autenticação: não comprovam integração real com Auth nem RLS. Os testes de moderação de banco exigem Supabase local descartável. Ver [Contribuição](/processo/contribuindo) e o registro de validação em [Arquitetura](/arquitetura/visao-geral#9-verificacao).

@@ -30,7 +30,7 @@ Alertas apenas no navegador dependeriam de a página estar aberta. Disparar sem 
 
 ## Consequências
 
-Entrada na agenda após o instante de disparo não gera alerta retroativo. Job já agendado e atrasado pode ser retomado antes do início uma única vez. A leitura é restrita à conta e retries preservam o primeiro read_at. A tecnologia do scheduler ainda depende da prova de infraestrutura.
+Entrada na agenda após o instante de disparo não gera alerta retroativo. Avisos já agendados e atrasados podem ser retomados antes do início uma única vez. A leitura é restrita à conta e novas tentativas preservam o primeiro `read_at`. O Supabase Cron foi validado localmente e a operação hospedada depende de homologação no projeto alvo.
 
 ## Orientações para contribuição e verificação
 

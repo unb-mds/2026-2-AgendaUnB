@@ -145,6 +145,8 @@ body.light .management-feedback.error > .material-symbols-outlined { color: #b32
 .notification-popover { position: absolute; top: calc(100% + 12px); right: 0; width: min(320px, calc(100vw - 32px)); max-height: min(480px, calc(100dvh - 100px)); display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--manage-border); border-radius: 12px; background: var(--manage-surface); color: var(--manage-text); box-shadow: 0 16px 40px rgba(0,0,0,.2); text-align: left; z-index: 1000; }
 .notification-popover-header { flex: none; display: flex; align-items: center; min-height: 42px; padding: 10px 14px; border-bottom: 1px solid var(--manage-border); }
 .notification-popover-header h2 { margin: 0; font-size: .9rem; font-weight: 700; line-height: 1.3; }
+.notification-sections { flex: none; padding: 8px 12px; border-bottom: 1px solid var(--manage-border); }
+.notification-sections button { padding: 6px 12px; }
 .notification-popover-body { min-height: 0; overflow-y: auto; }
 .notification-empty { padding: 22px 16px; text-align: center; color: var(--manage-muted); font-size: .85rem; line-height: 1.5; }
 .notification-popover .management-feedback { margin: 12px; padding: 12px; font-size: .85rem; }
@@ -157,11 +159,14 @@ body.light .management-feedback.error > .material-symbols-outlined { color: #b32
 .notification-popover .notification-event, .notification-popover blockquote { font-size: .85rem; overflow-wrap: anywhere; }
 .notification-popover .management-muted { font-size: .8rem; line-height: 1.5; }
 .notification-popover .management-pagination { padding: 10px 12px; border-top: 1px solid var(--manage-border); }
+.notification-popover .notification-pagination { justify-content: space-between; gap: 6px; margin-top: 0; font-size: .8rem; }
+.notification-pagination .manage-button { padding-inline: 8px; font-size: inherit; }
 .notification-list { list-style: none; margin-top: 16px; }
 .notification-list li { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 16px; padding: 24px 0; border-top: 1px solid var(--manage-border); }
 .notification-list li > .material-symbols-outlined { margin-top: 3px; color: var(--manage-muted); }
 .notification-list li.unread > .material-symbols-outlined { color: var(--manage-link); }
 .notification-title { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.notification-title strong { overflow-wrap: anywhere; }
 .notification-event { margin: 8px 0; }
 .notification-list blockquote { margin: 12px 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 .notification-list time { color: var(--manage-muted); font-size: .8rem; display: block; margin-top: 8px; }
@@ -189,7 +194,7 @@ body.light .management-feedback.error > .material-symbols-outlined { color: #b32
   .admin-table td[data-label]::before { content: attr(data-label); display: block; color: var(--manage-muted); font-size: .8rem; margin-bottom: 6px; }
 }
 @media (max-width: 540px) {
-  .notification-popover { position: fixed; top: 62px; right: 40px; width: min(320px, calc(100vw - 80px)); }
+  .notification-popover { position: fixed; top: 62px; right: 12px; width: min(320px, calc(100vw - 24px)); }
   .management-main { padding: 112px 16px 48px; }
   .management-heading { margin-bottom: 24px; }
   .management-toolbar { align-items: flex-start; gap: 12px; }
