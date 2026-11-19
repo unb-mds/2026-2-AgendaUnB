@@ -9,6 +9,9 @@ PHONE = "[telefone removido]"
 
 SPACE = r"[^\S\r\n\t]"
 FIELD = rf"{SPACE}*[:=·–—-]{SPACE}*"
+# Duas colunas podem ser separadas por espaços ou tabs. Exportações de PDF
+# também podem quebrar uma linha imediatamente após o rótulo.
+NAME_SEPARATOR = rf"(?:{FIELD}(?:\r?\n{SPACE}*)?|{SPACE}*\t+{SPACE}*|{SPACE}{{2,}})"
 ACADEMIC_LABEL = (
     r"disciplinas?|mat[eé]rias?|turmas?|c[oó]digo|semestre|per[ií]odo|"
     r"avalia(?:ç|c)[aã]o|provas?|trabalhos?|p[1-9]|datas?|hor[aá]rios?|"
@@ -21,7 +24,7 @@ NAME = rf"{NAME_PART}(?:{SPACE}+(?:(?i:da|das|de|do|dos|e|d[’']){SPACE}+)?{NAM
 FULL_ROLE = r"professor(?:\(a\)|[ao])?s?|docente\b(?:\(s\))?|monitor(?:\(a\)|[ao])?s?|alun(?:[oa]\(a\)|\(a\)|[oa])s?|discente(?:\(s\)|s)?|coordenador(?:\(a\)|[ao])?s?|nome\s+completo"
 
 RULES = (
-    (re.compile(rf"(?<!\w)(?i:{FULL_ROLE})(?!\w){FIELD}(?P<value>{NAME})(?!\w|@)"), IDENTIFIER),
+    (re.compile(rf"(?<!\w)(?i:{FULL_ROLE})(?!\w){NAME_SEPARATOR}(?P<value>{NAME})(?!\w|@)"), IDENTIFIER),
     (re.compile(rf"(?<!\w)(?i:prof(?:a|ª)?\.|dr(?:a|ª)?\.)"
                 rf"(?:{FIELD}|{SPACE}+)(?P<value>{NAME})(?!\w|@)"), IDENTIFIER),
     (re.compile(r"^(?:matr[ií]cula|cpf|nascimento)\s*[:=].*$", re.I | re.M), IDENTIFIER),

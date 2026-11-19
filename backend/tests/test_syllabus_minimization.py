@@ -25,3 +25,9 @@ def test_masks_name_in_running_text():
     assert minimize("Fale com a Profa. Ana Souza para confirmar a data.") == (
         "Fale com a Profa. [identificador removido] para confirmar a data."
     )
+
+
+@pytest.mark.parametrize("separator", ["\t", "  ", ":\n", ":\r\n  ", " · "])
+def test_masks_name_with_pdf_and_table_delimiters(separator):
+    source = f"Monitor(a){separator}Álvaro D’Ávila\tSala 204"
+    assert minimize(source) == f"Monitor(a){separator}[identificador removido]\tSala 204"
