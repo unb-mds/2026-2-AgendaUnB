@@ -21,8 +21,9 @@ class Campus(Base):
 class Category(Base):
     __tablename__ = "categories"
 
-    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True)
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
     nome: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    cor: Mapped[str | None] = mapped_column(String, nullable=True, default="#008bff")
 
 
 class Profile(Base):
@@ -112,6 +113,9 @@ class PublicEvent(Base):
     )
 
     justificativa_recusa: Mapped[str | None] = mapped_column(Text, nullable=True)
+    outbound_clicks_count: Mapped[int] = mapped_column(
+        "interessados_count", Integer, default=0, nullable=False
+    )
 
     # Procedência da coleta (S7-B05). Só registrar_evento_coletado() preenche.
     source: Mapped[str | None] = mapped_column("fonte", String, nullable=True)
@@ -153,6 +157,20 @@ class SavedPublicEvent(Base):
     )
 
 
+class EventOutboundClick(Base):
+    """Deduplicação de redirecionamentos de Conferir evento por (event_id, click_id)."""
+
+    __tablename__ = "eventos_cliques_redirecionamento"
+
+    event_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("eventos.id", ondelete="CASCADE"), primary_key=True, index=True
+    )
+    click_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(
+        "criado_em", DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
 class PersonalEvent(Base):
     __tablename__ = "eventos_pessoais"
     # Um candidato gera no máximo um evento por usuário (S7-D01).
@@ -166,6 +184,7 @@ class PersonalEvent(Base):
     user_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), nullable=False, index=True)
     title: Mapped[str] = mapped_column("titulo", String, nullable=False)
     description: Mapped[str | None] = mapped_column("descricao", Text, nullable=True)
+    location: Mapped[str | None] = mapped_column("localizacao", String, nullable=True)
     starts_at: Mapped[datetime] = mapped_column(
         "data_hora", DateTime(timezone=True), nullable=False, index=True
     )

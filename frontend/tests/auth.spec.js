@@ -142,7 +142,10 @@ for (const mode of ['login', 'signup']) {
     }
     await page.getByRole('button', { name: 'Continuar com Google' }).click();
     await expect(page).toHaveURL(/\/eventos$/);
+    const profileButton = page.getByRole('button', { name: /Menu do perfil/i });
+    await profileButton.click();
     await page.getByRole('button', { name: 'Sair da conta' }).click();
+    await expect(profileButton).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Sair da conta' })).toHaveCount(0);
   });
 }
@@ -245,6 +248,9 @@ for (const outcome of ['denied', 'email_mismatch', 'connected']) {
     } else {
       await expect(page.getByText(outcome === 'denied' ? /não foi concedido/ : /mesmo e-mail verificado/)).toBeVisible();
     }
+    const profileButton = page.getByRole('button', { name: /Menu do perfil/i });
+    await expect(profileButton).toBeVisible();
+    await profileButton.click();
     await expect(page.getByRole('button', { name: 'Sair da conta' })).toBeVisible();
   });
 }

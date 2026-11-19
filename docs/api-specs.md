@@ -27,11 +27,15 @@ Fontes: `backend/src/main.py`, `modules/events/router.py`, `modules/events/schem
 | Campo | Tipo | Obrigatório | Regra |
 | --- | --- | --- | --- |
 | `title` | string | Sim | 3–200 caracteres após remoção de espaços nas extremidades; não aceita null |
-| `starts_at` | datetime | Sim | Data/hora ISO 8601 com fuso, por exemplo `2026-11-10T14:00:00-03:00`; não aceita null |
+| `all_day` | boolean | Não | Padrão `false`. Se `true`, exige `start_date`/`end_date` e recusa `starts_at`/`ends_at`. |
+| `starts_at` | datetime | Condicional | Obrigatório se `all_day=false`. Data/hora ISO 8601 com fuso (ex.: `2026-11-10T14:00:00-03:00`). |
+| `ends_at` | datetime ou null | Não | Opcional se `all_day=false`; exige fuso e deve ser posterior a `starts_at`. |
+| `start_date` | date ou null | Condicional | Obrigatório se `all_day=true` (YYYY-MM-DD). |
+| `end_date` | date ou null | Não | Opcional se `all_day=true` (fim exclusivo); padrão `start_date + 1 dia`. |
 | `description` | string ou null | Não | Até 10.000 caracteres; padrão null |
 | `campus` | string ou null | Não | Nome existente, 2–120 caracteres; padrão null |
 | `category` | string ou null | Não | Nome existente, 2–80 caracteres; padrão null |
-| `location` | string ou null | Não | Até 250 caracteres; padrão null; ver limitação dos eventos pessoais |
+| `location` | string ou null | Não | Até 250 caracteres; persistido em eventos públicos e pessoais (`20261117200000`). |
 | `external_url` | URL HTTP/HTTPS ou null | Não | Somente evento público/sugestão; validado por `HttpUrl`; padrão null |
 
 Strings são aparadas. Strings vazias ou contendo somente espaços em `description`, `campus`, `category` e `location` viram null. Isso não se aplica a `external_url`: para ausência de link, omitir ou enviar null. Campus e categoria são resolvidos por nome, ignorando maiúsculas/minúsculas, e não por UUID. Nome desconhecido na escrita retorna 422.
@@ -71,7 +75,9 @@ Exemplo `EventCreate`:
 }
 ```
 
-`PersonalEventRead` retorna `id`, `title`, `description`, `starts_at`, `campus`, `category` e `location`, com os mesmos tipos. Não retorna URL externa nem organizador. **Limitação atual:** `location` é aceito na entrada pessoal, mas as rotas não o persistem e o serializador o retorna como null. O cliente não deve esperar que esse valor seja recuperado.
+`PersonalEventRead` retorna `id`, `title`, `description`, `starts_at`, `ends_at`, `all_day`, `start_date`, `end_date`, `campus`, `category`, `location` e `origin`, com persistência completa de `location` e intervalos após a migração `20261117200000`. Não retorna URL externa nem organizador.
+
+`EventRead` inclui também `ends_at`, `all_day`, `start_date`, `end_date`, `source`, `source_url` e `outbound_clicks_count`.
 
 `SavedEventStatus` é `{ "saved": true }` ou `{ "saved": false }`. Respostas 204 não contêm JSON nem outro corpo.
 
@@ -85,8 +91,12 @@ Nas tabelas, as rotas iniciadas por `/api/v1` usam os schemas acima. Todas as op
 | --- | --- | --- | --- | --- |
 | `GET /api/v1/events` | Público | Filtros abaixo | 200, `EventRead[]`, somente aprovados, ordenados por início crescente | 422, filtros inválidos |
 | `GET /api/v1/events/{event_id}` | Público | UUID no caminho | 200, `EventRead` aprovado | 422, UUID; 404, ausente ou não aprovado |
+| `POST /api/v1/events/{event_id}/outbound-clicks` | Público | UUID + `{"click_id": UUID}` | 200, `{external_url, outbound_clicks_count, incremented}` (deduplicado por `click_id`) | 422, sem link oficial; 404, ausente/não aprovado |
 | `POST /api/v1/events` | Professor/admin | `EventCreate` | 201, `EventRead`; autoria da sessão e status `aprovado` | 403, papel; 422, payload/referências; 409 |
 | `DELETE /api/v1/events/{event_id}` | Professor/admin | UUID no caminho | 204; exclui o evento e vínculos em cascata | 403, papel; 422, UUID; 404, ausente; 409 |
+| `GET /api/v1/categories` | Público | — | 200, `CategoryRead[]` | — |
+| `POST /api/v1/categories` | Admin | `CategoryCreate` (`name`, `color`) | 201, `CategoryRead` | 403, papel; 409, nome duplicado; 422 |
+| `DELETE /api/v1/categories/{category_id}` | Admin | UUID no caminho | 204 | 403, papel; 404, ausente; 409, categoria em uso |
 
 A exclusão pública não exige que o gestor seja o autor e não filtra status. A autorização é por papel.
 
@@ -254,6 +264,11 @@ O frontend usa o SDK autenticado, conforme `frontend/src/lib/moderation.js`. As 
 | `moderar_sugestao` | Professor/admin | `p_evento_id` UUID e `p_status` texto obrigatórios (`aprovado/rejeitado`); `p_justificativa` texto opcional, padrão null | Retorno SQL void; só decide sugestão pendente; recusa exige texto aparado de 1–2.000 caracteres; aprovação limpa justificativa |
 | `admin_buscar_usuarios` | Admin | `p_busca` texto vazio; `p_papel` vazio ou `student/professor/admin`; `p_confirmado` vazio ou `sim/nao`; `p_offset` inteiro ≥0, padrão 0 | `{items, total, all, unconfirmed}`; 20 por página, criação decrescente e ID; busca nome/e-mail; `all` e `unconfirmed` independem dos filtros |
 | `admin_definir_papel` | Admin | `p_usuario_id` UUID, `p_novo_papel` e `p_papel_atual` textos obrigatórios; papéis `student/professor/admin` | Retorno SQL void; bloqueia linha, compara cargo atual e chama `admin_alterar_papel`; impede rebaixar a própria conta admin |
+| `listar_revisoes_coleta` | Professor/admin | `p_status` (`pendente/aprovado/rejeitado`), `p_offset` inteiro ≥0 | `{items, total}` com itens coletados da Agenda UnB Notícias em revisão |
+| `admin_listar_categorias` | Admin | — | Lista de categorias com `id`, `nome`, `cor` e `events_count` |
+| `admin_criar_categoria` | Admin | `p_nome` texto (2–80), `p_cor` hex `#rrggbb` | Cria e retorna categoria (`42501` fora de admin; `22023` duplicada) |
+| `admin_excluir_categoria` | Admin | `p_categoria_id` UUID | Retorno void; bloqueia exclusão se houver eventos vinculados |
+| `registrar_redirecionamento_evento` | Público | `p_evento_id` UUID, `p_click_id` UUID | Incrementa `interessados_count` apenas no primeiro acionamento por `(event_id, click_id)` |
 
 Enviar filtros opcionais omitidos ou com seus padrões, não null como substituto indiscriminado. Itens de sugestão: `id`, `titulo`, `descricao`, `data_evento`, `localizacao`, `link_externo`, `status`, `justificativa_recusa`, `criado_em`, `autor_nome`, `campus`, `categoria`. Itens de usuário: `id`, `email`, `nome_completo`, `papel`, `criado_em`, `ultimo_login` (pode ser null), `email_confirmado` booleano. Listas vazias têm `items: []` e contagens numéricas.
 
