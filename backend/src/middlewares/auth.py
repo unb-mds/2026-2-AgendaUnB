@@ -91,3 +91,14 @@ def require_event_manager(
             detail="Apenas professores e administradores podem gerenciar eventos públicos",
         )
     return current_user
+
+
+def require_admin(
+    current_user: CurrentUser = Depends(get_current_user),
+) -> CurrentUser:
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=403,
+            detail="Apenas administradores podem gerenciar categorias e papéis",
+        )
+    return current_user

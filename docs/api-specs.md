@@ -35,7 +35,7 @@ Fontes: `backend/src/main.py`, `modules/events/router.py`, `modules/events/schem
 | `description` | string ou null | Não | Até 10.000 caracteres; padrão null |
 | `campus` | string ou null | Não | Nome existente, 2–120 caracteres; padrão null |
 | `category` | string ou null | Não | Nome existente, 2–80 caracteres; padrão null |
-| `location` | string ou null | Não | Até 250 caracteres; padrão null |
+| `location` | string ou null | Não | Até 250 caracteres; persistido em eventos públicos e pessoais (`20261117200000`). |
 | `external_url` | URL HTTP/HTTPS ou null | Não | Somente evento público/sugestão; validado por `HttpUrl`; padrão null |
 
 Strings são aparadas. Strings vazias ou contendo somente espaços em `description`, `campus`, `category` e `location` viram null. Isso não se aplica a `external_url`: para ausência de link, omitir ou enviar null. Campus e categoria são resolvidos por nome, ignorando maiúsculas/minúsculas, e não por UUID. Nome desconhecido na escrita retorna 422.
@@ -75,7 +75,9 @@ Exemplo `EventCreate`:
 }
 ```
 
-`PersonalEventRead` retorna `id`, `title`, `description`, `starts_at`, `ends_at`, `all_day`, `start_date`, `end_date`, `campus`, `category` e `location`, com os mesmos tipos. Não retorna URL externa nem organizador. Eventos de dia inteiro preenchem `all_day = true`, `start_date` e `end_date` exclusivo em `America/Sao_Paulo`, além de manterem `starts_at`/`ends_at` normalizados na meia-noite de Brasília para ordenação e filtros ([ADR-011](/arquitetura/adrs/adr-011-datas-civis-e-instantes)).
+`PersonalEventRead` retorna `id`, `title`, `description`, `starts_at`, `ends_at`, `all_day`, `start_date`, `end_date`, `campus`, `category`, `location` e `origin`, com persistência completa de `location` e intervalos após a migração `20261117200000`. Não retorna URL externa nem organizador. Eventos de dia inteiro preenchem `all_day = true`, `start_date` e `end_date` exclusivo em `America/Sao_Paulo`, além de manterem `starts_at`/`ends_at` normalizados na meia-noite de Brasília para ordenação e filtros ([ADR-011](/arquitetura/adrs/adr-011-datas-civis-e-instantes)).
+
+`EventRead` inclui também `ends_at`, `all_day`, `start_date`, `end_date`, `source`, `source_url` e `outbound_clicks_count`.
 
 `SavedEventStatus` é `{ "saved": true }` ou `{ "saved": false }`. Respostas 204 não contêm JSON nem outro corpo.
 
@@ -89,8 +91,12 @@ Nas tabelas, as rotas iniciadas por `/api/v1` usam os schemas acima. Todas as op
 | --- | --- | --- | --- | --- |
 | `GET /api/v1/events` | Público | Filtros abaixo | 200, `EventRead[]`, somente aprovados, ordenados por início crescente | 422, filtros inválidos |
 | `GET /api/v1/events/{event_id}` | Público | UUID no caminho | 200, `EventRead` aprovado | 422, UUID; 404, ausente ou não aprovado |
+| `POST /api/v1/events/{event_id}/outbound-clicks` | Público | UUID + `{"click_id": UUID}` | 200, `{external_url, outbound_clicks_count, incremented}` (deduplicado por `click_id`) | 422, sem link oficial; 404, ausente/não aprovado |
 | `POST /api/v1/events` | Professor/admin | `EventCreate` | 201, `EventRead`; autoria da sessão e status `aprovado` | 403, papel; 422, payload/referências; 409 |
 | `DELETE /api/v1/events/{event_id}` | Professor/admin | UUID no caminho | 204; exclui o evento e vínculos em cascata | 403, papel; 422, UUID; 404, ausente; 409 |
+| `GET /api/v1/categories` | Público | — | 200, `CategoryRead[]` | — |
+| `POST /api/v1/categories` | Admin | `CategoryCreate` (`name`, `color`) | 201, `CategoryRead` | 403, papel; 409, nome duplicado; 422 |
+| `DELETE /api/v1/categories/{category_id}` | Admin | UUID no caminho | 204 | 403, papel; 404, ausente; 409, categoria em uso |
 
 A exclusão pública não exige que o gestor seja o autor e não filtra status. A autorização é por papel.
 
@@ -152,6 +158,19 @@ As operações exigem autenticação. Planos privados ficam restritos ao autor; 
 | `DELETE /api/v1/syllabus/{syllabus_id}/candidates/{candidate_id}` | UUIDs do plano privado concluído e do candidato. | 204, marca o candidato como descartado sem remover sua evidência. Não descarta decisões de versões compartilhadas. |
 
 O histórico e o detalhe retornam `ano` e `semestre`. Planos antigos podem ter esses campos, `fileName` e `filePath` nulos. O upload aplica a cota de 10 envios em cinco dias (429 ao exceder) e valida o PDF antes de gravar. O cliente autenticado consulta os próprios planos e PDFs, enquanto o backend grava o arquivo e o registro de acompanhamento.
+
+### Conta e privacidade — S8-D01
+
+| Método | Rota | Acesso | Resposta |
+| --- | --- | --- | --- |
+| `GET` | `/api/v1/me/legal-documents` | Autenticado | 200 com a versão vigente e a aceita de cada documento |
+| `PUT` | `/api/v1/me/legal-acceptances/{terms\|privacy}` | Autenticado | 204; 409 se a versão enviada não é a vigente |
+| `GET` | `/api/v1/me/consents` | Autenticado | 200 com os consentimentos opcionais registrados |
+| `DELETE` | `/api/v1/me/consents/{purpose}` | Autenticado | 204; revoga consentimento opcional (ex.: `google_agenda`) |
+| `GET` | `/api/v1/me/data-export` | Autenticado | 200 com o JSON dos dados da conta, para download |
+| `DELETE` | `/api/v1/me` | Autenticado | 204; 422 sem a frase de confirmação; 409 para o último administrador |
+
+Detalhes em [Privacidade e ciclo de vida dos dados](/processo/privacidade#direitos-do-titular-na-api-e-na-interface).
 
 ### Saúde — R1
 
@@ -251,6 +270,11 @@ O frontend usa o SDK autenticado, conforme `frontend/src/lib/moderation.js`. As 
 | `moderar_sugestao` | Professor/admin | `p_evento_id` UUID e `p_status` texto obrigatórios (`aprovado/rejeitado`); `p_justificativa` texto opcional, padrão null | Retorno SQL void; só decide sugestão pendente; recusa exige texto aparado de 1–2.000 caracteres; aprovação limpa justificativa |
 | `admin_buscar_usuarios` | Admin | `p_busca` texto vazio; `p_papel` vazio ou `student/professor/admin`; `p_confirmado` vazio ou `sim/nao`; `p_offset` inteiro ≥0, padrão 0 | `{items, total, all, unconfirmed}`; 20 por página, criação decrescente e ID; busca nome/e-mail; `all` e `unconfirmed` independem dos filtros |
 | `admin_definir_papel` | Admin | `p_usuario_id` UUID, `p_novo_papel` e `p_papel_atual` textos obrigatórios; papéis `student/professor/admin` | Retorno SQL void; bloqueia linha, compara cargo atual e chama `admin_alterar_papel`; impede rebaixar a própria conta admin |
+| `listar_revisoes_coleta` | Professor/admin | `p_status` (`pendente/aprovado/rejeitado`), `p_offset` inteiro ≥0 | `{items, total}` com itens coletados da Agenda UnB Notícias em revisão |
+| `admin_listar_categorias` | Admin | — | Lista de categorias com `id`, `nome`, `cor` e `events_count` |
+| `admin_criar_categoria` | Admin | `p_nome` texto (2–80), `p_cor` hex `#rrggbb` | Cria e retorna categoria (`42501` fora de admin; `22023` duplicada) |
+| `admin_excluir_categoria` | Admin | `p_categoria_id` UUID | Retorno void; bloqueia exclusão se houver eventos vinculados |
+| `registrar_redirecionamento_evento` | Público | `p_evento_id` UUID, `p_click_id` UUID | Incrementa `interessados_count` apenas no primeiro acionamento por `(event_id, click_id)` |
 
 Enviar filtros opcionais omitidos ou com seus padrões, não null como substituto indiscriminado. Itens de sugestão: `id`, `titulo`, `descricao`, `data_evento`, `localizacao`, `link_externo`, `status`, `justificativa_recusa`, `criado_em`, `autor_nome`, `campus`, `categoria`. Itens de usuário: `id`, `email`, `nome_completo`, `papel`, `criado_em`, `ultimo_login` (pode ser null), `email_confirmado` booleano. Listas vazias têm `items: []` e contagens numéricas.
 
@@ -271,6 +295,17 @@ Erros SQL explícitos incluem `42501` (permissão), `22023` (filtro, papel ou de
 O SDK consulta `notificacoes` diretamente, filtrando `usuario_id`, com contagem exata, ordem `criado_em` decrescente e ID crescente, e intervalo inclusivo `page*20` a `page*20+19`. Uma segunda consulta conta não lidas (`lida_em IS NULL`). O wrapper retorna `{items, total, unread}`.
 
 Cada item tem `id`, `usuario_id`, `evento_id`, `tipo` (`submissao/aprovacao/recusa`), `titulo_evento`, `justificativa`, `criado_em` e `lida_em`. O banco permite ao destinatário apenas leitura e atualização de `lida_em`; a interface marca IDs próprios ainda não lidos com timestamp ISO. RLS e permissões de coluna fazem a proteção, não apenas o filtro do cliente. Triggers geram avisos na mesma transação da submissão/decisão. Não são lembretes programados.
+
+## Lembretes da agenda
+
+| Rota | Resultado |
+| --- | --- |
+| `GET /api/v1/me/reminders?limit=20&offset=0` | **200** com um array de lembretes disparados da sessão, ordenado por disparo e ID decrescentes. `limit` aceita de 1 a 100. `offset` é um inteiro de 0 a 2147483647. |
+| `PUT /api/v1/me/reminders/{id}/read` | **200** com `{id, read_at}`. A primeira leitura permanece em novas tentativas. O mesmo **404** é usado para IDs alheios, pendentes e inexistentes. |
+
+Cada item traz `id`, `event_kind` (`personal` ou `saved_public`), `event_id`, `title`, `starts_at`, `scheduled_at` e `read_at`. `starts_at` é o início usado no agendamento. `title` pode ser nulo quando o título atual está indisponível para aquela conta. `read_at` nulo indica aviso não lido.
+
+As duas rotas exigem uma sessão válida e um perfil com e-mail confirmado. Retornam **401** sem sessão, **403** para perfil indisponível ou com e-mail pendente de confirmação e **422** para parâmetros inválidos. Respostas de sucesso incluem `Cache-Control: no-store`. O scheduler opera no banco, conforme o [guia de implantação](/implantacao#publicacao-jobs-e-recuperacao).
 
 ## Verificação e manutenção
 

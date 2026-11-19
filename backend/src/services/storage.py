@@ -1,6 +1,8 @@
+from collections.abc import Iterable
 import logging
 import os
-from urllib.parse import quote
+import re
+from urllib.parse import quote, urlsplit
 
 import httpx
 from fastapi import Depends, HTTPException
@@ -37,6 +39,36 @@ class SupabaseStorageService:
 
     def _object_url(self, path: str) -> str:
         return f"{self.supabase_url}/storage/v1/object/{quote(self.bucket_name, safe='')}/{quote(path, safe='/')}"
+
+    def normalize_path(self, raw_path: str | None) -> str:
+        if not raw_path:
+            return ""
+        cleaned = raw_path.strip()
+        if not cleaned:
+            return ""
+        if cleaned.startswith(("http://", "https://")):
+            parsed_path = urlsplit(cleaned).path
+            marker = f"/{self.bucket_name}/"
+            if marker not in parsed_path:
+                return ""
+            cleaned = parsed_path.split(marker, 1)[1]
+        cleaned = cleaned.lstrip("/")
+        prefix = f"{self.bucket_name}/"
+        if cleaned.startswith(prefix):
+            cleaned = cleaned[len(prefix):]
+        return re.sub(r"/+", "/", cleaned).strip("/")
+
+    @staticmethod
+    def _is_not_found(response: httpx.Response) -> bool:
+        if response.status_code == 404:
+            return True
+        if response.status_code == 400:
+            try:
+                body = response.json()
+                return str(body.get("statusCode", "")) == "404"
+            except (ValueError, TypeError, AttributeError):
+                return False
+        return False
 
     def upload_file(
         self,
@@ -78,6 +110,103 @@ class SupabaseStorageService:
             logger.warning("Storage recusou compensação (HTTP %s).", response.status_code)
             return False
         return True
+
+    def delete_file_if_present(self, path: str) -> bool:
+        """Remove um objeto do Storage de forma idempotente (200/204/404 -> True)."""
+        object_key = self.normalize_path(path)
+        if not object_key:
+            return True
+        try:
+            response = httpx.delete(self._object_url(object_key), headers=self._headers(), timeout=10.0)
+        except (httpx.RequestError, HTTPException) as exc:
+            logger.warning("Falha ao remover objeto do Storage (%s).", type(exc).__name__)
+            return False
+        if response.status_code in (200, 204) or self._is_not_found(response):
+            return True
+        logger.warning("Storage recusou remoção (HTTP %s).", response.status_code)
+        return False
+
+    def list_prefix(self, prefix: str, *, page_size: int = 100) -> list[str]:
+        """Lista objetos no bucket privado sob o prefixo informado."""
+        clean_prefix = self.normalize_path(prefix)
+        headers = {**self._headers(), "Content-Type": "application/json"}
+        list_url = f"{self.supabase_url}/storage/v1/object/list/{quote(self.bucket_name, safe='')}"
+        results: list[str] = []
+        offset = 0
+        while True:
+            payload = {
+                "prefix": clean_prefix,
+                "limit": page_size,
+                "offset": offset,
+                "sortBy": {"column": "name", "order": "asc"},
+            }
+            try:
+                response = httpx.post(list_url, headers=headers, json=payload, timeout=10.0)
+            except httpx.RequestError as exc:
+                logger.warning("Falha ao listar objetos no Storage (%s).", type(exc).__name__)
+                raise HTTPException(
+                    status_code=503,
+                    detail="Não foi possível verificar arquivos no armazenamento.",
+                ) from exc
+            if response.status_code != 200:
+                logger.warning("Storage recusou listagem (HTTP %s).", response.status_code)
+                raise HTTPException(
+                    status_code=503,
+                    detail="Não foi possível verificar arquivos no armazenamento.",
+                )
+            try:
+                items = response.json()
+            except ValueError as exc:
+                logger.warning("Resposta inválida do Storage na listagem (%s).", type(exc).__name__)
+                raise HTTPException(
+                    status_code=503,
+                    detail="Não foi possível verificar arquivos no armazenamento.",
+                ) from exc
+            if not isinstance(items, list):
+                raise HTTPException(
+                    status_code=503,
+                    detail="Não foi possível verificar arquivos no armazenamento.",
+                )
+            for item in items:
+                if not isinstance(item, dict) or item.get("id") is None:
+                    continue
+                name = str(item.get("name") or "").lstrip("/")
+                if not name:
+                    continue
+                if clean_prefix and not name.startswith(f"{clean_prefix}/"):
+                    results.append(f"{clean_prefix}/{name}")
+                else:
+                    results.append(name)
+            if len(items) < page_size:
+                break
+            offset += page_size
+        return results
+
+    def delete_objects_strict(self, paths: Iterable[str]) -> int:
+        """Remove objetos no Storage; trata 404 como idempotente e aborta com 503 em falha."""
+        headers = self._headers()
+        unique_paths = list(dict.fromkeys(p for p in (self.normalize_path(raw) for raw in paths) if p))
+        removed = 0
+        for object_key in unique_paths:
+            try:
+                response = httpx.delete(self._object_url(object_key), headers=headers, timeout=10.0)
+            except httpx.RequestError as exc:
+                logger.warning("Falha ao excluir objeto do Storage (%s).", type(exc).__name__)
+                raise HTTPException(
+                    status_code=503,
+                    detail="Não foi possível remover arquivos do armazenamento.",
+                ) from exc
+            if response.status_code in (200, 204):
+                removed += 1
+            elif self._is_not_found(response):
+                continue
+            else:
+                logger.warning("Storage recusou exclusão (HTTP %s).", response.status_code)
+                raise HTTPException(
+                    status_code=503,
+                    detail="Não foi possível remover arquivos do armazenamento.",
+                )
+        return removed
 
     def download_file(self, path: str, *, max_bytes: int = 10 * 1024 * 1024) -> bytes:
         """Lê um objeto privado, com limite de memória, somente no servidor."""

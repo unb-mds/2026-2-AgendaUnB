@@ -12,7 +12,7 @@ description: "Decisão, consequências e critérios de verificação: exportar p
 | Rastreabilidade | RF21; RNF02 |
 | Substitui | Nenhuma ADR |
 
-Decisão implementada em `backend/src/modules/google_calendar/` (`router.py`, `service.py`, `export.py`), no frontend (`frontend/src/components/GoogleCalendarConnection.jsx`, `frontend/src/lib/ics.js`) e nas migrações `20261111150000`, `20261113174855`, `20261113212429` e `20261118120000`.
+Decisão implementada em `backend/src/modules/google_calendar/` (`router.py`, `service.py`, `export.py`), no frontend (`frontend/src/components/GoogleCalendarConnection.jsx`, `frontend/src/lib/ics.js`) e nas migrações `20261111150000`, `20261113174855`, `20261113212429` e `20261118130000`.
 
 ## Contexto
 
