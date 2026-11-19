@@ -50,12 +50,23 @@ PERSONAL_PROFILE = (
 )
 PERSONAL_SITE = rf"(?:site|link|blog|p[aá]gina|perfil){SPACE}+(?:pessoal|particular)"
 WHATSAPP_LINK = r"(?:wa\.me/\d|(?:api\.|web\.)?whatsapp\.com/send\?)"
+HOME_LABEL = (
+    rf"(?:endere[cç]o{SPACE}+(?:residencial|pessoal|particular|(?:da|de){SPACE}+resid[eê]ncia)"
+    rf"|resid[eê]ncia{SPACE}+(?:em|d[oea])|mora{SPACE}+em)"
+)
+ADDRESS_PART = r"[^\r\n\t|;]"
+ADDRESS_END = rf"(?=(?:{SPACE}*[,–—]{SPACE}*|{SPACE}+)(?:{ACADEMIC_LABEL}|{CONTACT_LABEL})\b|[.!?](?:\s|$))"
+HOME_VALUE = (
+    rf"\w(?:(?!{ADDRESS_END}){ADDRESS_PART}){{2,199}}?(?<!\s)"
+    rf"(?={ADDRESS_END}|{SPACE}*(?:[\r\n\t|;]|$))"
+)
 
 RULES = (
     (re.compile(rf"(?<![\w./@]){WEB_SCHEME}{PERSONAL_PROFILE}{URL_END}", re.I), IDENTIFIER),
     (re.compile(rf"(?<!\w){PERSONAL_SITE}{VALUE_SEPARATOR}"
                 rf"(?P<value>{WEB_SCHEME}(?:[a-z\d-]+\.)+[a-z]{{2,}}(?:[/#?]{URL_END})?)", re.I), IDENTIFIER),
     (re.compile(rf"(?<![\w./@]){WEB_SCHEME}{WHATSAPP_LINK}(?:{URL_END})?", re.I), PHONE),
+    (re.compile(rf"(?<!\w){HOME_LABEL}\b{VALUE_SEPARATOR}(?P<value>{HOME_VALUE})", re.I), IDENTIFIER),
     (re.compile(rf"(?<!\w)(?i:{FULL_ROLE})(?!\w){NAME_SEPARATOR}(?P<value>{NAME})(?!\w|@)"), IDENTIFIER),
     (re.compile(rf"(?<!\w)(?i:prof(?:a|ª)?\.|dr(?:a|ª)?\.)"
                 rf"(?:{FIELD}|{SPACE}+)(?P<value>{NAME})(?!\w|@)"), IDENTIFIER),

@@ -90,3 +90,13 @@ def test_counts_link_with_embedded_contact_once():
     cleaned, count = minimize_with_count("WhatsApp https://api.whatsapp.com/send?phone=5561900000000")
     assert cleaned == "WhatsApp [telefone removido]"
     assert count == 1
+
+
+@pytest.mark.parametrize(("source", "expected"), [
+    ("Endereço residencial: Rua Exemplo, 123 | Sala 204", "Endereço residencial: [identificador removido] | Sala 204"),
+    ("Mora em Rua Exemplo, apto 2. Prova 1", "Mora em [identificador removido]. Prova 1"),
+    ("Endereço: Campus Darcy Ribeiro, Bloco B", "Endereço: Campus Darcy Ribeiro, Bloco B"),
+])
+def test_masks_residential_address_and_preserves_academic_address(source, expected):
+    assert minimize(source) == expected
+    assert minimize_with_count(expected) == (expected, 0)
