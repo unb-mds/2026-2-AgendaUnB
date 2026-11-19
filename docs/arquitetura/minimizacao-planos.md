@@ -92,3 +92,18 @@ Prova 1 - 10/11/2026 - 14:00.
   e trabalho para as entradas de teste antes e depois da preparação, com
   horários, datas, locais nos trechos de origem e referências de página.
   A comparação usa uma resposta controlada do provedor.
+
+## Resultados locais em 19/11/2026
+
+| Verificação | Resultado |
+| --- | --- |
+| `python -m pytest tests -q -ra --tb=short` no backend, com Supabase isolado | 491 aprovados, 2 ignorados, 0 falhas |
+| `npm test` no frontend | 62 aprovados |
+| `npm run build` no frontend | Build aprovado |
+| Playwright em `syllabus-consent.spec.js` e `syllabus.spec.js` | 25 aprovados, incluindo o aviso em 360 e 1365 px |
+| `mint validate` e `mint broken-links --check-redirects` | Validação aprovada e nenhum link interno quebrado |
+
+Os dois casos ignorados foram a execução com o Gemini real e a publicação
+do catálogo, que exige um banco dedicado. Os testes da issue usaram um
+provedor simulado e documentos sintéticos. A conferência humana do fluxo
+e o registro do nome do revisor ficam pendentes na [issue #132](https://github.com/unb-mds/2026-2-AgendaUnB/issues/132).
