@@ -1,17 +1,18 @@
 ---
-title: "Dados de eventos: datas, coleta"
-description: "Como a API, o coletor usam as estruturas de eventos da Release 2."
+title: "Dados de eventos: datas, coleta e lembretes"
+description: "Como a API, o coletor e o agendador usam as estruturas de eventos da Release 2."
 ---
 
-# Dados de eventos: datas, coleta
+# Dados de eventos: datas, coleta e lembretes
 
-Guia de integração das migrações `20261111140000_eventos_datas_e_coleta.sql`. Elas entregam a parte de dados das issues abaixo; a API, o coletor e o agendador são implementados nas próprias issues.
+Guia de integração das migrações de datas, coleta e lembretes. A tabela resume o que as migrações entregam e as etapas pendentes de operação.
 
 | Issue | O que o banco já faz | O que falta na aplicação |
 | --- | --- | --- |
 | [S7-B05 (#75)](https://github.com/unb-mds/2026-2-AgendaUnB/issues/75) | Upsert por origem, decisão publicar/revisar, conciliação por URL, proteção de edições locais e de decisões de moderação, registro das execuções | Configurar e homologar a execução recorrente no ambiente hospedado; registrar as evidências operacionais da issue |
+| [S8-B03 (#81)](https://github.com/unb-mds/2026-2-AgendaUnB/issues/81) | Agendar, trocar, cancelar e disparar avisos com unicidade por conta e início | Homologar o Supabase Cron, a API e a central no ambiente hospedado |
 
-**Regra geral:** o que precisa valer em qualquer caminho de escrita está em chaves únicas, triggers e funções. A aplicação chama as funções; não reimplementa as regras. Nada daqui é gravável pelo navegador.
+As chaves únicas, os gatilhos e as funções aplicam as regras a todos os caminhos de escrita. O destinatário pode registrar a leitura do próprio aviso disparado.
 
 ## 1. Datas (ADR-011)
 
@@ -139,7 +140,55 @@ Eventos coletados expõem institucionalmente a sua procedência:
 - Na API pública (`/api/v1/events`), os contratos (`EventRead`) expõem os campos `source` (`"agenda_unb_noticias"`) e `source_url` (link HTTPS canônico), além de `all_day`, `start_date` e `end_date`. Metadados internos como `fonte_hash`, `coletado_em` e `motivo_revisao` permanecem estritamente privados no backend.
 - Na interface frontend, `PaginaDeEvento.jsx` exibe o box de procedência institucional com link direto para a publicação original na Agenda UnB Notícias e atribui o organizador institucional quando `autor_id` for ausente. Nos cards de listagem (`SecondPage.jsx`), é exibida a badge informativa de origem.
 
-## 3. Quem pode o quê
+## 3. Lembretes (#81, ADR-013)
+
+A tabela `lembretes` é mantida por triggers. A API **não cria nem cancela** avisos:
+
+| Acontecimento | Efeito |
+| --- | --- |
+| Compromisso criado ou evento público salvo, faltando mais de 24 h | Aviso `pendente` para 24 h antes do início |
+| Entrou na agenda faltando 24 h ou menos | Sem aviso (não há alerta retroativo) |
+| Início alterado | Aviso pendente trocado pelo novo horário |
+| Compromisso excluído, vínculo removido, evento rejeitado ou sem data | Aviso pendente cancelado |
+| Evento volta ao catálogo | Aviso reagendado para quem o mantém salvo |
+| Conta excluída | Avisos removidos |
+
+Para dia inteiro, o início é a meia-noite de Brasília do primeiro dia, então o aviso sai à meia-noite do dia anterior.
+
+### Agendador
+
+O Supabase Cron (`pg_cron`) executa `public.disparar_lembretes()` a cada cinco minutos. A pendência fica elegível 24 h antes e aparece na próxima execução que a processar. A tabela guarda as pendências e o job roda no PostgreSQL mesmo com a API e o navegador fechados.
+
+Após aplicar as migrações da #81, execute o arquivo versionado `supabase/snippets/habilitar_lembretes.sql` como `postgres` no projeto Supabase do ambiente alvo. O arquivo verifica a função, habilita a extensão se necessário e registra o job de nome `agenda-unb-lembretes`. Reexecutar o arquivo no mesmo projeto com o mesmo papel mantém um único job. Valide primeiro no banco de homologação com contas e eventos sintéticos.
+
+Para testar manualmente e acompanhar o histórico no ambiente em validação, execute estas consultas.
+
+```sql
+select public.disparar_lembretes(); -- quantidade de avisos disparados nesta chamada
+
+select jobid, schedule, active
+from cron.job where jobname = 'agenda-unb-lembretes';
+
+select r.start_time, r.end_time, r.status, r.return_message
+from cron.job_run_details r
+join cron.job j on j.jobid = r.jobid
+where j.jobname = 'agenda-unb-lembretes'
+order by r.runid desc
+limit 20;
+```
+
+Em incidente, execute `select cron.unschedule('agenda-unb-lembretes')` como o dono do job. As pendências e leituras permanecem na tabela. Confira a compatibilidade do schema antes de reativar com o mesmo arquivo. O disparo revalida o evento e o vínculo, retoma pendências elegíveis antes do início e descarta pendências após o início. A chave de unicidade contém conta, tipo e ID do evento e início de referência. A antecedência fixa de 24 horas é implícita nessa chave. A transação de disparo usa `FOR UPDATE SKIP LOCKED` para processar cada aviso uma única vez.
+
+### Central de avisos
+
+| Contrato | Consulta |
+| --- | --- |
+| `GET /api/v1/me/reminders` | `Reminder` com `user_id` da sessão e `status = 'disparado'`, ordenado por `fired_at desc` |
+| `PUT /api/v1/me/reminders/{id}/read` | Atualização atômica do próprio lembrete disparado preservando o primeiro `read_at` |
+
+O sino da navegação abre os lembretes para qualquer conta autenticada. Para estudantes, a opção Sugestões dá acesso aos avisos de moderação. O [contrato da API](/api-specs#lembretes-da-agenda) descreve os campos e as respostas.
+
+## 4. Quem pode o quê
 
 | Recurso | Visitante | Conta logada (navegador) | Professor / admin | Servidor |
 | --- | --- | --- | --- | --- |
@@ -147,8 +196,10 @@ Eventos coletados expõem institucionalmente a sua procedência:
 | Colunas de procedência e de moderação em `eventos` | Não grava | Não grava | Só pelas RPCs | Sim |
 | `coletas_eventos` | Sem acesso | Sem acesso | Sem acesso | Sim |
 | `listar_revisoes_coleta`, `moderar_sugestao` | Não | Recusado | Sim | Sim |
+| `disparar_lembretes` | Não | Não | Não | Sim |
+| `lembretes` | Sem acesso | Lê os próprios disparados e marca leitura | As mesmas permissões de destinatário | Sim |
 
-## 4. Testes e Validação Local
+## 5. Testes e Validação Local
 
 A suíte automatizada cobre unitariamente o coletor, a similaridade de duplicatas, o tratamento de dia inteiro, multicampus, os contratos da API e a projeção no frontend:
 
@@ -170,7 +221,17 @@ TEST_SUPABASE_DB_URL="postgresql+psycopg://postgres:postgres@127.0.0.1:14322/pos
   venv/bin/pytest tests/test_event_collection_database.py -q
 ```
 
-## 5. Coletor da Agenda UnB Notícias
+`backend/tests/test_reminders_database.py` cobre os cenários de aceite que dependem do banco: aviso 24 h antes, troca ao mudar o início, cancelamento, dia inteiro, evento criado dentro da janela, disparo repetido sem duplicar, revalidação no disparo e isolamento entre contas.
+
+```bash
+cd backend
+TEST_SUPABASE_DB_URL="postgresql+psycopg://postgres:postgres@127.0.0.1:14322/postgres" \
+  python -m pytest tests/test_reminders_database.py -q
+```
+
+Os contratos HTTP usam `backend/tests/test_reminders_api.py`. Os testes da central em `frontend/tests/reminders.spec.js` exercitam dois perfis, retorno à sessão, estados de leitura, erro, paginação e navegação por teclado. Consulte o [registro local de aceite](#aceite-local-da-s8-b03).
+
+## 6. Coletor da Agenda UnB Notícias
 
 O adaptador está em `backend/src/modules/events/collector.py`. A origem é fixa em `https://noticias.unb.br`; o cliente consulta `robots.txt` e só acessa a listagem `/component/agenda/agendas` e detalhes `/component/agenda/agenda/{id}` quando permitidos. O cliente não segue redirecionamentos, não usa cookies nem proxy do ambiente, tem timeout de 20 segundos e espera pelo menos um segundo entre requisições. Falhas transitórias recebem uma tentativa adicional respeitando `Retry-After` até 60 segundos.
 
@@ -199,7 +260,7 @@ Os contratos de código, migração e testes unitários locais estão completos.
 - **Validação de resiliência a falhas da fonte:** Simular timeout ou HTTP 503 na conexão com `noticias.unb.br` em execução real e comprovar a preservação intacta dos dados já gravados.
 - **Homologação humana:** Realizar a revisão e moderação de itens marcados como `possivel_duplicata`, `ambiguo` ou `informe` por um usuário com papel professor/admin na interface administrativa.
 
-## 6. Validação e Revisão Técnica — S7-B05 (#75)
+## 7. Validação e Revisão Técnica — S7-B05 (#75)
 
 Consolidado em **16/11/2026** para a issue [#75](https://github.com/unb-mds/2026-2-AgendaUnB/issues/75) (RF14, RF15, RF16, RNF02, RNF11, RNF13 e [ADR-011](/arquitetura/adrs/adr-011-datas-civis-e-instantes)). Responsável principal: `@pontesluis`. Corresponsável: `@marrathomaz`. Apoio em migrações: `@felipecduque7`.
 
@@ -218,3 +279,20 @@ Consolidado em **16/11/2026** para a issue [#75](https://github.com/unb-mds/2026
 - **Pendências abertas rastreadas:**
   1. Integração visual da RPC `listar_revisoes_coleta` na tela de moderação do frontend acompanhada na issue **#80 (`S8-F02`)** (`@Bielziin07` / `@marrathomaz`).
   2. Ativação da variável `PRODUCTION_EVENT_COLLECTION_ENABLED=true` no environment `production-jobs` após promoção para `main`, acompanhada na issue **#76 (`S7-B06`)** (`@pontesluis`).
+
+## Aceite local da S8-B03
+
+Validação de 18/11/2026 no commit `3db3e29`, em Supabase local descartável, PostgreSQL 17, FastAPI e Chromium, com contas e eventos sintéticos. Os testes aceleraram o vencimento de pendências sintéticas para observar o disparo.
+
+| Cenário da #81 | Evidência local | Resultado |
+| --- | --- | --- |
+| Compromisso privado e evento público salvo | Criação de compromisso, criação e salvamento de evento público pela API real. O PostgreSQL gravou os dois avisos com antecedência de 24 h e o cron os tornou visíveis. | Passou |
+| Dia inteiro e entrada tardia | A suíte PostgreSQL verificou a meia-noite do primeiro dia em Brasília e a ausência de aviso tardio. Um compromisso criado pela API 12 h antes do início também ficou sem aviso. | Passou |
+| Cancelamento e mudança de início | Exclusão de compromisso e alteração de horário verificadas pela API real. Uma conta removeu o próprio vínculo duas vezes e a outra manteve seu aviso. A suíte PostgreSQL também cobriu retirada do catálogo e salvamento simultâneo à mudança de horário nas duas ordens. | Passou |
+| Reinício, repetição e revalidação | O SQL de ativação foi repetido com um único job. Com a aplicação fechada, o banco foi parado antes do vencimento e iniciado depois dele. Duas execuções do cron terminaram com sucesso e houve um único aviso disparado. A suíte verificou o descarte após o início. | Passou |
+| Retorno e estados de leitura | Chromium abriu o sino com a sessão real, marcou o lembrete e confirmou a leitura depois de sair e entrar novamente. Duas requisições HTTP simultâneas preservaram o mesmo primeiro `read_at`. | Passou |
+| Isolamento | Uma segunda conta autenticada recebeu lista vazia e 404 ao tentar marcar o aviso alheio. O navegador confirmou que a central da segunda conta não incluía dados da primeira. A suíte PostgreSQL também verificou as permissões de visitante e do destinatário. | Passou |
+
+A revisão técnica local cobriu os contratos GET e PUT, a filtragem por sessão e status, RLS, permissões de coluna, a sincronização do vínculo público e o papel executor do cron. A API lê títulos autorizados de `eventos` e `eventos_pessoais`. Registra a primeira leitura em `lembretes`. O job atualiza o estado de disparo na mesma tabela e revalida `eventos_salvos` quando aplicável.
+
+O [PR #105](https://github.com/unb-mds/2026-2-AgendaUnB/pull/105) acompanha a [issue #81](https://github.com/unb-mds/2026-2-AgendaUnB/issues/81). Versão hospedada, evidências de homologação e nome do revisor humano seguem pendentes.
