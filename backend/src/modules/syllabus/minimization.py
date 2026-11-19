@@ -11,16 +11,17 @@ SPACE = r"[^\S\r\n\t]"
 FIELD = rf"{SPACE}*[:=·–—-]{SPACE}*"
 # Duas colunas podem ser separadas por espaços ou tabs. Exportações de PDF
 # também podem quebrar uma linha imediatamente após o rótulo.
-NAME_SEPARATOR = rf"(?:{FIELD}(?:\r?\n{SPACE}*)?|{SPACE}*\t+{SPACE}*|{SPACE}{{2,}})"
+NAME_SEPARATOR = rf"(?:{FIELD}(?:\r?\n{SPACE}*)?|{SPACE}*[\t|]{SPACE}*|{SPACE}{{2,}})"
 ACADEMIC_LABEL = (
     r"disciplinas?|mat[eé]rias?|turmas?|c[oó]digo|semestre|per[ií]odo|"
     r"avalia(?:ç|c)[aã]o|provas?|trabalhos?|p[1-9]|datas?|hor[aá]rios?|"
     r"salas?|audit[oó]rios?|blocos?|laborat[oó]rios?|campus|local"
 )
 CONTACT_LABEL = r"e-?mail|telefone|whats(?:app)?|celular|cpf|rg|siape|matr[ií]cula|contatos?"
-NAME_WORD = r"[A-ZÀ-ÖØ-Þ][^\W\d_]*(?:[’'-][^\W\d_]+)*"
+NAME_WORD = r"(?:[A-ZÀ-ÖØ-Þ]\.|[A-ZÀ-ÖØ-Þ][^\W\d_]*(?:[’'-][^\W\d_]+)*)"
 NAME_PART = rf"(?!(?i:{ACADEMIC_LABEL}|{CONTACT_LABEL}|nascimento|comparecer[aá])\b){NAME_WORD}"
-NAME = rf"{NAME_PART}(?:{SPACE}+(?:(?i:da|das|de|do|dos|e|d[’']){SPACE}+)?{NAME_PART}){{0,11}}"
+NAME_TAIL = rf"{SPACE}+(?:(?i:da|das|de|do|dos|e){SPACE}+)?{NAME_PART}"
+NAME = rf"{NAME_PART}(?:{NAME_TAIL}){{0,11}}"
 FULL_ROLE = (
     r"professor(?:\(a\)|a?s?|es|as)|docente(?:\(s\)|s)?|monitor(?:\(a\)|a?s?|es|as)|"
     r"alun(?:[oa](?:\(a\))?|\(a\))s?|discente(?:\(s\)|s)?|"
@@ -38,7 +39,7 @@ FORMATTED_PHONE = rf"(?:\+55{PHONE_SEP})?{DDD}(?:{PHONE_SEP}|[.-]){PHONE_NUMBER}
 LABELED_PHONE = rf"(?:\+?55{PHONE_SEP})?(?:{DDD}[ .-]?)?9?\d{{4}}[ .-]?\d{{4}}"
 CPF_FORMATTED = r"\d{3}\.\d{3}\.\d{3}-\d{2}"
 CPF_VALUE = rf"(?:{CPF_FORMATTED}|\d{{11}})"
-RG_VALUE = r"(?:\d{1,2}\.\d{3}\.\d{3}-?[\dX]|\d{7,9}(?:-?[\dX])?|\d{6,8}-[\dX])"
+RG_VALUE = r"(?:\d{1,2}\.\d{3}\.\d{3}(?:-?[\dX])?|\d{7,9}(?:-?[\dX])?|\d{6,8}-[\dX])"
 NUMBER_LABEL = rf"(?:{SPACE}+(?:n[º°.]|n[uú]mero))?"
 VALUE_SEPARATOR = rf"(?:{NAME_SEPARATOR}|{SPACE}+)"
 END_NUMBER = r"(?!\w|[./-]\d)"
@@ -78,6 +79,8 @@ RULES = (
     (re.compile(rf"(?<!\w)(?i:(?:{FULL_ROLE}){RESPONSIBLE})(?!\w){NAME_SEPARATOR}"
                 rf"(?:(?i:{SHORT_ROLE}){SPACE}+)*(?P<value>{LOWERCASE_NAME}|{NAME})(?!\w|@)"), IDENTIFIER),
     (re.compile(rf"(?m)^{SPACE}*(?i:{FULL_ROLE})(?!\w){SPACE}+(?P<value>{NAME}){NAME_FIELD_END}"), IDENTIFIER),
+    (re.compile(rf"(?<!\w)(?i:{FULL_ROLE})(?!\w){SPACE}+(?P<value>{NAME_PART}(?:{NAME_TAIL}){{1,11}})"
+                r"(?!\w|@)"), IDENTIFIER),
     (re.compile(rf"(?<!\w)(?i:{SHORT_ROLE})"
                 rf"(?:{FIELD}|{SPACE}+)(?P<value>{NAME})(?!\w|@)"), IDENTIFIER),
     (re.compile(rf"(?<!\w){BIRTH_LABEL}(?!\w){VALUE_SEPARATOR}(?P<value>{BIRTH_DATE}){END_NUMBER}",

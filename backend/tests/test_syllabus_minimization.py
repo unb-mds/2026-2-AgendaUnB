@@ -110,3 +110,19 @@ def test_masks_residential_address_and_preserves_academic_address(source, expect
 ])
 def test_handles_role_variants_and_lowercase_structured_names(source, expected):
     assert minimize(source) == expected
+
+
+def test_masks_table_row_with_pipe_delimiter_and_name_initial():
+    assert minimize("| Monitor(a) | Ana P. Silva | Sala 204 |") == (
+        "| Monitor(a) | [identificador removido] | Sala 204 |"
+    )
+
+
+def test_masks_professor_with_full_role_in_running_text():
+    assert minimize("Consulte a professora Ana Silva antes da prova.") == (
+        "Consulte a professora [identificador removido] antes da prova."
+    )
+
+
+def test_masks_dotted_rg_without_optional_digit():
+    assert minimize("| RG | 12.345.678 | Prova 1") == "| RG | [identificador removido] | Prova 1"
