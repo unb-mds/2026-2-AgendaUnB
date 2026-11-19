@@ -176,6 +176,9 @@ test('Google com permissão exporta apenas os eventos selecionados', async ({ pa
     json: [{ id: 'talk', title: 'Palestra', starts_at: '2026-11-13T18:00:00Z' }],
   }));
   await page.route('**/api/v1/me/google-calendar/connection', route => route.fulfill({ json: { connected: true } }));
+  await page.route('**/api/v1/me/google-calendar/exports/preview', route => route.fulfill({
+    json: { requires_overwrite_confirmation: false, items: [{ id: 'exam', kind: 'personal', action: 'create' }] },
+  }));
   await page.route('**/api/v1/me/google-calendar/exports', route => {
     expect(route.request().postDataJSON()).toEqual({ events: [{ id: 'exam', kind: 'personal' }] });
     return route.fulfill({ json: [{ id: 'exam', kind: 'personal', status: 'exported' }] });
@@ -254,3 +257,166 @@ for (const outcome of ['denied', 'email_mismatch', 'connected']) {
     await expect(page.getByRole('button', { name: 'Sair da conta' })).toBeVisible();
   });
 }
+
+test('Google Agenda exibe prévia, pede confirmação de sobrescrita, trata falha parcial com retry e exporta ICS', async ({ page }) => {
+  const session = calendarSession('password');
+  await authClient(page, `async getSession() { return { data: { session: ${JSON.stringify(session)} } }; },`, session);
+  await page.route('**/api/v1/me/events', route => route.fulfill({
+    json: [
+      {
+        id: '11111111-1111-4111-8111-111111111111',
+        title: 'Prova 2 de Cálculo',
+        description: 'Tipo de avaliação: Prova\n\nIntegrais triplas',
+        starts_at: '2026-11-20T17:00:00Z',
+        ends_at: '2026-11-20T18:50:00Z',
+        all_day: false,
+        location: 'PAT AT-011',
+      },
+      {
+        id: '22222222-2222-4222-8222-222222222222',
+        title: 'Entrega do Trabalho Final',
+        description: 'Tipo de avaliação: Trabalho\n\nRelatório em PDF',
+        starts_at: '2026-11-25T03:00:00Z',
+        all_day: true,
+        start_date: '2026-11-25',
+        end_date: '2026-11-26',
+      },
+    ],
+  }));
+  await page.route('**/api/v1/me/saved-events', route => route.fulfill({
+    json: [
+      {
+        id: '33333333-3333-4333-8333-333333333333',
+        title: 'Semana Universitária 2026',
+        description: 'Mostra de extensão da UnB',
+        starts_at: '2026-11-18T03:00:00Z',
+        all_day: true,
+        start_date: '2026-11-18',
+        end_date: '2026-11-21',
+        campus: 'Darcy Ribeiro (Plano Piloto)',
+      },
+    ],
+  }));
+  await page.route('**/api/v1/me/google-calendar/connection', route => route.fulfill({
+    json: { connected: true, recovery_required: false },
+  }));
+  await page.route('**/api/v1/me/google-calendar/exports/preview', route => {
+    const body = route.request().postDataJSON();
+    return route.fulfill({
+      json: {
+        requires_overwrite_confirmation: body.events.some(ev => ev.id === '11111111-1111-4111-8111-111111111111'),
+        items: body.events.map(ev => ({
+          id: ev.id,
+          kind: ev.kind,
+          action: ev.id === '11111111-1111-4111-8111-111111111111' ? 'update' : 'create',
+        })),
+      },
+    });
+  });
+
+  const exportCalls = [];
+  await page.route('**/api/v1/me/google-calendar/exports', route => {
+    const body = route.request().postDataJSON();
+    const idempotencyKey = route.request().headers()['idempotency-key'];
+    exportCalls.push({ body, idempotencyKey });
+    if (exportCalls.length === 1) {
+      return route.fulfill({
+        json: [
+          { id: '11111111-1111-4111-8111-111111111111', kind: 'personal', status: 'updated' },
+          { id: '22222222-2222-4222-8222-222222222222', kind: 'personal', status: 'failed' },
+          { id: '33333333-3333-4333-8333-333333333333', kind: 'saved', status: 'exported' },
+        ],
+      });
+    }
+    return route.fulfill({
+      json: [
+        { id: '22222222-2222-4222-8222-222222222222', kind: 'personal', status: 'exported' },
+      ],
+    });
+  });
+
+  await page.goto('/eventos?aba=meus');
+  await page.getByRole('button', { name: 'Exportar para o Google Agenda' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Exportar para o Google Agenda' });
+
+  await dialog.getByRole('button', { name: 'Selecionar período' }).click();
+  await dialog.getByLabel('Incluir descrição selecionada nos eventos enviados ao Google Agenda').check();
+  await expect(dialog.locator('.google-calendar-preview-summary')).toContainText('2 serão criados');
+  await expect(dialog.locator('.google-calendar-preview-summary')).toContainText('1 será atualizado');
+
+  // Primeiro clique exige confirmação explícita de sobrescrita dos campos geridos
+  await dialog.getByRole('button', { name: 'Exportar eventos selecionados' }).click();
+  await expect(dialog.getByText('Confirmar atualização de eventos já exportados?')).toBeVisible();
+  expect(exportCalls).toHaveLength(0);
+
+  await dialog.getByRole('button', { name: 'Confirmar atualização e exportar' }).click();
+  expect(exportCalls).toHaveLength(1);
+  expect(exportCalls[0].body.allow_managed_field_updates).toBe(true);
+  expect(exportCalls[0].body.include_description).toBe(true);
+  expect(exportCalls[0].idempotencyKey).toBeTruthy();
+
+  await expect(dialog.getByRole('status')).toContainText('2 eventos disponíveis no Google Agenda. (1 atualizado)');
+  await expect(dialog.getByRole('alert')).toContainText('Alguns eventos não foram exportados.');
+  await expect(dialog.getByText('Atualizado no Google Agenda')).toBeVisible();
+  await expect(dialog.getByText('Falha ao exportar')).toBeVisible();
+
+  // Somente o item falho permanece selecionado para nova tentativa
+  await expect(dialog.getByRole('checkbox', { name: /Prova 2 de Cálculo/ })).not.toBeChecked();
+  await expect(dialog.getByRole('checkbox', { name: /Entrega do Trabalho Final/ })).toBeChecked();
+
+  await dialog.getByRole('button', { name: 'Tentar novamente' }).click();
+  expect(exportCalls).toHaveLength(2);
+  expect(exportCalls[1].idempotencyKey).toBe(exportCalls[0].idempotencyKey);
+  expect(exportCalls[1].body.allow_managed_field_updates).toBe(true);
+  expect(exportCalls[1].body.events).toEqual([{ id: '22222222-2222-4222-8222-222222222222', kind: 'personal' }]);
+  await expect(dialog.getByRole('status')).toContainText('1 evento disponível no Google Agenda.');
+
+  // Testa download de arquivo ICS complementar
+  const downloadPromise = page.waitForEvent('download');
+  await dialog.getByRole('button', { name: 'Baixar arquivo ICS (.ics)' }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe('agenda-unb.ics');
+});
+
+test('destino Agenda UnB removido no Google permite confirmar recriação', async ({ page }) => {
+  const session = calendarSession('oauth');
+  let recoveryRequired = false;
+  let destinationPayload = undefined;
+  await authClient(page, `async getSession() { return { data: { session: ${JSON.stringify(session)} } }; },`, session);
+  await page.route('**/api/v1/me/events', route => route.fulfill({
+    json: [{ id: '11111111-1111-4111-8111-111111111111', title: 'Prova de Cálculo', starts_at: '2026-11-20T17:00:00Z' }],
+  }));
+  await page.route('**/api/v1/me/saved-events', route => route.fulfill({ json: [] }));
+  await page.route('**/api/v1/me/google-calendar/connection', route => route.fulfill({
+    json: { connected: true, recovery_required: recoveryRequired },
+  }));
+  await page.route('**/api/v1/me/google-calendar/exports/preview', route => route.fulfill({
+    json: { requires_overwrite_confirmation: false, items: [{ id: '11111111-1111-4111-8111-111111111111', kind: 'personal', action: 'create' }] },
+  }));
+  await page.route('**/api/v1/me/google-calendar/exports', route => {
+    recoveryRequired = true;
+    return route.fulfill({
+      status: 409,
+      json: { detail: 'Confirme o ID da agenda Agenda UnB antes de tentar exportar novamente.' },
+    });
+  });
+  await page.route('**/api/v1/me/google-calendar/destination', route => {
+    destinationPayload = route.request().postDataJSON();
+    recoveryRequired = false;
+    return route.fulfill({ status: 204 });
+  });
+
+  await page.goto('/eventos?aba=meus');
+  await page.getByRole('button', { name: 'Exportar para o Google Agenda' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Exportar para o Google Agenda' });
+  await dialog.getByRole('checkbox', { name: /Prova de Cálculo/ }).check();
+  await dialog.getByRole('button', { name: 'Exportar eventos selecionados' }).click();
+  await expect(dialog.getByRole('alert')).toContainText('Confirme o ID da agenda Agenda UnB');
+  await dialog.getByRole('button', { name: 'Recuperar ou recriar agenda Agenda UnB' }).click();
+
+  const recoveryDialog = page.getByRole('dialog', { name: 'Recuperar agenda do Google' });
+  await expect(recoveryDialog).toBeVisible();
+  await recoveryDialog.getByRole('button', { name: 'Confirmei que a agenda não existe' }).click();
+  expect(destinationPayload).toEqual({ calendar_id: null });
+  await expect(page.getByText('A próxima exportação criará a agenda Agenda UnB.')).toBeVisible();
+});
