@@ -3,8 +3,6 @@ title: "ADR-006 · Aplicar autorização na API, nas RPCs e nas políticas RLS"
 description: "Decisão, consequências e critérios de verificação: aplicar autorização na api, nas rpcs e nas políticas rls."
 ---
 
-# ADR-006 · Aplicar autorização na API, nas RPCs e nas políticas RLS
-
 | Campo | Valor |
 | --- | --- |
 | Estado | Implementada |

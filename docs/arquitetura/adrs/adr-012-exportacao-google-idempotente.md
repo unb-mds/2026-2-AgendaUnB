@@ -3,8 +3,6 @@ title: "ADR-012 · Exportar por ação explícita para uma agenda Google secund�
 description: "Decisão, consequências e critérios de verificação: exportar por ação explícita para uma agenda google secundária."
 ---
 
-# ADR-012 · Exportar por ação explícita para uma agenda Google secundária
-
 | Campo | Valor |
 | --- | --- |
 | Estado | Implementada |

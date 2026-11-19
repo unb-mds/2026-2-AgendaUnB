@@ -3,8 +3,6 @@ title: "Dados de eventos: datas, coleta e lembretes"
 description: "Como a API, o coletor e o agendador usam as estruturas de eventos da Release 2."
 ---
 
-# Dados de eventos: datas, coleta e lembretes
-
 Guia de integração das migrações de datas, coleta e lembretes. A tabela resume o que as migrações entregam e as etapas pendentes de operação.
 
 | Issue | O que o banco já faz | O que falta na aplicação |

@@ -3,8 +3,6 @@ title: "ADR-005 · Validar a sessão no Supabase Auth e consultar o papel no ban
 description: "Decisão, consequências e critérios de verificação: validar a sessão no supabase auth e consultar o papel no banco."
 ---
 
-# ADR-005 · Validar a sessão no Supabase Auth e consultar o papel no banco
-
 | Campo | Valor |
 | --- | --- |
 | Estado | Implementada |
