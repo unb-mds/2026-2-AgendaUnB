@@ -37,3 +37,14 @@ def test_masks_email_without_removing_wrappers_or_punctuation():
     assert minimize("Contato <ana+turma@dept.example.test>, Prova 1.") == (
         "Contato <[email removido]>, Prova 1."
     )
+
+
+@pytest.mark.parametrize("value", [
+    "+55 (61) 90000-0000", "(61) 3000-0000", "61 90000 0000", "61.90000.0000",
+])
+def test_masks_phone_with_ddd_in_running_text(value):
+    assert minimize(f"Ligue para {value}, sala 204.") == "Ligue para [telefone removido], sala 204."
+
+
+def test_masks_compact_whatsapp_when_labeled():
+    assert minimize("WhatsApp: 61900000000 | Prova 1") == "WhatsApp: [telefone removido] | Prova 1"
