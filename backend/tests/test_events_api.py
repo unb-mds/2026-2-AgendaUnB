@@ -454,3 +454,69 @@ def test_categories_management_is_restricted_to_admin(api):
     assert client.delete(f"/api/v1/categories/{new_id}").status_code == 204
 
 
+def test_public_event_update_is_restricted_to_professors_and_admins(api):
+    client, session_factory, authenticated_user, ids = api
+    with session_factory() as db:
+        event = make_public_event(
+            ids,
+            author_id=None,
+            title="Evento da Coleta Original",
+            source="agenda_unb_noticias",
+            source_url="https://noticias.unb.br/component/agenda/agenda/777",
+        )
+        pending = make_public_event(ids, title="Sugestão Pendente", status="pendente")
+        db.add_all([event, pending])
+        db.commit()
+        event_id = event.id
+        pending_id = pending.id
+
+    payload = {
+        "title": "Evento Atualizado",
+        "description": "Detalhes revisados pela moderação",
+        "all_day": True,
+        "start_date": "2026-11-20",
+        "end_date": "2026-11-22",
+        "campus": "Darcy Ribeiro (Plano Piloto)",
+        "category": "Cultura",
+        "location": "Auditório Dois Candangos",
+        "external_url": "https://unb.br/evento-atualizado",
+    }
+
+    # Estudante recebe 403
+    assert client.put(f"/api/v1/events/{event_id}", json=payload).status_code == 403
+
+    # Professor e admin podem editar eventos públicos aprovados (incluindo coletados)
+    actor = authenticated_user["value"]
+    authenticated_user["value"] = actor.__class__(id=actor.id, role="professor")
+    prof_res = client.put(f"/api/v1/events/{event_id}", json=payload)
+    assert prof_res.status_code == 200
+    assert prof_res.json()["title"] == "Evento Atualizado"
+    assert prof_res.json()["all_day"] is True
+    assert prof_res.json()["start_date"] == "2026-11-20"
+    assert prof_res.json()["end_date"] == "2026-11-22"
+    assert prof_res.json()["location"] == "Auditório Dois Candangos"
+    assert prof_res.json()["external_url"] == "https://unb.br/evento-atualizado"
+
+    authenticated_user["value"] = actor.__class__(id=actor.id, role="admin")
+    admin_res = client.put(
+        f"/api/v1/events/{event_id}",
+        json={
+            "title": "Evento Revisado pelo Admin",
+            "starts_at": "2026-11-21T14:00:00-03:00",
+            "ends_at": "2026-11-21T17:00:00-03:00",
+            "campus": "Darcy Ribeiro (Plano Piloto)",
+            "category": "Cultura",
+            "location": "Anfiteatro 9",
+        },
+    )
+    assert admin_res.status_code == 200
+    assert admin_res.json()["title"] == "Evento Revisado pelo Admin"
+    assert admin_res.json()["all_day"] is False
+    assert admin_res.json()["external_url"] is None
+
+    # Evento pendente ou inexistente retorna 404
+    assert client.put(f"/api/v1/events/{pending_id}", json=payload).status_code == 404
+    assert client.put(f"/api/v1/events/{uuid4()}", json=payload).status_code == 404
+
+
+

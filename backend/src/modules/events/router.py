@@ -23,6 +23,7 @@ from src.modules.events.schemas import (
     CategoryRead,
     EventCreate,
     EventRead,
+    EventUpdate,
     OutboundClickCreate,
     OutboundClickRead,
     PersonalEventCreate,
@@ -331,6 +332,50 @@ def create_public_event(
     db.commit()
     db.refresh(event)
     return _public_read(event)
+
+
+@router.put("/events/{event_id}", response_model=EventRead)
+def update_public_event(
+    event_id: UUID,
+    payload: EventUpdate,
+    db: Session = Depends(get_db),
+    _: CurrentUser = Depends(require_event_manager),
+) -> EventRead:
+    event = db.scalar(
+        select(PublicEvent)
+        .where(PublicEvent.id == event_id, PublicEvent.status == "aprovado")
+        .options(
+            joinedload(PublicEvent.campus),
+            joinedload(PublicEvent.category),
+            joinedload(PublicEvent.author),
+        )
+    )
+    if event is None:
+        raise HTTPException(status_code=404, detail="Evento não encontrado")
+
+    event.title = payload.title
+    event.description = payload.description or ""
+    event.starts_at = payload.starts_at
+    event.ends_at = payload.ends_at
+    event.all_day = payload.all_day
+    event.start_date = payload.start_date if payload.all_day else None
+    event.end_date = payload.end_date if payload.all_day else None
+    event.location = payload.location
+    event.external_url = str(payload.external_url) if payload.external_url else None
+    event.campus_id = _campus_id(db, payload.campus)
+    event.category_id = _category_id(db, payload.category)
+    db.commit()
+    db.expire(event, ["campus", "category"])
+    updated = db.scalar(
+        select(PublicEvent)
+        .where(PublicEvent.id == event_id)
+        .options(
+            joinedload(PublicEvent.campus),
+            joinedload(PublicEvent.category),
+            joinedload(PublicEvent.author),
+        )
+    )
+    return _public_read(updated)
 
 
 @router.delete("/events/{event_id}", status_code=204)
