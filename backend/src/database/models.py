@@ -296,6 +296,7 @@ class Syllabus(Base):
     authorized_at: Mapped[datetime | None] = mapped_column("autorizado_em", DateTime(timezone=True))
     queued_at: Mapped[datetime | None] = mapped_column("enfileirado_em", DateTime(timezone=True))
     preparation_duration_ms: Mapped[int | None] = mapped_column("duracao_preparacao_ms", Integer)
+    redacted_count: Mapped[int | None] = mapped_column("ocorrencias_mascaradas", Integer)
     text_revision: Mapped[int] = mapped_column("versao_texto", Integer, default=0, nullable=False)
     approved_version_id: Mapped[UUID | None] = mapped_column(
         "versao_aprovada_id", Uuid(as_uuid=True), ForeignKey(

@@ -90,10 +90,12 @@ def test_review_and_private_snapshot_use_the_same_sanitized_academic_text(api, s
 
     assert preview["pages"] == expected
     assert preview["textHash"] == text_hash(expected)
+    assert preview["redactedCount"] == 2
     assert preview["authorizationRequired"] is True
     with api[1]() as db:
         plan = db.get(Syllabus, UUID(sid))
         assert plan.prepared_pages == expected
+        assert plan.redacted_count == 2
         assert plan.approved_pages is None
 
 
