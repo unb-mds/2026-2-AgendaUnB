@@ -195,12 +195,14 @@ body.light .profile-logout-btn:active:not(:disabled) { background: #7f1d1d; }
 .notification-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; margin-top: 8px; }
 .management-text-button { background: transparent; border: 0; color: var(--manage-link); min-height: 44px; cursor: pointer; text-decoration: underline; text-underline-offset: 4px; font-size: .9rem; }
 .notification-mark { margin-top: 16px; }
-@media (max-width: 1020px) {
+@media (max-width: 1080px) {
+  .app-nav { padding: 0 18px; gap: 14px; }
   .app-nav .nav-items { gap: 14px; }
   .app-nav .nav-items a { font-size: .64rem; letter-spacing: .06em; }
+  .app-nav .nav-brand { font-size: .95rem; }
   .admin-table th, .admin-table td { padding: 16px 12px; }
 }
-@media (max-width: 800px) {
+@media (max-width: 900px) {
   .app-nav { padding: 0 12px; gap: 8px; }
   .app-nav .nav-right { gap: 8px; }
   .app-nav .nav-btn-account, .app-nav .nav-btn-account-login { font-size: .7rem; padding-inline: 12px; }
@@ -208,6 +210,8 @@ body.light .profile-logout-btn:active:not(:disabled) { background: #7f1d1d; }
   .app-nav .nav-items { display: none; position: absolute; top: 64px; left: 0; right: 0; padding: 16px; border: 1px solid var(--manage-border); border-radius: 20px; background: var(--manage-surface); flex-direction: column; align-items: stretch; gap: 4px; }
   .app-nav.menu-open .nav-items { display: flex; }
   .app-nav .nav-items a { font-size: .8rem; padding: 8px 12px; }
+}
+@media (max-width: 800px) {
   .admin-table, .admin-table tbody { display: block; }
   .admin-table thead { display: none; }
   .admin-table tr { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; padding: 24px; border-bottom: 1px solid var(--manage-border); }
@@ -216,6 +220,11 @@ body.light .profile-logout-btn:active:not(:disabled) { background: #7f1d1d; }
   .admin-table td[data-label]::before { content: attr(data-label); display: block; color: var(--manage-muted); font-size: .8rem; margin-bottom: 6px; }
 }
 @media (max-width: 540px) {
+  .app-nav { padding: 0 10px; gap: 4px; }
+  .app-nav .nav-brand-link { padding: 4px 6px 4px 4px; gap: 6px; }
+  .app-nav .nav-brand { font-size: .84rem; letter-spacing: .03em; }
+  .app-nav .nav-right { gap: 6px; }
+  .app-nav .nav-btn-account, .app-nav .nav-btn-account-login { font-size: .66rem; padding-inline: 10px; }
   .notification-popover { position: fixed; top: 62px; right: 12px; width: min(320px, calc(100vw - 24px)); }
   .profile-popover { position: fixed; top: 62px; right: 12px; width: min(296px, calc(100vw - 48px)); }
   .management-main { padding: 112px 16px 48px; }
@@ -236,6 +245,13 @@ body.light .profile-logout-btn:active:not(:disabled) { background: #7f1d1d; }
   .dialog-actions .manage-button { flex: 1; }
   .notification-list li { gap: 12px; }
   .management-pagination { gap: 8px; }
+}
+@media (max-width: 420px) {
+  .home-nav .nav-brand-icon { display: none; }
+  .app-nav .nav-brand { font-size: .78rem; }
+  .app-nav .nav-brand-icon { width: 18px; height: 18px; }
+  .app-nav .nav-menu-toggle { min-width: 38px; }
+  .home-nav .nav-btn-account, .home-nav .nav-btn-account-login { font-size: .62rem; padding-inline: 8px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .management-shell *, .manage-dialog *, .app-nav * { scroll-behavior: auto; transition: none; animation: none; }
