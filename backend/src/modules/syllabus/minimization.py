@@ -15,7 +15,30 @@ RULES = (
 )
 
 
-def minimize(text: str) -> str:
+def minimize_with_count(text: str) -> tuple[str, int]:
+    # Encontre os trechos no original, sem reconhecer partes das próprias máscaras.
+    spans = []
     for pattern, placeholder in RULES:
-        text = pattern.sub(placeholder, text)
-    return text
+        for match in pattern.finditer(text):
+            start, end = match.span("value" if "value" in pattern.groupindex else 0)
+            spans.append((start, end, placeholder))
+
+    selected = []
+    for start, end, placeholder in sorted(spans, key=lambda span: (span[0], -span[1])):
+        if selected and start < selected[-1][1]:
+            first, last, mask = selected[-1]
+            selected[-1] = (first, max(last, end), mask)
+        else:
+            selected.append((start, end, placeholder))
+
+    pieces = []
+    cursor = 0
+    for start, end, placeholder in selected:
+        pieces.extend((text[cursor:start], placeholder))
+        cursor = end
+    pieces.append(text[cursor:])
+    return "".join(pieces), len(selected)
+
+
+def minimize(text: str) -> str:
+    return minimize_with_count(text)[0]
