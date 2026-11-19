@@ -28,3 +28,13 @@ test('prévia inválida é rejeitada antes de renderizar ou autorizar', () => {
     assert.throws(() => normalizeTextPreview(value), /texto inválido/);
   }
 });
+
+test('contagem de máscaras preserva zero e aceita prévias antigas sem o campo', () => {
+  const data = { provider: 'Google Gemini API', providerAvailable: true, pages: [{ pagina: null, texto: 'Prova 1' }] };
+  assert.equal(normalizeTextPreview(data).redactedCount, null);
+  assert.equal(normalizeTextPreview({ ...data, redactedCount: 0 }).redactedCount, 0);
+  assert.equal(normalizeTextPreview({ ...data, redactedCount: 2 }).redactedCount, 2);
+  for (const redactedCount of [null, -1, 2.5, '2', Number.MAX_SAFE_INTEGER + 1]) {
+    assert.equal(normalizeTextPreview({ ...data, redactedCount }).redactedCount, null);
+  }
+});
