@@ -152,3 +152,18 @@ def test_bare_cpf_requires_check_digits_and_respects_academic_identifier_context
     assert minimize("00000000191 | Turma 00000000191 | Código da disciplina: 00000000191 | 12345678900") == (
         "[identificador removido] | Turma 00000000191 | Código da disciplina: 00000000191 | 12345678900"
     )
+
+
+@pytest.mark.parametrize(("source", "expected"), [
+    ("PROFESSOR (A) RESPONSÁVEL: Pessoa Exemplo", "PROFESSOR (A) RESPONSÁVEL: [identificador removido]"),
+    ("NOME DO MONITOR (A): Pessoa Exemplo", "NOME DO MONITOR (A): [identificador removido]"),
+    ("Nome do Aluno:\t\tPessoa Exemplo", "Nome do Aluno:\t\t[identificador removido]"),
+    ("Matrícula Aluno\n260000000", "Matrícula Aluno\n[identificador removido]"),
+    ("CEL: 61900000000", "CEL: [telefone removido]"),
+    ("ENDEREÇO: Rua Exemplo, 123 | Sala 204", "ENDEREÇO: [identificador removido] | Sala 204"),
+    ("Nome da Disciplina: Cálculo II", "Nome da Disciplina: Cálculo II"),
+    ("Endereço institucional: Avenida Exemplo, 123", "Endereço institucional: Avenida Exemplo, 123"),
+])
+def test_matches_labels_observed_in_unb_monitoring_forms(source, expected):
+    assert minimize(source) == expected
+    assert minimize_with_count(expected) == (expected, 0)
