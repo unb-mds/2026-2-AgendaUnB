@@ -92,6 +92,7 @@ def test_review_and_private_snapshot_use_the_same_sanitized_academic_text(api, s
     assert preview["pages"] == expected
     assert preview["textHash"] == text_hash(expected)
     assert preview["redactedCount"] == 2
+    assert api[0].get(f"/api/v1/syllabus/{sid}").json()["redactedCount"] == 2
     assert preview["authorizationRequired"] is True
     with api[1]() as db:
         plan = db.get(Syllabus, UUID(sid))
@@ -232,6 +233,7 @@ def test_redacted_count_distinguishes_old_records_from_zero_and_survives_edit(ap
                        json=approval(preview, pages=edited, textHash=text_hash(edited))).status_code == 202
     reviewed = api[0].get(f"/api/v1/syllabus/{sid}/text").json()
     assert reviewed["redactedCount"] == 1 and reviewed["pages"] == edited
+    assert api[0].get(f"/api/v1/syllabus/{sid}").json()["redactedCount"] == 1
 
     old_sid, clean = prepare(api, f"[identificador removido]\n{TEXT}")
     assert clean["redactedCount"] == 0

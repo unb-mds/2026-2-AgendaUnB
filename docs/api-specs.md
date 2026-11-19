@@ -380,7 +380,9 @@ execução em andamento, preparação antiga sem texto ou limite acumulado ating
 
 PDF e texto colado passam pelas mesmas regras locais antes da gravação do texto
 preparado. `redactedCount` é um inteiro não negativo com o total de trechos
-mascarados na preparação inicial, somado entre as páginas. É `null` nos planos
+mascarados na preparação inicial, somado entre as páginas. As respostas de
+preparação, autorização e detalhe do próprio plano incluem essa contagem para
+exibir o aviso durante e após a análise. É `null` nos planos
 preparados antes da contagem. O valor continua disponível após edição manual,
 fica fora de `pages` e do cálculo de `textHash` e não é enviado ao provedor.
 A autorização devolve `422` se a edição introduzir PII detectável. Um snapshot
