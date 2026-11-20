@@ -5,7 +5,7 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
-from src.database.models import PersonalEvent, Profile, Syllabus, SyllabusCandidate
+from src.database.models import PersonalEvent, Profile, Syllabus, SyllabusCandidate, SyllabusVersion
 from src.middlewares.auth import CurrentUser
 
 
@@ -351,3 +351,96 @@ def test_confirmation_accepts_all_day_assignment_without_time(api):
         assert event.all_day is True
         assert event.start_date.isoformat() == "2026-12-01"
         assert event.end_date.isoformat() == "2026-12-02"
+
+
+def test_delete_syllabus_removes_private_plan_and_preserves_imported_event(api):
+    client, sessions, auth, _ = api
+    owner_id = auth["value"].id
+    syllabus_id, candidate_id, _ = _create_syllabus(sessions, owner_id)
+    with sessions() as db:
+        version = SyllabusVersion(
+            syllabus_id=syllabus_id,
+            number=1,
+            author_id=owner_id,
+            author_role="student",
+            visibility="privada",
+        )
+        db.add(version)
+        db.flush()
+        syllabus = db.get(Syllabus, syllabus_id)
+        syllabus.approved_version_id = version.id
+        for candidate in db.scalars(select(SyllabusCandidate).where(SyllabusCandidate.syllabus_id == syllabus_id)).all():
+            candidate.version_id = version.id
+        db.commit()
+
+    confirmed = _confirm(client, syllabus_id, {"candidates": [{
+        "candidateId": str(candidate_id),
+        "startsAt": "2026-11-10T09:00:00Z",
+    }]}, "delete-preserves-event-001")
+    assert confirmed.status_code == 200
+
+    response = client.delete(f"/api/v1/syllabus/{syllabus_id}")
+    assert response.status_code == 204
+    with sessions() as db:
+        assert db.get(Syllabus, syllabus_id) is None
+        assert db.scalars(select(SyllabusVersion).where(SyllabusVersion.syllabus_id == syllabus_id)).all() == []
+        assert db.scalars(select(SyllabusCandidate).where(SyllabusCandidate.syllabus_id == syllabus_id)).all() == []
+        event = db.scalar(select(PersonalEvent).where(PersonalEvent.origin_candidate_id == candidate_id))
+        assert event is not None
+        assert event.origin_version_id is None
+
+
+def test_delete_syllabus_rejects_other_owner_processing_shared_and_third_party_revision(api):
+    client, sessions, auth, _ = api
+    owner_id = auth["value"].id
+    other_id = uuid4()
+
+    foreign_id, _, _ = _create_syllabus(sessions, other_id)
+    assert client.delete(f"/api/v1/syllabus/{foreign_id}").status_code == 404
+
+    processing_id, _, _ = _create_syllabus(sessions, owner_id, status="processando")
+    assert client.delete(f"/api/v1/syllabus/{processing_id}").status_code == 409
+
+    shared_id, _, _ = _create_syllabus(sessions, owner_id)
+    with sessions() as db:
+        db.add(SyllabusVersion(
+            syllabus_id=shared_id,
+            number=1,
+            author_id=owner_id,
+            author_role="student",
+            visibility="compartilhada",
+        ))
+        db.commit()
+    assert client.delete(f"/api/v1/syllabus/{shared_id}").status_code == 409
+
+    derived_id, _, _ = _create_syllabus(sessions, owner_id)
+    with sessions() as db:
+        if db.get(Profile, other_id) is None:
+            db.add(Profile(id=other_id, papel="professor", nome_completo="Docente Revisora"))
+            db.flush()
+        v1 = SyllabusVersion(
+            syllabus_id=derived_id,
+            number=1,
+            author_id=owner_id,
+            author_role="student",
+            visibility="privada",
+        )
+        db.add(v1)
+        db.flush()
+        v2 = SyllabusVersion(
+            syllabus_id=derived_id,
+            number=2,
+            author_id=other_id,
+            author_role="professor",
+            visibility="privada",
+            source_version_id=v1.id,
+        )
+        db.add(v2)
+        db.commit()
+        v2_id = v2.id
+
+    blocked = client.delete(f"/api/v1/syllabus/{derived_id}")
+    assert blocked.status_code == 409
+    with sessions() as db:
+        assert db.get(Syllabus, derived_id) is not None
+        assert db.get(SyllabusVersion, v2_id) is not None
