@@ -141,7 +141,8 @@ Todas as operações exigem sessão. O vínculo não copia o evento e não const
 | `GET /api/v1/me/saved-events` | Sem parâmetros definidos | 200, `EventRead[]`, somente aprovados vinculados; ordem por início e ID; sem paginação | Erros comuns |
 | `GET /api/v1/me/saved-events/{event_id}` | UUID | 200, `SavedEventStatus`; false se vínculo ausente, evento inexistente ou não aprovado | 422, UUID |
 | `PUT /api/v1/me/saved-events/{event_id}` | UUID, sem corpo | 200, `{ "saved": true }`, inclusive se já salvo | 422, UUID; 404, evento ausente/não aprovado; 409, conflito não recuperável |
-| `DELETE /api/v1/me/saved-events/{event_id}` | UUID | 204, inclusive se não houver vínculo/evento | 422, UUID; 409 |
+| `DELETE /api/v1/me/saved-events/{event_id}` | UUID | 204, inclusive se não houver vínculo/evento; cancela lembretes futuros pendentes do vínculo | 422, UUID; 409 |
+| `GET /api/v1/me/events/history` | `before` opcional (datetime ISO 8601 com fuso; padrão `now()`) | 200, `{ saved_public_events: EventRead[], personal_events: PersonalEventRead[] }`, em listas separadas ordenadas do mais recente ao mais antigo | 422, data sem fuso |
 
 PUT e DELETE são idempotentes. O PUT recupera colisão de inserção concorrente quando o vínculo já foi criado. DELETE só remove o vínculo do usuário atual.
 

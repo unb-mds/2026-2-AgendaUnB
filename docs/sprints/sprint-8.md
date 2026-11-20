@@ -114,15 +114,17 @@ Consolidar a distinção entre adicionar evento à agenda pessoal e conferir a f
 
 #### Tasks
 
-- [ ] Reutilizar o vínculo de evento salvo com unicidade por conta e evento. Adicionar e remover são operações idempotentes.
-- [ ] Registrar métricas agregadas de redirecionamento em Conferir evento, sem alterar os vínculos. A inscrição externa, quando exigida, ocorre no canal do organizador.
-- [ ] Mostrar eventos públicos salvos passados e compromissos privados passados em históricos separados. Remover o vínculo cancela lembretes futuros ([#81](https://github.com/unb-mds/2026-2-AgendaUnB/issues/81)).
+- [x] Reutilizar o vínculo de evento salvo com unicidade por conta e evento. Adicionar e remover são operações idempotentes.
+- [x] Registrar métricas agregadas de redirecionamento em Conferir evento, sem alterar os vínculos. A inscrição externa, quando exigida, ocorre no canal do organizador.
+- [x] Mostrar eventos públicos salvos passados e compromissos privados passados em históricos separados. Remover o vínculo cancela lembretes futuros ([#81](https://github.com/unb-mds/2026-2-AgendaUnB/issues/81)).
 
 #### Critérios de aceite
 
-- [ ] Repetir adição e remoção sem duplicar vínculo. Verificar histórico, agenda e cancelamento de lembrete futuro.
-- [ ] Abrir o link oficial, verificar incremento do redirecionamento e ausência de mudança na agenda. Repetir a mesma requisição sem duplicar o contador.
-- [ ] Recusar adição de evento indisponível e alteração de vínculo de outra conta.
+- [x] Repetir adição e remoção sem duplicar vínculo. Verificar histórico, agenda e cancelamento de lembrete futuro.
+- [x] Abrir o link oficial, verificar incremento do redirecionamento e ausência de mudança na agenda. Repetir a mesma requisição sem duplicar o contador.
+- [x] Recusar adição de evento indisponível e alteração de vínculo de outra conta.
+
+**Evidências consolidadas em 19/11/2026:** decisões e validação técnica registradas em [Dados de Conferir evento: redirecionamento por clique e histórico](/arquitetura/conferir-evento) e [Eventos públicos na agenda pessoal](/eventos-salvos). Migração `20261117151000_eventos_conferir_evento.sql` conciliada com `20261117200000_s8_f02_eventos_moderacao_categorias.sql` e `20261117152000_eventos_lembretes.sql`, endpoints FastAPI (`PUT/DELETE /api/v1/me/saved-events/{event_id}`, `POST /api/v1/events/{event_id}/outbound-clicks` e `GET /api/v1/me/events/history`), cancelamento de lembretes futuros ao remover vínculo e seções separadas de histórico em `SecondPage.jsx` (`splitMyEventsByHistory`) validados em `test_event_clicks_database.py`, `test_saved_events_api.py`, `test_events_api.py` e `calendar.test.js`.
 
 #### Evidências para fechamento
 
