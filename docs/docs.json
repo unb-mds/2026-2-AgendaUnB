@@ -5,7 +5,7 @@
   },
   "name": "Agenda UnB",
   "colors": {
-    "primary": "#008BFF",
+    "primary": "#005FD2",
     "light": "#4DAEFF",
     "dark": "#005FD2"
   },
@@ -56,6 +56,8 @@
           "produto/personas",
           "produto/requisitos",
           "produto/padroes",
+          "produto/politica-de-privacidade",
+          "produto/termos-de-uso",
           "matriz-release-2"
         ]
       },
@@ -99,7 +101,9 @@
         "group": "Processo",
         "pages": [
           "processo/contribuindo",
+          "processo/privacidade",
           "processo/uso-de-ia",
+          "processo/roteiro-entrega",
           "atualizacoes",
           {
             "group": "Sprints",
@@ -118,7 +122,8 @@
             "group": "Release notes",
             "pages": [
               "processo/release-notes/v0-1-0",
-              "processo/release-notes/v0-2-0-beta-1"
+              "processo/release-notes/v0-2-0-beta-1",
+              "processo/release-notes/v0-2-0"
             ]
           }
         ]

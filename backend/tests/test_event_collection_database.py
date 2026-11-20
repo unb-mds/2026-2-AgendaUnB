@@ -337,3 +337,24 @@ def test_collection_run_log_is_consistent(database):
     denied(conn, "update public.coletas_eventos set erro_codigo='timeout' where id=:id", {'id': run_id})
     conn.execute(text("""update public.coletas_eventos set status='falha', concluida_em=now(), erro_codigo='http_503'
         where id=:id"""), {'id': run_id})
+
+
+def test_find_existing_duplicate_detects_similar_title_within_two_days(database):
+    from datetime import date as civil_date
+    from src.modules.events.collector import find_existing_duplicate
+
+    conn, users = database
+    existing = manual_event(
+        conn,
+        users['professor'],
+        titulo='Simpósio de Engenharia de Software da UnB',
+        data_evento='2027-03-18T14:00:00-03:00',
+    )
+    dup_id = find_existing_duplicate(
+        conn,
+        title='Simpósio de Engenharia de Software UnB',
+        target_date=civil_date(2027, 3, 19),
+        source_id='9999',
+    )
+    assert str(dup_id) == existing
+

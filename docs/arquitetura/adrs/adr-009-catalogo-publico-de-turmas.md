@@ -3,8 +3,6 @@ title: "ADR-009 · Integrar o catálogo público de turmas com identidade local 
 description: "Decisão, consequências e critérios de verificação: integrar o catálogo público de turmas com identidade local e cache."
 ---
 
-# ADR-009 · Integrar o catálogo público de turmas com identidade local e cache
-
 | Campo | Valor |
 | --- | --- |
 | Estado | Implementada |

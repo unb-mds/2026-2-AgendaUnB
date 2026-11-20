@@ -7,7 +7,7 @@ description: "Operação do adaptador público Followw, publicação atômica, v
 
 Implementação baseada na #67, no esquema S7-D01 da #69 e na migração do [PR #104](https://github.com/unb-mds/2026-2-AgendaUnB/pull/104), commit `8a8cf42ef07e7b15278b3b78277b42eea4cf8483`. A migração original foi preservada; a evolução está em `20261111120000_publicacao_catalogo.sql`. RF05, RNF07–09 e RNF11 orientam esta integração.
 
-O servidor permite apenas GET HTTPS em `api.followw.app`, nas rotas `/public/classrooms/units`, `/public/classrooms` e `/public/subjects`. Não usa credenciais, cookies, proxy do ambiente ou redirecionamentos. A busca de disciplinas exige unidade ou código e período. Os contratos observados retornam listas sem paginação remota exposta; não se inventam parâmetros de paginação. A paginação da API do Agenda UnB é local.
+O servidor permite apenas GET HTTPS na base `https://followw.app/api`, nas rotas `/public/classrooms/units`, `/public/classrooms` e `/public/subjects`. Não usa credenciais, cookies, proxy do ambiente ou redirecionamentos. A busca de disciplinas exige unidade ou código e período. Os contratos observados retornam listas sem paginação remota exposta; não se inventam parâmetros de paginação. A paginação da API do Agenda UnB é local. A base usa [o mesmo encaminhamento da aplicação Followw](https://github.com/unb-mds/2026-2-Followw/blob/5e0b0f6ca27848fe6633d9ba13ac43cc986dce70/vercel.json). Em 16/11/2026, o subdomínio anterior `api.followw.app` retornou HTTP 404 com `DEPLOYMENT_NOT_FOUND`.
 
 A lista ao vivo determina presença. O ID de `subject.sigaa_id` identifica a disciplina. Somente uma correspondência exata por código, unidade, período e número textual permite adotar `classrooms[].sigaa_id` como ID de oferta. `01` permanece `01`, nível desconhecido fica nulo e professor/horário não participam da identidade. Respostas inválidas, identidades incompletas e colisões nunca são convertidas silenciosamente. Identidades rejeitadas ficam nos metadados da execução para revisão.
 
@@ -24,7 +24,7 @@ python -m src.modules.classes.sync --period 2026.2
 
 O comando consulta todas as unidades descobertas uma vez, em sequência. Períodos adicionais exigem flags repetidas, por exemplo `--period 2026.2 --period 2027.1`, após validar cobertura. Sem flags, somente `2026.2`. Semestres fora de 1/2 são rejeitados com `periodo_nao_suportado`, sem convertê-los; verão não é habilitado.
 
-Limites do adaptador: intervalo mínimo de um segundo entre inícios de chamadas, timeout de 20 segundos por operação HTTP, uma repetição para falhas transitórias. `Retry-After` aceita segundos ou data HTTP até 60 segundos; espera maior interrompe a tentativa. Esses valores não representam cotas confirmadas do Followw.
+Limites do adaptador: intervalo mínimo de um segundo entre inícios de chamadas, timeout de 30 segundos de leitura e 20 segundos nas demais fases HTTP, com até duas repetições para falhas transitórias. `Retry-After` aceita segundos ou data HTTP até 60 segundos; espera maior interrompe a tentativa. Esses valores não representam cotas confirmadas do Followw.
 
 Uma execução por vez, sem rota HTTP de sincronização. Consultas HTTP leem somente o banco. Após a coleta, uma transação chama `registrar_oferta_catalogo`, associa `publicacao_id` e publica a execução concluída. Leituras do catálogo são protegidas contra publicação concorrente. Uma unidade vazia válida conta como consultada; falha da busca ao vivo em qualquer unidade cancela a publicação inteira. Falha apenas no enriquecimento não retira as ofertas ao vivo: registra a cobertura do enriquecimento e utiliza a identidade natural.
 
@@ -44,13 +44,13 @@ Todas as rotas abaixo exigem a autenticação Supabase existente:
 | `GET /api/v1/me/class-offerings` | Vínculos da sessão, inclusive ofertas retiradas |
 | `PUT /api/v1/me/class-offerings/{id}` | Seguir oferta disponível, idempotente, 204 |
 | `DELETE /api/v1/me/class-offerings/{id}` | Remover somente o vínculo da sessão, idempotente, 204 |
-| `GET /api/v1/class-offerings/{id}/shared-plans` | Versões compartilhadas para seguidores, paginação 20/100, 403 para não seguidores; não expõe texto privado |
+| `GET /api/v1/class-offerings/{id}/shared-plans` | Versões compartilhadas para seguidores com autoria, origem, votos, indicador de versão padrão e alterações pós-importação; ordenadas por votos positivos e data mais recente no empate; paginação 20/100, 403 para não seguidores; não expõe texto privado |
 | `GET /api/v1/syllabus?offering_id={id}` | Histórico particular filtrado pela oferta; sem filtro mantém o histórico legado |
 | `POST /api/v1/syllabus/upload` e `/text` | `offering_id` obrigatório; 409 se oferta retirada, 503 sem publicação; disciplina/turma/período derivados do catálogo |
 
 A busca devolve `items`, `total`, `limit`, `offset`, `source_updated_at` e `stale`, com ordenação estável por código, unidade, período, turma e UUID. Cada item contém UUID, nome/código da disciplina, turma, ano/semestre, unidade, nível, professor, horário e disponibilidade. Erros seguem `detail` da API existente; filtros inválidos retornam 422.
 
-A rota `/plano-de-ensino?modo=catalogo` exige login. “Minhas turmas” persiste no servidor e abre `?modo=catalogo&oferta={UUID}`. A jornada mostra histórico particular, convite para envio e versões compartilhadas; estas são de consulta nesta entrega. Publicação, votação e importação de versões compartilhadas permanecem nas entregas específicas da R2. A revisão e confirmação de candidatos particulares reutilizam o fluxo existente. A demonstração mantém fixtures e ações locais em modo separado.
+A rota `/plano-de-ensino` exige login; visitantes sem sessão recebem orientação para autenticação sem acesso a upload ou vínculo de turmas. “Minhas turmas” persiste no servidor e alimenta o painel e a biblioteca compartilhada da turma (`PUT/DELETE .../sharing`, `POST .../versions`, `PUT .../vote` e `DELETE .../versions/{vid}/candidates/{cid}`). A revisão e confirmação de candidatos utilizam `POST /api/v1/syllabus/{id}/confirm` com `Idempotency-Key` e `versionId` opcional.
 
 “Tentar novamente” repete a leitura local; nunca dispara sincronização do Followw. Em 503 há acesso ao cadastro manual. Deixar de seguir preserva os eventos particulares já importados.
 
