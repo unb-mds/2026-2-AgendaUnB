@@ -37,7 +37,7 @@ def prepare(api, text=TEXT):
 
 def approval(preview, **changes):
     body = {"pages": preview["pages"], "textHash": preview["textHash"],
-            "authorize": True, "contentEligible": True, "reprocess": False}
+            "authorize": True, "reprocess": False}
     body.update(changes)
     return body
 
@@ -188,7 +188,7 @@ def test_personal_data_reintroduced_by_edit_is_rejected_even_with_correct_hash(a
     response = api[0].post(f"/api/v1/syllabus/{sid}/extractions",
                            json=approval(preview, pages=edited, textHash=text_hash(edited)))
     assert response.status_code == 422
-    assert "Remova os identificadores detectados" in response.json()["detail"]
+    assert "Envie o plano novamente" in response.json()["detail"]
     assert sensitive not in response.text
     assert api[0].get(f"/api/v1/syllabus/{sid}/text").json() == preview
     assert not SyllabusWorker(api[1], None, None, ProcessingConfig()).claim()

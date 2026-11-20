@@ -30,7 +30,7 @@ export const syllabusApi = {
     const textHash = await approvedTextHash(pages);
     return normalizePlan(await syllabusRequest(`/${encodeURIComponent(id)}/extractions`, {
       method: 'POST', signal,
-      body: JSON.stringify({ pages, textHash, authorize: true, contentEligible: true, reprocess }),
+      body: JSON.stringify({ pages, textHash, authorize: true, reprocess }),
     }));
   },
   async upload({ file, offeringId }, signal) {

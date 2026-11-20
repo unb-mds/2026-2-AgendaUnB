@@ -49,6 +49,6 @@ test('somente estados ativos permitem polling; erros são recuperáveis', () => 
   for (const status of ['concluido', 'falha', 'desconhecido']) assert.equal(isProcessing({ status }), false);
   assert.match(syllabusError({ status: 401 }), /sessão expirou/);
   assert.match(syllabusError({ status: 429 }), /Aguarde/);
-  assert.match(syllabusError({ status: 404 }, 'historico'), /histórico ainda não/);
-  assert.match(syllabusError(new TypeError('Failed to fetch'), 'envio'), /Confira o histórico/);
+  assert.match(syllabusError({ status: 404 }, 'historico'), /lista de planos ainda não/);
+  assert.match(syllabusError(new TypeError('Failed to fetch'), 'envio'), /Confira seus planos/);
 });

@@ -13,7 +13,7 @@ Consulte os [contratos](/atualizacoes#contratos-da-release-2) e a [matriz de ace
 
 - Seleção manual de turmas pelo catálogo público Followw, com vínculo autodeclarado.
 - Planos privados por padrão, com edição conforme papel e visibilidade. Compartilhamento voluntário de conteúdo revisado. O PDF original é descartado após a extração local.
-- IA limitada a provas e trabalhos, com revisão do texto antes do envio e confirmação antes da criação de eventos.
+- IA limitada a provas e trabalhos. O plano original da S7 previa revisão de texto. Na R2 a sanitização tornou-se automática e a autorização passou para o envio. A confirmação das avaliações continua necessária.
 - A Agenda UnB Notícias alimenta o catálogo. Eventos completos são publicados automaticamente e exceções seguem para revisão. Adicionar aos meus eventos e Conferir evento são ações independentes.
 - Professores e administradores moderam eventos. Administradores gerenciam papéis e categorias.
 - Lembretes na plataforma 24 horas antes de eventos da própria agenda. Exportação direta ao Google Agenda com consentimento adicional e e-mail verificado correspondente. ICS complementa Apple Calendar e Outlook.
@@ -88,15 +88,15 @@ Fixar as decisões da Release 2 e publicar contratos para frontend, backend e da
 - **Responsável principal** @Thomas4ugust0
 - **Apoio adicional** Toda a equipe valida os contratos e critérios das suas frentes.
 - **Dependências** Nenhuma.
-- **Requisitos** RF05–RF07, RF11, RF12, RF18, RF21, RNF02, RNF04 e RNF13. A matriz cobre RF01–RF21 e RNF01–RNF13.
+- **Requisitos** RF05–RF07, RF11–RF13, RF21, RNF02, RNF04 e RNF13.
 
 #### Tasks
 
 - [ ] Definir RF21 como exportação direta, acionada pelo usuário, para uma agenda secundária “Agenda UnB” via Google Calendar API. Registrar consentimento adicional, contratos de conexão/desconexão, mapeamento de IDs e reexportação idempotente. Manter ICS como compatibilidade com Apple Calendar/Outlook. A sincronização automática bidirecional fica fora do recorte.
 - [ ] Atualizar a visão e os requisitos canônicos, incluindo as funcionalidades antecipadas para esta entrega.
 - [ ] Revisar RF05/RF06 para substituir atestado de matrícula por seleção manual de oferta do catálogo público do Followw. Registrar vínculo autodeclarado e separar o catálogo de matrícula, notas, avisos privados e login Followw/SIGAA.
-- [ ] Revisar RF07/RNF02 para definir planos privados por padrão e compartilhamento voluntário após revisão. Distinguir contribuição de estudante, envio por perfil professor e origem institucional comprovada.
-- [ ] Delimitar moderação por professor/admin e gestão de papéis e categorias por admin. Documentar agenda pessoal, redirecionamento agregado e histórico em RF12/RF13/RF18.
+- [ ] Documentar em RF07/RNF02 a visibilidade, o compartilhamento automático da `v1` elegível e a publicação de revisões. Distinguir contribuição de estudante, envio por professor e origem institucional comprovada.
+- [ ] Delimitar moderação por professor/admin e gestão de papéis e categorias por admin. Documentar agenda pessoal e redirecionamento agregado em RF12/RF13.
 - [ ] Registrar o escopo de lembretes na plataforma, coleta inicial pela Agenda UnB Notícias e extração de provas e trabalhos com confirmação humana.
 - [ ] Definir contratos de turma, plano/versão, candidato, evento com intervalo/dia inteiro, vínculo de agenda, redirecionamento e lembrete. Harmonizar estados de processamento e planejar migrações.
 
@@ -287,7 +287,7 @@ Validar o fluxo de confirmação já entregue na sprint 6 com a extração real 
 - [ ] Registrar o nome do revisor e a revisão dos contratos, permissões e dados afetados por esta entrega.
 
 
-### S7-F03 - Integrar envio, revisão do texto, candidatos e agenda
+### S7-F03 - Integrar envio, extração, revisão dos candidatos e agenda
 
 [Issue #73](https://github.com/unb-mds/2026-2-AgendaUnB/issues/73)
 
@@ -304,14 +304,14 @@ Completar em homologação a jornada de plano particular até a agenda com dados
 
 #### Tasks
 
-- [ ] Integrar PDF/texto, escolha da turma, histórico de envios e acompanhamento do processamento. Trocar o editor vazio/desabilitado em `SyllabusReviewPanel.jsx` pelos dados reais.
-- [ ] Exibir antes do processamento o texto minimizado editável, o destino e a autorização separada para enviar ao provedor.
+- [ ] Integrar PDF/texto, escolha da turma, listagem de planos, acompanhamento do processamento e editor de candidatos com os dados reais.
+- [ ] Informar o destino do texto e registrar a autorização no envio. Preparar e sanitizar o texto automaticamente antes de encaminhá-lo ao provedor.
 - [ ] Mostrar candidatos com origem e alertas, seleção individual/em lote e correção. Chamar o endpoint real de confirmação e atualizar a agenda.
 - [ ] Tratar recarga, envio duplicado, falhas recuperáveis e PDF inválido/escaneado com alternativa por texto ou organização manual. Fornecer feedback acessível.
 
 #### Critérios de aceite
 
-- [ ] Demonstrar em homologação, sem mocks: seguir turma → enviar → revisar texto → autorizar → acompanhar → corrigir avaliações → importar → abrir na agenda.
+- [ ] Demonstrar em homologação, sem mocks: seguir turma → enviar com autorização → acompanhar extração → corrigir avaliações → importar → abrir na agenda.
 - [ ] Verificar que o envio ao provedor começa após autorização, que o evento só é criado após confirmação e que o progresso persiste após recarga.
 
 #### Evidências para fechamento

@@ -21,7 +21,6 @@ function SemesterPlansSession({ children, userId }) {
   const [plans, setPlans] = useState({});
   const [recent, setRecent] = useState([]);
   const [drafts, setDrafts] = useState({});
-  const [texts, setTexts] = useState({});
   const [authorizations, setAuthorizations] = useState({});
   const [planErrors, setPlanErrors] = useState({});
   const [results, setResults] = useState({});
@@ -95,7 +94,7 @@ function SemesterPlansSession({ children, userId }) {
 
   const needsWarning = uploads.some(item => item.status !== 'invalid') ||
     Object.keys(drafts).length > 0 ||
-    Object.values(texts).some(item => item?.dirty) || rawText.text.trim() ||
+    rawText.text.trim() ||
     Object.values(authorizations).some(item => item.busy) || confirming;
   useEffect(() => {
     if (!needsWarning) return;
@@ -146,7 +145,6 @@ function SemesterPlansSession({ children, userId }) {
       setPlans(omitKeys);
       setRecent(current => current.filter(plan => !removed.has(plan.id)));
       setProcessing(current => current.filter(id => !removed.has(id)));
-      setTexts(omitKeys);
       setAuthorizations(omitKeys);
       setPlanErrors(omitKeys);
       setResults(omitKeys);
@@ -187,7 +185,6 @@ function SemesterPlansSession({ children, userId }) {
       if (controller.signal.aborted) return;
       if (response.id !== id || (response.userId && response.userId !== userId)) throw new Error('Resposta da autorização inválida.');
       setPlans(current => ({ ...current, [id]: { ...current[id], ...response } }));
-      setTexts(current => ({ ...current, [id]: undefined }));
       setAuthorizations(current => ({ ...current, [id]: {} }));
     } catch (error) {
       if (!controller.signal.aborted) setAuthorizations(current => ({
@@ -210,7 +207,7 @@ function SemesterPlansSession({ children, userId }) {
         : syllabusApi.prepareText(item.text, signal, item.offer.id);
       request.then(plan => {
         if (signal.aborted) return;
-        if (plan.offeringId !== item.offer.id || (plan.userId && plan.userId !== userId)) throw new Error('O envio retornou uma turma diferente. Consulte o histórico.');
+        if (plan.offeringId !== item.offer.id || (plan.userId && plan.userId !== userId)) throw new Error('O envio retornou uma turma diferente. Consulte seus planos.');
         onPrepared(plan);
         if (plan.authorizationRequired && plan.preparedTextAvailable) void authorize(plan.id, null, false);
         setUploads(current => current.filter(row => row.id !== item.id));
@@ -218,7 +215,7 @@ function SemesterPlansSession({ children, userId }) {
         if (signal.aborted) return;
         setUploads(current => current.map(row => row.id === item.id
           ? { ...row, status: uncertain(error) ? 'uncertain' : 'failed',
-            error: uncertain(error) ? 'Não foi possível confirmar o envio. Confira o histórico antes de tentar de novo.' : syllabusError(error, 'envio'),
+            error: uncertain(error) ? 'Não foi possível confirmar o envio. Confira seus planos antes de tentar de novo.' : syllabusError(error, 'envio'),
           } : row));
       }).finally(() => prepared.current.delete(item.id));
     }
@@ -228,10 +225,8 @@ function SemesterPlansSession({ children, userId }) {
     const plan = await loadPlan(id, true);
     if (!plan) return;
     setAuthorizations(current => ({ ...current, [id]: {} }));
-    if (!plan.authorizationRequired) setTexts(current => ({ ...current, [id]: undefined }));
   };
 
-  const setText = (id, value) => setTexts(current => ({ ...current, [id]: value }));
   const changeDrafts = useCallback(changes => setDrafts(current => {
     const next = { ...current };
     for (const [key, value] of Object.entries(changes)) {
@@ -362,7 +357,7 @@ function SemesterPlansSession({ children, userId }) {
 
   return <Context.Provider value={{
     uploads, rawText, setRawText, addFiles, addText, remove, resetUploads, resetSend, retryUpload, uploadNotice, acknowledgeUpload, retryUncertainUpload,
-    plans, recent, planErrors, loadPlan, observe, drafts, changeDrafts, texts, setText, authorizations, authorize,
+    plans, recent, planErrors, loadPlan, observe, drafts, changeDrafts, authorizations, authorize,
     checkAuthorization, results, confirming, confirm, reconcile,
   }}>{children}</Context.Provider>;
 }

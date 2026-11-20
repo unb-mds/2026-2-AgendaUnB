@@ -4,7 +4,7 @@
 --   S8-B02 (#79)  redirecionamento contado uma vez por click_id,
 --                 com validação do link e sem identificar a pessoa
 --
--- Requisitos: RF17 e RNF02.
+-- Requisitos: RF12 e RNF02.
 --
 -- As regras que precisam valer em qualquer caminho de escrita ficam
 -- no banco (chaves únicas, triggers e funções). A API chama

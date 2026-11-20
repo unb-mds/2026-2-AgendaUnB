@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import PasswordField from '../components/PasswordField';
-import { changePassword, validateNewPassword } from '../lib/auth';
+import { NEW_PASSWORD_HINT, changePassword, validateNewPassword } from '../lib/auth';
 import { flushPendingSignupLegal } from '../lib/accountApi';
 import { createRecoveryClient, supabase } from '../lib/supabase';
 import '../styles/auth.css';
@@ -182,7 +182,7 @@ export default function AuthReturnPage() {
           )}
           {phase === 'password' && (
             <form onSubmit={updatePassword}>
-              <p className="auth-description" id="auth-new-password-hint">Use pelo menos 8 caracteres.</p>
+              <p className="auth-description" id="auth-new-password-hint">{NEW_PASSWORD_HINT}</p>
               <PasswordField label="Nova senha" name="password" newPassword describedBy="auth-new-password-hint" />
               <PasswordField label="Confirmar nova senha" name="confirmation" newPassword />
               <button type="submit" className="modal-btn-primary" disabled={sending}>{sending ? 'Salvando…' : 'Salvar senha'}</button>

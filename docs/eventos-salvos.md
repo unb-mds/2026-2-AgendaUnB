@@ -6,7 +6,7 @@ Em **Meus Eventos**, o frontend combina os eventos privados com os públicos sal
 mantendo busca, filtros, lista e calendário. Um público salvo pode ser removido da
 agenda, mas não editado ou excluído como se fosse um evento privado.
 
-A Release 2 mantém **Conferir evento** como ação separada, com métrica de redirecionamento, e usa o vínculo de eventos salvos para histórico e lembretes. [Contratos da Release 2](/atualizacoes#contratos-da-release-2)
+A Release 2 mantém **Conferir evento** como ação separada, com métrica de redirecionamento, e usa o vínculo de eventos salvos para exibir a agenda e agendar lembretes. [Contratos da Release 2](/atualizacoes#contratos-da-release-2)
 
 ## Banco e implantação
 

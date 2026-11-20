@@ -13,7 +13,7 @@ th,td{border:1px solid #445064;padding:12px;text-align:left;vertical-align:top}
 <body><main><nav aria-label="Navegação"><a href="/">Agenda UnB</a>
 <a href="/privacidade.html">Privacidade</a><a href="/termos.html">Termos de Uso</a></nav>
 <h1>Política de Privacidade</h1>
-<p><strong>Versão 2026-11-18.</strong> Esta política descreve como o Agenda UnB trata os seus dados pessoais.</p>
+<p><strong>Versão 2026-11-20.</strong> Esta política descreve como o Agenda UnB trata os seus dados pessoais.</p>
 <p>O Agenda UnB é um projeto acadêmico da disciplina Métodos de Desenvolvimento de Software (UnB, 2026/2), sem fins comerciais. Ele não é um serviço oficial da Universidade de Brasília. Adotamos a Lei Geral de Proteção de Dados (Lei 13.709/2018, LGPD) como referência para todo o tratamento descrito aqui.</p>
 <h2>1. Quem responde pelos seus dados</h2>
 <ul>
@@ -91,10 +91,10 @@ th,td{border:1px solid #445064;padding:12px;text-align:left;vertical-align:top}
 <h2>3. Planos de ensino</h2>
 <ul>
 <li>O envio em PDF aceita arquivos de até <strong>10 páginas</strong> e <strong>10 MB</strong>. O texto é extraído localmente em memória no servidor e o PDF <strong>não é guardado</strong> após a leitura. Arquivos antigos que ainda existiam no armazenamento seguem rotina de eliminação definitiva.</li>
-<li>Antes de qualquer envio à inteligência artificial, o sistema aceita até <strong>40.000 bytes UTF-8</strong> de texto (até 10 páginas) e aplica uma limpeza automática simples por regras fixas (para substituir e-mails, telefones brasileiros, sequências de 9 a 11 dígitos ou CPF e linhas iniciadas por rótulos como professor, aluno, nome, matrícula ou CPF). <strong>Essa remoção automática é limitada e não substitui a sua revisão.</strong></li>
-<li>Mostramos <strong>o trecho exato</strong> que seria enviado e pedimos a sua <strong>autorização específica</strong> para aquele plano. Se ainda houver algum padrão identificado ou se você não confirmar a revisão, o envio é bloqueado. Se o texto mudar, pedimos nova autorização.</li>
+<li>Antes de qualquer envio à inteligência artificial, o sistema aceita até <strong>40.000 bytes UTF-8</strong> de texto (até 10 páginas) e aplica uma limpeza automática simples por regras fixas (para substituir e-mails, telefones brasileiros, sequências de 9 a 11 dígitos ou CPF e linhas iniciadas por rótulos como professor, aluno, nome, matrícula ou CPF). A remoção automática cobre os padrões detectáveis e pode deixar passar dados fora desses padrões.</li>
+<li>Ao escolher <strong>Enviar PDF e extrair</strong> ou <strong>Enviar texto e extrair</strong>, você autoriza a análise do texto sanitizado daquele plano. A plataforma verifica novamente o texto antes de enviá-lo ao Gemini e impede o processamento de textos antigos com identificadores detectáveis.</li>
 <li>Toda data extraída é uma sugestão e só entra na sua agenda quando você confirma.</li>
-<li>Um plano começa <strong>privado</strong>. Ele só fica visível para quem segue a mesma turma se você decidir compartilhar. Professores e administradores não têm acesso ao seu conteúdo privado.</li>
+<li>Um plano começa <strong>privado</strong>. Ao consultar ou confirmar o resultado, a primeira versão com avaliações extraídas, incluindo as evidências dessas datas, fica disponível para quem segue a turma. Você pode retirar o compartilhamento. O texto integral preparado fica restrito à sua conta.</li>
 <li>Quem já importou datas de um plano compartilhado mantém as cópias independentes na própria agenda, mesmo que o compartilhamento seja retirado ou a conta de origem seja excluída.</li>
 </ul>
 <h2>4. Com quem compartilhamos</h2>
@@ -136,13 +136,13 @@ th,td{border:1px solid #445064;padding:12px;text-align:left;vertical-align:top}
 <tr>
 <td>Google (Gemini)</td>
 <td>Extrai datas do texto de um plano</td>
-<td>Somente o trecho revisado e autorizado por você (até 40.000 bytes UTF-8), enviado com armazenamento de interação desativado (<code>store: false</code>)</td>
+<td>Somente o texto sanitizado cuja análise você autorizou (até 40.000 bytes UTF-8), enviado com armazenamento de interação desativado (<code>store: false</code>)</td>
 <td>Estados Unidos e outros</td>
 </tr>
 <tr>
 <td>Google (Agenda)</td>
 <td>Exporta eventos para a agenda secundária "Agenda UnB", se você conectar</td>
-<td>Identificador técnico do item, título, data e horário de início e fim (fuso de Brasília, duração padrão de 1 hora) dos eventos escolhidos</td>
+<td>Identificador técnico, título, datas e horários dos eventos selecionados, local quando disponível e descrição quando escolhida</td>
 <td>Estados Unidos e outros</td>
 </tr>
 <tr>
@@ -161,7 +161,7 @@ th,td{border:1px solid #445064;padding:12px;text-align:left;vertical-align:top}
 <li>A exportação para o Google Agenda é <strong>opcional</strong> e separada do login.</li>
 <li>Ao conectar, solicitamos apenas os escopos <code>openid</code>, <code>email</code> (para conferir que a conta Google tem o mesmo e-mail verificado da sua conta no Agenda UnB) e <code>https://www.googleapis.com/auth/calendar.app.created</code> (acesso restrito à agenda secundária <strong>"Agenda UnB"</strong> criada pela aplicação, sem acesso às suas outras agendas).</li>
 <li>Os tokens de acesso e atualização ficam <strong>criptografados no servidor</strong> (Fernet) apenas enquanto a conexão estiver ativa. O estado temporário do pedido de autorização expira em <strong>10 minutos</strong>.</li>
-<li>Em cada exportação, você seleciona até <strong>20 eventos</strong> pessoais ou públicos salvos. São enviados apenas o identificador técnico do item, o título e os horários de início e fim no fuso <code>America/Sao_Paulo</code> (com duração padrão de 1 hora).</li>
+<li>Em cada exportação, você seleciona até <strong>20 eventos</strong> pessoais ou públicos salvos. São enviados o identificador técnico, título, início e fim (com duração padrão de 1 hora para eventos com horário sem término), local quando disponível e descrição se você escolher incluí-la. Eventos de dia inteiro mantêm suas datas civis.</li>
 <li>Ao desconectar em <strong>Meus Eventos</strong>, ao revogar o consentimento em <strong>Configurações</strong> ou ao excluir sua conta, apagamos os tokens guardados e solicitamos ao Google a revogação do acesso. Se o Google não confirmar a revogação remota na hora, mostramos um aviso para que você remova o acesso nas permissões da sua Conta Google.</li>
 <li><strong>Aviso sobre eventos já exportados:</strong> desconectar a integração ou excluir sua conta no Agenda UnB <strong>não apaga</strong> os eventos que já foram exportados. Para removê-los:<ol>
 <li>Acesse <a href="https://calendar.google.com">calendar.google.com</a> com a sua Conta Google.</li>
@@ -214,7 +214,7 @@ th,td{border:1px solid #445064;padding:12px;text-align:left;vertical-align:top}
 <ul>
 <li><strong>acessar e baixar</strong> os seus dados em formato JSON em <strong>Configurações</strong> → <strong>Baixar meus dados</strong>;</li>
 <li><strong>corrigir</strong> dados da conta pelo canal da seção 1 (nome e foto exibidos no perfil vêm da conta Google ou do cadastro inicial);</li>
-<li><strong>revogar</strong> o consentimento do Google Agenda em <strong>Configurações</strong> ou desconectar em <strong>Meus Eventos</strong>; a autorização para enviar texto de um plano à IA é dada por plano após revisão em <strong>Plano de Ensino</strong>;</li>
+<li><strong>revogar</strong> o consentimento do Google Agenda em <strong>Configurações</strong> ou desconectar em <strong>Meus Eventos</strong>; a autorização para enviar texto de um plano à IA é dada por plano ao solicitar a extração em <strong>Plano de Ensino</strong>;</li>
 <li><strong>gerenciar ou retirar o compartilhamento</strong> de planos compartilhados em <strong>Plano de Ensino</strong> (as cópias já importadas por colegas continuam nas agendas deles);</li>
 <li><strong>excluir sua conta</strong> diretamente em <strong>Configurações</strong> → <strong>Excluir conta</strong>, mediante digitação da frase de confirmação;</li>
 <li>pedir informações ou apresentar reclamação pelo canal da seção 1. Você também pode recorrer à Autoridade Nacional de Proteção de Dados (ANPD).</li>

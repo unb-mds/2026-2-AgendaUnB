@@ -3,9 +3,9 @@ title: "Privacidade e ciclo de vida dos dados"
 description: "Inventário de dados, direitos do titular, exclusão, descarte de PDFs e procedimento de incidente (S8-D01)."
 ---
 
-Registro técnico da [S8-D01 (#83)](https://github.com/unb-mds/2026-2-AgendaUnB/issues/83). Estado em **18/11/2026** na branch `feat/s8-d01-privacidade`. Os textos para o usuário são a [Política de Privacidade](/produto/politica-de-privacidade) e os [Termos de Uso](/produto/termos-de-uso).
+Registro técnico da [S8-D01 (#83)](https://github.com/unb-mds/2026-2-AgendaUnB/issues/83). Estado em **20/11/2026** na branch `fix/s8-d02-endurecimento`. Os textos para o usuário são a [Política de Privacidade](/produto/politica-de-privacidade) e os [Termos de Uso](/produto/termos-de-uso).
 
-Este documento descreve o que está implementado nesta entrega, o que foi validado em banco/API/interface locais e o que depende de ambiente hospedado ou de branches irmãs ainda não mescladas à `dev`. Ele não constitui parecer jurídico.
+Este documento descreve os fluxos integrados, as evidências locais de banco, API e interface e as validações que ainda dependem do ambiente hospedado.
 
 ## Decisões registradas (PO e equipe)
 
@@ -27,18 +27,22 @@ Base legal: referência aos incisos do art. 7º da LGPD. O projeto tem finalidad
 | Nome, e-mail, papel, avatar | `profiles` | Identificação e permissões | Execução do serviço (V) | Enquanto a conta existir | Cascata a partir de `auth.users` |
 | Agenda pessoal | `eventos_pessoais` | Agenda do titular | Execução do serviço (V) | Enquanto a conta existir | Cascata (`eventos_pessoais_user_id_fkey ON DELETE CASCADE`) |
 | Eventos salvos e notificações | `eventos_salvos`, `notificacoes` | Agenda e avisos da plataforma | Execução do serviço (V) | Enquanto a conta existir | Cascata |
+| Lembretes | `lembretes` | Agendamento e entrega de avisos de eventos da própria agenda | Execução do serviço (V) | Enquanto o registro estiver associado à conta | Cascata na exclusão da conta. A remoção do vínculo salvo cancela lembretes futuros pendentes. |
 | Eventos sugeridos ou publicados | `eventos` (`autor_id`) | Agenda pública; nome do autor como organizador | Execução do serviço (V) | Enquanto a conta existir | Cascata (ver D2) |
 | Turmas seguidas | `vinculos_turma` | Acesso a conteúdo da turma | Execução do serviço (V) | Enquanto a conta existir | Cascata |
 | PDF do plano | Não é guardado nos envios novos (extraído em memória no upload). Planos legados: Storage `syllabus_files` | Extração local do texto | Execução do serviço (V) | Envios novos: não armazenado. Legados: até descarte | `scripts/descartar_pdfs.py` e passo 4 do `DELETE /api/v1/me` |
-| Texto preparado e texto autorizado do plano | `planos_ensino.texto_preparado`, `texto_aprovado`, `hash_texto_aprovado` | Revisão pelo titular e envio autorizado à IA | Execução do serviço (V) e **consentimento** para envio (I) | Enquanto a conta existir | Cascata; incluído em `/me/data-export` |
+| Texto preparado e texto autorizado do plano | `planos_ensino.texto_preparado`, `texto_aprovado`, `hash_texto_aprovado` | Preparação automática e envio autorizado à IA | Execução do serviço (V) e **consentimento** para envio (I) | Enquanto a conta existir | Cascata; incluído em `/me/data-export` |
 | Metadados do plano, versões e candidatos | `planos_ensino`, `versoes_plano`, `avaliacoes` | Sugerir datas | Execução do serviço (V) | Enquanto a conta existir | Cascata (ver D3) |
 | Texto enviado ao provedor de IA | Não é guardado pela plataforma além do snapshot revisado | Extração de datas | **Consentimento** específico por plano (I) | Envio com `store: false` na API do Gemini | Revogação operacional: não autorizar novos envios |
 | Operações de importação | `operacoes_importacao`, `itens_importacao` | Evitar duplicar eventos em retries | Execução do serviço (V) | Enquanto a conta existir | Cascata |
+| Votos de avaliação | `votos_avaliacao` | Sinalizar divergências entre seguidores da turma | Execução do serviço (V) | Enquanto a conta e a avaliação existirem | Cascata |
 | Aceites e consentimentos | `aceites_termos`, `consentimentos` | Comprovar leitura de versão e autorização | Cumprimento de obrigação e exercício de direitos (II, VI) | Enquanto a conta existir | Cascata |
 | Tokens e estado OAuth do Google Agenda | `google_calendar_connections` (tokens cifrados com Fernet), `google_calendar_oauth_states` (TTL 10 min) | Exportação opcional para agenda `"Agenda UnB"` | **Consentimento** (I) | Até desconexão, revogação ou exclusão da conta (estado OAuth: 10 min) | Desconexão, `DELETE /me/consents/google_agenda`, `DELETE /me` e `ON DELETE CASCADE` em `profiles(id)` |
+| Mapeamentos de exportação ao Google Agenda | `google_calendar_event_exports` | Associar os eventos exportados às cópias e evitar duplicação | Execução da exportação solicitada (V) | Enquanto a conta e o mapeamento existirem | Cascata na exclusão da conta |
+| Alterações de papel | `auditoria_papeis` | Auditar quem alterou o papel e quando | Legítimo interesse (IX) | Conforme o ciclo de vida das referências à conta | A referência ao ator é limpa quando ele é excluído e os registros da conta afetada são removidos por cascata. |
 | Endereço IP e rota acessada | Logs dos provedores; memória do limitador de taxa | Segurança e diagnóstico | Legítimo interesse (IX) | Ver D4 | Expiração |
 
-**Recursos de branches ou entregas irmãs (fora desta branch):** `lembretes` (`#81`), `votos_avaliacao` e RPC `retirar_compartilhamento` (`#77`, branch `feat/s8-b01`), `auditoria_papeis` (`S8-D02`) e `cliques_evento` (`#75`/`#81`). O endpoint `GET /api/v1/me/data-export` já verifica a existência de `votos_avaliacao` e `notificacoes` defensivamente com `inspect(bind).has_table(...)` para permanecer compatível após os merges.
+`cliques_evento` contém apenas o identificador do evento, um UUID aleatório por visualização e a data do registro. A métrica não guarda ID da conta, IP nem agente do navegador.
 
 **Sem dado pessoal:** `coletas_eventos` (contadores operacionais e `erro_codigo` curto de até 60 caracteres), `sincronizacoes_catalogo`, `exclusoes_conta` (somente contagens agregadas, sem `user_id` ou PII), `campus`, `categories`, `disciplinas` e `ofertas_turma`. Eventos coletados podem citar nomes de palestrantes já divulgados pela fonte institucional.
 
@@ -50,7 +54,7 @@ Base legal: referência aos incisos do art. 7º da LGPD. O projeto tem finalidad
 | Render | API FastAPI | Dados em trânsito e logs técnicos (sem corpos, conteúdo acadêmico ou tokens) | EUA |
 | Vercel | SPA e `@vercel/analytics/react` | Logs de acesso e métricas agregadas do Vercel Web Analytics (sem cookies publicitários) | Rede global |
 | Google Identity | Login OAuth | Nome, e-mail e foto | EUA e outros |
-| Google Gemini | Extração de datas | Apenas o trecho revisado e autorizado após minimização local (`preparation.py`: limite de **10 páginas** / **10 MB** no PDF, **40.000 bytes UTF-8**, 4 expressões regulares simples para rótulos, e-mails, 9–11 dígitos/CPF e telefones BR, mais revisão humana obrigatória) e enviado com `"store": false` (`gemini.py`) | EUA e outros |
+| Google Gemini | Extração de datas | Texto sanitizado autorizado em **Plano de Ensino**, até 40.000 bytes UTF-8, com `store: false` em `gemini.py`. A [minimização automática](/arquitetura/minimizacao-planos) cobre padrões detectáveis, incluindo e-mails, telefones, documentos e campos rotulados. | EUA e outros |
 | Google Calendar | Exportação | Escopos `openid`, `email` e `https://www.googleapis.com/auth/calendar.app.created` (restrito à agenda secundária `"Agenda UnB"`). `export.py` envia até 20 eventos selecionados com `id` (SHA-256), `summary`, `start` e `end` (`America/Sao_Paulo`, +1h padrão). Expansões futuras de período/campos constam na `#82` | EUA e outros |
 | Google Fonts | Fontes e ícones | Endereço IP ao baixar fontes (`index.html`) | Rede global (ver D5) |
 
@@ -63,25 +67,25 @@ Base legal: referência aos incisos do art. 7º da LGPD. O projeto tem finalidad
 | | Aceite de termos | Consentimento |
 | --- | --- | --- |
 | Tabela | `aceites_termos` | `consentimentos` |
-| O que registra | Que a conta leu uma **versão** dos Termos ou da Política (`2026-11-18`) | Autorização para uma **finalidade** específica |
+| O que registra | Que a conta leu uma **versão** dos Termos ou da Política (`2026-11-20`) | Autorização para uma **finalidade** específica |
 | Finalidades | — | `google_agenda` |
 | Pode ser revogado | Não se aplica | Sim, a qualquer momento (`revogar_consentimento` e `DELETE /api/v1/me/consents/google_agenda`) |
 | Vínculo com o conteúdo | Versão do documento (data de vigência) | `referencia_id` e `conteudo_hash` (SHA-256 do escopo autorizado) |
 
-**Envio ao provedor de IA.** A autorização é registrada no próprio plano pela S7-B01: `texto_aprovado` (o trecho exato mostrado ao usuário), `hash_texto_aprovado` e `autorizado_em`. O worker confere o hash antes de chamar o provedor, e o trigger `tg_preserva_texto_autorizado` impede alterar o snapshot durante o processamento (`status = 'processando'`). Por isso `consentimentos` não aceita `envio_texto_ia`.
+**Envio ao provedor de IA.** A autorização é registrada no próprio plano pela S7-B01: `texto_aprovado` (as páginas sanitizadas autorizadas no envio), `hash_texto_aprovado` e `autorizado_em`. O worker confere o hash antes de chamar o provedor, e o trigger `tg_preserva_texto_autorizado` impede alterar o snapshot durante o processamento (`status = 'processando'`). Por isso `consentimentos` não aceita `envio_texto_ia`.
 
 ## Direitos do titular na API e na interface
 
 | Direito | Contrato | Observação |
 | --- | --- | --- |
-| Ver o que está pendente de leitura | `GET /api/v1/me/legal-documents` | Retorna objeto `{"terms": {"currentVersion": "2026-11-18", "acceptedVersion": null, "acceptedAt": null, "pending": true}, "privacy": {...}}` (`Cache-Control: no-store`) |
-| Registrar leitura | `PUT /api/v1/me/legal-acceptances/{terms\|privacy}` com `{"version": "2026-11-18"}` → `204` | Só aceita a versão vigente (`409` se o documento mudou) |
+| Ver o que está pendente de leitura | `GET /api/v1/me/legal-documents` | Retorna `{"terms": {"currentVersion": "2026-11-20", "acceptedVersion": null, "acceptedAt": null, "pending": true}, "privacy": {...}}` (`Cache-Control: no-store`) |
+| Registrar leitura | `PUT /api/v1/me/legal-acceptances/{terms\|privacy}` com `{"version": "2026-11-20"}` → `204` | Só aceita a versão vigente (`409` se o documento mudou) |
 | Listar consentimentos | `GET /api/v1/me/consents` | Lista `items` ordenados por `grantedAt` decrescente |
 | Revogar consentimento | `DELETE /api/v1/me/consents/google_agenda` → `204` | Desconecta e solicita revogação do token no Google Agenda e revoga o consentimento ativo |
-| Acesso e portabilidade | `GET /api/v1/me/data-export` → `200` JSON (`agenda-unb-dados.json`) | `Cache-Control: no-store`, `Pragma: no-cache`. Exclui tokens cifrados, `google_sub`, caminhos do Storage e dados de terceiros |
+| Acesso e portabilidade | `GET /api/v1/me/data-export` → `200` JSON (`agenda-unb-dados.json`) | `Cache-Control: no-store`, `Pragma: no-cache`. Inclui lembretes em `reminders` e mapeamentos em `googleCalendarExports`. Exclui tokens cifrados, `google_sub`, caminhos do Storage, chaves de idempotência e dados de terceiros. |
 | Exclusão | `DELETE /api/v1/me` com `{"confirmation": "EXCLUIR MINHA CONTA"}` → `204` | `409` para o último administrador |
 | Correção | Solicitação via `unbagenda@gmail.com` | `/configuracoes` exibe nome e e-mail apenas para leitura; não há edição self-service na interface |
-| Retirar compartilhamento | `DELETE …/versions/{id}/sharing` (`retirar_compartilhamento`, `#77`) | Implementado na branch `feat/s8-b01`, pendente de merge na `dev`; **Configurações** orienta sobre a retirada em **Plano de Ensino** |
+| Retirar compartilhamento | `DELETE /api/v1/syllabus/{id}/versions/{version_id}/sharing` (`retirar_compartilhamento`, `#77`) | Disponível ao autor da versão ou a um admin em **Plano de Ensino**. **Configurações** orienta sobre o fluxo. |
 
 A versão vigente de cada documento fica em `CURRENT_LEGAL_VERSIONS` (`backend/src/modules/account/repository.py`). Ao publicar um texto novo, atualize a versão nos documentos e em `CURRENT_LEGAL_VERSIONS`: as contas passam a receber `pending: true`.
 
@@ -105,10 +109,10 @@ Sequência executada por `DELETE /api/v1/me` (`account/service.py:132-161`):
 | Apagado | Mantido |
 | --- | --- |
 | Perfil e credenciais | Eventos que **outras contas** já importaram para a própria agenda (ficam sem vínculo com a origem) |
-| Agenda pessoal, eventos salvos e notificações | Registro anônimo em `exclusoes_conta`, só com contagens |
+| Agenda pessoal, eventos salvos, notificações e lembretes | Registro anônimo em `exclusoes_conta`, só com contagens |
 | Turmas seguidas, votos, operações de importação | Eventos já exportados à agenda `"Agenda UnB"` no Google Agenda do titular |
 | Aceites e consentimentos | Dados em cópias internas do provedor, até expirarem |
-| Tokens e estados OAuth do Google Agenda (com solicitação de revogação no Google) | |
+| Tokens, estados OAuth e mapeamentos locais do Google Agenda (com solicitação de revogação no Google) | |
 | Planos enviados, com todas as versões, candidatos e arquivos legados | |
 | Eventos públicos sugeridos ou publicados pela conta | |
 
@@ -155,9 +159,10 @@ TEST_SUPABASE_DB_URL="postgresql+psycopg://postgres:postgres@127.0.0.1:14322/pos
 | Tarefas pendentes e cópias independentes | `test_privacy_database.py` (inclusive cascata cruzada com `status = 'processando'`) e `test_account_api.py` | Validado no PostgreSQL `:14322` e SQLite |
 | Conteúdo acadêmico e tokens fora dos logs | `test_unhandled_exception_returns_500_without_leaking_secrets`, `test_database_errors_are_logged_without_row_content`, `test_supabase_admin_calls_never_log_identifiers` (`test_account_api.py`) | Validado na API/scripts. **Pendente:** inspeção nos painéis hospedados |
 | Google Calendar: desconexão, revogação, tokens e aviso de cópias | `google_calendar/service.py` (escopos, Fernet, revogação), `GoogleCalendarConnection.jsx` e `privacy-account.spec.js` | Validado em testes unitários, API/banco e E2E. **Pendente:** OAuth real com Google |
-| Política e termos no cadastro, entrada e Configurações | `politica-de-privacidade.md`, `termos-de-uso.md` (`2026-11-18`), `render_legal.py --publish`, `AuthDialog.jsx`, `LegalAcceptanceGate.jsx`, `SettingsPage.jsx` | Validado localmente em unitários, build e Playwright |
+| Política e termos no cadastro, entrada e Configurações | `politica-de-privacidade.md`, `termos-de-uso.md` (`2026-11-20`), `render_legal.py --publish`, `AuthDialog.jsx`, `LegalAcceptanceGate.jsx`, `SettingsPage.jsx` | Validado localmente em unitários, build e Playwright |
 
 ## Histórico de publicação legal
 
 - **11/11/2026:** versão inicial `2026-11-11` publicada com marcações de Release 2 e definição de D1/D4.
 - **18/11/2026:** versão `2026-11-18` alinhada a `CURRENT_LEGAL_VERSIONS`, inventário real de provedores (`@vercel/analytics/react`, limites de minimização do Gemini + `store: false`, payload real e escopos do Google Calendar, Followw/coleta pública, Google Fonts), autoatendimento em `/configuracoes` e avisos de cópias permanentes no Google Agenda. Gerador: `backend/venv/bin/python scripts/render_legal.py --publish` (`Markdown==3.11.3`).
+- **20/11/2026** — A versão `2026-11-20` registra sanitização automática e compartilhamento inicial de planos na R2, conforme `CURRENT_LEGAL_VERSIONS`.

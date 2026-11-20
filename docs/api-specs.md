@@ -2,7 +2,7 @@
 
 ## Referência e limites
 
-Este inventário descreve o backend atual. Para os contratos planejados, consulte [Release 2](/atualizacoes#contratos-da-release-2).
+Este inventário descreve o backend atual. Para as decisões de produto e os fluxos integrados, consulte [Release 2](/atualizacoes#contratos-da-release-2).
 
 A API possui operações HTTP de aplicação (inventário abaixo), incluindo `/health`. `/docs`, `/redoc` e `/openapi.json` são recursos de documentação gerados pelo FastAPI, não operações de negócio. Consulte também [Arquitetura](/arquitetura/visao-geral), [Padrões](/produto/padroes) e [Implantação](/implantacao).
 
@@ -15,14 +15,16 @@ Fontes: `backend/src/main.py`, `modules/events/router.py`, `modules/events/schem
 - Papéis persistidos: `student`, `professor`, `admin`. O servidor obtém o ID da sessão e consulta o papel em `profiles`; o cliente não escolhe a identidade.
 - Toda rota autenticada exige e-mail confirmado no Supabase Auth. Metadata nunca concede `admin`; `professor` só é aceito como solicitação após confirmação do endereço real `@unb.br` da conta Auth. Uma pessoa pode mudar o próprio papel de estudante para professor com esse e-mail confirmado; papel de terceiros só muda pela RPC de admin.
 - `{event_id}` é UUID. UUID malformado gera falha de validação; UUID válido ausente recebe o comportamento indicado em cada operação.
-- GET e DELETE não têm corpo definido; PUT de evento salvo também não. Listas de eventos retornam arrays, e listas vazias retornam `[]`. O histórico de planos usa um envelope de paginação.
+- Toda resposta leva cabeçalhos de proteção (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Content-Security-Policy`); respostas com dados da conta levam `Cache-Control: no-store`. O CORS aceita somente as origens de `CORS_ORIGINS` e os cabeçalhos `Authorization`, `Content-Type`, `Accept` e `Idempotency-Key`. Detalhes em [Verificação de segurança](processo/seguranca.md).
+- A busca `q` trata `%` e `_` como texto.
+- GET e DELETE não têm corpo definido; PUT de evento salvo também não. Listas de eventos retornam arrays, e listas vazias retornam `[]`. A listagem de planos usa um envelope de paginação.
 - Os schemas ignoram campos extras; enviar `status` ou `author_id` não altera os valores definidos pelo servidor. Isso não equivale a rejeitar esses campos com 422.
 
 ## Payloads e respostas
 
 ### Entrada de evento
 
-`EventCreate` é usado na criação pública e na sugestão. `PersonalEventCreate` e `PersonalEventUpdate` usam os mesmos campos comuns, sem `external_url`.
+`EventCreate` é usado na criação pública e na sugestão. `EventUpdate` usa os mesmos campos na edição pública. `PersonalEventCreate` e `PersonalEventUpdate` usam os campos comuns, sem `external_url`.
 
 | Campo | Tipo | Obrigatório | Regra |
 | --- | --- | --- | --- |
@@ -40,7 +42,7 @@ Fontes: `backend/src/main.py`, `modules/events/router.py`, `modules/events/schem
 
 Strings são aparadas. Strings vazias ou contendo somente espaços em `description`, `campus`, `category` e `location` viram null. Isso não se aplica a `external_url`: para ausência de link, omitir ou enviar null. Campus e categoria são resolvidos por nome, ignorando maiúsculas/minúsculas, e não por UUID. Nome desconhecido na escrita retorna 422.
 
-O PUT pessoal exige `title` e `starts_at`, assim como o POST. Não é uma atualização parcial: omitir descrição, campus ou categoria substitui esses valores por null. Não existe PATCH nem rota de atualização pública, embora exista um schema `EventUpdate` sem rota associada.
+Os PUTs de eventos substituem os campos editáveis. `title` e os campos de data e hora seguem as mesmas regras do POST. Omitir campos opcionais limpa seus valores, com descrição vazia armazenada no caso público.
 
 Exemplo `EventCreate`:
 
@@ -93,24 +95,26 @@ Nas tabelas, as rotas iniciadas por `/api/v1` usam os schemas acima. Todas as op
 | `GET /api/v1/events/{event_id}` | Público | UUID no caminho | 200, `EventRead` aprovado | 422, UUID; 404, ausente ou não aprovado |
 | `POST /api/v1/events/{event_id}/outbound-clicks` | Público | UUID + `{"click_id": UUID}` | 200, `{external_url, outbound_clicks_count, incremented}` (deduplicado por `click_id`) | 422, sem link oficial; 404, ausente/não aprovado |
 | `POST /api/v1/events` | Professor/admin | `EventCreate` | 201, `EventRead`; autoria da sessão e status `aprovado` | 403, papel; 422, payload/referências; 409 |
-| `DELETE /api/v1/events/{event_id}` | Professor/admin | UUID no caminho | 204; exclui o evento e vínculos em cascata | 403, papel; 422, UUID; 404, ausente; 409 |
+| `GET /api/v1/me/published-event-ids` | Professor/admin | — | 200, UUIDs dos próprios eventos aprovados, sem cache | 403, papel |
+| `PUT /api/v1/events/{event_id}` | Professor autor ou admin | UUID no caminho e `EventUpdate` | 200, `EventRead` atualizado para evento aprovado | 403, papel ou autoria; 422, UUID/payload/referências; 404, ausente ou não aprovado; 409 |
+| `DELETE /api/v1/events/{event_id}` | Professor autor ou admin | UUID no caminho | 204, exclui o evento e vínculos em cascata | 403, papel ou autoria; 422, UUID; 404, ausente; 409 |
 | `GET /api/v1/categories` | Público | — | 200, `CategoryRead[]` | — |
 | `POST /api/v1/categories` | Admin | `CategoryCreate` (`name`, `color`) | 201, `CategoryRead` | 403, papel; 409, nome duplicado; 422 |
 | `DELETE /api/v1/categories/{category_id}` | Admin | UUID no caminho | 204 | 403, papel; 404, ausente; 409, categoria em uso |
 
-A exclusão pública não exige que o gestor seja o autor e não filtra status. A autorização é por papel.
+Administradores podem editar qualquer evento aprovado, inclusive coletado. A exclusão autorizada pode atingir eventos em qualquer status.
 
 | Query de listagem pública | Tipo e padrão | Semântica |
 | --- | --- | --- |
 | `campus` | string opcional, 2–120 caracteres | Nome exato sem diferenciar caixa, aparado; nome desconhecido produz lista vazia |
 | `category` | string opcional, 2–80 caracteres | Mesma regra de campus |
-| `startDate` | datetime opcional | Limite inferior inclusivo sobre `starts_at`; exige fuso |
+| `startDate` | datetime opcional | Exige fuso. Com fim, inclui intervalos com `ends_at > startDate`. Sem fim, inclui eventos com `starts_at >= startDate`. |
 | `endDate` | datetime opcional | Limite superior inclusivo; exige fuso e não pode preceder `startDate` |
-| `q` | string opcional, 1–120 caracteres | Busca no título via `ILIKE '%texto%'`; `%` e `_` conservam semântica de curingas SQL |
+| `q` | string opcional, 1–120 caracteres | Busca parcial no título sem diferenciar caixa. `%` e `_` são caracteres literais. |
 | `limit` | inteiro, padrão 50 | De 1 a 100 |
 | `offset` | inteiro, padrão 0 | Maior ou igual a zero |
 
-Não há filtro de turno no backend: ele é aplicado pela interface. O frontend percorre páginas de 100; a API não fornece total nem cursor. A ordenação pública usa apenas data, sem desempate por ID.
+O filtro de turno é aplicado pela interface. O frontend percorre páginas de 100 por `offset`. A ordenação pública é `starts_at ASC, id ASC`.
 
 ### Agenda pessoal — R1
 
@@ -142,7 +146,6 @@ Todas as operações exigem sessão. O vínculo não copia o evento e não const
 | `GET /api/v1/me/saved-events/{event_id}` | UUID | 200, `SavedEventStatus`; false se vínculo ausente, evento inexistente ou não aprovado | 422, UUID |
 | `PUT /api/v1/me/saved-events/{event_id}` | UUID, sem corpo | 200, `{ "saved": true }`, inclusive se já salvo | 422, UUID; 404, evento ausente/não aprovado; 409, conflito não recuperável |
 | `DELETE /api/v1/me/saved-events/{event_id}` | UUID | 204, inclusive se não houver vínculo/evento; cancela lembretes futuros pendentes do vínculo | 422, UUID; 409 |
-| `GET /api/v1/me/events/history` | `before` opcional (datetime ISO 8601 com fuso; padrão `now()`) | 200, `{ saved_public_events: EventRead[], personal_events: PersonalEventRead[] }`, em listas separadas ordenadas do mais recente ao mais antigo | 422, data sem fuso |
 
 PUT e DELETE são idempotentes. O PUT recupera colisão de inserção concorrente quando o vínculo já foi criado. DELETE só remove o vínculo do usuário atual.
 
@@ -152,13 +155,14 @@ As operações exigem autenticação. Planos privados ficam restritos ao autor; 
 
 | Operação | Entrada | Resposta |
 | --- | --- | --- |
-| `POST /api/v1/syllabus/upload` | `multipart/form-data` com `file` (PDF), `disciplina`, `turma`, `ano` (2000 a 2100) e `semestre` (1 ou 2). `file` e `offering_id` são obrigatórios; disciplina, turma e período são derivados da oferta disponível. | 202, plano registrado como `pendente`. Ano e semestre são persistidos quando informados. |
-| `GET /api/v1/syllabus` | `limit` de 1 a 100 (padrão 20), `offset` a partir de 0 (padrão 0). | 200, `{ "items": [], "total": 0, "limit": 20, "offset": 0 }` para histórico vazio. Ordena por criação e ID decrescentes. |
+| `POST /api/v1/syllabus/upload` | `multipart/form-data` com `file` (PDF) e `offering_id` de uma oferta disponível que a conta segue. | 202, plano registrado como `pendente`. Disciplina, turma e período são derivados da oferta. |
+| `GET /api/v1/syllabus` | `limit` de 1 a 100 (padrão 20), `offset` a partir de 0 (padrão 0). | 200, `{ "items": [], "total": 0, "limit": 20, "offset": 0 }` para uma lista vazia. Ordena por criação e ID decrescentes. |
 | `GET /api/v1/syllabus/{syllabus_id}` | UUID do plano. | 200, dados e candidatos da versão aprovada. Para compartilhamento, aplica a permissão por autor/seguidor; 404 para versões indisponíveis. |
 | `POST /api/v1/syllabus/{syllabus_id}/confirm` | Cabeçalho `Idempotency-Key` (8 a 200 caracteres) e `candidates` selecionados, com `candidateId`, `title`, `description`, `type`, `startsAt` e `category` opcionais. Datas com instante incluem fuso ISO 8601. | 200, `{ operationId, repeated, items, events }`. A resposta indica candidatos criados/importados, evento removido e procedência. Reutilize a mesma chave somente ao repetir a mesma ação; use chave nova para uma nova confirmação após excluir o evento. |
+| `DELETE /api/v1/syllabus/{syllabus_id}` | UUID do plano privado da sessão. | 204, remove o plano, suas versões próprias e candidatos, preservando eventos pessoais já importados. 404 para plano alheio/inexistente; 409 se estiver em `processando`, tiver versão `compartilhada` ou possuir revisões de outros autores. |
 | `DELETE /api/v1/syllabus/{syllabus_id}/candidates/{candidate_id}` | UUIDs do plano privado concluído e do candidato. | 204, marca o candidato como descartado sem remover sua evidência. Não descarta decisões de versões compartilhadas. |
 
-O histórico e o detalhe retornam `ano` e `semestre`. Planos antigos podem ter esses campos, `fileName` e `filePath` nulos. O upload aplica a cota de 10 envios em cinco dias (429 ao exceder) e valida o PDF antes de gravar. O cliente autenticado consulta os próprios planos e PDFs, enquanto o backend grava o arquivo e o registro de acompanhamento.
+A listagem e o detalhe retornam `ano` e `semestre`, derivados da oferta para novos envios. O limite é de 10 envios em cinco dias (429 ao exceder). O backend guarda texto sanitizado e dados de acompanhamento após descartar o PDF. `filePath` é sempre `null`, inclusive em planos legados.
 
 ### Conta e privacidade — S8-D01
 
@@ -168,7 +172,7 @@ O histórico e o detalhe retornam `ano` e `semestre`. Planos antigos podem ter e
 | `PUT` | `/api/v1/me/legal-acceptances/{terms\|privacy}` | Autenticado | 204; 409 se a versão enviada não é a vigente |
 | `GET` | `/api/v1/me/consents` | Autenticado | 200 com os consentimentos opcionais registrados |
 | `DELETE` | `/api/v1/me/consents/{purpose}` | Autenticado | 204; revoga consentimento opcional (ex.: `google_agenda`) |
-| `GET` | `/api/v1/me/data-export` | Autenticado | 200 com o JSON dos dados da conta, para download |
+| `GET` | `/api/v1/me/data-export` | Autenticado | 200 com o JSON dos dados da conta, incluindo `reminders` e `googleCalendarExports`, para download |
 | `DELETE` | `/api/v1/me` | Autenticado | 204; 422 sem a frase de confirmação; 409 para o último administrador |
 
 Detalhes em [Privacidade e ciclo de vida dos dados](/processo/privacidade#direitos-do-titular-na-api-e-na-interface).
@@ -184,7 +188,7 @@ O login Google do Supabase solicita identidade. A permissão do Calendar é opci
 | Operação | Entrada | Resposta |
 | --- | --- | --- |
 | `POST /api/v1/me/google-calendar/authorization` | Bearer Supabase. | 200 com `authorization_url` e `expires_in_seconds`. O desafio de uso único usa `state` e PKCE S256 e expira em 10 minutos. |
-| `POST /api/v1/me/google-calendar/callback` | Formulário do Google com `state` e `code` ou `error`. | 303 para a URL configurada com `google_calendar` indicando o resultado. Confere o escopo `calendar.app.created` e o e-mail Google verificado com o e-mail confirmado atual da Agenda UnB. |
+| `GET /api/v1/me/google-calendar/callback` | Query string do Google com `state` e `code` ou `error`. O POST com formulário continua aceito para autorizações em trânsito. | 303 para a URL configurada com `google_calendar` indicando o resultado. Confere o escopo `calendar.app.created` e o e-mail Google verificado com o e-mail confirmado atual da Agenda UnB. |
 | `GET /api/v1/me/google-calendar/connection` | Bearer Supabase. | 200 com `connected` e `recovery_required`. |
 | `DELETE /api/v1/me/google-calendar/connection` | Bearer Supabase. | 200 com `disconnected` e `revocation`. Revoga o acesso no Google, remove as credenciais locais e invalida autorizações em andamento. Se a revogação remota falhar, o retorno orienta removê-la na Conta Google. |
 | `PUT /api/v1/me/google-calendar/destination` | Bearer Supabase e `calendar_id` (string ou `null`). | 204 após validar no Google o ID da agenda secundária Agenda UnB. Se o usuário confirmar que a agenda não existe ou foi excluída, envia `calendar_id: null` para limpar o destino e invalidar os mapeamentos do calendário anterior em `google_calendar_event_exports`, liberando nova criação. |
@@ -208,6 +212,8 @@ Cada evento recebe um identificador determinístico compatível com a regra `bas
 | 409 | `IntegrityError` não recuperado pela operação | `{"detail":"A operação conflita com os dados existentes."}` |
 | 422 | Validação automática de payload/path/query | `detail` textual e array `errors` de erros Pydantic |
 | 422 | Regra explícita: campus/categoria desconhecido ou intervalo inválido | Somente `detail` textual |
+| 413 | Corpo acima de 256 KiB fora do upload de planos (`MAX_JSON_BODY_BYTES`) | `{"detail":"mensagem"}` |
+| 429 | Limite de requisições por cliente (cabeçalho `Retry-After`) ou mais de 10 sugestões pendentes da mesma conta | `{"detail":"mensagem"}` |
 | 503 | Falha SQLAlchemy ou comunicação/configuração do Auth | `{"detail":"mensagem"}` |
 
 Falhas de configuração OAuth também retornam 503. Falha temporária com Google pode retornar 502/503; autorização expirada/revogada pede reconexão (409). O callback sempre redireciona com estado genérico e não repassa `error_description`, código ou tokens.
@@ -220,14 +226,12 @@ Exemplo de validação de título curto:
   "errors": [{
     "type": "string_too_short",
     "loc": ["body", "title"],
-    "msg": "String should have at least 3 characters",
-    "input": "AB",
-    "ctx": {"min_length": 3}
+    "msg": "String should have at least 3 characters"
   }]
 }
 ```
 
-O conteúdo auxiliar de `errors` depende da versão do Pydantic, que não está fixada nas dependências. Erros inesperados não têm envelope de aplicação garantido. **Dívida conhecida:** o handler passa `exc.errors()` diretamente a `JSONResponse`; erros de validadores com objetos não serializáveis em `ctx` podem resultar em 500, apesar da intenção de retornar 422. A especificação não promete 422 para esse caso sem correção e teste específicos. O upload já responde 202 para o registro do plano. A execução do worker externo e sua integração são parte da Release 2.
+O array `errors` inclui somente `type`, `loc` e `msg`. Falhas inesperadas recebem 500 com `detail` genérico. A validação evita devolver entrada bruta e contexto de exceções.
 
 ## Exemplos cURL
 
@@ -263,7 +267,7 @@ curl 'http://127.0.0.1:8000/health'
 
 ## Contratos Supabase separados da API FastAPI
 
-O frontend usa o SDK autenticado, conforme `frontend/src/lib/moderation.js`. As quatro RPCs abaixo são definidas na migração `20261018000000_moderacao_e_notificacoes.sql`. Não existem rotas FastAPI `/admin` ou de decisão de sugestão. Funções auxiliares/legadas do banco não são enumeradas como operações da interface.
+O frontend usa o SDK autenticado para as operações abaixo, conforme `frontend/src/lib/moderation.js`. A decisão de sugestões é feita pelo SDK. O registro de redirecionamentos passa pela rota HTTP e usa a RPC `registrar_redirecionamento_evento` com acesso restrito ao servidor.
 
 | RPC | Acesso | Parâmetros | Resultado |
 | --- | --- | --- | --- |
@@ -275,7 +279,6 @@ O frontend usa o SDK autenticado, conforme `frontend/src/lib/moderation.js`. As 
 | `admin_listar_categorias` | Admin | — | Lista de categorias com `id`, `nome`, `cor` e `events_count` |
 | `admin_criar_categoria` | Admin | `p_nome` texto (2–80), `p_cor` hex `#rrggbb` | Cria e retorna categoria (`42501` fora de admin; `22023` duplicada) |
 | `admin_excluir_categoria` | Admin | `p_categoria_id` UUID | Retorno void; bloqueia exclusão se houver eventos vinculados |
-| `registrar_redirecionamento_evento` | Público | `p_evento_id` UUID, `p_click_id` UUID | Incrementa `interessados_count` apenas no primeiro acionamento por `(event_id, click_id)` |
 
 Enviar filtros opcionais omitidos ou com seus padrões, não null como substituto indiscriminado. Itens de sugestão: `id`, `titulo`, `descricao`, `data_evento`, `localizacao`, `link_externo`, `status`, `justificativa_recusa`, `criado_em`, `autor_nome`, `campus`, `categoria`. Itens de usuário: `id`, `email`, `nome_completo`, `papel`, `criado_em`, `ultimo_login` (pode ser null), `email_confirmado` booleano. Listas vazias têm `items: []` e contagens numéricas.
 
@@ -312,69 +315,32 @@ As duas rotas exigem uma sessão válida e um perfil com e-mail confirmado. Reto
 
 Conferir inventário com `app.openapi()` e revisar manualmente handlers, permissões e SQL. Os testes de eventos, sugestões e salvos usam SQLite e substituem dependências de autenticação: não comprovam integração real com Auth nem RLS. Os testes de moderação de banco exigem Supabase local descartável. Ver [Contribuição](/processo/contribuindo) e o registro de validação em [Arquitetura](/arquitetura/visao-geral#9-verificacao).
 
-Qualquer alteração de rota, schema, autorização, erro ou RPC deve atualizar este documento no mesmo PR. Inscrições, categorias REST e atualização pública não são contratos disponíveis.
+Qualquer alteração de rota, schema, autorização, erro ou RPC deve atualizar este documento no mesmo PR. A inscrição acontece na fonte oficial. Alterar eventos públicos exige perfil autorizado e a gestão de categorias exige `admin`.
 
 ## Planos particulares — atualização S6-B01 (09/11/2026)
 
-### POST `/api/v1/syllabus/upload`
+Registro histórico da primeira implementação. Na S6, o PDF era armazenado em bucket privado e o worker escrevia em uma tabela separada de candidatos.
 
-Autenticação obrigatória. Recebe `multipart/form-data` com `file` PDF e campos
-`offering_id` obrigatório, com disciplina e turma derivadas do catálogo. Valida extensão, MIME, assinatura, integridade,
-senha, tamanho (10 MB), quantidade (dez páginas) e presença de texto selecionável.
-Lê no máximo limite + 1 byte antes de rejeitar excesso. O parser roda em processo
-separado com prazo de 8s (`SYLLABUS_UPLOAD_VALIDATION_TIMEOUT_SECONDS`); a espera
-e o acesso síncrono ao Storage/banco não bloqueiam o event loop da API.
-Salva o arquivo no bucket privado e a linha do dono como `pendente`; retorna
-**202**, sem esperar por IA. Se o banco falhar, compensa o arquivo no Storage.
+Na Release 2, o PDF é descartado após a leitura e o worker usa `avaliacoes`, a mesma tabela da consulta e da confirmação. Consulte o [contrato vigente de preparação e autorização](#preparacao-e-autorizacao-de-planos).
 
-Resposta: `id`, `userId`, `fileName`, `filePath`, `fileSize`, `fileType`, `status`,
-`createdAt` e `message`. `filePath` é referência privada, não URL pública assinada.
-401 sem sessão; 400 arquivo inválido/protegido/sem texto/excesso de páginas; 413
-excesso de bytes; 422 prazo de pré-validação excedido; 502/503 indisponibilidade
-de Storage, banco ou processo de validação. Timeout/falha da pré-validação não
-persistem arquivo ou tarefa. A pré-validação é aguardada antes do 202; o prazo
-inclui criação do processo e admite até 2,2s adicionais para encerrá-lo.
+## Preparação e autorização de planos {#preparacao-e-autorizacao-de-planos}
 
-### GET `/api/v1/syllabus/{syllabus_id}`
-
-Autenticado e restrito ao proprietário: UUID válido de outro dono ou inexistente
-retorna **404**. Retorna metadados do upload e `status`, `extractedEventsCount`,
-`errorMessage`, `errorCode`, `pageCount`, `attempts`, `processingStartedAt`,
-`processedAt`, `processingDurationMs`, `totalDurationMs`, `disciplina` e `turma`. Campos ainda não
-disponíveis são nulos; `attempts` começa em zero. Estados: `pendente`,
-`processando`, `concluido` e `falha`. Erros são mensagens fixas e códigos da S6-D01.
-Concluído com contagem zero significa documento sem cronograma identificado.
-`processingDurationMs` mede a última tentativa; `totalDurationMs` mede da criação
-do registro ao término, incluindo fila/retentativas, e é nulo antes de finalizar.
-
-O [worker independente](/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia) consome a fila. Ele fica
-desativado até a configuração explícita e a validação das políticas S6-D02.
-Upload e worker não criam compromissos. As rotas de listagem, detalhe e confirmação
-S6-B02 já existentes, descritas acima, operam sobre `avaliacoes` legadas; os
-candidatos privados do worker em `candidatos_avaliacao` ainda exigem conciliação
-com esse contrato antes da integração no ambiente da equipe.
-O contrato transacional de banco S6-D02 já está disponível em
-[`revisar_candidatos_plano`](/arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos).
-
-
-## Atualização S7-B01 — preparação e autorização do texto (10/11/2026)
-
-Este contrato substitui o fluxo de upload/extração S6 descrito acima.
+O envio pela interface autoriza a extração. O servidor prepara e sanitiza o texto. A revisão do usuário ocorre nas avaliações extraídas, antes da importação para a agenda.
 
 | Operação | Entrada | Resultado |
 | --- | --- | --- |
-| `POST /api/v1/syllabus/upload` | Multipart PDF validado, até 10 MiB/dez páginas; metadados existentes | 202, texto preparado privado, `filePath: null`, `authorizationRequired: true`, `preparedTextAvailable: true`. O PDF é descartado e não vai ao Storage. |
+| `POST /api/v1/syllabus/upload` | Multipart com `file` (PDF de até 10 MiB e dez páginas) e `offering_id` | 202, texto preparado privado, `filePath: null`, `authorizationRequired: true`, `preparedTextAvailable: true`. O PDF é descartado após a leitura. |
 | `POST /api/v1/syllabus/text` | JSON `text` e `offering_id` obrigatórios; até 40.000 bytes UTF-8 | 202, preparação privada, `fileType: text`; página de origem nula. |
 | `GET /api/v1/syllabus/{id}/text` | Sessão do dono | 200 com `pages: [{pagina, texto}]`, `textHash`, `authorizationRequired`, `provider`, `providerAvailable`, `maxTextBytes`, `warning`, `preparationDurationMs`, `textRevision` e `redactedCount`. Resposta `no-store`. |
-| `POST /api/v1/syllabus/{id}/extractions` | JSON `pages`, `textHash`, `authorize: true`, `contentEligible: true`, `reprocess` opcional | 202, autorização registrada e elegibilidade para a fila persistente. Repetir o mesmo hash sem reprocessar não cria execução adicional. |
+| `POST /api/v1/syllabus/{id}/extractions` | JSON `pages`, `textHash`, `authorize: true`, `reprocess` opcional | 202, autorização registrada e elegibilidade para a fila persistente. Repetir o mesmo hash sem reprocessar não cria execução adicional. |
 
 O hash usa SHA-256 do JSON UTF-8 compacto, com `pagina`/`texto` nessa ordem em
-cada página; não é assinatura de autorização. O servidor valida JWT/dono, limites,
-referências, integridade e declarações, recusa identificadores comuns ainda
+cada página; não é assinatura de autorização. O servidor valida sessão, propriedade, limites,
+referências e integridade, recusa identificadores comuns ainda
 presentes e não altera o texto aprovado antes de enviá-lo ao provedor.
 
 Erros: 400 PDF inválido/protegido/sem texto; 401 sem sessão; 404 para plano alheio/inexistente; 413 excesso de bytes;
-422 conteúdo, referências, declarações ou hash malformados; 409 hash divergente,
+422 conteúdo, referências, autorização ausente ou hash malformado; 409 hash divergente,
 execução em andamento, preparação antiga sem texto ou limite acumulado atingido;
 503 indisponibilidade/bloqueio operacional do provedor. O corpo continua
 `{"detail": "mensagem sanitizada"}`. Não há persistência do PDF após falha.
@@ -384,17 +350,16 @@ preparado. `redactedCount` é um inteiro não negativo com o total de trechos
 mascarados na preparação inicial, somado entre as páginas. As respostas de
 preparação, autorização e detalhe do próprio plano incluem essa contagem para
 exibir o aviso durante e após a análise. É `null` nos planos
-preparados antes da contagem. O valor continua disponível após edição manual,
-fica fora de `pages` e do cálculo de `textHash` e não é enviado ao provedor.
-A autorização devolve `422` se a edição introduzir PII detectável. Um snapshot
-legado autorizado que ainda contenha PII detectável falha antes de chamar o
-provedor, com `errorCode: texto_com_dados_pessoais`. Nesse caso, o dono pode
-revisar o texto novamente e solicitar reprocessamento dentro dos limites do plano.
+preparados antes da contagem. O valor fica fora de `pages` e de `textHash`.
+O cliente autoriza as páginas sanitizadas no fluxo iniciado pelo botão de envio.
+A autorização devolve `422` quando encontra identificadores detectáveis. Um
+snapshot legado com esses dados falha antes da chamada ao provedor, com
+`errorCode: texto_com_dados_pessoais`. Reenviar o plano aplica a preparação atual.
 
 Detalhe/listagem preservam estados anteriores. `authorizationRequired` distingue
-a revisão inicial da fila pronta; `preparedTextAvailable` identifica o protocolo
+texto preparado de uma extração já autorizada; `preparedTextAvailable` identifica o protocolo
 S7. Detalhe inclui `preparationDurationMs`, `reviewDurationMs` e
-`totalDurationMs` desde a autorização, separando a espera do estudante. Planos
+`totalDurationMs` desde a autorização. `reviewDurationMs` mede o intervalo entre criação e autorização. Planos
 históricos sem preparação mantêm a revisão legada e não recebem autorização
 retroativa. A consulta e a confirmação usam `avaliacoes`, a mesma tabela do worker,
 filtrando a versão aprovada e aplicando a permissão da versão. Cada candidato inclui `suggestedDate`,
@@ -414,7 +379,7 @@ A integração autenticada, rotas de catálogo/filtros/vínculos e operação es
 [Catálogo de turmas](/arquitetura/catalogo-de-turmas). PDF multipart e texto JSON
 passam a exigir `offering_id` (UUID da oferta disponível). O servidor deriva
 nome da disciplina, turma e período, ignorando metadados livres para associação.
-Histórico particular aceita `offering_id` opcional; dados privados continuam
+A listagem particular aceita `offering_id` opcional; dados privados continuam
 restritos ao proprietário. `GET /class-offerings/{id}/shared-plans` expõe apenas
 versões compartilhadas a seguidores da oferta, sem o texto privado do autor.
 
@@ -429,7 +394,7 @@ continua retornando 409; catálogo sem publicação retorna 503.
 
 A interface consulta a oferta e `GET /me/class-offerings` antes de habilitar
 PDF/texto. Falhas ou respostas inválidas bloqueiam o envio e oferecem nova consulta.
-Histórico e planos particulares continuam acessíveis ao dono após deixar de seguir.
+Planos particulares continuam acessíveis ao dono após deixar de seguir.
 
 ### Compartilhamento, versões, procedência e votos — S8-B01 (#77)
 

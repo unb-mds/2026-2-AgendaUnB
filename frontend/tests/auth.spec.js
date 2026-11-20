@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-async function authClient(page, implementation, initialSession = null) {
+async function authClient(page, implementation, initialSession = null, profile = null) {
   await page.route('**/src/lib/supabase.js*', route => route.fulfill({
     contentType: 'text/javascript',
     body: `
@@ -16,7 +16,7 @@ async function authClient(page, implementation, initialSession = null) {
       };
       export const supabase = {
         auth,
-        from() { return { select() { return this }, eq() { return this }, async single() { return { data: null } } } },
+        from() { return { select() { return this }, eq() { return this }, async single() { return { data: ${JSON.stringify(profile)} } } } },
       };
       export const createRecoveryClient = () => ({ auth: { ...auth,
         async signOut() { window.recoveryEnded = true; }
@@ -25,6 +25,81 @@ async function authClient(page, implementation, initialSession = null) {
   }));
   await page.route('**/api/v1/events?*', route => route.fulfill({ json: [] }));
 }
+
+test('Conferir evento reutiliza o identificador em cliques e tentativas da mesma visualização', async ({ page }) => {
+  await authClient(page, '');
+  await page.addInitScript(() => { window.open = () => null; });
+  const clicks = [];
+  await page.route('**/api/v1/events/*', (route) => route.fulfill({ json: {
+    id: new URL(route.request().url()).pathname.split('/').at(-1),
+    title: 'Evento público', starts_at: '2026-11-22T17:00:00Z', external_url: 'https://example.org/oficial',
+  } }));
+  await page.route('**/api/v1/events/*/outbound-clicks', (route) => {
+    const { click_id } = route.request().postDataJSON();
+    clicks.push(click_id);
+    return clicks.length === 1
+      ? route.fulfill({ status: 503, json: { detail: 'Tente novamente.' } })
+      : route.fulfill({ json: { outbound_clicks_count: 1, incremented: !clicks.slice(0, -1).includes(click_id) } });
+  });
+
+  await page.goto('/evento/primeiro');
+  const officialLink = page.getByRole('button', { name: 'Conferir evento' });
+  await officialLink.click();
+  await expect(page.getByRole('alert')).toContainText('Tente novamente.');
+  await officialLink.click();
+  await officialLink.click();
+  await expect.poll(() => clicks.length).toBe(3);
+  expect(new Set(clicks).size).toBe(1);
+
+  await page.goto('/evento/segundo');
+  await officialLink.click();
+  await expect.poll(() => clicks.length).toBe(4);
+  expect(clicks[3]).not.toBe(clicks[0]);
+});
+
+test('professor vê ações de gestão apenas nos próprios eventos públicos', async ({ page }) => {
+  const session = { access_token: 'token', user: { id: 'professor-unb', email: 'pessoa@unb.br' } };
+  await authClient(page, `async getSession() { return { data: { session: ${JSON.stringify(session)} } }; },`,
+    session, { id: session.user.id, papel: 'professor' });
+  let ownershipRequests = 0;
+  await page.route('**/api/v1/me/published-event-ids', (route) => {
+    ownershipRequests += 1;
+    return ownershipRequests === 1
+      ? route.fulfill({ status: 503, json: { detail: 'Tente novamente.' } })
+      : route.fulfill({ json: ['evento-proprio'] });
+  });
+  await page.route('**/api/v1/events?*', (route) => route.fulfill({ json: [
+    { id: 'evento-proprio', title: 'Evento do professor', starts_at: '2026-11-22T17:00:00Z' },
+    { id: 'evento-alheio', title: 'Evento de outro autor', starts_at: '2026-11-22T18:00:00Z' },
+  ] }));
+  await page.goto('/eventos?aba=publicos');
+
+  const own = page.locator('.event-card').filter({ hasText: 'Evento do professor' });
+  const other = page.locator('.event-card').filter({ hasText: 'Evento de outro autor' });
+  const accessError = page.getByRole('alert').filter({ hasText: 'Não foi possível consultar quais eventos públicos você pode gerenciar.' });
+  await expect(own).toBeVisible();
+  await expect(own.getByTitle('Editar evento')).toHaveCount(0);
+  await accessError.getByRole('button', { name: 'Tentar novamente' }).click();
+  await expect(accessError).toHaveCount(0);
+  await expect(own.getByTitle('Editar evento')).toBeVisible();
+  await expect(other).toBeVisible();
+  await expect(other.getByTitle('Editar evento')).toHaveCount(0);
+
+  await page.route('**/api/v1/events', (route) => route.fulfill({ status: 201, json: {
+    id: 'evento-publicado', title: 'Evento recém-publicado', starts_at: '2026-11-22T17:00:00Z',
+  } }));
+  await page.getByRole('button', { name: 'Criar Evento' }).click();
+  const form = page.getByRole('dialog', { name: 'Novo Evento' });
+  await form.getByLabel('Título do evento', { exact: false }).fill('Evento recém-publicado');
+  await form.getByRole('checkbox', { name: 'Evento de dia inteiro' }).check();
+  await form.getByRole('button', { name: 'dd/mm/aaaa' }).click();
+  await form.getByRole('button', { name: /^1\/\d+\/\d+$/ }).click();
+  await form.getByRole('button', { name: 'Salvar Evento' }).click();
+  const published = page.locator('.event-card').filter({ hasText: 'Evento recém-publicado' });
+  await expect(published.getByTitle('Editar evento')).toBeVisible();
+  await expect(own.getByTitle('Editar evento')).toBeVisible();
+  expect(ownershipRequests).toBe(2);
+});
 
 test('cadastro sem sessão confirma e controla intervalo de reenvio', async ({ page }) => {
   await page.clock.install();
@@ -45,10 +120,14 @@ test('cadastro sem sessão confirma e controla intervalo de reenvio', async ({ p
   await dialog.getByLabel('E-mail').fill('PESSOA@example.com');
   const password = dialog.getByLabel('Senha', { exact: true });
   await expect(password).toHaveAttribute('autocomplete', 'new-password');
+  await password.fill('Somenteletras');
+  const confirmation = dialog.getByLabel('Confirmar senha', { exact: true });
+  await confirmation.fill('Somenteletras');
+  await dialog.getByRole('button', { name: 'Criar conta' }).click();
+  await expect(dialog.getByRole('alert')).toHaveText('Use pelo menos 8 caracteres, com letras e números.');
   await password.fill('Exemplo local 124!');
   await dialog.getByRole('button', { name: 'Mostrar senha', exact: true }).click();
   await expect(password).toHaveAttribute('type', 'text');
-  const confirmation = dialog.getByLabel('Confirmar senha', { exact: true });
   await confirmation.fill('Exemplo local 125!');
   await dialog.getByRole('button', { name: 'Criar conta' }).click();
   await expect(dialog.getByRole('alert')).toHaveText('As senhas não coincidem.');

@@ -357,4 +357,3 @@ def test_find_existing_duplicate_detects_similar_title_within_two_days(database)
         source_id='9999',
     )
     assert str(dup_id) == existing
-

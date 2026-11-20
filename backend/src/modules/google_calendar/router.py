@@ -1,6 +1,6 @@
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
-from fastapi import APIRouter, Depends, Form, Header, HTTPException, Response
+from fastapi import APIRouter, Depends, Form, Header, HTTPException, Query, Response
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
@@ -80,13 +80,7 @@ def begin_authorization(
     return AuthorizationResponse(authorization_url=authorization_url)
 
 
-@router.post("/callback", response_class=RedirectResponse)
-def authorization_callback(
-    state: str = Form(..., min_length=32, max_length=128),
-    code: str | None = Form(None, min_length=1, max_length=4096),
-    error: str | None = Form(None, max_length=100),
-    db: Session = Depends(get_db),
-) -> RedirectResponse:
+def _complete_callback(db: Session, state: str, code: str | None, error: str | None) -> RedirectResponse:
     settings = GoogleOAuthSettings.from_env()
     try:
         result = finish_authorization(db, state, None if error else code, settings)
@@ -94,6 +88,26 @@ def authorization_callback(
         result = {403: "denied", 409: "invalid_state"}.get(exc.status_code, "failed")
     db.commit()
     return _return_to_frontend(settings, result)
+
+
+@router.get("/callback", response_class=RedirectResponse)
+def authorization_callback(
+    state: str = Query(..., min_length=32, max_length=128),
+    code: str | None = Query(None, min_length=1, max_length=4096),
+    error: str | None = Query(None, max_length=100),
+    db: Session = Depends(get_db),
+) -> RedirectResponse:
+    return _complete_callback(db, state, code, error)
+
+
+@router.post("/callback", response_class=RedirectResponse, include_in_schema=False)
+def authorization_form_callback(
+    state: str = Form(..., min_length=32, max_length=128),
+    code: str | None = Form(None, min_length=1, max_length=4096),
+    error: str | None = Form(None, max_length=100),
+    db: Session = Depends(get_db),
+) -> RedirectResponse:
+    return _complete_callback(db, state, code, error)
 
 
 @router.get("/connection", response_model=ConnectionResponse)

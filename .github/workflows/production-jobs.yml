@@ -71,7 +71,7 @@ jobs:
         run: python -m src.modules.events.collector
 
   catalog:
-    if: github.event_name == 'workflow_dispatch' && inputs.job == 'catalog'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && inputs.job == 'catalog'
     runs-on: ubuntu-latest
     environment: production-jobs
     timeout-minutes: 15

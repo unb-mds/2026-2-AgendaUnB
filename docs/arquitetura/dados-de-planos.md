@@ -96,6 +96,7 @@ contagem = chamar(db, "select public.votar_avaliacao(:ator, :candidato, :valor)"
 - `select * from public.resumo_votos_versao(:ator, :versao)` devolve, por candidato, `confirmam`, `contestam` e `meu_voto`, na ordem dos candidatos.
 - O voto individual é privado: pelo navegador cada conta lê só os próprios votos. A API expõe contagens.
 - Votos **não alteram datas** e não são prova. Mostre a divergência; a correção é uma revisão.
+- A RPC de gravação recusa avaliações retiradas (`P0002`). O resumo da versão omite essas avaliações e os votos anteriores permanecem registrados.
 
 ## 5. Confirmação idempotente (#72, ADR-010)
 

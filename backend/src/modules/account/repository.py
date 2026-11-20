@@ -14,12 +14,14 @@ from src.database.models import (
     ClassOffering,
     Consent,
     GoogleCalendarConnection,
+    GoogleCalendarEventExport,
     GoogleCalendarOAuthState,
     ImportItem,
     ImportOperation,
     PersonalEvent,
     Profile,
     PublicEvent,
+    Reminder,
     SavedPublicEvent,
     Subject,
     Syllabus,
@@ -29,8 +31,8 @@ from src.database.models import (
 from src.middlewares.auth import CurrentUser
 
 CURRENT_LEGAL_VERSIONS: dict[str, str] = {
-    "terms": "2026-11-18",
-    "privacy": "2026-11-18",
+    "terms": "2026-11-20",
+    "privacy": "2026-11-20",
 }
 
 CONFIRMATION_PHRASE = "EXCLUIR MINHA CONTA"
@@ -478,6 +480,44 @@ def collect_user_export_data(db: Session, user: CurrentUser) -> dict[str, Any]:
             "updated_at": _iso(gcal.updated_at),
         }
 
+    reminder_rows = db.scalars(
+        select(Reminder).where(Reminder.user_id == user.id)
+        .order_by(Reminder.scheduled_for.asc(), Reminder.id.asc())
+    ).all()
+    reminders = [
+        {
+            "id": str(row.id),
+            "event_kind": row.event_kind,
+            "personal_event_id": _iso(row.personal_event_id),
+            "public_event_id": _iso(row.public_event_id),
+            "event_starts_at": _iso(row.event_starts_at),
+            "scheduled_for": _iso(row.scheduled_for),
+            "status": row.status,
+            "fired_at": _iso(row.fired_at),
+            "read_at": _iso(row.read_at),
+            "created_at": _iso(row.created_at),
+        }
+        for row in reminder_rows
+    ]
+
+    calendar_export_rows = db.scalars(
+        select(GoogleCalendarEventExport).where(GoogleCalendarEventExport.user_id == user.id)
+        .order_by(GoogleCalendarEventExport.created_at.asc(), GoogleCalendarEventExport.event_kind.asc(),
+                  GoogleCalendarEventExport.local_event_id.asc())
+    ).all()
+    google_calendar_exports = [
+        {
+            "event_kind": row.event_kind,
+            "local_event_id": str(row.local_event_id),
+            "calendar_id": row.calendar_id,
+            "google_event_id": row.google_event_id,
+            "status": row.status,
+            "created_at": _iso(row.created_at),
+            "updated_at": _iso(row.updated_at),
+        }
+        for row in calendar_export_rows
+    ]
+
     return {
         "exported_at": _utcnow(),
         "profile": profile_data,
@@ -490,9 +530,11 @@ def collect_user_export_data(db: Session, user: CurrentUser) -> dict[str, Any]:
         "import_operations": import_operations,
         "votes": votes,
         "notifications": notifications,
+        "reminders": reminders,
         "legal_acceptances": legal_acceptances,
         "consents": consents,
         "google_calendar": google_calendar,
+        "google_calendar_exports": google_calendar_exports,
     }
 
 
@@ -644,11 +686,16 @@ def complete_account_deletion(
     if owned_syllabus_ids:
         db.execute(delete(Syllabus).where(Syllabus.id.in_(owned_syllabus_ids)))
 
-    db.execute(delete(PersonalEvent).where(PersonalEvent.user_id == user_id))
-    db.execute(delete(SavedPublicEvent).where(SavedPublicEvent.user_id == user_id))
     authored_event_ids = list(
         db.scalars(select(PublicEvent.id).where(PublicEvent.author_id == user_id)).all()
     )
+    reminder_filters = [Reminder.user_id == user_id]
+    if authored_event_ids:
+        reminder_filters.append(Reminder.public_event_id.in_(authored_event_ids))
+    db.execute(delete(Reminder).where(or_(*reminder_filters)))
+    db.execute(delete(GoogleCalendarEventExport).where(GoogleCalendarEventExport.user_id == user_id))
+    db.execute(delete(PersonalEvent).where(PersonalEvent.user_id == user_id))
+    db.execute(delete(SavedPublicEvent).where(SavedPublicEvent.user_id == user_id))
     if authored_event_ids:
         db.execute(
             update(PublicEvent)

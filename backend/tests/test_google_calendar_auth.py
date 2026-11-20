@@ -47,8 +47,10 @@ def _start(api):
 
 
 def _callback(api, query, **fields):
-    response = api[0].post(f"{ROOT}/callback", data={"state": query["state"][0], **fields}, follow_redirects=False)
+    response = api[0].get(f"{ROOT}/callback", params={"state": query["state"][0], **fields}, follow_redirects=False)
     assert response.status_code == 303
+    assert response.headers["cache-control"] == "no-store"
+    assert response.headers["referrer-policy"] == "no-referrer"
     redirect = urlsplit(response.headers["location"])
     assert redirect.netloc == "app.example.edu"
     assert set(parse_qs(redirect.query)) == {"aba", "google_calendar"}
@@ -57,6 +59,7 @@ def _callback(api, query, **fields):
 
 def _grant(api, actor, monkeypatch, *, scope=service.CALENDAR_SCOPE, email=None, verified=True):
     query = _start(api)
+    assert "response_mode" not in query
 
     def exchange(url, **kwargs):
         assert url == service.TOKEN_ENDPOINT
@@ -559,4 +562,3 @@ def test_rate_limit_429_uses_bounded_backoff_and_403_revocation_clears_credentia
     revoked_res = api[0].post(f"{ROOT}/exports", json={"events": [second]})
     assert revoked_res.status_code == 409
     assert api[0].get(f"{ROOT}/connection").json()["connected"] is False
-
