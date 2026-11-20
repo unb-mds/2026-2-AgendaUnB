@@ -12,7 +12,7 @@ Planejamento aprovado para 16–23/11/2026. Entrega final em 25/11/2026. As tare
 Consulte os [contratos](/atualizacoes#contratos-da-release-2) e a [matriz de aceite](/matriz-release-2) para os critérios vigentes.
 
 - Seleção manual de turmas pelo catálogo público Followw, com vínculo autodeclarado.
-- Planos privados por padrão, com edição conforme papel e visibilidade. Compartilhamento voluntário de conteúdo revisado. O PDF original é descartado após a extração local.
+- Planos privados durante preparação/autorização e reprocessamento; versão inicial (`v1`) vinculada a oferta é compartilhada automaticamente ao concluir a extração com candidatos (PO, 2026-11-17, [ADR-010](/arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos)), podendo ser retirada a qualquer momento sem perder cópias importadas. Edição conforme papel e visibilidade. O PDF original é descartado após a extração local.
 - IA limitada a provas e trabalhos, com revisão do texto antes do envio e confirmação antes da criação de eventos.
 - A Agenda UnB Notícias alimenta o catálogo. Eventos completos são publicados automaticamente e exceções seguem para revisão. Adicionar aos meus eventos e Conferir evento são ações independentes.
 - Professores e administradores moderam eventos. Administradores gerenciam papéis e categorias.
@@ -44,16 +44,19 @@ Permitir que usuários autenticados que seguem uma oferta consultem, avaliem e i
 
 #### Tasks
 
-- [ ] Autor publica voluntariamente conteúdo revisado. Autor ou admin pode retirar uma versão. Autor pode editar o próprio plano. Professor e admin podem editar versões compartilhadas conforme o contrato.
-- [ ] Explicar o conteúdo compartilhado e restringir leitura a seguidores autenticados da turma. O PDF original é descartado após extração local.
-- [ ] Criar voto único ativo por conta/candidato/versão, editável pelo autor do voto. Mostrar contagem e divergência, sem alterar datas automaticamente ou tratar votação como prova.
-- [ ] Gerar nova versão a cada revisão sem alterar calendários pessoais. Deduplicar importações por usuário/candidato/versão e aplicar a política de retirada.
+- [x] Autor publica voluntariamente conteúdo revisado. Autor ou admin pode retirar uma versão. Autor pode editar o próprio plano. Professor e admin podem editar versões compartilhadas conforme o contrato.
+- [x] Explicar o conteúdo compartilhado e restringir leitura a seguidores autenticados da turma. O PDF original é descartado após extração local.
+- [x] Criar voto único ativo por conta/candidato/versão, editável pelo autor do voto. Mostrar contagem e divergência, sem alterar datas automaticamente ou tratar votação como prova.
+- [x] Gerar nova versão a cada revisão sem alterar calendários pessoais. Deduplicar importações por usuário/candidato/versão e aplicar a política de retirada.
 
 #### Critérios de aceite
 
-- [ ] Dois seguidores da mesma turma leem a versão e importam para agendas privadas independentes. Visitante e usuário sem vínculo são recusados. O vínculo aparece como autodeclarado.
-- [ ] Voto repetido mantém a contagem e permite corrigir o próprio voto. Versão nova preserva eventos importados.
-- [ ] Retirar a versão impede novos acessos e importações e preserva cópias particulares já importadas conforme a política registrada.
+- [x] Dois seguidores da mesma turma leem a versão e importam para agendas privadas independentes. Visitante e usuário sem vínculo são recusados. O vínculo aparece como autodeclarado.
+- [x] Voto repetido mantém a contagem e permite corrigir o próprio voto. Versão nova preserva eventos importados.
+- [x] Retirar a versão impede novos acessos e importações e preserva cópias particulares já importadas conforme a política registrada.
+- [x] Exercitar edição por autor, professor e admin, publicação pelo autor e retirada pelo autor ou admin. Confirmar que a revisão preserva a versão anterior e que o papel de professor ou admin não dá acesso aos dados privados de outra conta.
+
+**Evidências consolidadas em 17/11/2026:** decisões e validação técnica registradas em [Dados de planos: leitura, confirmação, compartilhamento e votos](/arquitetura/dados-de-planos) e na [ADR-010](/arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos). Migração `20261117150000_planos_compartilhamento_e_votos.sql`, rotas FastAPI de compartilhamento/retirada/revisão/procedência/votos e importação por `versionId` validadas em `test_plan_sharing_database.py` e `test_plan_sharing_api.py`.
 
 #### Evidências para fechamento
 
@@ -155,6 +158,8 @@ Completar e homologar agenda, eventos, filtros e moderação nos fluxos existent
 - [ ] Exercitar a matriz visitante/aluno/professor/admin. Aluno não publica diretamente e professor não altera papéis ou categorias.
 - [ ] Preservar data, horário ou dia inteiro, intervalo, local e URL do formulário à tela. Verificar fuso, eventos de vários dias e combinação de filtros.
 - [ ] Confirmar legibilidade nos dois temas e distinção entre participação e eventos particulares.
+
+**Evidências técnicas locais (18/11/2026):** implementação da migração `20261117200000_s8_f02_eventos_moderacao_categorias.sql`, endpoints FastAPI (`all_day`, `ends_at`, `start_date`, `end_date`, `location` pessoal, `POST /events/{id}/outbound-clicks` e gestão de categorias restrita a `admin`), calendário multi-dia em `America/Sao_Paulo`, fila de revisão da coleta em `/sugestoes`, gestão de categorias em `/admin`, filtros combináveis por categoria/campus/turno/intervalo, persistência de tema e filtros, confirmação de ações destrutivas e verificação `impeccable detect --json` limpa (`[]`), validados nas suítes `test_events_api.py`, `test_suggestions_api.py`, `test_saved_events_api.py`, `calendar.test.js`, `publicEventsCache.test.js` e `preferences.test.js`.
 
 #### Evidências para fechamento
 

@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { getStoredTheme, setStoredTheme } from '../lib/preferences';
 import NavBar from './NavBar';
 
 export function Icon({ children }) {
@@ -72,11 +73,12 @@ export function ManagementSelect({ label, value, options, onChange, disabled = f
 }
 
 export function ManagementShell({ title, description, children }) {
-  const [isDark, setIsDark] = useState(() => !document.body.classList.contains('light'));
+  const [isDark, setIsDark] = useState(() => getStoredTheme() === 'dark');
+  useEffect(() => {
+    setStoredTheme(isDark ? 'dark' : 'light');
+  }, [isDark]);
   const toggleTheme = () => {
-    document.body.classList.toggle('light', isDark);
-    document.body.classList.toggle('dark', !isDark);
-    setIsDark(!isDark);
+    setIsDark(prev => !prev);
   };
   return <div className="management-shell">
     <NavBar pageType="management" isDark={isDark} toggleTheme={toggleTheme} />

@@ -47,6 +47,16 @@ erDiagram
         TIMESTAMPTZ iniciada_em
     }
 
+    LEMBRETES {
+        UUID id PK
+        UUID user_id FK
+        UUID evento_pessoal_id FK
+        UUID evento_id FK
+        TIMESTAMPTZ agendado_para
+        TEXT status
+        TIMESTAMPTZ lido_em
+    }
+
     EVENTOS_PESSOAIS {
         UUID id PK
         UUID user_id FK "auth.users.id"
@@ -104,7 +114,14 @@ erDiagram
         TEXT autor_papel
         UUID versao_origem_id FK
         BOOLEAN procedencia_institucional
+        TEXT fonte_institucional_url
         TEXT visibilidade
+    }
+
+    VOTOS_AVALIACAO {
+        UUID user_id PK,FK
+        UUID avaliacao_id PK,FK
+        TEXT valor
     }
 
     OPERACOES_IMPORTACAO {
@@ -153,6 +170,9 @@ erDiagram
     CATEGORIES o|--o{ EVENTOS : "classifica"
     CATEGORIES o|--o{ EVENTOS_PESSOAIS : "classifica"
     EVENTOS ||--o{ EVENTOS_SALVOS : "tem vinculos"
+    EVENTOS o|--o{ LEMBRETES : "avisa quem salvou"
+    EVENTOS_PESSOAIS o|--o{ LEMBRETES : "avisa o dono"
+    PROFILES ||--o{ LEMBRETES : "recebe"
     EVENTOS o|--o{ NOTIFICACOES : "origina"
     EVENTOS ||--o{ CLIQUES_EVENTO : "conta redirecionamentos"
     PLANOS_ENSINO ||--o{ AVALIACOES : "tem"
@@ -166,6 +186,8 @@ erDiagram
     OFERTAS_TURMA ||--o{ VINCULOS_TURMA : "seguida por"
     PLANOS_ENSINO o|--o{ PLANOS_ENSINO : "referencia plano oficial"
     VERSOES_PLANO o|--o{ EVENTOS_PESSOAIS : "origem da importacao"
+    AVALIACOES ||--o{ VOTOS_AVALIACAO : "recebe"
+    PROFILES ||--o{ VOTOS_AVALIACAO : "vota"
     PROFILES ||--o{ OPERACOES_IMPORTACAO : "confirma"
     OPERACOES_IMPORTACAO ||--|{ ITENS_IMPORTACAO : "contem"
     EVENTOS_PESSOAIS o|--o{ ITENS_IMPORTACAO : "criado por"

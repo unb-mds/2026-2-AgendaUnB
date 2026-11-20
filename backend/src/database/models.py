@@ -21,8 +21,9 @@ class Campus(Base):
 class Category(Base):
     __tablename__ = "categories"
 
-    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True)
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
     nome: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    cor: Mapped[str | None] = mapped_column(String, nullable=True, default="#008bff")
 
 
 class Profile(Base):
@@ -76,6 +77,29 @@ class GoogleCalendarConnection(Base):
     )
 
 
+class GoogleCalendarEventExport(Base):
+    """Mapeamento persistido de eventos exportados para a agenda secundária Agenda UnB."""
+
+    __tablename__ = "google_calendar_event_exports"
+
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), primary_key=True
+    )
+    event_kind: Mapped[str] = mapped_column(String, primary_key=True)
+    local_event_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True)
+    calendar_id: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    google_event_id: Mapped[str] = mapped_column(String, nullable=False)
+    exported_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String, default="exported", nullable=False)
+    last_idempotency_key: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        "criado_em", DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        "atualizado_em", DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+
 class PublicEvent(Base):
     __tablename__ = "eventos"
 
@@ -107,15 +131,16 @@ class PublicEvent(Base):
         Uuid(as_uuid=True), ForeignKey("categories.id"), nullable=True
     )
     status: Mapped[str] = mapped_column(String, nullable=False, default="pendente")
-    # Redirecionamentos em "Conferir evento", um por click_id (S8-B02).
-    redirect_count: Mapped[int] = mapped_column(
-        "interessados_count", Integer, default=0, server_default="0", nullable=False
-    )
     created_at: Mapped[datetime] = mapped_column(
         "criado_em", DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
     justificativa_recusa: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Redirecionamentos em "Conferir evento", um por click_id (S8-B02).
+    outbound_clicks_count: Mapped[int] = mapped_column(
+        "interessados_count", Integer, default=0, server_default="0", nullable=False
+    )
+    redirect_count = synonym("outbound_clicks_count")
 
     # Procedência da coleta (S7-B05). Só registrar_evento_coletado() preenche.
     source: Mapped[str | None] = mapped_column("fonte", String, nullable=True)
@@ -171,6 +196,20 @@ class EventClick(Base):
     )
 
 
+class EventOutboundClick(Base):
+    """Deduplicação de redirecionamentos de Conferir evento por (event_id, click_id)."""
+
+    __tablename__ = "eventos_cliques_redirecionamento"
+
+    event_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("eventos.id", ondelete="CASCADE"), primary_key=True, index=True
+    )
+    click_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(
+        "criado_em", DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
 class PersonalEvent(Base):
     __tablename__ = "eventos_pessoais"
     # Um candidato gera no máximo um evento por usuário (S7-D01).
@@ -184,6 +223,7 @@ class PersonalEvent(Base):
     user_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), nullable=False, index=True)
     title: Mapped[str] = mapped_column("titulo", String, nullable=False)
     description: Mapped[str | None] = mapped_column("descricao", Text, nullable=True)
+    location: Mapped[str | None] = mapped_column("localizacao", String, nullable=True)
     starts_at: Mapped[datetime] = mapped_column(
         "data_hora", DateTime(timezone=True), nullable=False, index=True
     )
@@ -275,9 +315,12 @@ class Syllabus(Base):
     text_revision: Mapped[int] = mapped_column("versao_texto", Integer, default=0, nullable=False)
     approved_version_id: Mapped[UUID | None] = mapped_column(
         "versao_aprovada_id", Uuid(as_uuid=True), ForeignKey(
-            "versoes_plano.id", ondelete="RESTRICT", use_alter=True,
+            "versoes_plano.id", ondelete="SET NULL", use_alter=True,
             name="planos_versao_aprovada_fkey"
         )
+    )
+    discarded_at: Mapped[datetime | None] = mapped_column(
+        "arquivo_descartado_em", DateTime(timezone=True), nullable=True
     )
 
 
@@ -441,6 +484,18 @@ class SyllabusVersion(Base):
     )
     visibility: Mapped[str] = mapped_column("visibilidade", String, default="privada", nullable=False)
     shared_at: Mapped[datetime | None] = mapped_column("compartilhada_em", DateTime(timezone=True), nullable=True)
+    # Evidência pública oficial, validada por admin. Papel do autor não a substitui.
+    institutional_source_url: Mapped[str | None] = mapped_column("fonte_institucional_url", String, nullable=True)
+    provenance_validated_by: Mapped[UUID | None] = mapped_column(
+        "procedencia_validada_por", Uuid(as_uuid=True), ForeignKey("profiles.id", ondelete="SET NULL"), nullable=True
+    )
+    provenance_validated_at: Mapped[datetime | None] = mapped_column(
+        "procedencia_validada_em", DateTime(timezone=True), nullable=True
+    )
+    withdrawn_at: Mapped[datetime | None] = mapped_column("retirada_em", DateTime(timezone=True), nullable=True)
+    withdrawn_by: Mapped[UUID | None] = mapped_column(
+        "retirada_por", Uuid(as_uuid=True), ForeignKey("profiles.id", ondelete="SET NULL"), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         "criado_em", DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -506,6 +561,56 @@ class ImportItem(Base):
     candidate_type: Mapped[str | None] = mapped_column("tipo_revisado", String, nullable=True)
 
 
+class CandidateVote(Base):
+    """Voto de um seguidor sobre um candidato compartilhado (S8-B01). Gravado por votar_avaliacao()."""
+
+    __tablename__ = "votos_avaliacao"
+
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), primary_key=True
+    )
+    candidate_id: Mapped[UUID] = mapped_column(
+        "avaliacao_id", Uuid(as_uuid=True), ForeignKey("avaliacoes.id", ondelete="CASCADE"), primary_key=True
+    )
+    value: Mapped[str] = mapped_column("valor", String, nullable=False)  # confirma | contesta
+    created_at: Mapped[datetime] = mapped_column(
+        "criado_em", DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        "atualizado_em", DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class Reminder(Base):
+    """Aviso na plataforma 24 h antes do início (S8-B03).
+
+    O banco agenda, troca e cancela os avisos por triggers; a aplicação só
+    lê os disparados e marca a leitura.
+    """
+
+    __tablename__ = "lembretes"
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    event_kind: Mapped[str] = mapped_column("tipo_evento", String, nullable=False)
+    personal_event_id: Mapped[UUID | None] = mapped_column(
+        "evento_pessoal_id", Uuid(as_uuid=True), ForeignKey("eventos_pessoais.id", ondelete="CASCADE"), nullable=True
+    )
+    public_event_id: Mapped[UUID | None] = mapped_column(
+        "evento_id", Uuid(as_uuid=True), ForeignKey("eventos.id", ondelete="CASCADE"), nullable=True
+    )
+    event_starts_at: Mapped[datetime] = mapped_column("inicio_referencia", DateTime(timezone=True), nullable=False)
+    scheduled_for: Mapped[datetime] = mapped_column("agendado_para", DateTime(timezone=True), nullable=False)
+    status: Mapped[str] = mapped_column(String, default="pendente", nullable=False)
+    fired_at: Mapped[datetime | None] = mapped_column("disparado_em", DateTime(timezone=True), nullable=True)
+    read_at: Mapped[datetime | None] = mapped_column("lido_em", DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        "criado_em", DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
 class CatalogSync(Base):
     __tablename__ = "sincronizacoes_catalogo"
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
@@ -521,3 +626,59 @@ class CatalogSync(Base):
     periods: Mapped[list] = mapped_column("periodos", JSON, default=list)
     coverage: Mapped[list] = mapped_column("cobertura", JSON, default=list)
     rejected: Mapped[list] = mapped_column("rejeitadas", JSON, default=list)
+
+
+class TermAcceptance(Base):
+    """Registro de ciência por versão de Termos ou Política de Privacidade (S8-D01)."""
+
+    __tablename__ = "aceites_termos"
+
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), primary_key=True
+    )
+    document: Mapped[str] = mapped_column("documento", String, primary_key=True)
+    version: Mapped[str] = mapped_column("versao", String(40), primary_key=True)
+    accepted_at: Mapped[datetime] = mapped_column(
+        "aceito_em", DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class Consent(Base):
+    """Consentimentos específicos e revogáveis (S8-D01)."""
+
+    __tablename__ = "consentimentos"
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    purpose: Mapped[str] = mapped_column("finalidade", String, nullable=False)
+    reference_id: Mapped[UUID | None] = mapped_column("referencia_id", Uuid(as_uuid=True), nullable=True)
+    content_hash: Mapped[str | None] = mapped_column("conteudo_hash", String(64), nullable=True)
+    granted_at: Mapped[datetime] = mapped_column(
+        "concedido_em", DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    revoked_at: Mapped[datetime | None] = mapped_column("revogado_em", DateTime(timezone=True), nullable=True)
+
+
+class AccountDeletionRecord(Base):
+    """Registro anônimo com contagens agregadas de exclusão de conta (sem PII)."""
+
+    __tablename__ = "exclusoes_conta"
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    status: Mapped[str] = mapped_column(String, default="iniciada", nullable=False)
+    started_at: Mapped[datetime] = mapped_column(
+        "iniciada_em", DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    completed_at: Mapped[datetime | None] = mapped_column("concluida_em", DateTime(timezone=True), nullable=True)
+    removed_syllabi: Mapped[int] = mapped_column("planos_removidos", Integer, default=0, nullable=False)
+    removed_personal_events: Mapped[int] = mapped_column(
+        "eventos_pessoais_removidos", Integer, default=0, nullable=False
+    )
+    removed_public_events: Mapped[int] = mapped_column(
+        "eventos_publicos_removidos", Integer, default=0, nullable=False
+    )
+    removed_storage_files: Mapped[int] = mapped_column(
+        "arquivos_storage_removidos", Integer, default=0, nullable=False
+    )

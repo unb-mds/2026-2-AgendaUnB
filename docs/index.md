@@ -55,6 +55,7 @@ A [v0.1.0](/processo/release-notes/v0-1-0) registra a entrega de 28/09/2026. Con
 * [Integração FastAPI/Supabase e autorização](/arquitetura/adrs/adr-001-integracao-fastapi-supabase) — Permissões, moderação, notificações e RPCs administrativas ([ADR-006](/arquitetura/adrs/adr-006-autorizacao-em-camadas)).
 * [Interface e design](/arquitetura/frontend) — Navegação e experiência de uso.
 * [Hospedagem e ambientes](/arquitetura/adrs/adr-002-separar-hospedagem-e-ambientes) — Infraestrutura gratuita, SMTP, CI reproduzível e isolamento ([ADR-007](/arquitetura/adrs/adr-007-migracoes-sql)).
+* [Dados de eventos: datas e coleta](/arquitetura/dados-de-eventos) — Coleta periódica da Agenda UnB Notícias, atualização, deduplicação e procedência ([ADR-011](/arquitetura/adrs/adr-011-datas-civis-e-instantes)).
 
 A extração de planos de ensino oferece preparação local de PDF/texto, revisão e autorização do trecho ([ADR-003](/arquitetura/adrs/adr-003-minimizar-dados-de-planos)), processamento assíncrono resiliente ([ADR-014](/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia)) e confirmação idempotente versionada ([ADR-010](/arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos)); a execução externa do provedor permanece controlada por flags operacionais.
 
