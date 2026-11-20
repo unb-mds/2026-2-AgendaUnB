@@ -6,7 +6,7 @@ from datetime import datetime, time as dt_time, timedelta, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, Response, UploadFile, status
-from sqlalchemy import delete, func, select, text
+from sqlalchemy import delete, func, select, text, update
 from sqlalchemy.exc import DBAPIError, IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session, joinedload
 from starlette.concurrency import run_in_threadpool
@@ -751,6 +751,11 @@ def delete_syllabus(
     )
     if syllabus is None:
         raise HTTPException(status_code=404, detail="Plano de ensino não encontrado.")
+    if syllabus.status == "processando":
+        raise HTTPException(
+            status_code=409,
+            detail="Aguarde a conclusão do processamento antes de remover este plano.",
+        )
     has_shared = db.scalar(
         select(SyllabusVersion.id).where(
             SyllabusVersion.syllabus_id == syllabus_id,
@@ -762,11 +767,55 @@ def delete_syllabus(
             status_code=409,
             detail="Retire o compartilhamento antes de remover este plano.",
         )
+    has_other_authors = db.scalar(
+        select(SyllabusVersion.id).where(
+            SyllabusVersion.syllabus_id == syllabus_id,
+            SyllabusVersion.author_id != current_user.id,
+        ).limit(1)
+    )
+    if has_other_authors is not None:
+        raise HTTPException(
+            status_code=409,
+            detail="Este plano possui revisões de outros usuários e não pode ser removido.",
+        )
+    version_ids = list(
+        db.scalars(
+            select(SyllabusVersion.id).where(SyllabusVersion.syllabus_id == syllabus_id)
+        ).all()
+    )
+    if syllabus.approved_version_id is not None:
+        syllabus.approved_version_id = None
+        db.flush()
+    if version_ids:
+        db.execute(
+            update(SyllabusVersion)
+            .where(SyllabusVersion.source_version_id.in_(version_ids))
+            .values(source_version_id=None)
+        )
+        db.execute(
+            update(ImportOperation)
+            .where(ImportOperation.version_id.in_(version_ids))
+            .values(version_id=None)
+        )
+        db.execute(
+            update(PersonalEvent)
+            .where(PersonalEvent.origin_version_id.in_(version_ids))
+            .values(origin_version_id=None)
+        )
+    candidate_ids = list(
+        db.scalars(
+            select(SyllabusCandidate.id).where(SyllabusCandidate.syllabus_id == syllabus_id)
+        ).all()
+    )
+    if candidate_ids:
+        db.execute(
+            delete(CandidateVote).where(CandidateVote.candidate_id.in_(candidate_ids))
+        )
     db.execute(
-        SyllabusCandidate.__table__.delete().where(SyllabusCandidate.syllabus_id == syllabus_id)
+        delete(SyllabusCandidate).where(SyllabusCandidate.syllabus_id == syllabus_id)
     )
     db.execute(
-        SyllabusVersion.__table__.delete().where(SyllabusVersion.syllabus_id == syllabus_id)
+        delete(SyllabusVersion).where(SyllabusVersion.syllabus_id == syllabus_id)
     )
     db.delete(syllabus)
     db.commit()

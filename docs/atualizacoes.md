@@ -53,10 +53,10 @@ e coleta externa.
 
 Em `/plano-de-ensino`, a área autenticada reúne vínculo com turmas, envio de vários planos, autorização no envio de cada documento, sanitização automática e revisão consolidada das avaliações. O usuário pode continuar enviando ou revisando outros planos durante a extração. A confirmação em lote informa o resultado de cada plano e encaminha para **Meus Eventos**. Veja o [fluxo e o roteiro de homologação](/arquitetura/frontend#painel-do-semestre).
 
-A preparação de PDF e texto colado mascara os dados pessoais detectados antes
-de salvar o texto para revisão. Quando houver ocorrências mascaradas, o editor
-exibe o total e permite ajustar o texto antes de autorizar o envio.
-Veja o [catálogo e os exemplos de minimização](/arquitetura/minimizacao-planos).
+A preparação de PDF e texto colado mascara automaticamente os dados pessoais
+detectados antes de persistir o snapshot sanitizado para a extração. Quando
+houver ocorrências mascaradas, a interface exibe o aviso com o total durante e
+após a análise. Veja o [catálogo e os exemplos de minimização](/arquitetura/minimizacao-planos).
 
 ## Verificação disponível
 
