@@ -3,8 +3,6 @@ title: "ADR-011 · Distinguir datas civis de instantes e usar fim exclusivo"
 description: "Decisão, consequências e critérios de verificação: distinguir datas civis de instantes e usar fim exclusivo."
 ---
 
-# ADR-011 · Distinguir datas civis de instantes e usar fim exclusivo
-
 | Campo | Valor |
 | --- | --- |
 | Estado | Aceita para a Release 2 |

@@ -3,8 +3,6 @@ title: "ADR-010 · Versionar planos e exigir confirmação individual para impor
 description: "Decisão, consequências e critérios de verificação: versionar planos e exigir confirmação individual para importar candidatos."
 ---
 
-# ADR-010 · Versionar planos e exigir confirmação individual para importar candidatos
-
 | Campo | Valor |
 | --- | --- |
 | Estado | Implementada |
@@ -29,8 +27,8 @@ A extração pode produzir datas incertas. Uma versão compartilhada atende vár
    - Toda data extraída começa como candidata e só vira evento pessoal (`eventos_pessoais`, categoria `Acadêmico`, fuso padrão `-03:00` quando confirmado) mediante ação explícita em lote via `POST /api/v1/syllabus/{id}/confirm` (até 100 itens).
    - A confirmação exige `Idempotency-Key` persistida em `operacoes_importacao` e `itens_importacao` na mesma transação dos eventos. Repetir a mesma chave com o mesmo conteúdo retorna o resultado anterior sem recriar eventos apagados pelo usuário; reusar a chave com conteúdo diferente retorna `409` (`AG409`); mantém-se no máximo um evento ativo por `(user_id, versao_id, avaliacao_id)`; reimportar após exclusão exige nova chave. A RPC legada `revisar_candidatos_plano` permanece restrita ao dono para compatibilidade.
 3. **Jornada de acompanhamento na interface (`/plano-de-ensino`):**
-   - Visitantes recebem apenas orientação e convite para autenticação, sem envio de planos nem vínculo de turmas; usuários autenticados consultam oferta seguida (`GET /class-offerings/{id}`, `GET /me/class-offerings`), biblioteca compartilhada (`GET /class-offerings/{id}/shared-plans`), histórico (`GET /syllabus?limit=10&offset=0`) e detalhe (`GET /syllabus/{id}`).
-   - Os estados de plano são `pendente`, `processando`, `concluido` e `falha`, com `authorizationRequired` e `preparedTextAvailable` distinguindo espera por autorização humana da fila pronta. O polling de progresso não se sobrepõe (5s para detalhe e 15s para histórico, espaçamento até 30s), pausa em abas ocultas ou erro e encerra em estado final. A seleção em lote valida títulos (3–200 caracteres), tipo (`Prova`/`Trabalho`) e datas antes do envio, preservando escolhas durante ajustes.
+   - Visitantes recebem apenas orientação e convite para autenticação, sem envio de planos nem vínculo de turmas; usuários autenticados consultam oferta seguida (`GET /class-offerings/{id}`, `GET /me/class-offerings`), biblioteca compartilhada (`GET /class-offerings/{id}/shared-plans`), lista de planos (`GET /syllabus?limit=10&offset=0`) e detalhe (`GET /syllabus/{id}`).
+   - Os estados de plano são `pendente`, `processando`, `concluido` e `falha`, com `authorizationRequired` e `preparedTextAvailable` distinguindo planos preparados de extrações autorizadas. O polling de progresso não se sobrepõe (5s para detalhe e 15s para listagem, espaçamento até 30s), pausa em abas ocultas ou erro e encerra em estado final. A seleção em lote valida títulos (3–200 caracteres), tipo (`Prova`/`Trabalho`) e datas antes do envio, preservando escolhas durante ajustes.
    - Em **Revisar datas**, uma prova pendente com data definida e sem horário no plano recebe no rascunho local uma sugestão de início da aula a partir do campo `schedule` da oferta vinculada (`GET /class-offerings/{id}`), interpretado conforme a [grade de horários do SIGAA na UnB](https://design.unb.br/codigos-aulas-sigaa/) para o dia da semana da prova (por exemplo, `24T23` sugere `14:00` numa segunda ou quarta). O campo indica a origem da sugestão e permanece editável; alterar a data recalcula a sugestão, enquanto horários vindos do plano ou editados pelo estudante são preservados. Sem aula no dia, com mais de um bloco no dia ou com código não interpretável, o preenchimento é manual.
 
 ## Alternativas para comparação

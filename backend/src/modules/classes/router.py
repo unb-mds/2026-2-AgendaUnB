@@ -62,11 +62,7 @@ def offerings(year: int | None = Query(None, ge=2000, le=2100),
         def folded(column):
             source = 'áàâãäéèêëíìîïóòôõöúùûüçÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇ'
             target = 'aaaaaeeeeiiiiooooouuuucAAAAAEEEEIIIIOOOOOUUUUC'
-            if db.bind.dialect.name == 'postgresql':
-                return func.lower(func.translate(column, source, target))
-            for old, new in zip(source, target):
-                column = func.replace(column, old, new)
-            return func.lower(column)
+            return func.lower(func.translate(column, source, target))
         columns = [folded(column) for column in (Subject.name, Subject.code, ClassOffering.teacher, ClassOffering.class_number)]
         terms = re.findall(r'[a-z0-9]+', needle)
         meaningful = [term for term in terms if term not in {'de', 'da', 'do', 'das', 'dos', 'e', 'a', 'o', 'em'}]

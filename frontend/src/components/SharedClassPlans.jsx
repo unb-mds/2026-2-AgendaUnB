@@ -26,9 +26,6 @@ const formatTimeLabel = item => (
       : 'Sem horário'
 );
 
-const DEFAULT_SHARED_NOTICE =
-  'Vínculo autodeclarado com a turma. Apenas avaliações revisadas e compartilhadas voluntariamente ficam visíveis aos seguidores; o PDF original é descartado após a extração local e a votação sinaliza concordância ou divergência sem alterar datas automaticamente.';
-
 function SharedCandidateRow({ item, disabled, canWithdraw, onPatch, onSelect, onVoteCandidate, onWithdrawCandidate }) {
   const uid = useId();
   const [confirmWithdraw, setConfirmWithdraw] = useState(false);
@@ -88,104 +85,110 @@ function SharedCandidateRow({ item, disabled, canWithdraw, onPatch, onSelect, on
         })[field] || field).join(', ')}.</p>
       )}
       {!item.imported && (
-        <fieldset disabled={readOnly} className="semester-edit-fields">
-          <legend className="sr-only">Ajustar {title} antes de importar</legend>
-          {[
-            ['title', 'Título', 'text'],
-            ['type', 'Tipo', 'select'],
-            ['date', 'Data', 'date'],
-            ['time', 'Horário (Brasília)', 'time'],
-          ].map(([field, name, type]) => {
-            const props = {
-              value: item[field],
-              'aria-label': name,
-              'aria-invalid': errors[field] ? true : undefined,
-              'aria-describedby': errors[field] ? `${uid}-${field}-error` : undefined,
-              onChange: event => onPatch({ edits: { [field]: event.target.value }, checked: false }),
-            };
-            return <label className="semester-field" key={field}>
-              {name}
-              {type === 'select' ? (
-                <select {...props}>
-                  <option value="">Selecione</option>
-                  {!['', 'prova', 'trabalho'].includes(item.type) && <option value={item.type}>{item.type}</option>}
-                  <option value="prova">Prova</option>
-                  <option value="trabalho">Trabalho</option>
-                </select>
-              ) : (
-                <input {...props} type={type} step={type === 'time' ? 'any' : undefined} />
-              )}
-              {errors[field] && <small className="semester-error" id={`${uid}-${field}-error`}>{errors[field]}</small>}
-            </label>;
-          })}
-        </fieldset>
-      )}
-      <div className="shared-candidate-actions">
-        {item.ambiguous && !item.checked && !item.imported && (
-          <button
-            className="manage-button"
-            type="button"
-            disabled={readOnly || !!Object.keys(errors).length}
-            onClick={() => onPatch({ checked: true, selected: true })}
-          >
-            Usar estes dados
-          </button>
-        )}
-        <div className="shared-candidate-votes" role="group" aria-label={`Votar em ${title}`}>
-          <button
-            type="button"
-            className={`manage-button${['confirma', 'confirm'].includes(myVote) ? ' primary' : ''}`}
-            aria-pressed={['confirma', 'confirm'].includes(myVote)}
-            disabled={disabled}
-            onClick={() => onVoteCandidate(item.id, 'confirm')}
-          >
-            <Icon>thumb_up</Icon>Confirmar item ({confirmCount})
-          </button>
-          <button
-            type="button"
-            className={`manage-button${['contesta', 'contest'].includes(myVote) ? ' is-contested' : ''}`}
-            aria-pressed={['contesta', 'contest'].includes(myVote)}
-            disabled={disabled}
-            onClick={() => onVoteCandidate(item.id, 'contest')}
-          >
-            <Icon>thumb_down</Icon>Contestar item ({contestCount})
-          </button>
-        </div>
-        {canWithdraw && (
-          !confirmWithdraw ? (
+        <div className="shared-personal-adjust">
+          <p className="shared-personal-note">Ajuste opcional apenas para a sua agenda antes de importar:</p>
+          <fieldset disabled={readOnly} className="semester-edit-fields">
+            <legend className="sr-only">Ajustar {title} antes de importar</legend>
+            {[
+              ['title', 'Título', 'text'],
+              ['type', 'Tipo', 'select'],
+              ['date', 'Data', 'date'],
+              ['time', 'Horário (Brasília)', 'time'],
+            ].map(([field, name, type]) => {
+              const props = {
+                value: item[field],
+                'aria-label': name,
+                'aria-invalid': errors[field] ? true : undefined,
+                'aria-describedby': errors[field] ? `${uid}-${field}-error` : undefined,
+                onChange: event => onPatch({ edits: { [field]: event.target.value }, checked: false }),
+              };
+              return <label className="semester-field" key={field}>
+                {name}
+                {type === 'select' ? (
+                  <select {...props}>
+                    <option value="">Selecione</option>
+                    {!['', 'prova', 'trabalho'].includes(item.type) && <option value={item.type}>{item.type}</option>}
+                    <option value="prova">Prova</option>
+                    <option value="trabalho">Trabalho</option>
+                  </select>
+                ) : (
+                  <input {...props} type={type} step={type === 'time' ? 'any' : undefined} />
+                )}
+                {errors[field] && <small className="semester-error" id={`${uid}-${field}-error`}>{errors[field]}</small>}
+              </label>;
+            })}
+          </fieldset>
+          {item.ambiguous && !item.checked && (
             <button
-              className="management-text-button shared-danger-action"
+              className="manage-button"
               type="button"
-              disabled={disabled}
-              onClick={() => setConfirmWithdraw(true)}
+              disabled={readOnly || !!Object.keys(errors).length}
+              onClick={() => onPatch({ checked: true, selected: true })}
             >
-              Retirar evento
+              Usar estes dados
             </button>
-          ) : (
-            <span className="shared-inline-confirm">
-              <span>Retirar evento desta versão?</span>
+          )}
+        </div>
+      )}
+      <div className="shared-community-bar">
+        <span className="shared-community-label">Validação da turma</span>
+        <div className="shared-candidate-actions">
+          <div className="shared-candidate-votes" role="group" aria-label={`Votar em ${title}`}>
+            <button
+              type="button"
+              className={`manage-button${['confirma', 'confirm'].includes(myVote) ? ' primary' : ''}`}
+              aria-pressed={['confirma', 'confirm'].includes(myVote)}
+              disabled={disabled}
+              onClick={() => onVoteCandidate(item.id, 'confirm')}
+            >
+              <Icon>thumb_up</Icon>Confirmar item ({confirmCount})
+            </button>
+            <button
+              type="button"
+              className={`manage-button${['contesta', 'contest'].includes(myVote) ? ' is-contested' : ''}`}
+              aria-pressed={['contesta', 'contest'].includes(myVote)}
+              disabled={disabled}
+              onClick={() => onVoteCandidate(item.id, 'contest')}
+            >
+              <Icon>thumb_down</Icon>Contestar item ({contestCount})
+            </button>
+          </div>
+          {canWithdraw && (
+            !confirmWithdraw ? (
               <button
-                className="manage-button"
+                className="management-text-button shared-danger-action"
                 type="button"
                 disabled={disabled}
-                onClick={() => {
-                  setConfirmWithdraw(false);
-                  onWithdrawCandidate(item.id);
-                }}
+                onClick={() => setConfirmWithdraw(true)}
               >
-                Confirmar retirada
+                Retirar evento
               </button>
-              <button
-                className="management-text-button"
-                type="button"
-                disabled={disabled}
-                onClick={() => setConfirmWithdraw(false)}
-              >
-                Cancelar
-              </button>
-            </span>
-          )
-        )}
+            ) : (
+              <span className="shared-inline-confirm">
+                <span>Retirar evento desta versão?</span>
+                <button
+                  className="manage-button"
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => {
+                    setConfirmWithdraw(false);
+                    onWithdrawCandidate(item.id);
+                  }}
+                >
+                  Confirmar retirada
+                </button>
+                <button
+                  className="management-text-button"
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => setConfirmWithdraw(false)}
+                >
+                  Cancelar
+                </button>
+              </span>
+            )
+          )}
+        </div>
       </div>
     </div>
   </li>;
@@ -348,8 +351,6 @@ export default function SharedClassPlans({
   const activePlan = versions.find(v => v.id === selectedVersionId) || versions[0] || null;
   const updatedPlan = versions.find(v => v.has_imported_update) || null;
   const classSchedule = offer?.schedule || null;
-  const membershipType = plans.data?.membership_type || 'autodeclarado';
-  const sharedNotice = plans.data?.shared_content_notice || DEFAULT_SHARED_NOTICE;
   const showSharePrompt = Boolean(
     shareablePlan?.versionId && !versions.some(version => version.id === shareablePlan.versionId),
   );
@@ -549,11 +550,6 @@ export default function SharedClassPlans({
         </label>
       )}
     </header>
-
-    <div className="shared-notice" role="note">
-      <span className="shared-badge">Vínculo {membershipType}</span>
-      <p>{sharedNotice}</p>
-    </div>
 
     <Feedback error={plans.error?.message} onRetry={reloadPlans} />
     <Feedback error={actionError} success={actionSuccess} />

@@ -1,6 +1,6 @@
 site_name: Agenda UnB Docs
 site_description: Documentação oficial do projeto Agenda UnB — Métodos de Desenvolvimento de Software (MDS) 2026/2
-repo_name: unb-mds/G8-2026-2
+repo_name: unb-mds/2026-2-AgendaUnB
 repo_url: https://github.com/unb-mds/2026-2-AgendaUnB
 
 docs_dir: ../docs
@@ -28,10 +28,12 @@ nav:
     - ADR-013 — Persistir lembretes com agendamento idempotente e revalidação: arquitetura/adrs/adr-013-lembretes-persistentes.md
     - ADR-014 — Processamento assíncrono resiliente de planos com fila persistida, lease e orçamento: arquitetura/adrs/adr-014-processamento-assincrono-planos-ia.md
   - Contratos do Backend: api-specs.md
+  - Dados de Conferir evento: arquitetura/conferir-evento.md
   - Matriz de aceite da Release 2: matriz-release-2.md
   - Plano de Implantação: implantacao.md
   - Modelo de Dados: arquitetura/modelo-de-dados.md
   - Dados de planos: arquitetura/dados-de-planos.md
+  - Minimização de dados pessoais: arquitetura/minimizacao-planos.md
   - Especificação do Banco: arquitetura/banco-de-dados.md
   - Dados de eventos: arquitetura/dados-de-eventos.md
   - Eventos salvos: eventos-salvos.md
@@ -52,9 +54,15 @@ nav:
   - Release Notes:
     - v0.1.0: processo/release-notes/v0-1-0.md
     - v0.2.0-beta.1: processo/release-notes/v0-2-0-beta-1.md
+    - v0.2.0: processo/release-notes/v0-2-0.md
     - Atualizações e contratos da R2: atualizacoes.md
   - Uso de IA: processo/uso-de-ia.md
   - Como Contribuir: processo/contribuindo.md
+  - Verificação de segurança: processo/seguranca.md
+  - Privacidade e ciclo de vida: processo/privacidade.md
+  - Roteiro de entrega: processo/roteiro-entrega.md
+  - Política de Privacidade: produto/politica-de-privacidade.md
+  - Termos de Uso: produto/termos-de-uso.md
 
 plugins:
   - search

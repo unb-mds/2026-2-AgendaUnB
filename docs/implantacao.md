@@ -1,119 +1,62 @@
 # Plano de hospedagem e CI/CD
 
-## Operação da S7-B06
+## Operação da Release 2
 
-Em 14/11/2026, por decisão do PO de manter ambiente único nesta fase (sem
-serviços ou projetos duplicados entre homologação e produção por prazo e
-orçamento), [agendaunb.com.br](https://agendaunb.com.br) e
-[2026-2-agendaunb-agenda-un-b.vercel.app](https://2026-2-agendaunb-agenda-un-b.vercel.app)
-servem o frontend Vite na Vercel (o endereço legado `agendaunb.vercel.app`
-retorna `DEPLOYMENT_NOT_FOUND`). O domínio `www` redireciona para o domínio
-principal. O bundle aponta para a
-[API no Render](https://agenda-unb-api-homolog.onrender.com/health)
-(`agenda-unb-api-homolog`) e para o projeto Supabase `pzniltzdhyuzzdqbppjw`
-(`agenda-unb-homolog`), com as 31 migrações versionadas aplicadas,
-sincronização do catálogo `2026.2` executada e supressão de `uvicorn.access`
-quando `APP_ENV != "local"`.
+A R2 usa um ambiente hospedado compartilhado. A aprovação das mudanças da release usa Supabase local descartável e contas sintéticas. Confira o SHA e o estado dos serviços antes de publicar.
 
-| Componente | Configuração ativa |
+| Camada | Configuração da R2 |
 | --- | --- |
-| SPA | Vercel, raiz `frontend` (e configuração equivalente na raiz em [`vercel.json`](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/vercel.json)), Vite, `npm ci`, `npm run build`, saída `dist`. As rotas `/api/search`, `/sitemap.xml`, `/evento/:id` e `/auth/retorno` têm rewrites dedicados e ficam preservadas no fallback. |
-| API | FastAPI em Python 3.11 no Render (`agenda-unb-api-homolog`). Usar HTTPS direto para `/api/v1`, inclusive no upload. O Blueprint em [`render.yaml`](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/render.yaml) reflete o serviço único Free com publicação manual. |
-| Auth, dados e Storage | Projeto Supabase único `pzniltzdhyuzzdqbppjw` (`agenda-unb-homolog`), compartilhado entre API, frontend e jobs, com 31 migrações aplicadas até `20261113212429` e conexão PostgreSQL via TLS (`sslmode=require`). |
-| Worker, coletor e catálogo | GitHub Actions com segredos no environment `production-jobs` e disparo manual/agendado por job (`worker`, `collector` e `catalog` para `python -m src.modules.classes.sync --period 2026.2`), validando a operação de custo zero da [#68](https://github.com/unb-mds/2026-2-AgendaUnB/issues/68). |
+| Vercel | [agendaunb.com.br](https://agendaunb.com.br) e [domínio Vercel](https://2026-2-agendaunb-agenda-un-b.vercel.app). Root Directory `frontend`, Vite, `npm ci`, `npm run build`, saída `dist`. `frontend/vercel.json` serve a SPA e a função de busca de eventos públicos. |
+| Render | [agenda-unb-api-homolog](https://agenda-unb-api-homolog.onrender.com/health), plano Free, FastAPI. O serviço ativo foi observado com runtime Python nativo e deploy automático de `main`. O Blueprint versionado define Docker com Python 3.11, `/health` e publicação manual. Coordene a configuração do serviço ativo com a ordem abaixo. |
+| Supabase | Projeto `agenda-unb-homolog` (`pzniltzdhyuzzdqbppjw`) para PostgreSQL, Auth e Storage. Use conexão Session Pooler com TLS. |
+| Jobs | GitHub Actions em `main` para retomada da fila de planos e coleta de notícias. Sincronização do Followw sob demanda no mesmo workflow. Supabase Cron para lembretes. |
 
-O PDF vai diretamente do navegador para o Render com Bearer do Supabase e
-multipart. O limite é 10 MiB (10.485.760 bytes), com espaço adicional para o
-envelope multipart. A API prepara o texto privado e descarta o PDF original.
-A revisão e a autorização do texto continuam necessárias para iniciar
-processamento por IA. A Vercel limita o payload de Functions a 4,5 MB.
-[Limites da Vercel](https://vercel.com/docs/functions/limitations#request-body-size).
+A SPA envia o PDF diretamente ao Render com a sessão Supabase via `Authorization`. O backend aceita até 10 MiB em multipart, extrai e sanitiza o texto e descarta o PDF. O envio autoriza o processamento do texto sanitizado. [Limites de payload da Vercel](https://vercel.com/docs/functions/limitations#request-body-size).
 
 ### Configurar o ambiente único
 
 | Local | Variáveis e configuração |
 | --- | --- |
-| Vercel | `VITE_API_URL` com `https://agenda-unb-api-homolog.onrender.com/api/v1`, `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` do projeto `pzniltzdhyuzzdqbppjw` (chave legada anon também aceita). |
-| Previews Vercel | Como o projeto opera com ambiente único por decisão do PO, habilitar `VERCEL_ENV` apenas quando houver projeto/origem de produção distintos; caso contrário, `deploymentConfig.js` valida que `VITE_API_URL` seja HTTPS terminado em `/api/v1` e bloqueia variáveis `VITE_*` não listadas. |
-| Render | `APP_ENV=production` (com `uvicorn.access` desativado fora de `local`), `DATABASE_URL` com TLS, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `GOOGLE_CALENDAR_REDIRECT_URI=https://agenda-unb-api-homolog.onrender.com/api/v1/me/google-calendar/callback`, `GOOGLE_CALENDAR_FRONTEND_REDIRECT_URI=https://agendaunb.com.br/eventos?aba=meus` e `CORS_ORIGINS=https://agendaunb.com.br,https://2026-2-agendaunb-agenda-un-b.vercel.app`. |
-| Supabase Auth | Definir `https://agendaunb.com.br` como Site URL e incluir `https://agendaunb.com.br/?auth=login`, `https://agendaunb.com.br/auth/retorno`, `https://agendaunb.com.br/eventos`, `https://2026-2-agendaunb-agenda-un-b.vercel.app/?auth=login` e `https://2026-2-agendaunb-agenda-un-b.vercel.app/auth/retorno` em Redirect URLs. |
+| Vercel | `VITE_API_URL=https://agenda-unb-api-homolog.onrender.com/api/v1`, `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` da mesma instância Supabase. A função de busca também usa a URL e a chave pública em runtime. |
+| Render | `APP_ENV=production`, `DATABASE_URL` com TLS, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` e `CORS_ORIGINS=https://agendaunb.com.br,https://2026-2-agendaunb-agenda-un-b.vercel.app`. |
+| Supabase Auth | Site URL `https://agendaunb.com.br`. Cadastre as URLs exatas de retorno para `/auth/retorno`, `/?auth=login` e `/eventos` nas origens oficiais em uso. Configure SMTP e templates de confirmação/recuperação. Confira no painel o mesmo contrato de senha do `supabase/config.toml`, com pelo menos 8 caracteres, letras e dígitos e troca segura habilitada. |
 
-Manter chaves de serviço, Gemini, SMTP, OAuth e criptografia nos serviços
-servidores que as usam. O bundle público recebe apenas os valores acima.
-Manter `SYLLABUS_PROVIDER_TERMS_READY` desativado até a validação da #68.
+Previews Vercel precisam de Auth, banco e API separados quando `VERCEL_ENV=preview` estiver disponível para o build. A verificação usa `VITE_DEPLOYMENT_ENV=preview`, `PRODUCTION_SUPABASE_URL` e `PRODUCTION_API_ORIGIN`. Reserve segredos de banco, Storage, Gemini e OAuth aos serviços servidores que os consomem.
 
 ### Google OAuth
 
-Para **login**, registrar `https://agendaunb.com.br` e
-`https://2026-2-agendaunb-agenda-un-b.vercel.app` em Origens JavaScript
-autorizadas do cliente Web Agenda UnB. O URI de retorno do cliente de login é
-`https://pzniltzdhyuzzdqbppjw.supabase.co/auth/v1/callback` para o projeto atual.
-Quando o projeto de produção for separado, registrar o callback dele no
-respectivo cliente Web. Atualizar o branding com a home, a
-[política de privacidade](https://agendaunb.com.br/privacidade.html) e os
-[termos de uso](https://agendaunb.com.br/termos.html) do domínio principal após
-verificar a propriedade. [Google Auth Platform](https://console.cloud.google.com/auth/clients?project=agendaunb).
+Para **login**, configure o provedor Google no Supabase Auth, com o callback `https://pzniltzdhyuzzdqbppjw.supabase.co/auth/v1/callback` no Google. Inclua as origens oficiais do frontend no cliente OAuth Web e vincule a tela de consentimento às páginas legais do domínio. [Google OAuth no Supabase](https://supabase.com/docs/guides/auth/social-login/auth-google).
 
-Para **Calendar**, integrar [#110](https://github.com/unb-mds/2026-2-AgendaUnB/pull/110)
-e aplicar a migration `20261111150000_s7_f04_auth_calendar_connection.sql`
-antes do deploy da API que contém o callback. Em cada ambiente:
+Para **Google Agenda**:
 
-1. Habilitar a Google Calendar API e configurar o cliente e o consentimento
-   para o escopo `https://www.googleapis.com/auth/calendar.app.created`.
-2. Cadastrar `https://<host-da-api>/api/v1/me/google-calendar/callback` no Google
-   e usar o mesmo valor em `GOOGLE_CALENDAR_REDIRECT_URI`. Usar os hosts
-   definitivos de produção e teste, cada um vinculado ao ambiente correspondente.
-3. No Render, cadastrar `GOOGLE_CALENDAR_CLIENT_ID`,
-   `GOOGLE_CALENDAR_CLIENT_SECRET`, `GOOGLE_TOKEN_ENCRYPTION_KEY` e
-   `GOOGLE_CALENDAR_FRONTEND_REDIRECT_URI` para a rota de configurações da SPA
-   publicada pela [#82](https://github.com/unb-mds/2026-2-AgendaUnB/issues/82).
-4. Com conta sintética do ambiente, validar consentimento, retorno, persistência
-   da conexão, renovação após expiração e desconexão. Conferir o estado da
-   verificação Google, inclusive restrições a contas de teste.
+1. Habilite a Google Calendar API no projeto OAuth do Calendar. O fluxo usa `openid`, `email` e `https://www.googleapis.com/auth/calendar.app.created`.
+2. Registre `https://agenda-unb-api-homolog.onrender.com/api/v1/me/google-calendar/callback` no Google e em `GOOGLE_CALENDAR_REDIRECT_URI`. O callback recebe `state` e `code` ou `error` e redireciona, sem credenciais na URL final, para `GOOGLE_CALENDAR_FRONTEND_REDIRECT_URI=https://agendaunb.com.br/eventos?aba=meus`. [OAuth para aplicações web](https://developers.google.com/identity/protocols/oauth2/web-server#handlingresponse).
+3. Cadastre `GOOGLE_CALENDAR_CLIENT_ID`, `GOOGLE_CALENDAR_CLIENT_SECRET` e `GOOGLE_TOKEN_ENCRYPTION_KEY` no Render. A chave Fernet deve ser estável para renovar conexões existentes. Use uma conta sintética com o mesmo e-mail verificado nos dois lados e incluída na lista de teste do Google, quando aplicável.
 
 ### Publicação, jobs e recuperação
 
-1. Revisar o PR e exigir os checks de frontend, backend e banco aplicáveis a
-   `main`. Registrar o SHA em homologação. Conferir o histórico local/remoto
-   com `supabase migration list` e revisar `supabase db push --dry-run` para
-   cada projeto alvo. Aplicar migrations de forma controlada, primeiro em
-   homologação, e repetir os testes antes de promover a mesma versão.
-2. Depois da migração compatível, implantar o SHA revisado no Render, conferir
-   `/health`, uma consulta ao banco via API e o preflight. Na Vercel, preparar
-   um deploy de produção com as variáveis de produção, verificar as rotas e
-   promover o deploy validado. Registrar os IDs e os SHAs dos dois serviços.
-3. No GitHub, restringir `production-jobs` a `main` e configurar
-   `DATABASE_URL` com TLS. Após integrar o coletor e sua migration da #75,
-   habilitar `PRODUCTION_EVENT_COLLECTION_ENABLED` e executar `collector`
-   manualmente antes de contar com a execução diária às 07h27 de Brasília.
-   Acompanhar contagens, falhas e estado da coleta persistido no Supabase.
-4. Após a prova da #68, configurar `GEMINI_API_KEY`,
-   `SYLLABUS_PRIVACY_READY` e `SYLLABUS_PROVIDER_TERMS_READY` no environment de
-   jobs. Habilitar `PRODUCTION_SYLLABUS_WORKER_ENABLED` somente depois de
-   demonstrar retomada da fila e medir o tempo até o resultado. A agenda
-   configurada processa até um item por execução, a cada 30 minutos, e pode
-   atrasar. Serve para prova de execução e persistência, com capacidade e
-   latência de produção ainda por validar. Lembretes dependem da #81.
-5. Em incidente, desativar os jobs afetados e selecionar os deploys anteriores
-   da API e da SPA compatíveis com o schema aplicado. Conferir os IDs,
-   restaurar o deploy da API no Render e o da SPA na Vercel, repetir consultas,
-   Auth e preflight, e só então retomar os jobs. Preferir correção incremental
-   do schema se a aplicação anterior for incompatível com a migration.
-   Ensaiar primeiro em homologação e registrar o tempo e o resultado.
+1. Confirme o SHA revisado e o destino com `supabase migration list`. No estado observado em 20/11/2026, o Supabase remoto tinha 35 migrações, incluindo `20261117150000_planos_compartilhamento_e_votos.sql`, e ainda precisava receber `20261117130000_endurecimento_seguranca.sql`. Revise `supabase db push --dry-run --include-all` e aplique `supabase db push --include-all`. O `--include-all` inclui essa migração anterior ainda ausente. Faça backup antes da janela de mudança conforme o [roteiro de entrega](/processo/roteiro-entrega).
+2. Publique a API do SHA validado no Render. Confira `/health`, `/api/v1/events?limit=1`, o preflight da origem oficial e `/api/v1/me/legal-documents` com sessão. Na Vercel, publique o mesmo SHA e confira recarga de `/configuracoes`, `/plano-de-ensino`, `/eventos` e `/auth/retorno`, além de `/sitemap.xml` e de um detalhe público.
+3. Para liberar a análise no Render, confira `GEMINI_API_KEY`, `SYLLABUS_WORKER_ENABLED`, `SYLLABUS_PRIVACY_READY` e `SYLLABUS_PROVIDER_TERMS_READY`. O Render pode iniciar o subprocesso após a autorização. O job `worker` de `production-jobs` retoma a fila persistente aos minutos 13 e 43 de cada hora, sujeito a atrasos do GitHub. Ele drena até 25 planos por execução, com lease e orçamento. Defina `PRODUCTION_SYLLABUS_WORKER_ENABLED` e as flags de prontidão como variáveis do repositório. Mantenha `DATABASE_URL` e `GEMINI_API_KEY` como segredos do ambiente `production-jobs`. [Variáveis do GitHub Actions](https://docs.github.com/en/actions/reference/workflows-and-actions/variables#configuration-variable-precedence).
+4. Configure `PRODUCTION_EVENT_COLLECTION_ENABLED` e execute `collector` sob demanda em `main` antes de depender do agendamento diário às 07h27 de Brasília. Execute `catalog` sob demanda para `2026.2`. Ambos usam `DATABASE_URL` com TLS. Registre a contagem e o estado da coleta/publicação, incluindo exceções encaminhadas à moderação.
+5. Após aplicar as migrações de lembretes, execute `supabase/snippets/habilitar_lembretes.sql` como `postgres`. Confira o job `agenda-unb-lembretes` no Supabase Cron e valide a entrega e a leitura de uma notificação. [Operação dos lembretes](/arquitetura/dados-de-eventos#agendador).
+6. Em incidente, pause os jobs afetados e restaure o deploy da API e da SPA compatível com o schema aplicado. Confira saúde, CORS e Auth antes de retomar. Para o banco, prefira uma migração corretiva. Registre SHAs e IDs de deploy.
 
-O Render Free pode suspender a API após 15 minutos sem tráfego e compartilha
-750 horas mensais por workspace. O sistema de arquivos é efêmero. Render Cron
-Jobs têm mínimo de US$ 1 por serviço por mês e workers dedicados não têm
-instância Free. Conferir o consumo do workspace e as cotas dos provedores
-antes de habilitar os jobs. [Render Free](https://render.com/docs/free) ·
-[Render Cron Jobs](https://render.com/docs/cronjobs#compute-plans-and-billing) ·
-[Agendamento do GitHub Actions](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule).
+A instância Free do Render pode suspender a API após 15 minutos sem tráfego. O SMTP de autenticação sai do Supabase Auth. O Render Free bloqueia portas SMTP comuns. Acompanhe build e erros na Vercel, logs da API no Render, execuções no GitHub Actions e jobs no Supabase. [Limites do Render Free](https://render.com/docs/free).
 
-Conferir logs de build e deploy na Vercel, eventos da API no Render, histórico
-do GitHub Actions e estado dos jobs no Supabase. Correlacionar pelo horário,
-SHA, status e código de erro. Os access logs do Uvicorn ficam desativados para
-evitar o registro de URLs completas. Conferir com dados sintéticos que os
-logs dos provedores também omitem tokens, credenciais e conteúdo acadêmico.
+### Estado verificado em 20/11/2026
+
+| Ambiente | Evidência |
+| --- | --- |
+| Vercel publicada | `main` em `0239a06`. Home, eventos, retorno de autenticação, sitemap, documentos legais e `/docs` responderam. `/configuracoes` retornou 404 nessa versão. |
+| Render publicado | Mesmo SHA. `/health` e `/api/v1/events?limit=1` retornaram 200. A operação de documentos legais retornou 404, pois a API publicada antecede a entrega de privacidade. |
+| Supabase hospedado | 35 migrações aplicadas. O projeto redirecionou o login ao Google, sem completar uma sessão nesta verificação. O inventário retornou zero objetos no bucket legado e zero caminhos de PDF persistidos. O Supabase Cron ainda não estava ativado. |
+| Branch integrada em ambiente isolado | A migração foi testada a partir do zero e na ordem real do ambiente hospedado. O lint SQL e a conferência do schema passaram. O lembrete agendado executou com sucesso no Supabase local. Build Vercel com Node 26 e container Render Python 3.11 foram verificados. |
+| Envio e importação de plano | Com Auth, Storage e PostgreSQL locais, um PDF sintético de 838 bytes gerou dois candidatos em 7,91 s com Gemini real. A primeira importação criou um compromisso e o PDF foi descartado. Um PDF sintético de 10 MiB também passou com provedor simulado. |
+
+`npm audit` e `pip-audit` passaram após a atualização das dependências sinalizadas.
+
+O aceite hospedado depende da publicação do SHA integrado após as migrações. Inclui entrega de e-mail por SMTP, login via Google, conexão e exportação no Google Agenda, importação de plano, execução dos jobs e entrega de lembretes.
 
 ### Evidências de 12/11/2026
 
@@ -191,24 +134,9 @@ real do Google. Esses dois fluxos devem ser homologados após a configuração r
 Referências: [chaves Supabase](https://supabase.com/docs/guides/api/api-keys) e
 [Google OAuth](https://supabase.com/docs/guides/auth/social-login/auth-google).
 
-### Processo de extração de planos (S6-B01)
+### Processo de extração de planos
 
-Além da API, provisionar processo independente com comando, na pasta `backend`,
-`python -m src.modules.syllabus.worker`. Deve usar o mesmo banco e Storage privado
-da API e reiniciar após interrupções. O ciclo de requisição HTTP não executa IA.
-Configurar `GEMINI_API_KEY` como segredo do servidor, nunca no frontend; demais
-limites, preços e regras de fila/orçamento estão na [ADR-014](/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia).
-
-Aplicar #40, S6-D01, `20261109110000_fila_processamento_planos.sql` e
-`20261109113000_privacidade_e_revisao_planos.sql` (S6-D02).
-Manter `SYLLABUS_WORKER_ENABLED=false` e `SYLLABUS_PRIVACY_READY=false` até
-implantar/verificar as políticas de S6-D02 no PostgreSQL com os papéis reais.
-Somente então habilitar os dois parâmetros no ambiente correspondente. A avaliação
-sintética com Gemini não homologa privacidade, Storage remoto ou fila em produção.
-Esta entrega não provisiona serviço nem aplica migrações remotas.
-O worker também verifica pré-requisitos nos catálogos do banco e recusa configuração
-incompleta, mesmo com as flags ativas. Consultar as [ADR-003](/arquitetura/adrs/adr-003-minimizar-dados-de-planos) e [ADR-014](/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia)
-para conferir o banco local antes de ativar o processo.
+A API registra a autorização e a fila no PostgreSQL. O worker executa em processo independente, verifica o snapshot sanitizado e limita tentativas, tempo e custo. Os requisitos de execução estão nas [ADR-003](/arquitetura/adrs/adr-003-minimizar-dados-de-planos) e [ADR-014](/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia). Faça o teste da jornada completa com PDF sintético e confirme prazo, candidatos, exclusão do original e ausência de texto nos logs.
 
 ### Coleta da Agenda UnB Notícias (S7-B05)
 
@@ -218,7 +146,7 @@ O coletor é um processo desacoplado da API, que utiliza `DATABASE_URL` do ambie
 1. **GitHub Actions (Ambiente Hospedado):**
    - Configurado no workflow `.github/workflows/production-jobs.yml` através do job `collector`.
    - Execução programada diariamente às 07h27 BRT (`cron: '27 10 * * *'`) e manual via `workflow_dispatch` com input `job: collector`.
-   - **Ativação:** requer definir a variável `PRODUCTION_EVENT_COLLECTION_ENABLED = 'true'` no environment `production-jobs` e vincular o secret `DATABASE_URL` com TLS.
+   - **Ativação:** defina a variável de repositório `PRODUCTION_EVENT_COLLECTION_ENABLED=true` e configure o segredo `DATABASE_URL` com TLS no ambiente `production-jobs`.
 2. **Automação Local via Makefile:**
    - `make events-collect`: executa uma única passagem de coleta localmente.
    - `make events-collect-daemon`: executa o coletor em modo daemon com intervalo padrão.
@@ -236,15 +164,7 @@ Consulte [Dados de eventos: datas e coleta](/arquitetura/dados-de-eventos) e a [
 | Marcação de dia inteiro vs `00:00` | Termos explícitos reconhecidos gerando datas civis (`dia_inteiro: True`); horários `00:00` sem indicativo mantidos em revisão (`ambiguo: True`). | Verificação amostral nos eventos extraídos diretamente de `noticias.unb.br`. |
 | Procedência visível (RF16) | Contratos públicos em `EventRead` (`source`, `source_url`), API (`test_events_api.py`), cache frontend (`publicEventsCache.test.js`) e UI (`PaginaDeEvento.jsx`, `SecondPage.jsx`). | Inspeção visual no deploy da Vercel após publicação em `main`. |
 | Cobertura multicampus | Mapeamento e normalização dos 5 campi da UnB (Darcy Ribeiro, FCTE, FCTS, FUP, FAL). | Conferência dos nomes de campus gravados no banco remoto. |
-| Execuções concorrentes e falha da fonte | Advisory lock (`pg_try_advisory_lock(708073)` e lock por item) validado; rollback de transação e preservação de dados existentes em caso de erro HTTP/timeout (`status = 'falha'`). | Ativação de `PRODUCTION_EVENT_COLLECTION_ENABLED=true` no environment `production-jobs` após merge em `main`. |
-
-| Ambiente | Aplicação e dados | Uso e publicação |
-| --- | --- | --- |
-| Local | Vite/FastAPI + Supabase CLI/Docker | Desenvolvimento e testes; dados descartáveis |
-| Homologação | Vercel + Render + projeto Supabase exclusivo | Dados fictícios e contas de teste; recebe `main` após validações |
-| Produção | Projetos/serviços separados dos de homologação | Promoção manual do commit homologado, após aprovação do responsável pela release |
-
-URLs, IDs dos projetos, região e responsáveis nominais serão preenchidos quando os recursos forem provisionados. Usar HTTPS público e regiões compatíveis entre API e banco. Não compartilhar banco, usuários, buckets ou segredos entre homologação e produção. Previews de PR não devem receber credenciais de produção.
+| Execuções concorrentes e falha da fonte | Advisory lock (`pg_try_advisory_lock(708073)` e lock por item) validado. Falhas de HTTP/timeout preservam dados existentes e registram `status = 'falha'`. | Ativação da variável de repositório `PRODUCTION_EVENT_COLLECTION_ENABLED=true` após merge em `main`. |
 
 ### Variáveis
 
@@ -258,6 +178,9 @@ URLs, IDs dos projetos, região e responsáveis nominais serão preenchidos quan
 | `SUPABASE_ANON_KEY` | Runtime Render | Chave anon usada na validação do token pelo Auth |
 | `CORS_ORIGINS` | Runtime Render | Origens exatas da SPA, separadas por vírgula, sem caminho; evitar curingas |
 | `PORT` | Runtime Render | Fornecida pelo provedor; usada pelo comando de início |
+| `API_DOCS_ENABLED` | Runtime Render | `false` em homologação e produção: desliga `/docs`, `/redoc` e `/openapi.json` |
+| `TRUSTED_PROXY_HOPS` | Runtime Render | Configuração para hospedagem própria. No Render, o limite usa o IP inserido pela borda em `CF-Connecting-IP`. |
+| `RATE_LIMIT_PER_MINUTE` / `RATE_LIMIT_WRITE_PER_MINUTE` | Runtime Render | Limite de requisições por cliente; padrões `240` e `60` |
 | `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID` / `SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET` | Supabase Auth | Cliente de login. Em ambiente hospedado, configure o provedor diretamente no Supabase. |
 | `GOOGLE_CALENDAR_CLIENT_ID` / `GOOGLE_CALENDAR_CLIENT_SECRET` | Runtime da API | Cliente web do projeto Google Cloud dedicado ao Calendar. |
 | `GOOGLE_CALENDAR_REDIRECT_URI` | Runtime da API | Callback HTTPS exato da API com caminho `/api/v1/me/google-calendar/callback`. |
@@ -272,9 +195,9 @@ Configurar a conexão PostgreSQL usando a opção oferecida pelo projeto Supabas
 
 ### SPA, CORS e configuração Vercel
 
-Tanto [`frontend/vercel.json`](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/frontend/vercel.json) (usado quando o Root Directory é `frontend`) quanto [`vercel.json`](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/vercel.json) na raiz configuram exclusivamente o frontend Vite (`framework: "vite"`, saída `dist` / `frontend/dist`), preservando `/api/search` (`kind=sitemap` e `kind=event`), `/auth/retorno` -> `/app.html`, `/eventos` -> `/eventos.html` e rotas profundas em `/app.html`.
+Use [`frontend/vercel.json`](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/frontend/vercel.json) com Root Directory `frontend`. A configuração Vite (saída `dist`) preserva `/api/search` (`kind=sitemap` e `kind=event`), `/auth/retorno` -> `/app.html`, `/eventos` -> `/eventos.html` e rotas profundas em `/app.html`.
 
-O [roteamento do frontend](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/frontend/vercel.json) gera títulos, descrições e URLs canônicas no HTML da home e da lista de eventos durante o build. As rotas da SPA, como `/admin` e `/plano-de-ensino`, continuam aceitando acesso direto e recarga.
+O [roteamento do frontend](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/frontend/vercel.json) gera títulos, descrições e URLs canônicas no HTML da home e da lista de eventos durante o build. As rotas da SPA, como `/admin`, `/configuracoes` e `/plano-de-ensino`, continuam aceitando acesso direto e recarga.
 
 A função [de busca](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/frontend/api/search.js) responde a `/sitemap.xml` e `/evento/<id>`. Configure a URL e a chave pública do Supabase do mesmo ambiente no build e na função. As leituras passam pela RLS anônima e selecionam apenas eventos aprovados. A CDN pode guardar respostas públicas por cinco minutos. Teste o sitemap, um evento aprovado e um ID inexistente após a publicação. Após o deploy, envie o sitemap e solicite indexação no Search Console.
 
@@ -349,13 +272,13 @@ Usar duas contas estudantes, uma professora e uma administradora fictícias, cri
 | Salvar/remover público repetidamente | Sem duplicatas; remover vínculo não remove evento; usuários isolados |
 | Sugestão aprovada/recusada | Pendência fora do catálogo; recusa exige justificativa; avisos ao autor; segunda decisão recusada |
 | Administração | Só admin altera terceiros; cargo divergente detectado; sem autorrebaixamento |
-| RLS de notificações e Storage | Usuário não lê/atualiza recursos alheios; bucket permanece privado; isso não implica fluxo de upload implementado |
+| RLS de notificações e Storage | Usuário não lê/atualiza recursos alheios; bucket legado permanece privado e novos PDFs são descartados após a preparação |
 | Rotas SPA e CORS | Acesso direto funciona; origem autorizada integra API; origem não permitida não recebe liberação CORS |
 | Saúde e dependências | `/health` responde e leituras reais/autenticação também funcionam |
 
 Aceitar a implantação apenas com evidências registradas de migrações, builds, testes de fumaça e recuperação preparada. Não marcar como homologado somente porque um deploy terminou.
 
-## Pendências e responsabilidades propostas
+## Pendências do plano original, registro de 24/10
 
 | Pendência futura | Papel responsável |
 | --- | --- |

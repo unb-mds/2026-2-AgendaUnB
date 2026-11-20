@@ -3,7 +3,7 @@ title: "Visão do produto"
 description: "Documento de visão do produto Agenda UnB, descrevendo propósito, escopo, posicionamento, stakeholders, recursos e prioridades."
 ---
 
-**Versão** 2.0 (escopo planejado da Release 2)<br />**Equipe** Agenda UnB — Métodos de Desenvolvimento de Software, 2026/2
+**Versão** 2.0 (escopo da Release 2)<br />**Equipe** Agenda UnB — Métodos de Desenvolvimento de Software, 2026/2
 
 ---
 
@@ -96,8 +96,8 @@ Aplicação web responsiva com catálogo público de eventos e área autenticada
 
 - Estudantes possuem conta de e-mail ativa para autenticação (pessoal ou Google/institucional); professores possuem e-mail institucional sob o domínio `@unb.br`.
 - O backend consulta apenas o catálogo público do Followw. O usuário escolhe a oferta manualmente e declara seu vínculo. Se a fonte falhar, vale o último catálogo válido. O envio de plano exige uma oferta disponível nesse catálogo.
-- Planos começam privados. O autor pode compartilhar uma versão revisada com seguidores autenticados da turma. A plataforma distingue contribuição estudantil, autoria de perfil professor e origem institucional comprovada.
-- A plataforma recebe PDF digital ou texto bruto. O PDF original é descartado após a extração local. O usuário revisa e autoriza separadamente o texto minimizado antes do processamento externo.
+- Planos começam privados. A primeira versão com avaliações extraídas torna-se disponível para seguidores autenticados da turma quando o autor consulta ou confirma o resultado. O autor pode retirar o compartilhamento. A plataforma distingue contribuição estudantil, autoria de perfil professor e origem institucional comprovada.
+- A plataforma recebe PDF digital ou texto bruto. O PDF original é descartado após a extração local. O envio autoriza a análise do texto, que passa pela sanitização automática antes do processamento externo.
 - A persistência relacional, autenticação e armazenamento de arquivos utilizam a infraestrutura gerenciada do Supabase (PostgreSQL, Auth e Storage), orquestrada por uma API REST em Python/FastAPI.
 
 ---
@@ -114,8 +114,8 @@ O detalhamento completo dos 21 requisitos funcionais está em [requisitos](/prod
 | R4 | Publicação, moderação e administração | Professor e admin moderam sugestões. Somente admin gerencia papéis e categorias (RF10, RF11). |
 | R5 | Seleção de turmas | Seleção manual de oferta do catálogo público Followw e vínculo autodeclarado (RF05). |
 | R6 | Extração assistida de avaliações | Provas e trabalhos são extraídos como candidatos com evidência de origem (RF06). |
-| R7 | Revisão, compartilhamento e colaboração | Revisão de candidatos, confirmação individual, compartilhamento voluntário e votação por versão (RF07). |
-| R8 | Eventos públicos na agenda pessoal | Adicionar ou remover eventos públicos da agenda, consultar seu histórico e acessar separadamente o link original (RF12, RF13, RF18). |
+| R7 | Revisão, compartilhamento e colaboração | Revisão de candidatos, confirmação explícita, compartilhamento na turma, revisões e votos (RF07). |
+| R8 | Eventos públicos na agenda pessoal | Adicionar ou remover eventos públicos da agenda e acessar separadamente o link oficial (RF12, RF13). |
 | R9 | Lembretes na plataforma | Avisos persistentes 24 horas antes de eventos da própria agenda (RF17). |
 | R10 | Exportação de calendário | Envio solicitado pelo usuário a uma agenda secundária Agenda UnB na conta Google de mesmo e-mail verificado. Reexportação idempotente e ICS complementar (RF21). |
 | R11 | Design System e Bivalência de Temas | Alternância entre modo escuro (_Dark_) e claro (_Light_), ancorado na identidade "The Neon Campus" com estilo _halftone_, _glassmorphism_ e _glow_ em Azul `#008bff` (RF20, DESIGN.md, PRODUCT.md) |
@@ -135,9 +135,9 @@ O detalhamento completo dos 21 requisitos funcionais está em [requisitos](/prod
 
 **De banco de dados e persistência** — PostgreSQL gerenciado via Supabase, migrações SQL versionadas em `supabase/migrations/` e RLS para isolamento dos dados. O plano persiste como texto e avaliações sob acesso autorizado. O PDF original só existe durante a extração local.
 
-O ambiente virtual local `backend/venv`, usado pelo Makefile, executa **Python 3.14.4** (verificado em 08/11/2026). O backend não fixa uma versão no repositório; o CI de documentação usa Python 3.11. A proposta de implantação em 3.11 ainda exige validação de compatibilidade.
+O CI do backend e o Dockerfile de implantação usam **Python 3.11**. Consulte os passos de configuração no [guia de execução local](/processo/execucao-local).
 
-**De documentação e versionamento** — Documentação estática gerada via MkDocs Material e publicada no GitHub Pages através de workflow de CI/CD (`.github/workflows/docs.yml`).
+**De documentação e versionamento** — A documentação oficial usa Mintlify, com validação no workflow `.github/workflows/docs.yml`.
 
 ---
 
@@ -167,6 +167,6 @@ A ordem de prioridade segue o planejamento por ciclos acordado pela equipe:
 
 - R5, R6 e R7: seleção de turma, extração assistida, revisão e compartilhamento de planos (RF05–RF07).
 - R4: homologação da moderação por professor/admin e da gestão de papéis e categorias por admin (RF10, RF11).
-- R8, R9, R10 e R12: eventos públicos na agenda e histórico, lembretes, exportação direta e coleta da Agenda UnB Notícias entram nesta entrega (RF12, RF13, RF16–RF18, RF21).
+- R8, R9, R10 e R12: eventos públicos na agenda, lembretes, exportação direta e coleta da Agenda UnB Notícias entram nesta entrega (RF12, RF13, RF16, RF17, RF21).
 
 A Release 2 cobre a organização acadêmica e a exportação sob demanda. Matrícula oficial, atestados, notas, avisos privados do Followw/SIGAA e sincronização automática de calendário ficam fora do recorte.

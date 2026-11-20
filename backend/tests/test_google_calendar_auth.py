@@ -1,14 +1,23 @@
 import base64
 import hashlib
-from datetime import datetime, timedelta, timezone
+import re
+from datetime import date, datetime, timedelta, timezone
 from urllib.parse import parse_qs, urlsplit
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from cryptography.fernet import Fernet
 import httpx
 import pytest
 
-from src.database.models import GoogleCalendarConnection, GoogleCalendarOAuthState, PersonalEvent, Profile, PublicEvent, SavedPublicEvent
+from src.database.models import (
+    GoogleCalendarConnection,
+    GoogleCalendarEventExport,
+    GoogleCalendarOAuthState,
+    PersonalEvent,
+    Profile,
+    PublicEvent,
+    SavedPublicEvent,
+)
 from src.middlewares.auth import CurrentUser
 from src.modules.google_calendar import export, service
 
@@ -38,8 +47,10 @@ def _start(api):
 
 
 def _callback(api, query, **fields):
-    response = api[0].post(f"{ROOT}/callback", data={"state": query["state"][0], **fields}, follow_redirects=False)
+    response = api[0].get(f"{ROOT}/callback", params={"state": query["state"][0], **fields}, follow_redirects=False)
     assert response.status_code == 303
+    assert response.headers["cache-control"] == "no-store"
+    assert response.headers["referrer-policy"] == "no-referrer"
     redirect = urlsplit(response.headers["location"])
     assert redirect.netloc == "app.example.edu"
     assert set(parse_qs(redirect.query)) == {"aba", "google_calendar"}
@@ -48,6 +59,7 @@ def _callback(api, query, **fields):
 
 def _grant(api, actor, monkeypatch, *, scope=service.CALENDAR_SCOPE, email=None, verified=True):
     query = _start(api)
+    assert "response_mode" not in query
 
     def exchange(url, **kwargs):
         assert url == service.TOKEN_ENDPOINT
@@ -282,3 +294,271 @@ def test_partial_export_reports_which_item_to_retry(api, actor, monkeypatch):
     assert [item["status"] for item in result.json()] == ["exported", "failed"]
     assert api[0].post(f"{ROOT}/exports", json={"events": [second]}).json()[0]["status"] == "exported"
     assert attempts[0] != attempts[1] == attempts[2]
+
+
+def test_export_persists_mapping_and_supports_all_day_intervals_location_and_description(
+    api, actor, monkeypatch
+):
+    assert _grant(api, actor, monkeypatch) == "connected"
+    with api[1]() as db:
+        all_day_personal = PersonalEvent(
+            user_id=actor.id,
+            title="Entrega do Trabalho Final — Cálculo",
+            description="Enviar relatório em PDF no aprender3",
+            location=" Bloco B - FGA ",
+            all_day=True,
+            start_date=date(2026, 11, 18),
+            end_date=date(2026, 11, 21),
+            starts_at=datetime(2026, 11, 18, 3, tzinfo=timezone.utc),
+            ends_at=datetime(2026, 11, 21, 3, tzinfo=timezone.utc),
+        )
+        timed_public = PublicEvent(
+            author_id=actor.id,
+            title="Simpósio de Extensão Universitária",
+            description="Mesa-redonda com apresentação de projetos",
+            location="Auditório Central",
+            all_day=False,
+            starts_at=datetime(2026, 11, 19, 17, 0, tzinfo=timezone.utc),
+            ends_at=datetime(2026, 11, 19, 19, 30, tzinfo=timezone.utc),
+            status="aprovado",
+        )
+        db.add_all([all_day_personal, timed_public])
+        db.flush()
+        db.add(SavedPublicEvent(user_id=actor.id, event_id=timed_public.id))
+        personal_ref = {"id": str(all_day_personal.id), "kind": "personal"}
+        saved_ref = {"id": str(timed_public.id), "kind": "saved"}
+        db.commit()
+
+    sent_payloads = []
+
+    def post(client, path, token, payload):
+        if path == "calendars":
+            return httpx.Response(200, json={"id": "agenda@example.com"})
+        assert path == "calendars/agenda%40example.com/events"
+        sent_payloads.append(payload)
+        return httpx.Response(200, json={"id": payload["id"]})
+
+    monkeypatch.setattr(export, "_post", post)
+    response = api[0].post(
+        f"{ROOT}/exports",
+        json={
+            "events": [personal_ref, saved_ref],
+            "include_description": True,
+            "start_date": "2026-11-18",
+            "end_date": "2026-11-20",
+        },
+    )
+    assert response.status_code == 200
+    assert [item["status"] for item in response.json()] == ["exported", "exported"]
+    assert len(sent_payloads) == 2
+
+    first_payload, second_payload = sent_payloads
+    assert re.fullmatch(r"[a-v0-9]{5,1024}", first_payload["id"])
+    assert first_payload["summary"] == "Entrega do Trabalho Final — Cálculo"
+    assert first_payload["location"] == "Bloco B - FGA"
+    assert first_payload["description"] == "Enviar relatório em PDF no aprender3"
+    assert first_payload["start"] == {"date": "2026-11-18"}
+    assert first_payload["end"] == {"date": "2026-11-21"}
+
+    assert re.fullmatch(r"[a-v0-9]{5,1024}", second_payload["id"])
+    assert second_payload["summary"] == "Simpósio de Extensão Universitária"
+    assert second_payload["location"] == "Auditório Central"
+    assert second_payload["description"] == "Mesa-redonda com apresentação de projetos"
+    assert second_payload["start"] == {
+        "dateTime": "2026-11-19T14:00:00-03:00",
+        "timeZone": "America/Sao_Paulo",
+    }
+    assert second_payload["end"] == {
+        "dateTime": "2026-11-19T16:30:00-03:00",
+        "timeZone": "America/Sao_Paulo",
+    }
+
+    with api[1]() as db:
+        rows = db.query(GoogleCalendarEventExport).filter_by(user_id=actor.id).all()
+        assert len(rows) == 2
+        assert {row.status for row in rows} == {"exported"}
+        assert {row.calendar_id for row in rows} == {"agenda@example.com"}
+        for row in rows:
+            assert re.fullmatch(r"[0-9a-f]{64}", row.exported_version)
+
+
+def test_preview_and_explicit_reexport_overwrite_confirmation(api, actor, monkeypatch):
+    assert _grant(api, actor, monkeypatch) == "connected"
+    with api[1]() as db:
+        item = _personal(db, actor.id)
+        event_uuid = UUID(item["id"])
+        db.commit()
+
+    put_calls = []
+
+    def post(client, path, token, payload):
+        if path == "calendars":
+            return httpx.Response(200, json={"id": "agenda@example.com"})
+        return httpx.Response(409 if put_calls or db_has_export() else 200)
+
+    def put(client, path, token, payload):
+        put_calls.append((path, payload))
+        return httpx.Response(200, json={"id": payload["id"]})
+
+    def db_has_export():
+        with api[1]() as db:
+            row = db.get(GoogleCalendarEventExport, (actor.id, "personal", event_uuid))
+            return row is not None and row.status in ("exported", "updated", "already_exported")
+
+    monkeypatch.setattr(export, "_post", post)
+    monkeypatch.setattr(export, "_put", put)
+
+    preview_before = api[0].post(f"{ROOT}/exports/preview", json={"events": [item]})
+    assert preview_before.status_code == 200
+    assert preview_before.json() == {
+        "requires_overwrite_confirmation": False,
+        "items": [{"id": item["id"], "kind": "personal", "action": "create"}],
+    }
+
+    first_export = api[0].post(f"{ROOT}/exports", json={"events": [item]})
+    assert first_export.status_code == 200
+    assert first_export.json()[0]["status"] == "exported"
+
+    preview_unchanged = api[0].post(f"{ROOT}/exports/preview", json={"events": [item]})
+    assert preview_unchanged.json() == {
+        "requires_overwrite_confirmation": False,
+        "items": [{"id": item["id"], "kind": "personal", "action": "unchanged"}],
+    }
+
+    # Edit local event title and location
+    with api[1]() as db:
+        ev = db.get(PersonalEvent, event_uuid)
+        ev.title = "Prova 1 (Sala Alterada)"
+        ev.location = "Sala I1"
+        db.commit()
+
+    preview_modified = api[0].post(f"{ROOT}/exports/preview", json={"events": [item]})
+    assert preview_modified.json() == {
+        "requires_overwrite_confirmation": True,
+        "items": [{"id": item["id"], "kind": "personal", "action": "update"}],
+    }
+
+    # Without allow_managed_field_updates=True, re-export does not overwrite remote event
+    without_confirm = api[0].post(
+        f"{ROOT}/exports",
+        json={"events": [item], "allow_managed_field_updates": False},
+    )
+    assert without_confirm.status_code == 200
+    assert without_confirm.json()[0]["status"] == "already_exported"
+    assert put_calls == []
+
+    # Preview still reports update required because remote copy was not overwritten yet
+    assert api[0].post(f"{ROOT}/exports/preview", json={"events": [item]}).json()[
+        "requires_overwrite_confirmation"
+    ] is True
+
+    # With explicit confirmation (allow_managed_field_updates=True), updates via PUT
+    with_confirm = api[0].post(
+        f"{ROOT}/exports",
+        json={"events": [item], "allow_managed_field_updates": True},
+    )
+    assert with_confirm.status_code == 200
+    assert with_confirm.json()[0]["status"] == "updated"
+    assert len(put_calls) == 1
+    assert put_calls[0][1]["summary"] == "Prova 1 (Sala Alterada)"
+    assert put_calls[0][1]["location"] == "Sala I1"
+    assert put_calls[0][1]["status"] == "confirmed"
+
+    # Now preview shows unchanged
+    preview_after_update = api[0].post(f"{ROOT}/exports/preview", json={"events": [item]})
+    assert preview_after_update.json() == {
+        "requires_overwrite_confirmation": False,
+        "items": [{"id": item["id"], "kind": "personal", "action": "unchanged"}],
+    }
+
+
+def test_timeout_reconciliation_and_idempotency_key_prevent_duplicates(api, actor, monkeypatch):
+    assert _grant(api, actor, monkeypatch) == "connected"
+    with api[1]() as db:
+        item = _personal(db, actor.id)
+        db.commit()
+
+    post_calls = []
+
+    def post(client, path, token, payload):
+        if path == "calendars":
+            return httpx.Response(200, json={"id": "agenda@example.com"})
+        post_calls.append(payload["id"])
+        if len(post_calls) == 1:
+            raise httpx.ReadTimeout("upstream timeout after event creation")
+        return httpx.Response(409)
+
+    monkeypatch.setattr(export, "_post", post)
+
+    # First attempt times out -> status is failed
+    first = api[0].post(
+        f"{ROOT}/exports",
+        headers={"Idempotency-Key": "batch-key-1"},
+        json={"events": [item]},
+    )
+    assert first.status_code == 200
+    assert first.json()[0]["status"] == "failed"
+
+    # Retry with same Idempotency-Key reconciles 409 from Google into already_exported
+    second = api[0].post(
+        f"{ROOT}/exports",
+        headers={"Idempotency-Key": "batch-key-1"},
+        json={"events": [item]},
+    )
+    assert second.status_code == 200
+    assert second.json()[0]["status"] == "already_exported"
+    assert len(post_calls) == 2
+
+    # Repeating the already-completed Idempotency-Key returns without calling Google again
+    third = api[0].post(
+        f"{ROOT}/exports",
+        headers={"Idempotency-Key": "batch-key-1"},
+        json={"events": [item]},
+    )
+    assert third.status_code == 200
+    assert third.json()[0]["status"] == "already_exported"
+    assert len(post_calls) == 2
+
+
+def test_rate_limit_429_uses_bounded_backoff_and_403_revocation_clears_credentials(
+    api, actor, monkeypatch
+):
+    assert _grant(api, actor, monkeypatch) == "connected"
+    with api[1]() as db:
+        item = _personal(db, actor.id)
+        db.get(GoogleCalendarConnection, actor.id).calendar_id = "agenda@example.com"
+        db.commit()
+
+    slept = []
+    monkeypatch.setattr(export.time_module, "sleep", lambda seconds: slept.append(seconds))
+
+    attempts = 0
+
+    def post_rate_limited(client, path, token, payload):
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            return httpx.Response(429, headers={"Retry-After": "10"})
+        return httpx.Response(200, json={"id": payload["id"]})
+
+    monkeypatch.setattr(export, "_post", post_rate_limited)
+    res = api[0].post(f"{ROOT}/exports", json={"events": [item]})
+    assert res.status_code == 200
+    assert res.json()[0]["status"] == "exported"
+    assert slept == [export.MAX_BACKOFF_SECONDS]
+
+    # Non-rate-limit 403 revokes credentials and requires reauthorization (409)
+    with api[1]() as db:
+        second = _personal(db, actor.id)
+        db.commit()
+
+    monkeypatch.setattr(
+        export,
+        "_post",
+        lambda client, path, token, payload: httpx.Response(
+            403, json={"error": {"errors": [{"reason": "insufficientPermissions"}]}}
+        ),
+    )
+    revoked_res = api[0].post(f"{ROOT}/exports", json={"events": [second]})
+    assert revoked_res.status_code == 409
+    assert api[0].get(f"{ROOT}/connection").json()["connected"] is False

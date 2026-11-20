@@ -3,9 +3,7 @@ title: "Termos de Uso"
 description: "Regras de uso do Agenda UnB."
 ---
 
-# Termos de Uso
-
-**Versão 2026-11-11.**
+**Versão 2026-11-20.**
 
 ## 1. O que é o Agenda UnB
 
@@ -15,7 +13,7 @@ Uma plataforma acadêmica, desenvolvida por estudantes na disciplina Métodos de
 
 - Informe dados verdadeiros e mantenha a senha em sigilo. Você responde pelo uso da sua conta.
 - O papel de professor exige e-mail institucional `@unb.br` confirmado.
-- Você pode solicitar a exclusão da conta a qualquer momento pelo canal de contato. A opção em Configurações está prevista para a Release 2.
+- Você pode excluir sua conta a qualquer momento em **Configurações** (mediante confirmação explícita) ou solicitar apoio pelo canal de contato.
 
 ## 3. As informações não são oficiais
 
@@ -27,7 +25,7 @@ Uma plataforma acadêmica, desenvolvida por estudantes na disciplina Métodos de
 
 ## 4. O que você pode publicar
 
-Ao sugerir um evento ou compartilhar um plano, você declara que tem o direito de fazê-lo. Não é permitido:
+Ao sugerir um evento ou enviar um plano, você declara que tem o direito de usar e compartilhar o conteúdo que será disponibilizado. Não é permitido:
 
 - publicar conteúdo ilegal, ofensivo, discriminatório ou enganoso;
 - divulgar dados pessoais de outras pessoas sem autorização;
@@ -38,19 +36,19 @@ Sugestões de eventos passam por moderação. A equipe pode recusar ou remover c
 
 ## 5. Conteúdo que você compartilha
 
-O conteúdo continua seu. Ao compartilhar um plano com a turma, você autoriza que as pessoas que seguem aquela turma o vejam, votem e importem as datas para as próprias agendas. Você pode retirar o compartilhamento quando quiser; as cópias já importadas por outras pessoas permanecem com elas.
+O conteúdo continua seu. Ao enviar um plano para uma turma, você autoriza o compartilhamento da primeira versão com avaliações extraídas quando consultar ou confirmar o resultado. As pessoas que seguem a turma podem consultar a versão e importar as datas para as próprias agendas. Você pode retirar o compartilhamento em **Plano de Ensino** ou apagar todos os seus planos ao excluir a conta em **Configurações**; as cópias já importadas por outras pessoas permanecem com elas.
 
 ## 6. Disponibilidade
 
-O serviço é oferecido como está, em infraestrutura gratuita, sem garantia de funcionamento contínuo. Avisos e lembretes podem atrasar ou falhar. **Não dependa apenas da plataforma para prazos importantes.**
+O serviço é oferecido como está, em infraestrutura gratuita, sem garantia de funcionamento contínuo. Avisos e notificações podem atrasar ou falhar. **Não dependa apenas da plataforma para prazos importantes.**
 
 ## 7. Privacidade
 
-O tratamento de dados está descrito na [Política de Privacidade](/produto/politica-de-privacidade). Aceitar estes termos não é o mesmo que consentir com tratamentos específicos: o envio de texto a serviços de inteligência artificial e a conexão com o Google Agenda pedem autorização própria, que pode ser revogada.
+O tratamento de dados está descrito na [Política de Privacidade](/produto/politica-de-privacidade). Aceitar estes termos não é o mesmo que consentir com tratamentos específicos: o envio de texto sanitizado ao Gemini e a conexão com o Google Agenda pedem autorização própria. O consentimento do Google Agenda pode ser revogado a qualquer momento em **Configurações** ou **Meus Eventos**.
 
 ## 8. Mudanças
 
-Cada versão é identificada pela data de vigência. Mudanças relevantes serão comunicadas na plataforma. O registro de leitura na entrada está previsto para a Release 2.
+Cada versão é identificada pela data de vigência. Mudanças relevantes serão comunicadas na plataforma, com novo registro de leitura ao entrar ou em **Configurações**.
 
 ## 9. Contato
 
