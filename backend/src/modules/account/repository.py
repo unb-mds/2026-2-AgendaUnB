@@ -686,11 +686,16 @@ def complete_account_deletion(
     if owned_syllabus_ids:
         db.execute(delete(Syllabus).where(Syllabus.id.in_(owned_syllabus_ids)))
 
-    db.execute(delete(PersonalEvent).where(PersonalEvent.user_id == user_id))
-    db.execute(delete(SavedPublicEvent).where(SavedPublicEvent.user_id == user_id))
     authored_event_ids = list(
         db.scalars(select(PublicEvent.id).where(PublicEvent.author_id == user_id)).all()
     )
+    reminder_filters = [Reminder.user_id == user_id]
+    if authored_event_ids:
+        reminder_filters.append(Reminder.public_event_id.in_(authored_event_ids))
+    db.execute(delete(Reminder).where(or_(*reminder_filters)))
+    db.execute(delete(GoogleCalendarEventExport).where(GoogleCalendarEventExport.user_id == user_id))
+    db.execute(delete(PersonalEvent).where(PersonalEvent.user_id == user_id))
+    db.execute(delete(SavedPublicEvent).where(SavedPublicEvent.user_id == user_id))
     if authored_event_ids:
         db.execute(
             update(PublicEvent)

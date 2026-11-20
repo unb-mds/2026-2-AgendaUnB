@@ -371,19 +371,25 @@ def test_votes_are_private_and_written_only_by_the_server(database):
     denied(conn, 'select count(*) from public.votos_avaliacao')
 
 
-def test_vote_summary_omits_withdrawn_assessments(database):
+def test_withdrawn_assessments_reject_votes_and_are_omitted_from_summary(database):
     conn, users = database
     turma = offering(conn)
     _, version_id, candidates = plan(conn, users['ana'], turma)
     follow(conn, users['bruno'], turma)
+    follow(conn, users['carla'], turma)
     share(conn, users['ana'], version_id)
-    scalar(conn, 'select public.votar_avaliacao(:a, :c, :v)',
-           {'a': users['bruno'], 'c': candidates[0], 'v': 'contesta'})
+    vote = 'select public.votar_avaliacao(:a, :c, :v)'
+    conn.execute(text('set local role service_role'))
+    scalar(conn, vote, {'a': users['bruno'], 'c': candidates[0], 'v': 'contesta'})
+    conn.execute(text('reset role'))
     conn.execute(text("update public.avaliacoes set status='descartado', revisado_em=now() where id=:id"),
                  {'id': candidates[0]})
 
+    conn.execute(text('set local role service_role'))
     entries = conn.execute(text('select * from public.resumo_votos_versao(:a, :v)'),
                            {'a': users['bruno'], 'v': version_id}).mappings().all()
     assert [str(row['avaliacao_id']) for row in entries] == [candidates[1]]
-    assert scalar(conn, 'select count(*) from public.votos_avaliacao where avaliacao_id=:id',
-                  {'id': candidates[0]}) == 1
+    for name in ('bruno', 'carla'):
+        refused(conn, 'P0002', vote, {'a': users[name], 'c': candidates[0], 'v': 'confirma'})
+    assert conn.execute(text('select valor from public.votos_avaliacao where avaliacao_id=:id'),
+                        {'id': candidates[0]}).scalars().all() == ['contesta']

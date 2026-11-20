@@ -61,7 +61,13 @@ test('professor vê ações de gestão apenas nos próprios eventos públicos', 
   const session = { access_token: 'token', user: { id: 'professor-unb', email: 'pessoa@unb.br' } };
   await authClient(page, `async getSession() { return { data: { session: ${JSON.stringify(session)} } }; },`,
     session, { id: session.user.id, papel: 'professor' });
-  await page.route('**/api/v1/me/published-event-ids', (route) => route.fulfill({ json: ['evento-proprio'] }));
+  let ownershipRequests = 0;
+  await page.route('**/api/v1/me/published-event-ids', (route) => {
+    ownershipRequests += 1;
+    return ownershipRequests === 1
+      ? route.fulfill({ status: 503, json: { detail: 'Tente novamente.' } })
+      : route.fulfill({ json: ['evento-proprio'] });
+  });
   await page.route('**/api/v1/events?*', (route) => route.fulfill({ json: [
     { id: 'evento-proprio', title: 'Evento do professor', starts_at: '2026-11-22T17:00:00Z' },
     { id: 'evento-alheio', title: 'Evento de outro autor', starts_at: '2026-11-22T18:00:00Z' },
@@ -70,9 +76,29 @@ test('professor vê ações de gestão apenas nos próprios eventos públicos', 
 
   const own = page.locator('.event-card').filter({ hasText: 'Evento do professor' });
   const other = page.locator('.event-card').filter({ hasText: 'Evento de outro autor' });
+  const accessError = page.getByRole('alert').filter({ hasText: 'Não foi possível consultar quais eventos públicos você pode gerenciar.' });
+  await expect(own).toBeVisible();
+  await expect(own.getByTitle('Editar evento')).toHaveCount(0);
+  await accessError.getByRole('button', { name: 'Tentar novamente' }).click();
+  await expect(accessError).toHaveCount(0);
   await expect(own.getByTitle('Editar evento')).toBeVisible();
   await expect(other).toBeVisible();
   await expect(other.getByTitle('Editar evento')).toHaveCount(0);
+
+  await page.route('**/api/v1/events', (route) => route.fulfill({ status: 201, json: {
+    id: 'evento-publicado', title: 'Evento recém-publicado', starts_at: '2026-11-22T17:00:00Z',
+  } }));
+  await page.getByRole('button', { name: 'Criar Evento' }).click();
+  const form = page.getByRole('dialog', { name: 'Novo Evento' });
+  await form.getByLabel('Título do evento', { exact: false }).fill('Evento recém-publicado');
+  await form.getByRole('checkbox', { name: 'Evento de dia inteiro' }).check();
+  await form.getByRole('button', { name: 'dd/mm/aaaa' }).click();
+  await form.getByRole('button', { name: /^1\/\d+\/\d+$/ }).click();
+  await form.getByRole('button', { name: 'Salvar Evento' }).click();
+  const published = page.locator('.event-card').filter({ hasText: 'Evento recém-publicado' });
+  await expect(published.getByTitle('Editar evento')).toBeVisible();
+  await expect(own.getByTitle('Editar evento')).toBeVisible();
+  expect(ownershipRequests).toBe(2);
 });
 
 test('cadastro sem sessão confirma e controla intervalo de reenvio', async ({ page }) => {

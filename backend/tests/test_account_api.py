@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from urllib.parse import parse_qs, urlsplit
 from uuid import UUID, uuid4
 
@@ -12,7 +12,7 @@ import pytest
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from cryptography.fernet import Fernet
-from sqlalchemy import text
+from sqlalchemy import select, text
 from sqlalchemy.exc import SQLAlchemyError
 
 from scripts.descartar_pdfs import discard_legacy_pdfs
@@ -806,6 +806,42 @@ def test_record_legal_acceptance_handles_concurrent_duplicate_insert(api, monkey
     status_res = client.get("/api/v1/me/legal-documents")
     assert status_res.status_code == 200
     assert status_res.json()["terms"]["pending"] is False
+
+
+def test_sqlite_account_deletion_removes_own_reminders_and_calendar_exports(api):
+    client, SessionLocal, auth_state, _ = api
+    ana = _make_user()
+    bruno = _make_user(email="bruno@unb.br")
+    auth_state["value"] = ana
+    starts_at = datetime(2026, 11, 22, 14, tzinfo=timezone.utc)
+
+    with SessionLocal() as db:
+        db.add_all([Profile(id=user.id, papel="student") for user in (ana, bruno)])
+        db.flush()
+        for user in (ana, bruno):
+            event = PersonalEvent(user_id=user.id, title="Prova", starts_at=starts_at)
+            db.add(event)
+            db.flush()
+            db.add_all([
+                Reminder(user_id=user.id, event_kind="pessoal", personal_event_id=event.id,
+                         event_starts_at=starts_at, scheduled_for=starts_at - timedelta(days=1)),
+                GoogleCalendarEventExport(user_id=user.id, event_kind="personal", local_event_id=event.id,
+                                          calendar_id="agenda-de-teste", google_event_id=str(event.id),
+                                          exported_version="a" * 64),
+            ])
+        db.commit()
+
+    class FakeAuthAdmin(account_service.SupabaseAuthAdminClient):
+        def delete_user(self, user_id: UUID) -> None:
+            assert user_id == ana.id
+
+    app.dependency_overrides[account_service.get_auth_admin_client] = lambda: FakeAuthAdmin()
+    response = client.request("DELETE", "/api/v1/me", json={"confirmation": "EXCLUIR MINHA CONTA"})
+    assert response.status_code == 204
+
+    with SessionLocal() as db:
+        assert db.scalars(select(Reminder.user_id)).all() == [bruno.id]
+        assert db.scalars(select(GoogleCalendarEventExport.user_id)).all() == [bruno.id]
 
 
 def test_sqlite_deletion_nullifies_public_event_moderation_and_duplicate_refs(api):
