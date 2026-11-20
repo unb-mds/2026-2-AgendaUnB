@@ -25,6 +25,16 @@ services:
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
+      - key: GOOGLE_CALENDAR_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CALENDAR_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_TOKEN_ENCRYPTION_KEY
+        sync: false
+      - key: GOOGLE_CALENDAR_REDIRECT_URI
+        value: https://agenda-unb-api-homolog.onrender.com/api/v1/me/google-calendar/callback
+      - key: GOOGLE_CALENDAR_FRONTEND_REDIRECT_URI
+        value: https://agendaunb.com.br/eventos?aba=meus
       - key: GEMINI_API_KEY
         sync: false
       - key: GEMINI_MODEL

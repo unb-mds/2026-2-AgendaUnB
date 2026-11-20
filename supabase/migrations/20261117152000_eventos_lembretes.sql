@@ -4,7 +4,7 @@
 --   S8-B03 (#81)  lembretes persistentes dentro da plataforma
 --   ADR-013       agendamento idempotente e revalidação no disparo
 --
--- Requisitos: RF18 e RNF02.
+-- Requisitos: RF17 e RNF02.
 --
 -- As regras que precisam valer em qualquer caminho de escrita ficam
 -- no banco (chaves únicas, triggers e funções). O agendador só

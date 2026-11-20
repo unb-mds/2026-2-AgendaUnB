@@ -4,7 +4,7 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { eventsApi, toApiEvent, toUiEvent } from '../lib/api';
-import { formatEventSchedule, splitMyEventsByHistory } from '../lib/calendar';
+import { formatEventSchedule } from '../lib/calendar';
 import {
   clearStoredEventFilters,
   getStoredEventFilters,
@@ -353,8 +353,7 @@ function getAreaIcon(areaName) {
 function EventCardItem({
   evento,
   visaoEventos,
-  isProfessor,
-  isAdmin,
+  canManagePublic,
   textColor,
   onOpen,
   onEdit,
@@ -362,10 +361,10 @@ function EventCardItem({
 }) {
   const canEdit = visaoEventos === 'MEUS'
     ? Boolean(evento.criadoPorMim)
-    : Boolean(isProfessor || isAdmin);
+    : canManagePublic;
   const canRemove = visaoEventos === 'MEUS'
     ? (evento.criadoPorMim || evento.salvoNaAgenda)
-    : (isProfessor || isAdmin);
+    : canManagePublic;
 
   return (
     <div
@@ -463,6 +462,12 @@ export default function SegundaPagina() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user, profile, isProfessor, isAdmin } = useAuth();
+  const professorId = isProfessor && !isAdmin ? user?.id : null;
+  const [publishedEvents, setPublishedEvents] = useState(null);
+  const [publishedEventsRevision, setPublishedEventsRevision] = useState(0);
+  const canManagePublic = (event) => isAdmin || Boolean(
+    professorId && publishedEvents?.userId === professorId && publishedEvents.ids.has(event.id),
+  );
 
   // --- GERENCIAMENTO DE TEMA PERSISTENTE ---
   const [theme, setTheme] = useState(() => getStoredTheme());
@@ -564,6 +569,31 @@ export default function SegundaPagina() {
       ...(profile?.papel === 'student' ? [{ label: 'Sugerir evento', value: 'Sugestão' }] : []),
       { label: 'Apenas para mim', value: 'Privado' },
     ];
+
+  useEffect(() => {
+    if (!professorId || visaoEventos !== 'Públicos') {
+      setPublishedEvents(null);
+      return undefined;
+    }
+    setPublishedEvents(current => current?.userId === professorId ? { ...current, failed: false } : null);
+    let active = true;
+    eventsApi.listOwnPublishedIds()
+      .then((ids) => {
+        if (active) setPublishedEvents(current => ({
+          userId: professorId,
+          ids: new Set([...ids, ...(current?.userId === professorId ? current.ids : [])]),
+          failed: false,
+        }));
+      })
+      .catch(() => {
+        if (active) setPublishedEvents(current => ({
+          userId: professorId,
+          ids: current?.userId === professorId ? current.ids : new Set(),
+          failed: true,
+        }));
+      });
+    return () => { active = false; };
+  }, [professorId, visaoEventos, publishedEventsRevision]);
 
   useEffect(() => {
     let active = true;
@@ -702,14 +732,19 @@ export default function SegundaPagina() {
         return;
       }
       if (editingPublic) {
-        if (!isProfessor && !isAdmin) {
-          throw new Error('Apenas professores e administradores podem editar eventos públicos.');
+        if (!canManagePublic(eventoEmEdicao)) {
+          throw new Error('Apenas o autor ou um administrador pode editar este evento.');
         }
         savedEvent = await eventsApi.updatePublic(eventoEmEdicao.id, payload);
       } else if (eventoEmEdicao) {
         savedEvent = await eventsApi.updatePersonal(eventoEmEdicao.id, payload);
       } else if (visibilidade === 'Público') {
         savedEvent = await eventsApi.createPublic(payload);
+        if (professorId) setPublishedEvents(current => ({
+          userId: professorId,
+          ids: new Set([savedEvent.id, ...(current?.userId === professorId ? current.ids : [])]),
+          failed: current?.userId === professorId && current.failed,
+        }));
       } else {
         savedEvent = await eventsApi.createPersonal(payload);
       }
@@ -752,7 +787,7 @@ export default function SegundaPagina() {
 
   const handleEditarEvento = (evento) => {
     const isPublicEdit = evento.visibilidade === 'Público' && !evento.criadoPorMim;
-    if (isPublicEdit && !isProfessor && !isAdmin) return;
+    if (isPublicEdit && !canManagePublic(evento)) return;
     setErroEventos('');
     setEventoEmEdicao(evento);
     setTitulo(evento.titulo);
@@ -838,18 +873,6 @@ export default function SegundaPagina() {
       return matchVisao && matchBusca && matchArea && matchCampus && matchTurno && matchDataInicio && matchDataFim;
     });
   }, [eventos, visaoEventos, searchQuery, filtroArea, filtroCampus, filtroTurno, filtroDataInicio, filtroDataFim]);
-
-  const {
-    upcomingEvents: meusEventosAtivos,
-    pastSavedPublicEvents: historicoPublicosSalvos,
-    pastPersonalEvents: historicoPrivadosPassados,
-  } = useMemo(
-    () => (visaoEventos === 'MEUS'
-      ? splitMyEventsByHistory(eventosFiltrados)
-      : { upcomingEvents: eventosFiltrados, pastSavedPublicEvents: [], pastPersonalEvents: [] }),
-    [eventosFiltrados, visaoEventos],
-  );
-  const temHistoricoMeus = historicoPublicosSalvos.length > 0 || historicoPrivadosPassados.length > 0;
 
   // --- ESTILIZAÇÃO DINÂMICA ---
   const bgColor = isDark ? '#080c16' : '#f0f4f8';
@@ -996,6 +1019,12 @@ export default function SegundaPagina() {
         {erroEventos && (
           <EventError message={erroEventos} onRetry={() => setReloadRevision(v => v + 1)} />
         )}
+        {visaoEventos === 'Públicos' && professorId && publishedEvents?.userId === professorId && publishedEvents.failed && (
+          <EventError
+            message="Não foi possível consultar quais eventos públicos você pode gerenciar."
+            onRetry={() => setPublishedEventsRevision(value => value + 1)}
+          />
+        )}
 
         {modoVisualizacao === 'calendario' ? (
           <EventCalendar
@@ -1049,88 +1078,6 @@ export default function SegundaPagina() {
               )}
             </div>
           </div>
-        ) : visaoEventos === 'MEUS' && temHistoricoMeus ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
-            {meusEventosAtivos.length > 0 && (
-              <section aria-label="Próximos eventos da agenda">
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))', gap: '20px' }}>
-                  {meusEventosAtivos.map((evento) => (
-                    <EventCardItem
-                      key={`${evento.visibilidade}-${evento.id}`}
-                      evento={evento}
-                      visaoEventos={visaoEventos}
-                      isProfessor={isProfessor}
-                      isAdmin={isAdmin}
-                      textColor={textColor}
-                      onOpen={ev => navigate(`/evento/${ev.id}`, { state: { evento: ev } })}
-                      onEdit={handleEditarEvento}
-                      onRemove={handleSolicitarRemocao}
-                    />
-                  ))}
-                </div>
-              </section>
-            )}
-
-            <section aria-labelledby="history-saved-public-heading" style={{ borderTop: `1px solid ${borderColor}`, paddingTop: '1.75rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1rem' }}>
-                <span className="material-symbols-outlined" aria-hidden="true" style={{ color: accentColor }}>history</span>
-                <h3 id="history-saved-public-heading" style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0, color: textColor }}>
-                  Histórico — Eventos públicos salvos passados ({historicoPublicosSalvos.length})
-                </h3>
-              </div>
-              {historicoPublicosSalvos.length === 0 ? (
-                <p style={{ color: textMuted, margin: 0, fontSize: '0.95rem' }}>
-                  Nenhum evento público salvo encerrado até o momento.
-                </p>
-              ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))', gap: '20px' }}>
-                  {historicoPublicosSalvos.map((evento) => (
-                    <EventCardItem
-                      key={`hist-public-${evento.id}`}
-                      evento={evento}
-                      visaoEventos={visaoEventos}
-                      isProfessor={isProfessor}
-                      isAdmin={isAdmin}
-                      textColor={textColor}
-                      onOpen={ev => navigate(`/evento/${ev.id}`, { state: { evento: ev } })}
-                      onEdit={handleEditarEvento}
-                      onRemove={handleSolicitarRemocao}
-                    />
-                  ))}
-                </div>
-              )}
-            </section>
-
-            <section aria-labelledby="history-personal-heading" style={{ borderTop: `1px solid ${borderColor}`, paddingTop: '1.75rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1rem' }}>
-                <span className="material-symbols-outlined" aria-hidden="true" style={{ color: accentColor }}>event_available</span>
-                <h3 id="history-personal-heading" style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0, color: textColor }}>
-                  Histórico — Compromissos privados passados ({historicoPrivadosPassados.length})
-                </h3>
-              </div>
-              {historicoPrivadosPassados.length === 0 ? (
-                <p style={{ color: textMuted, margin: 0, fontSize: '0.95rem' }}>
-                  Nenhum compromisso privado encerrado até o momento.
-                </p>
-              ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))', gap: '20px' }}>
-                  {historicoPrivadosPassados.map((evento) => (
-                    <EventCardItem
-                      key={`hist-personal-${evento.id}`}
-                      evento={evento}
-                      visaoEventos={visaoEventos}
-                      isProfessor={isProfessor}
-                      isAdmin={isAdmin}
-                      textColor={textColor}
-                      onOpen={ev => navigate(`/evento/${ev.id}`, { state: { evento: ev } })}
-                      onEdit={handleEditarEvento}
-                      onRemove={handleSolicitarRemocao}
-                    />
-                  ))}
-                </div>
-              )}
-            </section>
-          </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))', gap: '20px' }}>
             {eventosFiltrados.map((evento) => (
@@ -1138,8 +1085,7 @@ export default function SegundaPagina() {
                 key={`${evento.visibilidade}-${evento.id}`}
                 evento={evento}
                 visaoEventos={visaoEventos}
-                isProfessor={isProfessor}
-                isAdmin={isAdmin}
+                canManagePublic={canManagePublic(evento)}
                 textColor={textColor}
                 onOpen={ev => navigate(`/evento/${ev.id}`, { state: { evento: ev } })}
                 onEdit={handleEditarEvento}

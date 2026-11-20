@@ -6,4 +6,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY src ./src
 RUN useradd --create-home appuser
 USER appuser
-CMD ["sh", "-c", "exec uvicorn src.main:app --host 0.0.0.0 --port ${PORT:-8000} --no-access-log"]
+CMD ["sh", "-c", "exec uvicorn src.main:app --host 0.0.0.0 --port ${PORT:-8000} --no-access-log --no-server-header"]

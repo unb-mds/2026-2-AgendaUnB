@@ -17,13 +17,26 @@ from src.modules.events.router import router as events_router
 from src.modules.google_calendar.router import router as google_calendar_router
 from src.modules.reminders.router import router as reminders_router
 from src.modules.syllabus.router import router as syllabus_router
+from src.middlewares.security import (
+    BodyLimitMiddleware,
+    RateLimitMiddleware,
+    SecurityHeadersMiddleware,
+    env_flag,
+)
 from src.middlewares.upload_limits import UploadLimitsMiddleware
 from src.deployment import cors_origins
 
 
+# A documentação interativa descreve toda a superfície da API. Em
+# homologação/produção, definir API_DOCS_ENABLED=false.
+docs_enabled = env_flag("API_DOCS_ENABLED", os.environ.get("APP_ENV", "local") == "local")
+
 app = FastAPI(
     title="Agenda UnB API",
     version="1.0.0",
+    docs_url="/docs" if docs_enabled else None,
+    redoc_url="/redoc" if docs_enabled else None,
+    openapi_url="/openapi.json" if docs_enabled else None,
 )
 logger = logging.getLogger("agenda_unb.api")
 logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -92,7 +105,6 @@ async def handle_validation_error(request: Request, exc: RequestValidationError)
         content={"detail": "; ".join(messages), "errors": [{"loc": e["loc"], "msg": e["msg"], "type": e["type"]} for e in exc.errors()]},
     )
 
-
 @app.exception_handler(Exception)
 async def handle_unexpected_error(request: Request, exc: Exception) -> JSONResponse:
     logger.error("Unhandled %s on %s %s", type(exc).__name__, request.method, request.url.path)
@@ -101,15 +113,26 @@ async def handle_unexpected_error(request: Request, exc: Exception) -> JSONRespo
         content={"detail": "Erro interno inesperado. Tente novamente."},
     )
 
+# Origens exatas, validadas por src.deployment (https obrigatório fora do ambiente local).
 allowed_origins = cors_origins(os.environ)
+
+# A última camada adicionada é a mais externa. Ordem de entrada da requisição:
+# cabeçalhos de segurança -> CORS -> limite de taxa -> limites de corpo -> rotas.
+# O CORS fica por fora dos limites para que 413/429 cheguem legíveis ao navegador.
 app.add_middleware(UploadLimitsMiddleware)
+app.add_middleware(BodyLimitMiddleware)
+app.add_middleware(RateLimitMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
-    allow_credentials=True,
+    # A sessão viaja no cabeçalho Authorization, nunca em cookie.
+    allow_credentials=False,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["*"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "Idempotency-Key"],
+    expose_headers=["Retry-After"],
+    max_age=600,
 )
+app.add_middleware(SecurityHeadersMiddleware)
 
 app.include_router(account_router, prefix="/api/v1")
 app.include_router(classes_router, prefix="/api/v1")

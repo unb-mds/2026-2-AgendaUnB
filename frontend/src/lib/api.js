@@ -167,31 +167,14 @@ export const eventsApi = {
   },
   getPublic: (id) => request(`/events/${encodeURIComponent(id)}`),
   registerOutboundClick: async (eventId, clickId) => {
-    try {
-      const result = await request(`/events/${encodeURIComponent(eventId)}/outbound-clicks`, {
-        method: 'POST',
-        body: JSON.stringify({ click_id: clickId }),
-      });
-      if (result?.incremented) {
-        clearPublicCache();
-      }
-      return result;
-    } catch (backendError) {
-      if (!canUseSupabaseFallback() || (backendError?.status && backendError.status < 500)) {
-        throw backendError;
-      }
-      const { data, error } = await supabase.rpc('registrar_redirecionamento_evento', {
-        p_evento_id: eventId,
-        p_click_id: clickId,
-      });
-      if (error || !data) {
-        throw backendError;
-      }
-      if (data.incremented) {
-        clearPublicCache();
-      }
-      return data;
+    const result = await request(`/events/${encodeURIComponent(eventId)}/outbound-clicks`, {
+      method: 'POST',
+      body: JSON.stringify({ click_id: clickId }),
+    });
+    if (result?.incremented) {
+      clearPublicCache();
     }
+    return result;
   },
   listCategories: () => request('/categories'),
   createCategory: (payload) => request('/categories', {
@@ -204,8 +187,8 @@ export const eventsApi = {
     auth: true,
   }),
   listPersonal: () => request('/me/events', { auth: true }),
+  listOwnPublishedIds: () => request('/me/published-event-ids', { auth: true }),
   listSaved: () => request('/me/saved-events', { auth: true }),
-  listHistory: () => request('/me/events/history', { auth: true }),
   savedStatus: (id) => request(`/me/saved-events/${encodeURIComponent(id)}`, { auth: true }),
   savePublic: (id) => request(`/me/saved-events/${encodeURIComponent(id)}`, { auth: true, method: 'PUT' }),
   removeSaved: (id) => request(`/me/saved-events/${encodeURIComponent(id)}`, { auth: true, method: 'DELETE' }),

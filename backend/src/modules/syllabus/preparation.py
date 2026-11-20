@@ -40,7 +40,7 @@ class ExtractionAuthorization(BaseModel):
     pages: list[ReviewPage] = Field(min_length=1, max_length=10)
     text_hash: str = Field(alias="textHash", pattern="^[a-f0-9]{64}$")
     authorize: bool = Field(strict=True)
-    content_eligible: bool = Field(alias="contentEligible", strict=True)
+    content_eligible: bool | None = Field(default=None, alias="contentEligible", strict=True)
     reprocess: bool = Field(default=False, strict=True)
 
 
@@ -157,15 +157,15 @@ def preview(plan):
     return {"id": str(plan.id), "pages": pages, "textHash": text_hash(pages),
             "authorizationRequired": plan.authorized_at is None,
             "provider": "Google Gemini API", "providerAvailable": os.getenv("SYLLABUS_PROVIDER_TERMS_READY", "false").lower() == "true", "maxTextBytes": MAX_TEXT_BYTES,
-            "warning": "A remoção automática de identificadores é limitada. Revise o texto exato. Não envie conteúdo pessoal, sensível ou confidencial. A autorização não substitui os termos do provedor.",
+            "warning": "A preparação mascara os dados pessoais detectados. Evite incluir conteúdo pessoal, sensível ou confidencial.",
             "preparationDurationMs": plan.preparation_duration_ms,
             "redactedCount": plan.redacted_count,
             "textRevision": plan.text_revision}
 
 
 def authorize(db, plan, payload, config):
-    if not payload.authorize or not payload.content_eligible:
-        raise HTTPException(422, "Autorize o envio do texto revisado e confirme que o conteúdo atende às regras do provedor.")
+    if not payload.authorize or payload.content_eligible is False:
+        raise HTTPException(422, "Autorize o envio do texto preparado para a extração.")
     pages = checked_pages(payload.pages)
     allowed = {page["pagina"] for page in plan.prepared_pages or []}
     if any(page["pagina"] not in allowed for page in pages):
@@ -174,7 +174,7 @@ def authorize(db, plan, payload, config):
     if digest != payload.text_hash:
         raise HTTPException(409, "O texto aprovado não corresponde ao hash informado. Revise novamente.")
     if contains_personal_data(pages):
-        raise HTTPException(422, "Remova os identificadores detectados antes de autorizar o envio.")
+        raise HTTPException(422, "O texto contém dados pessoais detectáveis. Envie o plano novamente para aplicar a preparação atual.")
     if not config.provider_terms_ready:
         raise HTTPException(503, "A análise com Gemini ainda não está disponível. Use a organização manual.")
     if plan.approved_hash == digest and not payload.reprocess:

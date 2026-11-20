@@ -177,8 +177,3 @@ class PersonalEventCreate(EventInput):
 
 class PersonalEventUpdate(EventInput):
     pass
-
-
-class EventHistoryRead(BaseModel):
-    saved_public_events: list[EventRead]
-    personal_events: list[PersonalEventRead]

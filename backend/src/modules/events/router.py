@@ -13,18 +13,17 @@ from src.database.models import (
     Campus,
     Category,
     EventClick,
-    EventOutboundClick,
     PersonalEvent,
     PublicEvent,
     Reminder,
     SavedPublicEvent,
 )
 from src.middlewares.auth import CurrentUser, get_current_user, require_admin, require_event_manager
+from src.middlewares.security import escape_like
 from src.modules.events.schemas import (
     CategoryCreate,
     CategoryRead,
     EventCreate,
-    EventHistoryRead,
     EventRead,
     EventUpdate,
     OutboundClickCreate,
@@ -38,6 +37,10 @@ from src.modules.events.schemas import (
 
 router = APIRouter(tags=["events"])
 PUBLIC_EVENTS_CACHE_CONTROL = "public, max-age=60, s-maxage=300, stale-while-revalidate=600"
+
+# Cada sugestão ocupa a fila de moderação e gera notificação. O teto impede
+# que uma única conta inunde a fila; decididas as pendentes, a conta volta a sugerir.
+MAX_PENDING_SUGGESTIONS = 10
 
 
 def _category_id(db: Session, name: str | None) -> UUID | None:
@@ -303,7 +306,9 @@ def list_public_events(
     if end_date:
         statement = statement.where(PublicEvent.starts_at <= end_date)
     if search:
-        statement = statement.where(PublicEvent.title.ilike(f"%{search.strip()}%"))
+        statement = statement.where(
+            PublicEvent.title.ilike(f"%{escape_like(search.strip())}%", escape="\\")
+        )
 
     events = db.scalars(
         statement.order_by(PublicEvent.starts_at.asc(), PublicEvent.id.asc())
@@ -380,8 +385,7 @@ def register_outbound_click(
 
     key = (event_id, payload.click_id)
     incremented = False
-    if db.get(EventOutboundClick, key) is None and db.get(EventClick, key) is None:
-        db.add(EventOutboundClick(event_id=event_id, click_id=payload.click_id))
+    if db.get(EventClick, key) is None:
         db.add(EventClick(event_id=event_id, click_id=payload.click_id))
         event.outbound_clicks_count = (event.outbound_clicks_count or 0) + 1
         try:
@@ -437,7 +441,7 @@ def update_public_event(
     event_id: UUID,
     payload: EventUpdate,
     db: Session = Depends(get_db),
-    _: CurrentUser = Depends(require_event_manager),
+    current_user: CurrentUser = Depends(require_event_manager),
 ) -> EventRead:
     event = db.scalar(
         select(PublicEvent)
@@ -450,6 +454,8 @@ def update_public_event(
     )
     if event is None:
         raise HTTPException(status_code=404, detail="Evento não encontrado")
+    if current_user.role != "admin" and event.author_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Apenas o autor ou um administrador pode editar este evento")
 
     event.title = payload.title
     event.description = payload.description or ""
@@ -499,6 +505,18 @@ def delete_public_event(
     return Response(status_code=204)
 
 
+@router.get("/me/published-event-ids", response_model=list[UUID])
+def list_own_published_event_ids(
+    db: Session = Depends(get_db),
+    current_user: CurrentUser = Depends(require_event_manager),
+) -> list[UUID]:
+    return list(db.scalars(
+        select(PublicEvent.id)
+        .where(PublicEvent.author_id == current_user.id, PublicEvent.status == "aprovado")
+        .order_by(PublicEvent.id)
+    ))
+
+
 @router.post("/suggestions", response_model=EventRead, status_code=201)
 def suggest_event(
     payload: EventCreate,
@@ -507,6 +525,16 @@ def suggest_event(
 ) -> EventRead:
     if current_user.role != "student":
         raise HTTPException(status_code=403, detail="Apenas estudantes enviam sugestões")
+    pending = db.scalar(
+        select(func.count()).select_from(PublicEvent).where(
+            PublicEvent.author_id == current_user.id, PublicEvent.status == "pendente"
+        )
+    ) or 0
+    if pending >= MAX_PENDING_SUGGESTIONS:
+        raise HTTPException(
+            status_code=429,
+            detail="Você já tem muitas sugestões aguardando análise. Aguarde a moderação para enviar novas.",
+        )
     event = PublicEvent(
         author_id=current_user.id,
         title=payload.title,
@@ -605,55 +633,6 @@ def remove_saved_event(
         )
         db.commit()
     return Response(status_code=204)
-
-
-@router.get("/me/events/history", response_model=EventHistoryRead)
-def list_event_history(
-    response: Response,
-    reference_at: Annotated[datetime | None, Query(alias="before")] = None,
-    current_user: CurrentUser = Depends(get_current_user),
-    db: Session = Depends(get_db),
-) -> EventHistoryRead:
-    _check_date_range(reference_at, None)
-    cutoff = reference_at or datetime.now(timezone.utc)
-    response.headers["Cache-Control"] = "no-store"
-
-    saved_past = db.scalars(
-        select(PublicEvent)
-        .join(SavedPublicEvent, SavedPublicEvent.event_id == PublicEvent.id)
-        .where(
-            SavedPublicEvent.user_id == current_user.id,
-            PublicEvent.status == "aprovado",
-            or_(
-                (PublicEvent.ends_at.is_not(None)) & (PublicEvent.ends_at < cutoff),
-                (PublicEvent.ends_at.is_(None)) & (PublicEvent.starts_at < cutoff),
-            ),
-        )
-        .options(
-            joinedload(PublicEvent.campus),
-            joinedload(PublicEvent.category),
-            joinedload(PublicEvent.author),
-        )
-        .order_by(PublicEvent.starts_at.desc(), PublicEvent.id.asc())
-    ).all()
-
-    personal_past = db.scalars(
-        select(PersonalEvent)
-        .where(
-            PersonalEvent.user_id == current_user.id,
-            or_(
-                (PersonalEvent.ends_at.is_not(None)) & (PersonalEvent.ends_at < cutoff),
-                (PersonalEvent.ends_at.is_(None)) & (PersonalEvent.starts_at < cutoff),
-            ),
-        )
-        .options(joinedload(PersonalEvent.campus), joinedload(PersonalEvent.category))
-        .order_by(PersonalEvent.starts_at.desc(), PersonalEvent.id.asc())
-    ).all()
-
-    return EventHistoryRead(
-        saved_public_events=[_public_read(event) for event in saved_past],
-        personal_events=[_personal_read(event) for event in personal_past],
-    )
 
 
 @router.get("/me/events", response_model=list[PersonalEventRead])

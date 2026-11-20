@@ -623,6 +623,7 @@ body.light .btn-toggle-group { background: #ffffff; }
 .btn-toggle-item {
   padding: 10px 24px; border-radius: 999px; border: none; cursor: pointer; font-weight: 600; transition: all 0.3s; background: transparent; color: var(--text-muted);
 }
+.events-page .btn-toggle-item { line-height: 1.125; }
 .btn-toggle-item.active {
   background: var(--accent-color); color: #fff;
 }

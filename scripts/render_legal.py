@@ -45,6 +45,7 @@ def render(publish=False):
 <title>{html.escape(title)} | Agenda UnB</title><style>{STYLE}</style></head>
 <body><main><nav aria-label="Navegação"><a href="/">Agenda UnB</a>
 <a href="/privacidade.html">Privacidade</a><a href="/termos.html">Termos de Uso</a></nav>
+<h1>{html.escape(title)}</h1>
 {warning}{content}</main></body></html>'''
         documents.append((filename, page))
     output = ROOT / ('frontend/public' if publish else 'output/legal-preview')

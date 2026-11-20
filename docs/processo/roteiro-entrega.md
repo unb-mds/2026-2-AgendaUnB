@@ -21,9 +21,9 @@ Este roteiro reúne os procedimentos operacionais da Release 2 para o ensaio de 
 1. Conferir histórico de migrations antes de aplicar em produção:
    ```bash
    npx supabase migration list
-   npx supabase db push --dry-run
+   npx supabase db push --dry-run --include-all
    ```
-2. Garantir compatibilidade retroativa antes de subir código novo (aplicar migrations aditivas antes do deploy da API no Render e da SPA na Vercel).
+2. Revise a lista e aplique as migrações com `npx supabase db push --include-all` antes de publicar a API e a SPA. Confirme que a versão publicada continua compatível durante a janela.
 3. Verificar variáveis sem segredos no código: `VITE_API_URL`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` na Vercel; `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `GEMINI_API_KEY`, `GOOGLE_CALENDAR_*`, `GOOGLE_TOKEN_ENCRYPTION_KEY` e `CORS_ORIGINS` no Render/GitHub Environments.
 4. Validar `/health`, resposta JSON de `/api/v1/events?limit=1` e headers CORS após o deploy.
 
@@ -48,13 +48,13 @@ pg_restore --clean --if-exists --no-owner --no-acl -d "$DATABASE_URL" backup-age
 - [ ] SHA implantado na Vercel e no Render confere com a tag/commit revisado.
 - [ ] Todas as migrations aplicadas sem divergência em `supabase migration list`.
 - [ ] `GET /health` e `GET /api/v1/events?limit=1` retornam `200` com TLS válido.
-- [ ] Jobs `collector` (Agenda UnB Notícias) e `worker` (planos de ensino) executados com sucesso ao menos uma vez no ambiente final.
+- [ ] Jobs `collector` (Agenda UnB Notícias) e `worker` (planos de ensino) executados com sucesso ao menos uma vez no ambiente final. Job `agenda-unb-lembretes` ativo e com execução registrada no Supabase Cron.
 - [ ] Build de documentação Mintlify passando (`mint validate`, `mint broken-links --check-redirects`, `mint a11y`).
 
 ### Roteiro de demonstração e aceite (25/11)
 1. **Catálogo público e filtros:** abrir `/eventos`, filtrar por campus/categoria/busca e alternar entre Lista e Calendário.
 2. **Autenticação e termos:** entrar com conta de teste (e-mail/senha e Google), verificar exibição e aceite de Termos/Política.
-3. **Turma, plano de ensino e extração:** selecionar oferta em `/plano-de-ensino`, enviar PDF sintético, revisar texto minimizado, autorizar envio, revisar candidatos extraídos e importar para **Meus Eventos**.
+3. **Turma, plano de ensino e extração:** selecionar oferta em `/plano-de-ensino`, enviar PDF sintético, conferir a sanitização automática e o andamento, revisar os candidatos extraídos e importar para **Meus Eventos**.
 4. **Exportação direta ao Google Calendar:** conectar Google Calendar em **Meus Eventos**, selecionar eventos da agenda pessoal, exportar para **"Agenda UnB"** e conferir o aviso sobre cópias independentes e recuperação em caso de falha/revogação.
 5. **Privacidade e ciclo de vida:** acessar `/configuracoes`, baixar os dados em JSON (`Baixar meus dados`) e demonstrar desconexão do Google Calendar / fluxo de exclusão de conta.
 6. **Operação e documentação:** mostrar `/docs`, matriz de rastreabilidade (`RF01`–`RF21`, `RNF01`–`RNF13`) e checklist de rollback.

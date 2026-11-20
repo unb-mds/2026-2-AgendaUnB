@@ -8,7 +8,7 @@ description: "Instale as dependências e rode o Agenda UnB com React, FastAPI e 
 - [Git](https://git-scm.com/)
 - [Node.js](https://nodejs.org/) 22 ou superior com npm, para o frontend e a CLI do Supabase
 - [Python](https://www.python.org/) 3.11, versão usada no CI do backend, com `pip` e `venv`
-- [Docker Desktop ou Docker Engine](https://www.docker.com/) em execução
+- [Docker Desktop ou Docker Engine](https://docs.docker.com/get-docker/) em execução
 - [GNU Make](https://www.gnu.org/software/make/) para a execução automatizada. No Windows, use Git Bash com Make instalado ou instale os pré-requisitos no WSL.
 
 Clone a branch de desenvolvimento:

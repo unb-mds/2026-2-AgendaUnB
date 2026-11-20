@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   EMAIL_RETRY_SECONDS, sendConfirmation, sendRecovery, signInWithEmail, signInWithGoogle,
-  signUpWithEmail, validateNewPassword,
+  NEW_PASSWORD_HINT, signUpWithEmail, validateNewPassword,
 } from '../lib/auth';
 import { accountApi, flushPendingSignupLegal, markPendingSignupLegal } from '../lib/accountApi';
 import GoogleMark from './GoogleMark';
@@ -216,7 +216,7 @@ export default function AuthDialog({ mode, setMode }) {
           {(signup || login) && <PasswordField label="Senha" name="password" newPassword={signup} describedBy={signup ? 'auth-password-hint' : undefined} />}
           {signup && (
             <>
-              <p className="auth-field-hint auth-password-hint" id="auth-password-hint">Use pelo menos 8 caracteres.</p>
+              <p className="auth-field-hint auth-password-hint" id="auth-password-hint">{NEW_PASSWORD_HINT}</p>
               <PasswordField label="Confirmar senha" name="confirmation" newPassword
                 invalid={Boolean(passwordError)} describedBy={passwordError ? 'auth-password-error' : undefined} />
               {passwordError && <p id="auth-password-error" className="auth-error" role="alert">{passwordError}</p>}

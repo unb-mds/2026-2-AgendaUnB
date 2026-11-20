@@ -27,7 +27,7 @@ A data do registro não é a data da decisão. Referências DA preservam os iden
 | [ADR-005](/arquitetura/adrs/adr-005-validacao-de-sessao) | Validar a sessão no Supabase Auth e consultar o papel no banco | Implementada | DA-03; RF01, RF03, RF04 |
 | [ADR-006](/arquitetura/adrs/adr-006-autorizacao-em-camadas) | Aplicar autorização na API, nas RPCs e nas políticas RLS | Implementada | DA-04; RF04, RF09, RF11; RNF02, RNF04 |
 | [ADR-007](/arquitetura/adrs/adr-007-migracoes-sql) | Usar migrações SQL como referência do esquema completo | Implementada | DA-05; RNF13 |
-| [ADR-008](/arquitetura/adrs/adr-008-vinculos-de-eventos-publicos) | Salvar vínculos aos eventos públicos na agenda pessoal | Implementada | DA-06; RF08, RF12, RF13, RF18 |
+| [ADR-008](/arquitetura/adrs/adr-008-vinculos-de-eventos-publicos) | Salvar vínculos aos eventos públicos na agenda pessoal | Implementada | DA-06; RF08, RF12, RF13 |
 | [ADR-009](/arquitetura/adrs/adr-009-catalogo-publico-de-turmas) | Integrar o catálogo público de turmas com identidade local e cache | Implementada | RF05; RNF11 |
 | [ADR-010](/arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos) | Versionar planos e exigir confirmação individual para importar candidatos | Implementada | RF06, RF07; RNF02, RNF04 |
 | [ADR-011](/arquitetura/adrs/adr-011-datas-civis-e-instantes) | Distinguir datas civis de instantes e usar fim exclusivo | Aceita para a Release 2 | RF06, RF08, RF17, RF21 |
@@ -78,8 +78,8 @@ Links para documentação, requisitos e ADRs relacionadas.
 
 ## Limites e decisões ainda abertas
 
-A prova de infraestrutura ainda deve validar o provedor da API, execução de jobs e viabilidade do catálogo público. Estes registros não escolhem um scheduler nem aprovam a hospedagem proposta. O limite de entrada de texto bruto também permanece pendente no contrato da R2.
+A [ADR-002](/arquitetura/adrs/adr-002-separar-hospedagem-e-ambientes) registra a hospedagem e a execução de jobs da R2. A [ADR-013](/arquitetura/adrs/adr-013-lembretes-persistentes) descreve o agendamento de lembretes no Supabase Cron. O [guia de implantação](/implantacao) indica o que ainda depende de validação hospedada.
 
-A documentação contém trechos históricos de planos ainda indisponíveis e uma visão mais recente com upload e confirmação. Consulte o inventário da API e o código antes de assumir disponibilidade. A ADR-011 explicita a transição do fuso do navegador para o contrato da R2.
+O [contrato de planos](/api-specs#preparacao-e-autorizacao-de-planos) fixa o limite de texto em 40.000 bytes UTF-8 e descreve o envio e a autorização. A [ADR-011](/arquitetura/adrs/adr-011-datas-civis-e-instantes) define as datas civis e o fuso usados na agenda.
 
 [Visão arquitetural](/arquitetura/visao-geral) · [Padrões](/produto/padroes) · [Matriz de aceite](/matriz-release-2)

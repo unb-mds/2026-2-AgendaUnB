@@ -3,7 +3,7 @@ title: "Termos de Uso"
 description: "Regras de uso do Agenda UnB."
 ---
 
-**Versão 2026-11-18.**
+**Versão 2026-11-20.**
 
 ## 1. O que é o Agenda UnB
 
@@ -25,7 +25,7 @@ Uma plataforma acadêmica, desenvolvida por estudantes na disciplina Métodos de
 
 ## 4. O que você pode publicar
 
-Ao sugerir um evento ou compartilhar um plano, você declara que tem o direito de fazê-lo. Não é permitido:
+Ao sugerir um evento ou enviar um plano, você declara que tem o direito de usar e compartilhar o conteúdo que será disponibilizado. Não é permitido:
 
 - publicar conteúdo ilegal, ofensivo, discriminatório ou enganoso;
 - divulgar dados pessoais de outras pessoas sem autorização;
@@ -36,7 +36,7 @@ Sugestões de eventos passam por moderação. A equipe pode recusar ou remover c
 
 ## 5. Conteúdo que você compartilha
 
-O conteúdo continua seu. Ao compartilhar um plano com a turma, você autoriza que as pessoas que seguem aquela turma o vejam e importem as datas para as próprias agendas. Você pode retirar o compartilhamento em **Plano de Ensino** ou apagar todos os seus planos ao excluir a conta em **Configurações**; as cópias já importadas por outras pessoas permanecem com elas.
+O conteúdo continua seu. Ao enviar um plano para uma turma, você autoriza o compartilhamento da primeira versão com avaliações extraídas quando consultar ou confirmar o resultado. As pessoas que seguem a turma podem consultar a versão e importar as datas para as próprias agendas. Você pode retirar o compartilhamento em **Plano de Ensino** ou apagar todos os seus planos ao excluir a conta em **Configurações**; as cópias já importadas por outras pessoas permanecem com elas.
 
 ## 6. Disponibilidade
 
@@ -44,7 +44,7 @@ O serviço é oferecido como está, em infraestrutura gratuita, sem garantia de 
 
 ## 7. Privacidade
 
-O tratamento de dados está descrito na [Política de Privacidade](/produto/politica-de-privacidade). Aceitar estes termos não é o mesmo que consentir com tratamentos específicos: o envio de texto revisado a serviços de inteligência artificial e a conexão com o Google Agenda pedem autorização própria. O consentimento do Google Agenda pode ser revogado a qualquer momento em **Configurações** ou **Meus Eventos**.
+O tratamento de dados está descrito na [Política de Privacidade](/produto/politica-de-privacidade). Aceitar estes termos não é o mesmo que consentir com tratamentos específicos: o envio de texto sanitizado ao Gemini e a conexão com o Google Agenda pedem autorização própria. O consentimento do Google Agenda pode ser revogado a qualquer momento em **Configurações** ou **Meus Eventos**.
 
 ## 8. Mudanças
 
