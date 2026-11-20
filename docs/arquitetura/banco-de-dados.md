@@ -146,8 +146,8 @@ Esquema atual de uploads de plano de ensino. O campo `tipo` admite os valores le
     *   `quantidade_eventos` (INT ≥ 0): quantidade de candidatos extraídos.
     *   `execucao_atual` (SMALLINT, Not Null, padrão 0): número da execução mais recente. Cada novo processamento incrementa; os candidatos válidos são os desta execução.
     *   `provedor_ia`, `modelo_ia`, `versao_processamento` (TEXT): da execução mais recente.
-    *   `texto_com_dados_pessoais` sinaliza a detecção de dados pessoais na preparação e `ocorrencias_mascaradas` registra quantas ocorrências foram mascaradas.
-    *   `erro_codigo` (TEXT): obrigatório se, e somente se, `status = 'falha'`. Valores: `pdf_invalido`, `pdf_protegido`, `pdf_sem_texto`, `limite_paginas`, `falha_ia`, `tempo_esgotado`, `erro_interno`.
+    *   `ocorrencias_mascaradas` (INTEGER ≥ 0, aceita `NULL` em planos legados) registra quantas ocorrências foram mascaradas na preparação.
+    *   `erro_codigo` (TEXT) é obrigatório em `status = 'falha'` e nulo nos outros estados. Valores permitidos são `pdf_invalido`, `pdf_protegido`, `pdf_sem_texto`, `limite_paginas`, `falha_ia`, `tempo_esgotado`, `erro_interno` e `texto_com_dados_pessoais`. O último código identifica snapshots legados cujo processamento foi bloqueado por conter dados pessoais.
     *   `erro` (TEXT, até 500): mensagem curta e segura para o usuário, só em `falha`. Nunca guarda stack trace, texto do PDF ou resposta bruta da IA.
     *   `processamento_iniciado_em` (obrigatório em `processando`), `processado_em` (obrigatório se, e somente se, `concluido` ou `falha`), `criado_em`, `atualizado_em` (mantido por trigger).
     *   **Resultado vazio** é `concluido` sem candidatos, e não `falha`.

@@ -464,6 +464,7 @@ export default function SegundaPagina() {
   const { user, profile, isProfessor, isAdmin } = useAuth();
   const professorId = isProfessor && !isAdmin ? user?.id : null;
   const [publishedEvents, setPublishedEvents] = useState(null);
+  const [publishedEventsRevision, setPublishedEventsRevision] = useState(0);
   const canManagePublic = (event) => isAdmin || Boolean(
     professorId && publishedEvents?.userId === professorId && publishedEvents.ids.has(event.id),
   );
@@ -570,16 +571,29 @@ export default function SegundaPagina() {
     ];
 
   useEffect(() => {
-    setPublishedEvents(null);
-    if (!professorId || visaoEventos !== 'Públicos') return undefined;
+    if (!professorId || visaoEventos !== 'Públicos') {
+      setPublishedEvents(null);
+      return undefined;
+    }
+    setPublishedEvents(current => current?.userId === professorId ? { ...current, failed: false } : null);
     let active = true;
     eventsApi.listOwnPublishedIds()
       .then((ids) => {
-        if (active) setPublishedEvents({ userId: professorId, ids: new Set(ids) });
+        if (active) setPublishedEvents(current => ({
+          userId: professorId,
+          ids: new Set([...ids, ...(current?.userId === professorId ? current.ids : [])]),
+          failed: false,
+        }));
       })
-      .catch(() => {});
+      .catch(() => {
+        if (active) setPublishedEvents(current => ({
+          userId: professorId,
+          ids: current?.userId === professorId ? current.ids : new Set(),
+          failed: true,
+        }));
+      });
     return () => { active = false; };
-  }, [professorId, visaoEventos, reloadRevision]);
+  }, [professorId, visaoEventos, publishedEventsRevision]);
 
   useEffect(() => {
     let active = true;
@@ -726,7 +740,11 @@ export default function SegundaPagina() {
         savedEvent = await eventsApi.updatePersonal(eventoEmEdicao.id, payload);
       } else if (visibilidade === 'Público') {
         savedEvent = await eventsApi.createPublic(payload);
-        if (professorId) setReloadRevision(value => value + 1);
+        if (professorId) setPublishedEvents(current => ({
+          userId: professorId,
+          ids: new Set([savedEvent.id, ...(current?.userId === professorId ? current.ids : [])]),
+          failed: current?.userId === professorId && current.failed,
+        }));
       } else {
         savedEvent = await eventsApi.createPersonal(payload);
       }
@@ -1000,6 +1018,12 @@ export default function SegundaPagina() {
 
         {erroEventos && (
           <EventError message={erroEventos} onRetry={() => setReloadRevision(v => v + 1)} />
+        )}
+        {visaoEventos === 'Públicos' && professorId && publishedEvents?.userId === professorId && publishedEvents.failed && (
+          <EventError
+            message="Não foi possível consultar quais eventos públicos você pode gerenciar."
+            onRetry={() => setPublishedEventsRevision(value => value + 1)}
+          />
         )}
 
         {modoVisualizacao === 'calendario' ? (
