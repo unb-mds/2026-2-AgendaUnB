@@ -8,7 +8,7 @@ Especificamente:
 * **Seja gentil. Seja cortês. Seja acolhedor(a).**
 * **Ouça. Considere e reconheça os pontos de vista das outras pessoas antes de responder.**
 
-Caso você vivencie ou presencie qualquer situação que faça você se sentir desconfortável ou não acolhido(a) na comunidade do AgendaUnb, entre em contato pelo e-mail `[SEU-EMAIL@EXEMPLO.COM]` ou, se preferir, fale diretamente com alguma pessoa mantenedora do projeto (por exemplo, [@thomas4ugust0](https://github.com/thomas4ugust0) ou qualquer integrante da [equipe](README.md#equipe)).
+Caso você vivencie ou presencie qualquer situação que faça você se sentir desconfortável ou não acolhido(a) na comunidade do AgendaUnb, entre em contato pelo e-mail `unbagenda@gmail.com` ou, se preferir, fale diretamente com alguma pessoa mantenedora do projeto (por exemplo, [@thomas4ugust0](https://github.com/thomas4ugust0) ou qualquer integrante da [equipe](README.md#equipe)).
 
 O projeto AgendaUnb **não tolerará assédio** em sua comunidade, mesmo fora dos canais públicos de comunicação do projeto.
 
