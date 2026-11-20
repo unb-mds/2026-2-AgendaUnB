@@ -21,11 +21,13 @@ export function normalizePlan(plan) {
   if (!plan || typeof plan.id !== 'string' || !plan.id) throw new Error('Resposta do plano inválida. Tente consultar novamente.');
   return {
     id: plan.id,
+    userId: plan.userId ?? null,
     offeringId: plan.offeringId ?? null,
     candidates: normalizeCandidates(plan.candidates),
     status: plan.status,
     authorizationRequired: plan.authorizationRequired === true,
     preparedTextAvailable: plan.preparedTextAvailable === true,
+    redactedCount: Number.isSafeInteger(plan.redactedCount) && plan.redactedCount >= 0 ? plan.redactedCount : null,
     fileName: plan.fileName || 'Plano de ensino.pdf',
     disciplina: plan.disciplina || '',
     semestre: plan.semestre ?? null,

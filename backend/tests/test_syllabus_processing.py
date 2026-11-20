@@ -612,3 +612,285 @@ def test_extracts_two_digit_years_and_markdown_tables_with_semester_reference():
         "2026-10-13", "2026-11-12", "2026-11-26", "2026-12-01",
     ]
     assert result.unsupported_dates == 0
+
+
+def test_spawn_worker_drain_skips_when_daemon_is_active(monkeypatch):
+    import src.modules.syllabus.worker as module
+
+    monkeypatch.setattr(module, "_ACTIVE_WORKER", None)
+    monkeypatch.setenv("SYLLABUS_DAEMON_ACTIVE", "true")
+    monkeypatch.setenv("SYLLABUS_WORKER_ENABLED", "true")
+    monkeypatch.setenv("SYLLABUS_PRIVACY_READY", "true")
+    monkeypatch.setenv("SYLLABUS_PROVIDER_TERMS_READY", "true")
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+
+    called = False
+
+    def fail_popen(*args, **kwargs):
+        nonlocal called
+        called = True
+        raise AssertionError("Popen não deve ser chamado com daemon ativo.")
+
+    monkeypatch.setattr(module.subprocess, "Popen", fail_popen)
+    assert module.spawn_worker_drain() is False
+    assert called is False
+
+
+def test_local_syllabus_readiness_checks_dialect_flags_and_secrets(monkeypatch):
+    from sqlalchemy import create_engine
+    import src.modules.syllabus.privacy as privacy_module
+
+    engine = create_engine("sqlite://")
+    try:
+        with engine.connect() as connection:
+            code, messages = privacy_module.check_local_syllabus_readiness(connection, {})
+            assert code == 0
+            assert "não-PostgreSQL" in "\n".join(messages)
+
+            code, messages = privacy_module.check_local_syllabus_readiness(
+                connection, {"SYLLABUS_WORKER_ENABLED": "true"}
+            )
+            assert code == 1
+            assert "PostgreSQL" in "\n".join(messages)
+    finally:
+        engine.dispose()
+
+    monkeypatch.setattr(
+        privacy_module,
+        "privacy_checks",
+        lambda _conn: {"migration": True, "rls": False, "owner_policies": False},
+    )
+    code, messages = privacy_module.check_local_syllabus_readiness(object(), {})
+    assert code == 1
+    assert "rls, owner_policies" in "\n".join(messages)
+
+    monkeypatch.setattr(
+        privacy_module,
+        "privacy_checks",
+        lambda _conn: {"migration": True, "rls": True},
+    )
+    ready_env = {
+        "GEMINI_API_KEY": "segredo-teste",
+        "SYLLABUS_WORKER_ENABLED": "true",
+        "SYLLABUS_PRIVACY_READY": "true",
+        "SYLLABUS_PROVIDER_TERMS_READY": "true",
+    }
+    code, messages = privacy_module.check_local_syllabus_readiness(object(), ready_env)
+    joined = "\n".join(messages)
+    assert code == 0
+    assert "[OK]" in joined and "gemini-3.5-flash-lite" in joined
+    assert "segredo-teste" not in joined
+
+    partial_env = {
+        "GEMINI_API_KEY": "segredo-teste",
+        "SYLLABUS_WORKER_ENABLED": "true",
+        "SYLLABUS_PRIVACY_READY": "false",
+        "SYLLABUS_PROVIDER_TERMS_READY": "false",
+    }
+    code, messages = privacy_module.check_local_syllabus_readiness(object(), partial_env)
+    joined = "\n".join(messages)
+    assert code == 0
+    assert "[AVISO]" in joined
+    assert "SYLLABUS_PRIVACY_READY" in joined
+    assert "SYLLABUS_PROVIDER_TERMS_READY" in joined
+    assert "segredo-teste" not in joined
+
+
+NARRATIVE_CALENDAR_TEXT = (
+    "Aviso Importante: Calendário de Avaliações — Semestre 2026.2\n"
+    "Prezados alunos,\n"
+    "Informamos que o cronograma oficial das avaliações regulares referentes ao segundo semestre letivo de 2026 já está disponível. "
+    "Fiquem atentos aos horários, datas e locais de aplicação de cada disciplina para evitarem atrasos.\n"
+    "A primeira avaliação será a de Cálculo Diferencial e Integral II, marcada para o dia 14 de setembro de 2026, das 08h00 às 10h00, no Auditório Central. "
+    "Em seguida, teremos a prova de Estruturas de Dados e Algoritmos, que ocorrerá no dia 02/10/2026, no Laboratório de Informática 3, a partir das 14h30.\n"
+    "Para o mês de novembro, estão agendadas duas avaliações importantes. "
+    "A prova teórica de Banco de Dados Relacionais acontecerá na quarta-feira, 11 de novembro de 2026, às 19h00, na Sala 204 do Bloco B. "
+    "Já a avaliação de Engenharia de Software I foi definida para o dia 27 de nov. de 2026, das 10h00 às 12h00, na Sala 101 do Bloco A.\n"
+    "Por fim, encerrando o ciclo de provas regulares do semestre, a avaliação de Redes de Computadores será realizada no dia 09/12/2026, às 08h30, no Auditório Anexo.\n"
+    "Lembramos que os pedidos de segunda chamada devem ser protocolados na secretaria em até 48 horas após a data de cada exame, mediante apresentação de justificativa documental.\n"
+    "Bons estudos a todos!\n"
+    "Coordenação Acadêmica"
+)
+
+
+def test_narrative_calendar_structured_titles_chronological_order_and_ranges():
+    pages = [TextPage(None, NARRATIVE_CALENDAR_TEXT)]
+    # Propositalmente fora de ordem cronológica e com item administrativo de segunda chamada.
+    payload = json.dumps({
+        "candidatos": [
+            {
+                "titulo": "Prova 1 - Redes de Computadores",
+                "tipo": "prova",
+                "data_sugerida": "2026-12-09",
+                "hora_sugerida": "08:30",
+                "campos_ambiguos": [],
+                "pagina_origem": None,
+                "trecho_origem": "Por fim, encerrando o ciclo de provas regulares do semestre, a avaliação de Redes de Computadores será realizada no dia 09/12/2026, às 08h30, no Auditório Anexo.",
+            },
+            {
+                "titulo": "Avaliação 2 - Engenharia de Software I",
+                "tipo": "prova",
+                "data_sugerida": "2026-11-27",
+                "hora_sugerida": "10:00",
+                "campos_ambiguos": [],
+                "pagina_origem": None,
+                "trecho_origem": "Já a avaliação de Engenharia de Software I foi definida para o dia 27 de nov. de 2026, das 10h00 às 12h00, na Sala 101 do Bloco A.",
+            },
+            {
+                "titulo": "Prova 5 - Cálculo Diferencial e Integral II",
+                "tipo": "prova",
+                "data_sugerida": "2026-09-14",
+                "hora_sugerida": "08:00",
+                "campos_ambiguos": [],
+                "pagina_origem": None,
+                "trecho_origem": "A primeira avaliação será a de Cálculo Diferencial e Integral II, marcada para o dia 14 de setembro de 2026, das 08h00 às 10h00, no Auditório Central.",
+            },
+            {
+                "titulo": "Prova 3 - Banco de Dados Relacionais",
+                "tipo": "prova",
+                "data_sugerida": "2026-11-11",
+                "hora_sugerida": "19:00",
+                "campos_ambiguos": [],
+                "pagina_origem": None,
+                "trecho_origem": "A prova teórica de Banco de Dados Relacionais acontecerá na quarta-feira, 11 de novembro de 2026, às 19h00, na Sala 204 do Bloco B.",
+            },
+            {
+                "titulo": "Prova 4 - Estruturas de Dados e Algoritmos",
+                "tipo": "prova",
+                "data_sugerida": "2026-10-02",
+                "hora_sugerida": "14:30",
+                "campos_ambiguos": [],
+                "pagina_origem": None,
+                "trecho_origem": "Em seguida, teremos a prova de Estruturas de Dados e Algoritmos, que ocorrerá no dia 02/10/2026, no Laboratório de Informática 3, a partir das 14h30.",
+            },
+            {
+                "titulo": "Segunda chamada",
+                "tipo": "prova",
+                "data_sugerida": None,
+                "hora_sugerida": None,
+                "campos_ambiguos": ["data"],
+                "pagina_origem": None,
+                "trecho_origem": "Lembramos que os pedidos de segunda chamada devem ser protocolados na secretaria em até 48 horas após a data de cada exame, mediante apresentação de justificativa documental.",
+            },
+        ]
+    })
+    result = validate_candidates(payload, pages)
+    assert result.unsupported_dates == 0
+    assert [(c.titulo, c.data_sugerida.isoformat(), c.hora_sugerida.strftime("%H:%M"), c.campos_ambiguos) for c in result.candidates] == [
+        ("Prova 1 - Cálculo Diferencial e Integral II", "2026-09-14", "08:00", []),
+        ("Prova 2 - Estruturas de Dados e Algoritmos", "2026-10-02", "14:30", []),
+        ("Prova 3 - Banco de Dados Relacionais", "2026-11-11", "19:00", []),
+        ("Prova 4 - Engenharia de Software I", "2026-11-27", "10:00", []),
+        ("Prova 5 - Redes de Computadores", "2026-12-09", "08:30", []),
+    ]
+
+
+def test_verbose_sentence_titles_are_cleaned_and_indexed_chronologically():
+    pages = [TextPage(None, NARRATIVE_CALENDAR_TEXT)]
+    sentences = [
+        ("Por fim, encerrando o ciclo de provas regulares do semestre, a avaliação de Redes de Computadores será realizada no dia 09/12/2026, às 08h30, no Auditório Anexo.", "2026-12-09", "08:30"),
+        ("A primeira avaliação será a de Cálculo Diferencial e Integral II, marcada para o dia 14 de setembro de 2026, das 08h00 às 10h00, no Auditório Central.", "2026-09-14", "08:00"),
+        ("Em seguida, teremos a prova de Estruturas de Dados e Algoritmos, que ocorrerá no dia 02/10/2026, no Laboratório de Informática 3, a partir das 14h30.", "2026-10-02", "14:30"),
+        ("A prova teórica de Banco de Dados Relacionais acontecerá na quarta-feira, 11 de novembro de 2026, às 19h00, na Sala 204 do Bloco B.", "2026-11-11", "19:00"),
+        ("Já a avaliação de Engenharia de Software I foi definida para o dia 27 de nov. de 2026, das 10h00 às 12h00, na Sala 101 do Bloco A.", "2026-11-27", "10:00"),
+    ]
+    payload = json.dumps({
+        "candidatos": [
+            {
+                "titulo": sentence,
+                "tipo": "prova",
+                "data_sugerida": iso_date,
+                "hora_sugerida": hour,
+                "campos_ambiguos": [],
+                "pagina_origem": None,
+                "trecho_origem": sentence,
+            }
+            for sentence, iso_date, hour in sentences
+        ]
+    })
+    result = validate_candidates(payload, pages)
+    assert [c.titulo for c in result.candidates] == [
+        "Prova 1 - Cálculo Diferencial e Integral II",
+        "Prova 2 - Estruturas de Dados e Algoritmos",
+        "Prova 3 - Banco de Dados Relacionais",
+        "Prova 4 - Engenharia de Software I",
+        "Prova 5 - Redes de Computadores",
+    ]
+    assert [c.hora_sugerida.strftime("%H:%M") for c in result.candidates] == ["08:00", "14:30", "19:00", "10:00", "08:30"]
+
+
+def test_structured_title_blocks_hallucinations_and_respects_duration_and_abbreviated_dates():
+    # Título estruturado com matéria inventada deve falhar.
+    pages = [TextPage(None, NARRATIVE_CALENDAR_TEXT)]
+    with pytest.raises(ProcessingError) as caught:
+        validate_candidates(
+            raw_candidate(
+                titulo="Prova 1 - Física Quântica",
+                pagina_origem=None,
+                data_sugerida="2026-09-14",
+                hora_sugerida="08:00",
+                trecho_origem="A primeira avaliação será a de Cálculo Diferencial e Integral II, marcada para o dia 14 de setembro de 2026, das 08h00 às 10h00, no Auditório Central.",
+            ),
+            pages,
+        )
+    assert caught.value.reason == "title_mismatch"
+
+    # Horário de término em intervalo "das 08h00 às 10h00" não é aceito como horário inicial.
+    end_time_result = validate_candidates(
+        raw_candidate(
+            titulo="Prova 1 - Cálculo Diferencial e Integral II",
+            pagina_origem=None,
+            data_sugerida="2026-09-14",
+            hora_sugerida="10:00",
+            trecho_origem="A primeira avaliação será a de Cálculo Diferencial e Integral II, marcada para o dia 14 de setembro de 2026, das 08h00 às 10h00, no Auditório Central.",
+        ),
+        pages,
+    )
+    assert end_time_result.candidates[0].hora_sugerida is None
+    assert "hora" in end_time_result.candidates[0].campos_ambiguos
+
+    # Intervalo "das 14 às 16h", duração textual "duração de 2 horas" e meses abreviados com/sem ano explícito.
+    source = (
+        "Semestre 2026.2\n"
+        "- Avaliação de Compiladores: 27 de nov., 10h00 (duração de 2 horas).\n"
+        "- Avaliação de Sistemas Operacionais: 14 de set. de 26, das 14 às 16h.\n"
+        "- Entrega de Trabalho de Compiladores: 27 de nov. de 2027, às 23h59.\n"
+    )
+    payload = json.dumps({
+        "candidatos": [
+            {
+                "titulo": "Prova 2 - Compiladores",
+                "tipo": "prova",
+                "data_sugerida": "2026-11-27",
+                "hora_sugerida": "10:00",
+                "campos_ambiguos": [],
+                "pagina_origem": None,
+                "trecho_origem": "- Avaliação de Compiladores: 27 de nov., 10h00 (duração de 2 horas).",
+            },
+            {
+                "titulo": "Prova 1 - Sistemas Operacionais",
+                "tipo": "prova",
+                "data_sugerida": "2026-09-14",
+                "hora_sugerida": "14:00",
+                "campos_ambiguos": [],
+                "pagina_origem": None,
+                "trecho_origem": "- Avaliação de Sistemas Operacionais: 14 de set. de 26, das 14 às 16h.",
+            },
+            {
+                "titulo": "Trabalho 1 - Compiladores",
+                "tipo": "trabalho",
+                "data_sugerida": "2027-11-27",
+                "hora_sugerida": "23:59",
+                "campos_ambiguos": [],
+                "pagina_origem": None,
+                "trecho_origem": "- Entrega de Trabalho de Compiladores: 27 de nov. de 2027, às 23h59.",
+            },
+        ]
+    })
+    res = validate_candidates(payload, [TextPage(None, source)])
+    assert [(c.titulo, c.tipo, c.data_sugerida.isoformat(), c.hora_sugerida.strftime("%H:%M"), c.campos_ambiguos) for c in res.candidates] == [
+        ("Prova 1 - Sistemas Operacionais", "prova", "2026-09-14", "14:00", []),
+        ("Prova 2 - Compiladores", "prova", "2026-11-27", "10:00", []),
+        ("Trabalho 1 - Compiladores", "trabalho", "2027-11-27", "23:59", []),
+    ]
+    assert res.unsupported_dates == 0

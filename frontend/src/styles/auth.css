@@ -29,6 +29,8 @@ body.light :is(.auth-dialog, .auth-return-panel) {
 .auth-dialog::backdrop {
   background: rgb(2 6 16 / 82%);
   backdrop-filter: blur(8px);
+  overflow: hidden;
+  overscroll-behavior: contain;
 }
 
 body.light .auth-dialog::backdrop { background: rgb(223 232 244 / 75%); }
@@ -127,6 +129,42 @@ body.light .auth-dialog .modal-divider { color: var(--auth-muted); margin-block:
 .auth-password-hint { margin-top: -.5rem; }
 .auth-error { color: var(--auth-error); }
 .auth-countdown { text-align: center; font-variant-numeric: tabular-nums; }
+.auth-legal-consent { margin: .75rem 0 1rem; }
+.auth-checkbox-row {
+  display: flex;
+  align-items: flex-start;
+  gap: .65rem;
+  min-height: 44px;
+  padding-block: .25rem;
+}
+.auth-checkbox-row input[type="checkbox"] {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin-top: .15rem;
+  accent-color: #006bc4;
+  cursor: pointer;
+}
+.auth-checkbox-row label {
+  font-size: .9rem;
+  line-height: 1.5;
+  color: inherit;
+  cursor: pointer;
+}
+.auth-checkbox-row a,
+.auth-legal-note a {
+  color: var(--auth-link);
+  text-underline-offset: .22em;
+  text-decoration: underline;
+}
+.auth-legal-consent .auth-field-hint { margin: .25rem 0 .25rem; }
+.auth-legal-note {
+  margin: .875rem 0 0;
+  text-align: center;
+  color: var(--auth-muted);
+  font-size: .85rem;
+  line-height: 1.5;
+}
 
 :is(.auth-dialog, .auth-return-panel) .modal-btn-primary { margin-bottom: .25rem; }
 :is(.auth-dialog, .auth-return-panel) .modal-btn-primary:hover { background-color: #0052b9; }

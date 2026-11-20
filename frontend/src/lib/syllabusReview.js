@@ -2,6 +2,7 @@ import { classStartOnDate, defaultClassStart } from './classSchedule.js';
 
 // Local editor model, not an API payload.
 export const BRASILIA_UTC_OFFSET = '-03:00';
+export const MAX_CONFIRMATION_CANDIDATES = 100;
 
 function formatInBrasilia(isoInstant) {
   if (!isoInstant) return null;
@@ -93,7 +94,7 @@ function nextCivilDay(isoDate) {
 export function buildReviewConfirmation(draft, candidates) {
   const pending = new Map(candidates.filter(item => item.status === 'pendente').map(item => [item.id, item]));
   const selected = draft.filter(item => item.decision === 'selected');
-  if (!selected.length || selected.length > 100 || new Set(selected.map(item => item.id)).size !== selected.length
+  if (!selected.length || selected.length > MAX_CONFIRMATION_CANDIDATES || new Set(selected.map(item => item.id)).size !== selected.length
     || selected.some(item => !pending.has(item.id) || Object.keys(validateReviewItem(item, true)).length)) {
     throw new Error('Revise as avaliações selecionadas antes de confirmar.');
   }

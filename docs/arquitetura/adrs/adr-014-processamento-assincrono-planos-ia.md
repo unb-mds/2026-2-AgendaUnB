@@ -3,8 +3,6 @@ title: "ADR-014 · Processamento assíncrono resiliente de planos com fila persi
 description: "Decisão arquitetural do worker de extração de planos de ensino via IA: fila persistida em planos_ensino, lease com fencing, subprocessos isolados, orçamento controlado e validação estrita."
 ---
 
-# ADR-014 · Processamento assíncrono resiliente de planos com fila persistida, lease e orçamento
-
 | Campo | Valor |
 | --- | --- |
 | Estado | Implementada |

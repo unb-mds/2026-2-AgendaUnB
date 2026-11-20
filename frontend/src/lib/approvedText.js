@@ -11,7 +11,9 @@ export function normalizeTextPreview(data) {
     || approvedTextSize(pages) > MAX_APPROVED_TEXT_BYTES) {
     throw new Error('O serviço retornou um texto inválido. Tente carregar novamente.');
   }
-  return { ...data, pages: pages.map(({ pagina, texto }) => ({ pagina, texto })) };
+  const count = data.redactedCount;
+  const redactedCount = Number.isSafeInteger(count) && count >= 0 ? count : null;
+  return { ...data, redactedCount, pages: pages.map(({ pagina, texto }) => ({ pagina, texto })) };
 }
 
 export async function approvedTextHash(pages) {

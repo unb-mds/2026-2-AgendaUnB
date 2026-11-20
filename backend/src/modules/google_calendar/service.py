@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session
 
 from src.database.models import GoogleCalendarConnection, GoogleCalendarOAuthState, Profile
 from src.middlewares.auth import CurrentUser
+from src.modules.account import repository as account_repository
 
 AUTHORIZATION_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth"
 TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token"
@@ -106,6 +107,7 @@ def disconnect(db: Session, user: CurrentUser) -> str:
     db.query(GoogleCalendarOAuthState).filter_by(user_id=user.id).delete()
     connection = db.get(GoogleCalendarConnection, user.id)
     if connection is None or not connection.encrypted_refresh_token:
+        account_repository.revoke_active_consents(db, user.id, "google_agenda")
         db.commit()
         return "already_disconnected"
     try:
@@ -115,6 +117,7 @@ def disconnect(db: Session, user: CurrentUser) -> str:
     except (HTTPException, InvalidToken):
         revoked = False
     clear_credentials(connection)
+    account_repository.revoke_active_consents(db, user.id, "google_agenda")
     db.commit()
     return "confirmed" if revoked else "not_confirmed_remove_access_in_google"
 
@@ -174,6 +177,13 @@ def finish_authorization(db: Session, state: str, code: str | None, settings: Go
             _store_tokens(connection, token, refresh_token, settings)
             db.add(connection)
             db.flush()
+            account_repository.upsert_active_consent(
+                db,
+                user_id=user_id,
+                purpose="google_agenda",
+                reference_id=user_id,
+                content_hash=hashlib.sha256(scope.encode("utf-8")).hexdigest(),
+            )
     except IntegrityError:
         return "different_google_account"
     return "connected"

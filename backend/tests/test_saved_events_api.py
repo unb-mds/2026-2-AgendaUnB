@@ -1,11 +1,11 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 import pytest
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 
-from src.database.models import Profile, PublicEvent, SavedPublicEvent
+from src.database.models import PersonalEvent, Profile, PublicEvent, Reminder, SavedPublicEvent
 from src.main import app
 from src.middlewares.auth import CurrentUser, get_current_user
 
@@ -119,3 +119,128 @@ def test_saved_endpoints_require_authentication(saved_api):
         assert client.delete(path).status_code == 401
     finally:
         app.dependency_overrides[get_current_user] = override
+
+
+def test_removing_saved_event_cancels_future_reminder_and_history_separates_past_lists(saved_api):
+    client, sessions, authenticated, _ = saved_api
+    owner_id = authenticated['value'].id
+    future_start = datetime.now(timezone.utc) + timedelta(days=5)
+    past_public_start = datetime.now(timezone.utc) - timedelta(days=4)
+    past_personal_start = datetime.now(timezone.utc) - timedelta(days=2)
+
+    with sessions() as db:
+        future_public = PublicEvent(
+            author_id=owner_id,
+            title='Congresso Futuro',
+            description='Com lembrete agendado',
+            starts_at=future_start,
+            status='aprovado',
+            external_url='https://example.org/congresso',
+        )
+        past_public_saved = PublicEvent(
+            author_id=owner_id,
+            title='Seminário Público Passado Salvo',
+            description='Salvo pelo usuário',
+            starts_at=past_public_start,
+            status='aprovado',
+            external_url='https://example.org/seminario-passado',
+        )
+        past_public_only_clicked = PublicEvent(
+            author_id=owner_id,
+            title='Evento Público Apenas Conferido',
+            description='Aberto em Conferir evento sem salvar',
+            starts_at=past_public_start,
+            status='aprovado',
+            external_url='https://example.org/apenas-conferido',
+        )
+        past_personal = PersonalEvent(
+            user_id=owner_id,
+            title='Prova Passada Privada',
+            description='Compromisso privado encerrado',
+            starts_at=past_personal_start,
+        )
+        future_personal = PersonalEvent(
+            user_id=owner_id,
+            title='Entrega Futura Privada',
+            description='Compromisso privado futuro',
+            starts_at=future_start,
+        )
+        db.add_all([
+            future_public,
+            past_public_saved,
+            past_public_only_clicked,
+            past_personal,
+            future_personal,
+        ])
+        db.commit()
+        future_public_id = future_public.id
+        past_public_saved_id = past_public_saved.id
+        past_public_clicked_id = past_public_only_clicked.id
+        past_personal_id = past_personal.id
+
+    # Salvar evento futuro agenda lembrete pendente; repetir PUT não duplica vínculo nem lembrete.
+    for _ in range(2):
+        res = client.put(f'/api/v1/me/saved-events/{future_public_id}')
+        assert res.status_code == 200
+        assert res.json() == {'saved': True}
+
+    with sessions() as db:
+        pending_count = db.scalar(
+            select(func.count())
+            .select_from(Reminder)
+            .where(
+                Reminder.user_id == owner_id,
+                Reminder.public_event_id == future_public_id,
+                Reminder.status == 'pendente',
+            )
+        )
+        assert pending_count == 1
+
+    # Salvar evento público passado (entra no histórico de públicos salvos, sem lembrete retroativo).
+    assert client.put(f'/api/v1/me/saved-events/{past_public_saved_id}').status_code == 200
+    with sessions() as db:
+        retro_count = db.scalar(
+            select(func.count())
+            .select_from(Reminder)
+            .where(
+                Reminder.user_id == owner_id,
+                Reminder.public_event_id == past_public_saved_id,
+            )
+        )
+        assert retro_count == 0
+
+    # Acionar Conferir evento em um evento passado NÃO o adiciona à agenda nem ao histórico.
+    click_res = client.post(
+        f'/api/v1/events/{past_public_clicked_id}/outbound-clicks',
+        json={'clickId': str(uuid4())},
+    )
+    assert click_res.status_code == 200
+    assert click_res.json()['outbound_clicks_count'] == 1
+
+    history = client.get('/api/v1/me/events/history')
+    assert history.status_code == 200
+    body = history.json()
+    assert [item['id'] for item in body['saved_public_events']] == [str(past_public_saved_id)]
+    assert [item['id'] for item in body['personal_events']] == [str(past_personal_id)]
+
+    # Remover o vínculo do evento futuro cancela o lembrete pendente; repetir DELETE é seguro (204).
+    for _ in range(2):
+        assert client.delete(f'/api/v1/me/saved-events/{future_public_id}').status_code == 204
+
+    with sessions() as db:
+        remaining_reminders = db.scalar(
+            select(func.count())
+            .select_from(Reminder)
+            .where(
+                Reminder.user_id == owner_id,
+                Reminder.public_event_id == future_public_id,
+                Reminder.status == 'pendente',
+            )
+        )
+        assert remaining_reminders == 0
+
+    # Remover o vínculo do evento passado retira-o do histórico de públicos salvos, mantendo o privado.
+    assert client.delete(f'/api/v1/me/saved-events/{past_public_saved_id}').status_code == 204
+    after_unsave = client.get('/api/v1/me/events/history').json()
+    assert after_unsave['saved_public_events'] == []
+    assert [item['id'] for item in after_unsave['personal_events']] == [str(past_personal_id)]

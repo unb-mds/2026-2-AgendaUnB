@@ -22,7 +22,7 @@ from src.modules.syllabus.gemini import GeminiProvider
 from src.modules.syllabus.processing_config import ERROR_MESSAGES, ProcessingConfig, ProcessingError
 from src.modules.syllabus.processing_task import DocumentResult, run_isolated
 from src.modules.syllabus.privacy import privacy_checks
-from src.modules.syllabus.preparation import checked_pages, text_hash
+from src.modules.syllabus.preparation import checked_pages, contains_personal_data, text_hash
 from src.modules.syllabus.versions import private_version
 from src.modules.syllabus.timing import duration_ms as elapsed_ms
 
@@ -48,6 +48,8 @@ def worker_ready_to_spawn() -> bool:
 def spawn_worker_drain() -> bool:
     """Inicia um worker independente em --drain quando a execução automática está ativa."""
     global _ACTIVE_WORKER
+    if os.getenv("SYLLABUS_DAEMON_ACTIVE", "false").lower() == "true":
+        return False
     if not worker_ready_to_spawn():
         return False
     with _SPAWN_LOCK:
@@ -234,6 +236,8 @@ class SyllabusWorker:
             pages = checked_pages(lease.approved_pages or [])
             if text_hash(pages) != lease.approved_hash:
                 raise ProcessingError("pdf_invalido")
+            if contains_personal_data(pages):
+                raise ProcessingError("texto_com_dados_pessoais")
             cached = self._find_cached_extraction(lease, pages)
             from_cache = cached is not None
             if cached is not None:
@@ -329,6 +333,8 @@ def main():
         parser.exit(2, "Gemini aguarda validação de termos e elegibilidade S7-B02.\n")
     worker = SyllabusWorker(SessionLocal, None, GeminiProvider(config), config, pace=True)
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("httpcore").setLevel(logging.WARNING)
     processed = 0
     try:
         while True:

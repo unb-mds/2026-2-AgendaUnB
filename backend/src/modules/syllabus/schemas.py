@@ -23,6 +23,7 @@ class SyllabusUploadResponse(BaseModel):
     created_at: datetime = Field(alias="createdAt")
     authorization_required: bool = Field(default=True, alias="authorizationRequired")
     prepared_text_available: bool = Field(default=False, alias="preparedTextAvailable")
+    redacted_count: int | None = Field(default=None, alias="redactedCount", ge=0)
     message: str = "Texto preparado. Revise e autorize o trecho antes de enviar ao Gemini."
 
 
@@ -74,6 +75,11 @@ class SyllabusCandidateRead(BaseModel):
     suggested_time: time | None = Field(default=None, alias="suggestedTime")
     ambiguous_fields: list[str] = Field(default_factory=list, alias="ambiguousFields")
     version_id: UUID | None = Field(default=None, alias="versionId")
+    confirm_count: int = Field(default=0, alias="confirmCount")
+    contest_count: int = Field(default=0, alias="contestCount")
+    divergent: bool = False
+    my_vote: str | None = Field(default=None, alias="myVote")
+
 
 
 class SyllabusDetailResponse(SyllabusListItem):
@@ -81,6 +87,7 @@ class SyllabusDetailResponse(SyllabusListItem):
     authorization_required: bool = Field(default=True, alias="authorizationRequired")
     preparation_duration_ms: int | None = Field(default=None, alias="preparationDurationMs")
     review_duration_ms: int | None = Field(default=None, alias="reviewDurationMs")
+    redacted_count: int | None = Field(default=None, alias="redactedCount", ge=0)
 
 
 class SyllabusListResponse(BaseModel):
@@ -132,6 +139,9 @@ class ConfirmCandidateInput(BaseModel):
 
 
 class ConfirmSyllabusRequest(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    version_id: UUID | None = Field(default=None, alias="versionId")
     candidates: list[ConfirmCandidateInput] = Field(min_length=1, max_length=100)
 
     @model_validator(mode="after")
@@ -140,6 +150,121 @@ class ConfirmSyllabusRequest(BaseModel):
         if len(ids) != len(set(ids)):
             raise ValueError("Não repita o mesmo candidato na confirmação")
         return self
+
+
+class RevisionCandidateInput(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, str_strip_whitespace=True)
+
+    candidate_id: UUID | None = Field(default=None, alias="candidateId")
+    title: str = Field(min_length=3, max_length=200)
+    kind: str | None = Field(default=None, min_length=2, max_length=80, alias="type")
+    starts_at: datetime | None = Field(default=None, alias="startsAt")
+    suggested_date: date | None = Field(default=None, alias="suggestedDate")
+    suggested_time: time | None = Field(default=None, alias="suggestedTime")
+    source_page: int | None = Field(default=None, ge=1, alias="sourcePage")
+    source_excerpt: str | None = Field(default=None, max_length=5000, alias="sourceExcerpt")
+    ambiguous: bool = False
+    ambiguous_fields: list[str] = Field(default_factory=list, alias="ambiguousFields")
+
+    @field_validator("kind", "source_excerpt", mode="before")
+    @classmethod
+    def empty_revision_strings_to_none(cls, value):
+        if isinstance(value, str) and not value.strip():
+            return None
+        return value
+
+
+class CreateRevisionRequest(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    source_version_id: UUID | None = Field(default=None, alias="sourceVersionId")
+    candidates: list[RevisionCandidateInput] | None = Field(default=None, min_length=1, max_length=100)
+    share: bool = False
+
+
+class UpdateVersionRequest(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    candidates: list[RevisionCandidateInput] = Field(min_length=1, max_length=100)
+
+
+class ValidateProvenanceRequest(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, str_strip_whitespace=True)
+
+    institutional_source_url: str = Field(min_length=8, max_length=2048, alias="institutionalSourceUrl")
+
+
+class VoteVersionRequest(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, str_strip_whitespace=True)
+
+    value: str = Field(pattern="^(confirm|contest|confirma|contesta)$")
+    candidate_id: UUID | None = Field(default=None, alias="candidateId")
+
+
+class CandidateVoteSummaryRead(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    candidate_id: UUID = Field(alias="candidateId")
+    version_id: UUID = Field(alias="versionId")
+    confirm_count: int = Field(alias="confirmCount")
+    contest_count: int = Field(alias="contestCount")
+    divergent: bool = False
+    my_vote: str | None = Field(default=None, alias="myVote")
+
+
+class VoteVersionResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    version_id: UUID = Field(alias="versionId")
+    candidate_id: UUID | None = Field(default=None, alias="candidateId")
+    confirm_count: int = Field(alias="confirmCount")
+    contest_count: int = Field(alias="contestCount")
+    divergent: bool = False
+    my_vote: str = Field(alias="myVote")
+
+
+class VersionVotesResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    version_id: UUID = Field(alias="versionId")
+    confirm_count: int = Field(alias="confirmCount")
+    contest_count: int = Field(alias="contestCount")
+    divergent: bool = False
+    my_vote: str | None = Field(default=None, alias="myVote")
+    items: list[CandidateVoteSummaryRead] = Field(default_factory=list)
+
+
+class VersionStatusResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: UUID
+    syllabus_id: UUID = Field(alias="syllabusId")
+    offering_id: UUID | None = Field(default=None, alias="offeringId")
+    number: int
+    visibility: str
+    author_id: UUID = Field(alias="authorId")
+    author_role: str = Field(alias="authorRole")
+    source_version_id: UUID | None = Field(default=None, alias="sourceVersionId")
+    institutional_provenance: bool = Field(default=False, alias="institutionalProvenance")
+    institutional_source_url: str | None = Field(default=None, alias="institutionalSourceUrl")
+    shared_at: datetime | None = Field(default=None, alias="sharedAt")
+    withdrawn_at: datetime | None = Field(default=None, alias="withdrawnAt")
+    created_at: datetime | None = Field(default=None, alias="createdAt")
+    membership_type: str = Field(default="autodeclarado", alias="membershipType")
+    shared_content_notice: str = Field(alias="sharedContentNotice")
+    candidates: list[SyllabusCandidateRead] = Field(default_factory=list)
+
+
+class SyllabusVersionListResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    syllabus_id: UUID = Field(alias="syllabusId")
+    offering_id: UUID | None = Field(default=None, alias="offeringId")
+    membership_type: str = Field(default="autodeclarado", alias="membershipType")
+    shared_content_notice: str = Field(alias="sharedContentNotice")
+    items: list[VersionStatusResponse] = Field(default_factory=list)
+    total: int
+
 
 
 class ConfirmItemResult(BaseModel):
