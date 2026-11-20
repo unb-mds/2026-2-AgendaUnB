@@ -41,6 +41,21 @@ O campo **verificado** é o mais importante. Sem ele, a entrada declara o uso ma
 - **O que entrou no repositório:** Conciliação das migrações `20261117151000_eventos_conferir_evento.sql` e `20261117200000_s8_f02_eventos_moderacao_categorias.sql` (evitando falha de `revoke` sobre `registrar_interesse` já removida e sincronizando a deduplicação entre `cliques_evento` e `eventos_cliques_redirecionamento`); endpoint `GET /api/v1/me/events/history`, suporte a `click_id`/`clickId` em `POST /api/v1/events/{id}/outbound-clicks` e sincronização/cancelamento de lembretes futuros no ORM (`backend/src/modules/events/router.py`, `schemas.py`, `models.py`); separação visual e lógica dos históricos de públicos salvos passados e compromissos privados passados em **Meus Eventos** (`frontend/src/lib/calendar.js`, `frontend/src/pages/SecondPage.jsx`, `frontend/src/lib/api.js`); testes em `backend/tests/test_saved_events_api.py`, `backend/tests/test_event_clicks_database.py` e `frontend/src/lib/calendar.test.js`; documentação atualizada em `docs/arquitetura/conferir-evento.md`, `docs/api-specs.md`, `docs/sprints/sprint-8.md` e `docs/matriz-release-2.md`.
 - **O que foi verificado:** Execução da suíte automatizada do backend (`298 passed`) e dos testes unitários do frontend (`62/62 passed` em `node --test src/lib/*.test.js`), validação de sintaxe JSX com `esbuild` e `git diff --check`.
 - **O que foi rejeitado ou corrigido:** A migração `20261117200000` executava `revoke all on function public.registrar_interesse(uuid)` assumindo que a função ainda existia, o que falharia após `drop function if exists public.registrar_interesse(uuid)` na migração `20261117151000`; o `revoke` foi protegido por verificação condicional `to_regprocedure('public.registrar_interesse(uuid)') is not null`. Também foi adicionado `email_confirmed_at = now()` às contas sintéticas de `test_event_clicks_database.py` para compatibilidade com a política restritiva de e-mail confirmado da `dev`.
+### 19/11/2026 — Minimização de dados pessoais em planos de ensino (#132)
+
+- **Quem** — Heitor Gomes Monteiro, com assistência do Codex.
+- **Ferramentas** — Codex, Impeccable, pytest e Playwright.
+- **O que foi pedido** — Aprimorar a sanitização de PDF e texto colado,
+  manter o conteúdo acadêmico e mostrar as ocorrências mascaradas na revisão.
+- **O que entrou no repositório** — Regras determinísticas, preparação
+  compartilhada, contagem persistida, bloqueio de texto legado detectável,
+  aviso acessível e testes de regressão e integração.
+- **O que foi verificado** — Hash do snapshot privado, controle de acesso,
+  procedência dos candidatos, privacidade no fluxo com provedor simulado e
+  edição em celular e desktop. [Exemplos e resultados](/arquitetura/minimizacao-planos).
+- **Ajuste durante a validação** — O teste de upload concorrente passou a
+  manter o segundo envio aberto até o terceiro ter começado, permitindo
+  medir a concorrência em ambientes com tempo de resposta diferente.
 
 ### 18/11/2026 — S8-F02: eventos, moderação, agenda, filtros múltiplos e melhorias de uso (#80)
 

@@ -22,7 +22,7 @@ from src.modules.syllabus.gemini import GeminiProvider
 from src.modules.syllabus.processing_config import ERROR_MESSAGES, ProcessingConfig, ProcessingError
 from src.modules.syllabus.processing_task import DocumentResult, run_isolated
 from src.modules.syllabus.privacy import privacy_checks
-from src.modules.syllabus.preparation import checked_pages, text_hash
+from src.modules.syllabus.preparation import checked_pages, contains_personal_data, text_hash
 from src.modules.syllabus.versions import private_version
 from src.modules.syllabus.timing import duration_ms as elapsed_ms
 
@@ -236,6 +236,8 @@ class SyllabusWorker:
             pages = checked_pages(lease.approved_pages or [])
             if text_hash(pages) != lease.approved_hash:
                 raise ProcessingError("pdf_invalido")
+            if contains_personal_data(pages):
+                raise ProcessingError("texto_com_dados_pessoais")
             cached = self._find_cached_extraction(lease, pages)
             from_cache = cached is not None
             if cached is not None:

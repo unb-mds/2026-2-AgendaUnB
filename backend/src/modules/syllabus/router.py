@@ -50,7 +50,7 @@ from src.modules.syllabus.services import process_syllabus_upload, validate_pdf_
 from src.modules.syllabus.timing import duration_ms
 from src.modules.syllabus.processing_config import ProcessingConfig
 from src.modules.syllabus.preparation import (
-    TextInput, ExtractionAuthorization, PreparationPreview, checked_pages, minimize, extract_pdf_isolated,
+    TextInput, ExtractionAuthorization, PreparationPreview, checked_pages, extract_pdf_isolated,
     owned_plan, preview, authorize,
 )
 from src.modules.syllabus.services import UPLOAD_VALIDATION_TIMEOUT_SECONDS
@@ -509,9 +509,8 @@ def prepare_syllabus_text(payload: TextInput, current_user: CurrentUser = Depend
     offer = followed_available_offering(db, payload.offering_id, current_user.id)
     started = time.monotonic()
     pages = checked_pages([{"pagina": None, "texto": payload.text}])
-    pages = checked_pages([{"pagina": None, "texto": minimize(pages[0]["texto"])}])
     plan = process_syllabus_upload(user_id=current_user.id, filename="texto-revisado.txt",
-        file_size=len(payload.text.encode("utf-8")), pages=pages, file_type="text", db=db,
+        file_size=len(pages[0]["texto"].encode("utf-8")), pages=pages, file_type="text", db=db,
         preparation_duration_ms=round((time.monotonic()-started)*1000),
         offering_id=offer.id, disciplina=offer.subject.name, turma=offer.class_number, ano=offer.year, semestre=offer.semester)
     return SyllabusUploadResponse.model_validate(plan)
@@ -624,6 +623,7 @@ def get_syllabus_status(
         authorizationRequired=syllabus.authorization_required if is_owner else False,
         preparedTextAvailable=bool(syllabus.prepared_pages) if is_owner else False,
         preparationDurationMs=syllabus.preparation_duration_ms if is_owner else None,
+        redactedCount=syllabus.redacted_count if is_owner else None,
         reviewDurationMs=duration_ms(syllabus.created_at, syllabus.authorized_at) if is_owner else None,
         disciplina=syllabus.disciplina,
         turma=syllabus.turma,
