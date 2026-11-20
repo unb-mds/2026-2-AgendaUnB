@@ -33,6 +33,46 @@ O campo **verificado** é o mais importante. Sem ele, a entrada declara o uso ma
 
 ## Entradas
 
+### 20/11/2026 — Integração da Release 2 e endurecimento
+
+- **Solicitante:** Thomas. **Ferramenta:** Codex.
+- **Pedido:** Integrar a `dev` a `fix/s8-d02-endurecimento` e alinhar a documentação, o escopo e a preparação do deploy.
+- **Entrega:** Revisão das descrições e discussões dos PRs pós-Sprint 6, incluindo o [#94](https://github.com/unb-mds/2026-2-AgendaUnB/pull/94). Retirada do histórico separado da agenda e da revisão manual do texto. Consolidação de cliques e fila de IA, correções de compatibilidade dos runtimes, retorno OAuth e atualização dos documentos legais.
+- **Verificação** — 523 testes de backend, 62 unitários de frontend e 69 cenários de Playwright em cada navegador, Chromium, Edge e Firefox. A publicação atômica do catálogo passou em PostgreSQL isolado. Com Supabase local, um PDF sintético gerou dois candidatos em 7,91 s usando Gemini real e a confirmação criou um compromisso. Também passaram o ensaio de atualização a partir das versões remotas, o job local de lembretes, o container Render, o build Vercel e a verificação da documentação. Os ambientes hospedados foram consultados em leitura. [Evidências e ordem de publicação](/implantacao#estado-verificado-em-20112026).
+
+### 19/11/2026 — S8-B02: consolidação de eventos salvos, redirecionamento deduplicado e históricos separados (#79)
+
+- **Quem:** Thomaz Marra (solicitante).
+- **Ferramenta:** Google Antigravity (Gemini), Pytest e Node Test Runner.
+- **O que foi pedido:** Concluir na branch `feat/s8-b02-conferir-evento` a integração com a `dev`, os contratos de redirecionamento deduplicado, o cancelamento de lembretes futuros ao remover vínculo salvo e a separação dos históricos de eventos públicos salvos passados e compromissos privados passados.
+- **O que entrou no repositório:** Conciliação das migrações `20261117151000_eventos_conferir_evento.sql` e `20261117200000_s8_f02_eventos_moderacao_categorias.sql` (evitando falha de `revoke` sobre `registrar_interesse` já removida e sincronizando a deduplicação entre `cliques_evento` e `eventos_cliques_redirecionamento`); endpoint `GET /api/v1/me/events/history`, suporte a `click_id`/`clickId` em `POST /api/v1/events/{id}/outbound-clicks` e sincronização/cancelamento de lembretes futuros no ORM (`backend/src/modules/events/router.py`, `schemas.py`, `models.py`); separação visual e lógica dos históricos de públicos salvos passados e compromissos privados passados em **Meus Eventos** (`frontend/src/lib/calendar.js`, `frontend/src/pages/SecondPage.jsx`, `frontend/src/lib/api.js`); testes em `backend/tests/test_saved_events_api.py`, `backend/tests/test_event_clicks_database.py` e `frontend/src/lib/calendar.test.js`; documentação atualizada em `docs/arquitetura/conferir-evento.md`, `docs/api-specs.md`, `docs/sprints/sprint-8.md` e `docs/matriz-release-2.md`.
+- **O que foi verificado:** Execução da suíte automatizada do backend (`298 passed`) e dos testes unitários do frontend (`62/62 passed` em `node --test src/lib/*.test.js`), validação de sintaxe JSX com `esbuild` e `git diff --check`.
+- **O que foi rejeitado ou corrigido:** A migração `20261117200000` executava `revoke all on function public.registrar_interesse(uuid)` assumindo que a função ainda existia, o que falharia após `drop function if exists public.registrar_interesse(uuid)` na migração `20261117151000`; o `revoke` foi protegido por verificação condicional `to_regprocedure('public.registrar_interesse(uuid)') is not null`. Também foi adicionado `email_confirmed_at = now()` às contas sintéticas de `test_event_clicks_database.py` para compatibilidade com a política restritiva de e-mail confirmado da `dev`.
+### 19/11/2026 — Minimização de dados pessoais em planos de ensino (#132)
+
+- **Quem** — Heitor Gomes Monteiro, com assistência do Codex.
+- **Ferramentas** — Codex, Impeccable, pytest e Playwright.
+- **O que foi pedido** — Aprimorar a sanitização de PDF e texto colado,
+  manter o conteúdo acadêmico e mostrar as ocorrências mascaradas na revisão.
+- **O que entrou no repositório** — Regras determinísticas, preparação
+  compartilhada, contagem persistida, bloqueio de texto legado detectável,
+  aviso acessível e testes de regressão e integração.
+- **O que foi verificado** — Hash do snapshot privado, controle de acesso,
+  procedência dos candidatos, privacidade no fluxo com provedor simulado e
+  edição em celular e desktop. [Exemplos e resultados](/arquitetura/minimizacao-planos).
+- **Ajuste durante a validação** — O teste de upload concorrente passou a
+  manter o segundo envio aberto até o terceiro ter começado, permitindo
+  medir a concorrência em ambientes com tempo de resposta diferente.
+
+### 18/11/2026 — S8-F02: eventos, moderação, agenda, filtros múltiplos e melhorias de uso (#80)
+
+- **Quem:** Gabriel Escramin (solicitante).
+- **Ferramenta:** Google Antigravity (Gemini), Impeccable (`critique`, `polish`, `harden`, `colorize`), Vite e `node --test`.
+- **O que foi pedido:** Concluir na branch `feat/s8-f02-eventos-e-melhorias` as entregas de banco, API, interface de calendário/detalhes/moderação, filtros combináveis com múltipla seleção, edição pública por professor/admin, menu de logout e acabamento visual da issue #80 (`S8-F02`).
+- **O que entrou no repositório:** Migração `supabase/migrations/20261117200000_s8_f02_eventos_moderacao_categorias.sql` (`localizacao` em `eventos_pessoais`, redirecionamento deduplicado em `registrar_redirecionamento_evento`, gestão admin de categorias e projeção de intervalos/dia inteiro); endpoints FastAPI em `backend/src/modules/events/router.py` e `schemas.py` (`all_day`, `ends_at`, `POST /events/{id}/outbound-clicks`, `PUT /events/{id}` para `professor`/`admin` e CRUD admin em `/api/v1/categories`) com testes em `backend/tests/test_events_api.py`; calendário multi-dia em `America/Sao_Paulo` (`calendar.js`, `EventCalendar.jsx`), ações independentes em `PaginaDeEvento.jsx`, fila de coleta em `SuggestionsPage.jsx`, gestão de categorias em `AdminPage.jsx`, filtros múltiplos com checkbox (`CustomSelect.jsx`, `preferences.js`), edição de eventos públicos restrita a `professor`/`admin` e remoção do botão de voltar em `SecondPage.jsx`, `ProfileMenu.jsx` com logout na `NavBar.jsx`, polimento de contraste/responsividade em `global.css` e `management.css`, e atualização de `docs/api-specs.md`, `docs/sprints/sprint-8.md` e `docs/matriz-release-2.md`.
+- **O que foi verificado:** Build de produção do frontend (`npm --prefix frontend run build`) e **50/50** testes unitários em `frontend/src/lib/*.test.js` (`npm --prefix frontend test`) aprovados após as últimas alterações; detector mecânico `impeccable detect --json` sem novos achados nos componentes e páginas alterados (restando apenas o aviso pré-existente da fonte `Inter`, definida no `DESIGN.md`); checagem de sintaxe Python (`python -m py_compile`) nos arquivos alterados do backend. A execução da suíte `pytest` com as dependências da `.venv`, a aplicação da migração no PostgreSQL de destino e a homologação manual dos critérios de aceite ficaram pendentes para a etapa final de PR.
+- **O que foi rejeitado ou corrigido:** A barra de botões rápidos `"Campi UnB"` e a aba separada `"Histórico"` (RF18) adicionadas inicialmente em `SecondPage.jsx` foram removidas por decisão do solicitante, mantendo os cinco campi no seletor `Qualquer campus` e deixando a visualização do RF18 vinculada à integração com a `#79` (`S8-B02`). Nos ajustes de qualidade e UI, foram removidos `side-tab` (`borderLeft`), gradientes lineares e badges/botões translúcidos com borda colorida (substituídos por cores sólidas de alto contraste, inclusive no botão `"Sair da conta"`), equalizados os filtros em `<= 600px` e preservados `linkExterno` e visibilidade na edição de eventos públicos.
+
 ### 17/11/2026 — S8-B01: endpoints de compartilhamento, versões, procedência e votos (#77)
 
 - **Quem:** Thomaz Marra (solicitante).
@@ -94,6 +134,14 @@ O campo **verificado** é o mais importante. Sem ele, a entrada declara o uso ma
 - **O que entrou no repositório:** Verificação de oferta disponível e vínculo antes da extração e antes da persistência, bloqueio de envio na interface até consultar as turmas seguidas, testes de regressão, ajuste da paginação em celular e contrato HTTP atualizado.
 - **O que foi corrigido:** O identificador de uma oferta disponível podia ser inserido diretamente na URL ou enviado à API sem seguir a turma. O histórico particular permanece acessível ao dono após remover o vínculo.
 - **Limites:** Testes locais utilizam SQLite e fixtures de autenticação; testes de navegador controlam as respostas da API. PostgreSQL concorrente e a jornada completa em homologação exigem validação própria. O merge da main preparado anteriormente permanece separado das alterações desta etapa no índice do Git.
+
+### 10/11/2026 — Segurança (S8-D02), parte de dados de seis issues e privacidade (S8-D01)
+- **Quem:** Felipe Couto Duque
+- **Ferramenta:** Claude (Anthropic), interface web
+- **O que foi pedido:** revisar a segurança do projeto e resolver a parte de banco das issues em que sou responsável ou corresponsável, deixando prontas as funções e a documentação que os responsáveis pela API, pelo coletor e pelo agendador precisam
+- **O que entrou no repositório:** um PR por issue, conforme o template. [#84](https://github.com/unb-mds/2026-2-AgendaUnB/issues/84): migração `20261117130000` (endurecimento), proteções da API em `middlewares/security.py` e `docs/processo/seguranca.md`. [#75](https://github.com/unb-mds/2026-2-AgendaUnB/issues/75): `20261111140000` (datas civis e coleta). [#72](https://github.com/unb-mds/2026-2-AgendaUnB/issues/72): `20261111141000` (confirmação idempotente). [#70](https://github.com/unb-mds/2026-2-AgendaUnB/issues/70): `20261110142000` (catálogo). [#77](https://github.com/unb-mds/2026-2-AgendaUnB/issues/77): `20261117150000` (compartilhamento e votos). [#79](https://github.com/unb-mds/2026-2-AgendaUnB/issues/79): `20261117151000` (Conferir evento). [#81](https://github.com/unb-mds/2026-2-AgendaUnB/issues/81): `20261117152000` (lembretes). [#83](https://github.com/unb-mds/2026-2-AgendaUnB/issues/83): `20261117160000`, módulo `account`, script de descarte de PDFs, política de privacidade e termos de uso. Cada PR traz os modelos do ORM, os testes de banco e o guia de integração da sua issue
+- **O que foi verificado:** a IA executou cada branch em PostgreSQL 16 com um substituto mínimo do Supabase (papéis, `auth.users`, `storage.objects` e o histórico de migrações), aplicando todas as migrações do zero: #84 com 229 testes, #75 com 209, #72 com 215, #77 com 223, #81 com 229, #83 com 243, #79 com 194 e #70 com 194 (números sobre a `dev` de 10/11; após a atualização de 11/11 com a `main`, os números de cada branch estão na descrição do PR), além do build estrito da documentação. **Não foi exercitado** em Supabase hospedado: Auth, Storage, TLS e CORS reais ficam para a homologação. Minha conferência no Supabase local, antes de abrir os PRs: rodei #84 (229 passed), #75 (209), #72 (215) e #77 (223), com os mesmos números da IA; as demais não rodei localmente.
+- **O que foi rejeitado ou corrigido:** os testes encontraram erros da própria IA durante o trabalho: a trava de conteúdo compartilhado impedia excluir um plano inteiro; um teste usava um hash mais curto do que a regra do banco aceita; e a exclusão de conta falhava porque `eventos_pessoais.user_id` não tinha `ON DELETE CASCADE`, um defeito antigo do esquema que virou correção. Ao atualizar com a `dev`, foram corrigidas a numeração das migrações (a nuvem já tinha a `20261110120000` e o `db push` recusa números menores), a escrita aberta na fila de processamento (#92) e uma política que deixava o dono do plano ler o rascunho de revisão de outra conta. Em 11/11, com a publicação do catálogo (`20261111120000`) já na `main`, as migrações destes PRs foram renumeradas para `20261117130000` em diante, para que rodem na mesma ordem no banco local e na nuvem, e cada branch recebeu a correção da CI da `dev`. Em 17/11, com a `dev` 110 commits à frente, as branches ainda abertas foram atualizadas de novo e as migrações renumeradas para `20261117...`: a `20261111150000` do compartilhamento coincidia com a da S7-F04, e a `dev` já tinha migrações até `20261114190000`. Na segurança, a regra de professor da S7-F04 substituiu a minha (eram equivalentes), e o endurecimento passou a manter o acesso às funções criadas depois dele (`listar_eventos_publicos`, conferências de e-mail e revisão da coleta). A privacidade foi alinhada ao fluxo de texto preparado da S7-B01, sem duplicar o registro de autorização da IA. A primeira entrega reunia várias issues em um PR; foi dividida em um PR por issue. Ficaram como decisões da equipe, e não da IA: o modelo da coleta (#75 e #93), a tabela de fila duplicada e o destino dos eventos públicos e das revisões de terceiros quando uma conta é excluída
 
 ### 10/11/2026 — Resolução dos conflitos do PR #108 (dev → main)
 
@@ -322,3 +370,10 @@ Este arquivo foi redigido com auxílio da I.A. A estrutura e o texto das entrada
 - **O que entrou:** HTML e metadados para páginas públicas, guias com fontes oficiais da UnB, sitemap de eventos aprovados e regras de indexação.
 - **Verificações:** build e 25 testes do frontend, HTTP local dos guias e testes da função com respostas simuladas do Supabase. A validação do roteamento e do cache na Vercel fica para a homologação.
 - **Decisão:** a marcação estruturada de eventos depende de endereços completos no catálogo. As páginas públicas usam o campo de local disponível e não inferem um endereço.
+
+### 18/11/2026 — Lembretes persistentes (#81)
+
+- **Ferramenta** — Codex, com pytest, Supabase local e Chromium.
+- **Pedido** — Concluir o job, os contratos e a central de lembretes em commits separados.
+- **Entrega** — Migração incremental para a corrida de reagendamento, SQL de ativação do Supabase Cron, rotas autenticadas e estados de leitura no sino.
+- **Verificação** — Testes SQL e HTTP, reinício do banco com job real e retorno à sessão no navegador com duas contas sintéticas. [Evidências locais e pendências](/arquitetura/dados-de-eventos#aceite-local-da-s8-b03).

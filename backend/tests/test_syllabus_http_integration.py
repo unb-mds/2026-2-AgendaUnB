@@ -152,6 +152,32 @@ class ReferenceProvider:
         }]})
 
 
+def test_preparation_sanitizes_pdf_and_text_with_local_auth_and_postgres(local_http):
+    from src.modules.syllabus.preparation import text_hash
+
+    ctx, client, _ = local_http
+    raw = "Disciplina: Estrutura de Dados 1 | Prof. Pessoa Exemplo | RG: 12.345.678-X\nProva 1: 20/11/2026 14:30 Sala 204"
+    expected = raw.replace("Pessoa Exemplo", "[identificador removido]").replace("12.345.678-X", "[identificador removido]")
+    headers = ctx.headers("owner")
+    paste = client.post("/api/v1/syllabus/text", headers=headers, json={"offering_id": ctx.offering_id, "text": raw})
+    upload = client.post("/api/v1/syllabus/upload", headers=headers, data={"offering_id": ctx.offering_id},
+                         files={"file": ("sintetico.pdf", make_pdf([raw]), "application/pdf")})
+
+    for response, page, suffix in [(paste, None, ""), (upload, 1, "\n")]:
+        assert response.status_code == 202
+        url = f"/api/v1/syllabus/{response.json()['id']}/text"
+        review = client.get(url, headers=headers)
+        assert review.status_code == 200
+        assert review.headers["cache-control"] == "no-store"
+        preview = review.json()
+        pages = [{"pagina": page, "texto": expected + suffix}]
+        assert preview["pages"] == pages
+        assert preview["textHash"] == text_hash(pages)
+        assert preview["redactedCount"] == 2
+        assert preview["authorizationRequired"] is True
+        assert client.get(url, headers=ctx.headers("other")).status_code == 404
+
+
 @pytest.mark.parametrize("provider_kind",["reference",pytest.param("gemini",marks=pytest.mark.skipif(
     os.getenv("TEST_GEMINI_LIVE") != "true",reason="Gemini real exige --gemini-live"))])
 def test_authenticated_upload_private_download_processing_and_review(local_http,provider_kind):
@@ -183,10 +209,10 @@ def test_authenticated_upload_private_download_processing_and_review(local_http,
             assert hidden.status_code == (401 if role is None else 404)
     with ctx.sessions() as session:
         assert session.execute(text("select count(*) from storage.objects where bucket_id='syllabus_files'")).scalar() == 0
-    # Snapshot sintético conhecido: autorização explícita após conferir o conteúdo.
+    # A autorização do envio é vinculada às páginas sanitizadas.
     preview = preview.json()
     authorized = client.post(f"/api/v1/syllabus/{sid}/extractions",headers=ctx.headers("owner"), json={
-        "pages":preview["pages"],"textHash":preview["textHash"],"authorize":True,"contentEligible":True})
+        "pages":preview["pages"],"textHash":preview["textHash"],"authorize":True})
     assert authorized.status_code == 202
     queue_started = time.monotonic()
     provider = GeminiProvider(config) if provider_kind == "gemini" else ReferenceProvider()
@@ -199,7 +225,8 @@ def test_authenticated_upload_private_download_processing_and_review(local_http,
             break
         time.sleep(config.retry_delay_seconds)
     status = client.get(f"/api/v1/syllabus/{sid}",headers=ctx.headers("owner"))
-    assert status.status_code == 200 and status.json()["status"] == "concluido"
+    assert status.status_code == 200
+    assert status.json()["status"] == "concluido", status.json().get("errorCode")
     assert status.json()["extractedEventsCount"] == 2
     upload_to_candidates_ms = round((time.monotonic()-started)*1000)
     total_processing_ms = status.json()["totalDurationMs"]

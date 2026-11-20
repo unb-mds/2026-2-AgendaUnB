@@ -11,6 +11,16 @@
   ],
   "headers": [
     {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(), payment=()" },
+        { "key": "Strict-Transport-Security", "value": "max-age=31536000" }
+      ]
+    },
+    {
       "source": "/auth/retorno",
       "headers": [
         { "key": "X-Robots-Tag", "value": "noindex" },
@@ -19,16 +29,12 @@
       ]
     },
     {
-      "source": "/:page(admin|sugestoes|segunda-pagina|plano-de-ensino|app.html)/:path*",
+      "source": "/:page(admin|sugestoes|segunda-pagina|plano-de-ensino|configuracoes|app.html)/:path*",
       "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }]
     },
     {
       "source": "/eventos",
       "has": [{ "type": "query", "key": "aba", "value": "meus" }],
-      "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }]
-    },
-    {
-      "source": "/prototipo-plano-de-ensino/:path*",
       "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }]
     }
   ],
@@ -42,6 +48,6 @@
     { "source": "/sitemap.xml", "destination": "/api/search?kind=sitemap" },
     { "source": "/evento/:id", "destination": "/api/search?kind=event&id=:id" },
     { "source": "/eventos", "destination": "/eventos.html" },
-    { "source": "/:page(admin|sugestoes|segunda-pagina|plano-de-ensino)/:path*", "destination": "/app.html" }
+    { "source": "/:page(admin|sugestoes|segunda-pagina|plano-de-ensino|configuracoes)/:path*", "destination": "/app.html" }
   ]
 }

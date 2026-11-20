@@ -39,6 +39,8 @@ async function fetchPublicFromBackend(filters = {}) {
   const query = new URLSearchParams();
   if (filters.campus) query.set('campus', filters.campus);
   if (filters.category) query.set('category', filters.category);
+  if (filters.startDate) query.set('startDate', filters.startDate);
+  if (filters.endDate) query.set('endDate', filters.endDate);
   if (filters.search) query.set('q', filters.search);
   const pageSize = 100;
   const events = new Map();
@@ -152,7 +154,7 @@ export const eventsApi = {
     return eventsApi.listPublic().catch(() => null);
   },
   listPublic: async (filters = {}) => {
-    const isUnfiltered = !filters.campus && !filters.category && !filters.search;
+    const isUnfiltered = !filters.campus && !filters.category && !filters.startDate && !filters.endDate && !filters.search;
     if (!isUnfiltered) {
       return fetchPublicFromBackend(filters);
     }
@@ -164,7 +166,28 @@ export const eventsApi = {
     return inFlightPublicPromise;
   },
   getPublic: (id) => request(`/events/${encodeURIComponent(id)}`),
+  registerOutboundClick: async (eventId, clickId) => {
+    const result = await request(`/events/${encodeURIComponent(eventId)}/outbound-clicks`, {
+      method: 'POST',
+      body: JSON.stringify({ click_id: clickId }),
+    });
+    if (result?.incremented) {
+      clearPublicCache();
+    }
+    return result;
+  },
+  listCategories: () => request('/categories'),
+  createCategory: (payload) => request('/categories', {
+    method: 'POST',
+    auth: true,
+    body: JSON.stringify(payload),
+  }),
+  deleteCategory: (id) => request(`/categories/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    auth: true,
+  }),
   listPersonal: () => request('/me/events', { auth: true }),
+  listOwnPublishedIds: () => request('/me/published-event-ids', { auth: true }),
   listSaved: () => request('/me/saved-events', { auth: true }),
   savedStatus: (id) => request(`/me/saved-events/${encodeURIComponent(id)}`, { auth: true }),
   savePublic: (id) => request(`/me/saved-events/${encodeURIComponent(id)}`, { auth: true, method: 'PUT' }),
@@ -178,6 +201,15 @@ export const eventsApi = {
     });
     clearPublicCache();
     return created;
+  },
+  updatePublic: async (id, event) => {
+    const updated = await request(`/events/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      auth: true,
+      body: JSON.stringify(event),
+    });
+    clearPublicCache();
+    return updated;
   },
   deletePublic: async (id) => {
     const result = await request(`/events/${encodeURIComponent(id)}`, {

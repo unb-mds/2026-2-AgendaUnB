@@ -26,6 +26,8 @@ test('oito planos e 60 avaliações: vínculo, upload concorrente, autorização
   let maxUploads = 0;
   let duringProcessing = false;
   let authorized = 0;
+  let thirdUploadStarted;
+  const overlappingUpload = new Promise(resolve => { thirdUploadStarted = resolve; });
   const started = performance.now();
   const hash = createHash('sha256').update(JSON.stringify(textPayload.pages)).digest('hex');
   await page.route('**/api/v1/syllabus/upload', async route => {
@@ -37,6 +39,9 @@ test('oito planos e 60 avaliações: vínculo, upload concorrente, autorização
     duringProcessing ||= [...data.values()].some(plan => plan.status === 'processando');
     running.add(index);
     maxUploads = Math.max(maxUploads, running.size);
+    // Mantenha o segundo envio aberto até o terceiro chegar, mesmo em CI lento.
+    if (index === 2) await overlappingUpload;
+    if (index === 3) thirdUploadStarted();
     await new Promise(resolve => setTimeout(resolve, 650));
     const plan = pendingText(index);
     data.set(plan.id, plan);
@@ -47,7 +52,7 @@ test('oito planos e 60 avaliações: vínculo, upload concorrente, autorização
   await page.route('**/api/v1/syllabus/*/extractions', route => {
     const id = route.request().url().split('/').at(-2);
     const body = route.request().postDataJSON();
-    expect(body).toMatchObject({ pages: textPayload.pages, textHash: hash, authorize: true, contentEligible: true });
+    expect(body).toMatchObject({ pages: textPayload.pages, textHash: hash, authorize: true });
     authorized++;
     const plan = { ...data.get(id), authorizationRequired: false, status: 'processando' };
     data.set(id, plan);
@@ -64,7 +69,6 @@ test('oito planos e 60 avaliações: vínculo, upload concorrente, autorização
   });
 
   await page.goto('/plano-de-ensino');
-  await page.getByRole('button', { name: 'Buscar turmas', exact: true }).click();
   const catalog = page.getByRole('region', { name: 'Catálogo de turmas' });
   await catalog.getByRole('button', { name: 'Buscar turmas', exact: true }).click();
   for (const offer of offers) {
@@ -73,23 +77,20 @@ test('oito planos e 60 avaliações: vínculo, upload concorrente, autorização
   }
   await catalog.getByRole('button', { name: /Seguir 8/ }).click();
   await expect(catalog.getByText('8 turmas adicionadas à sua lista.')).toBeVisible();
-  await page.getByRole('button', { name: 'Fechar catálogo', exact: true }).click();
+  await page.getByRole('button', { name: 'Avançar para organizar datas' }).first().click();
 
   await chooseUploadClass(page, 1);
   await files(page).setInputFiles(makePdf(1));
-  await queue(page).getByRole('button', { name: 'Autorizar texto: plano-1.pdf', exact: true }).click();
-  expect(authorized).toBe(0);
-  await page.getByRole('button', { name: 'Autorizar envio', exact: true }).click();
   await expect(queue(page).getByRole('button', { name: 'Processando: plano-1.pdf', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Iniciar extração', exact: true })).toHaveCount(0);
 
   for (let index = 2; index <= 8; index++) {
     await chooseUploadClass(page, index);
     await files(page).setInputFiles(makePdf(index));
   }
+  await expect.poll(() => maxUploads).toBe(2);
   await page.getByRole('button', { name: 'Ver todos os planos' }).click();
   for (let index = 2; index <= 8; index++) {
-    await queue(page).getByRole('button', { name: `Autorizar texto: plano-${index}.pdf`, exact: true }).click();
-    await page.getByRole('button', { name: 'Autorizar envio', exact: true }).click();
     await expect(queue(page).getByRole('button', { name: `Processando: plano-${index}.pdf`, exact: true })).toBeVisible();
   }
   expect(authorized).toBe(8);
@@ -176,7 +177,7 @@ test('arquivo inválido não bloqueia outro e oferta retirada não pode ser asso
     return route.fulfill({ status: 400, json: { detail: 'O PDF não contém texto extraível.' } });
   });
   await page.goto('/plano-de-ensino');
-  const addPlans = queue(page).getByRole('button', { name: 'Adicionar planos' });
+  const addPlans = queue(page).getByRole('button', { name: 'Enviar PDF e extrair' });
   await expect(addPlans).toBeDisabled();
   await expect(queue(page).getByText('Selecione uma turma antes de enviar um plano.')).toBeVisible();
   await files(page).setInputFiles(makePdf(2));
@@ -188,6 +189,7 @@ test('arquivo inválido não bloqueia outro e oferta retirada não pode ser asso
   await expect(queue(page).getByRole('alert').first()).toContainText('Escolha um arquivo no formato PDF');
   await expect(queue(page).getByText('O PDF não contém texto extraível.')).toBeVisible();
   await expect(queue(page).getByText('plano-1.pdf', { exact: true })).toBeVisible();
+  await queue(page).getByRole('tab', { name: 'Colar texto' }).click();
   await expect(queue(page).getByRole('textbox', { name: 'Texto do plano' })).toBeVisible();
   expect(calls).toBe(1);
 });
@@ -281,8 +283,8 @@ for (const width of [360, 768, 1365]) for (const theme of ['light', 'dark']) {
     })).toEqual([]);
     if (width < 820) {
       await page.getByRole('button', { name: 'Recolher fila de planos' }).press('Enter');
-      await expect(page.getByRole('button', { name: 'Autorizar texto: plano-2.pdf' })).toBeHidden();
-      await expect(page.getByRole('button', { name: 'Adicionar planos' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Extrair avaliações: plano-2.pdf' })).toBeHidden();
+      await expect(page.getByRole('button', { name: 'Enviar PDF e extrair' })).toBeVisible();
       await page.getByRole('button', { name: 'Expandir fila de planos' }).press('Enter');
     }
     await page.screenshot({ path: info.outputPath('semester.png'), fullPage: true });

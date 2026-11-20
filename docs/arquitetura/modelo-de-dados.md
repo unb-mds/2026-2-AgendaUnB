@@ -47,6 +47,16 @@ erDiagram
         TIMESTAMPTZ iniciada_em
     }
 
+    LEMBRETES {
+        UUID id PK
+        UUID user_id FK
+        UUID evento_pessoal_id FK
+        UUID evento_id FK
+        TIMESTAMPTZ agendado_para
+        TEXT status
+        TIMESTAMPTZ lido_em
+    }
+
     EVENTOS_PESSOAIS {
         UUID id PK
         UUID user_id FK "auth.users.id"
@@ -59,6 +69,12 @@ erDiagram
     EVENTOS_SALVOS {
         UUID user_id PK,FK
         UUID event_id PK,FK
+        TIMESTAMPTZ criado_em
+    }
+
+    CLIQUES_EVENTO {
+        UUID evento_id PK,FK
+        UUID click_id PK
         TIMESTAMPTZ criado_em
     }
 
@@ -154,7 +170,11 @@ erDiagram
     CATEGORIES o|--o{ EVENTOS : "classifica"
     CATEGORIES o|--o{ EVENTOS_PESSOAIS : "classifica"
     EVENTOS ||--o{ EVENTOS_SALVOS : "tem vinculos"
+    EVENTOS o|--o{ LEMBRETES : "avisa quem salvou"
+    EVENTOS_PESSOAIS o|--o{ LEMBRETES : "avisa o dono"
+    PROFILES ||--o{ LEMBRETES : "recebe"
     EVENTOS o|--o{ NOTIFICACOES : "origina"
+    EVENTOS ||--o{ CLIQUES_EVENTO : "conta redirecionamentos"
     PLANOS_ENSINO ||--o{ AVALIACOES : "tem"
     PLANOS_ENSINO ||--|{ VERSOES_PLANO : "versiona"
     VERSOES_PLANO ||--o{ AVALIACOES : "contem"

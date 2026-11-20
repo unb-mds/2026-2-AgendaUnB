@@ -5,7 +5,7 @@ description: "Documento que registra a arquitetura de software do Agenda UnB, de
 
 ## 1. Objetivo e escopo
 
-O Agenda UnB reúne eventos públicos dos campi e compromissos privados em uma aplicação web responsiva. A Release 2 prevê seleção manual de ofertas no catálogo público do Followw e vínculo autodeclarado. A plataforma organiza compromissos e eventos da comunidade. Matrícula oficial, notas e frequência seguem no sistema acadêmico.
+O Agenda UnB reúne eventos públicos dos campi e compromissos privados em uma aplicação web responsiva. A Release 2 inclui seleção manual de ofertas no catálogo público do Followw e vínculo autodeclarado. A plataforma organiza compromissos e eventos da comunidade. Matrícula oficial, notas e frequência seguem no sistema acadêmico.
 
 Referência da consolidação: **24/10/2026**, commit `e0ecf46`; histórico de operações comparado à tag `R1` (`4a3a07d`). Implementação observada e testes existentes não equivalem a aprovação formal do time. Propostas futuras são identificadas separadamente.
 
@@ -46,7 +46,8 @@ A API é uma aplicação única, sem microsserviços. O módulo de eventos conce
 | `/` | Apresentação, cadastro e login |
 | `/eventos` | Catálogo público e Meus Eventos; lista de cards ou calendário mensal/semanal |
 | `/evento/:id` | Detalhes de evento público aprovado ou compromisso privado do proprietário |
-| `/plano-de-ensino` | Envio e histórico de planos. A jornada integrada de extração e revisão está planejada para a Release 2 |
+| `/plano-de-ensino` | Turmas seguidas, preparação de planos, extração de candidatos, revisão e biblioteca compartilhada |
+| `/configuracoes` | Aceites, consentimentos, exportação de dados e exclusão da conta |
 | `/sugestoes` | Fila e histórico de sugestões; professores e administradores |
 | `/admin` | Busca e filtros de usuários, confirmação de e-mail, último acesso e cargos; somente admins |
 | `/segunda-pagina` | Redirecionamento legado para `/eventos`, preservando query e fragmento; `#plano-de-ensino` leva à página de planos |
@@ -117,11 +118,11 @@ As migrações devem ser aplicadas antes de disponibilizar API/frontend dependen
 
 ## 8. Funcionalidades futuras e implantação
 
-O backend atual recebe uploads de planos, oferece histórico paginado, detalhe com candidatos e confirmação de avaliações na agenda privada. A seleção de ofertas, o worker de extração e o compartilhamento de versões fazem parte do fluxo planejado para a Release 2.
+O backend registra PDF digital e texto vinculados a turmas seguidas, acompanha extrações e confirma candidatos na agenda da própria conta. O catálogo público Followw alimenta as ofertas e a biblioteca apresenta versões compartilhadas aos seguidores.
 
-O fluxo previsto descarta o PDF após a extração local. O usuário revisa o texto minimizado e autoriza o processamento externo. Os candidatos só viram eventos após confirmação. O autor pode compartilhar uma versão revisada para que seguidores da oferta votem e importem avaliações para a própria agenda.
+O backend extrai e sanitiza o texto automaticamente. O envio autoriza o processamento externo do snapshot sanitizado. O PDF é descartado após a extração local. O estudante confirma as avaliações antes de importá-las para sua agenda. A primeira versão elegível fica disponível aos seguidores quando o autor consulta ou confirma o resultado.
 
-A entrega também prevê coleta da Agenda UnB Notícias, métricas de redirecionamento independentes da agenda, lembretes e exportação Google/ICS. A coleta deve operar separadamente das consultas à agenda para que falhas da fonte preservem os dados já armazenados. [Contratos da Release 2](/atualizacoes#contratos-da-release-2) · [Matriz de aceite](/matriz-release-2)
+A entrega também inclui coleta da Agenda UnB Notícias, métricas de redirecionamento independentes da agenda, lembretes e exportação Google/ICS. A coleta deve operar separadamente das consultas à agenda para que falhas da fonte preservem os dados já armazenados. [Contratos da Release 2](/atualizacoes#contratos-da-release-2) · [Matriz de aceite](/matriz-release-2)
 
 O GitHub Pages hospeda a documentação. Isso não define hospedagem da SPA ou da API. O arquivo `backend/Dockerfile` está vazio; não constitui uma imagem executável. O desenvolvimento usa Supabase CLI/Docker, FastAPI e Vite. O [plano de implantação](/implantacao) propõe Vercel, Render com runtime Python e Supabase separado por ambiente; não há pipeline da aplicação implementado.
 
@@ -155,7 +156,7 @@ O [índice de ADRs](/arquitetura/adrs/index) reúne as decisões implementadas, 
 | DA-04 — autorização | [ADR-006](/arquitetura/adrs/adr-006-autorizacao-em-camadas) |
 | DA-05 — migrações | [ADR-007](/arquitetura/adrs/adr-007-migracoes-sql) |
 | DA-06 — eventos salvos | [ADR-008](/arquitetura/adrs/adr-008-vinculos-de-eventos-publicos) |
-| DA-07 — hospedagem proposta | [ADR-002](/arquitetura/adrs/adr-002-separar-hospedagem-e-ambientes) |
+| DA-07 — hospedagem | [ADR-002](/arquitetura/adrs/adr-002-separar-hospedagem-e-ambientes) |
 
 As decisões da R2 estão nas ADRs 003 e 009–013. Seu estado não comprova implementação nem homologação.
 

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { eventsApi } from '../lib/api';
 
-export default function SaveEventButton({ eventId, user }) {
+export default function SaveEventButton({ eventId, user, onSavedChange = null }) {
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(Boolean(user));
   const [saving, setSaving] = useState(false);
@@ -12,12 +12,20 @@ export default function SaveEventButton({ eventId, user }) {
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      onSavedChange?.(false);
+      return;
+    }
     let active = true;
     setLoading(true);
     setLoadError('');
     eventsApi.savedStatus(eventId)
-      .then(result => { if (active) setSaved(result.saved); })
+      .then(result => {
+        if (!active) return;
+        const nextSaved = Boolean(result.saved);
+        setSaved(nextSaved);
+        onSavedChange?.(nextSaved);
+      })
       .catch(() => { if (active) setLoadError('Não foi possível consultar sua agenda.'); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
@@ -31,8 +39,10 @@ export default function SaveEventButton({ eventId, user }) {
     try {
       if (saved) await eventsApi.removeSaved(eventId);
       else await eventsApi.savePublic(eventId);
-      setSaved(!saved);
-      setMessage(saved ? 'Evento removido da sua agenda.' : 'Evento adicionado à sua agenda.');
+      const nextSaved = !saved;
+      setSaved(nextSaved);
+      onSavedChange?.(nextSaved);
+      setMessage(nextSaved ? 'Evento adicionado à sua agenda.' : 'Evento removido da sua agenda.');
     } catch (err) {
       setError(err.message || 'Não foi possível atualizar sua agenda. Tente novamente.');
     } finally {
@@ -41,7 +51,7 @@ export default function SaveEventButton({ eventId, user }) {
   };
 
   if (!user) {
-    return <p className="save-event-feedback"><Link to="/">Entre na sua conta</Link> para adicionar este evento aos seus eventos.</p>;
+    return <p className="save-event-feedback"><Link to="/?auth=login">Entre na sua conta</Link> para adicionar este evento aos seus eventos.</p>;
   }
 
   return (
@@ -58,7 +68,7 @@ export default function SaveEventButton({ eventId, user }) {
         </button>
       )}
       {error && <p className="save-event-feedback" role="alert">{error}</p>}
-      {message && <p className="save-event-feedback" role="status">{message} <Link to="/segunda-pagina?aba=meus">Ver meus eventos</Link></p>}
+      {message && <p className="save-event-feedback" role="status">{message} <Link to="/eventos?aba=meus">Ver meus eventos</Link></p>}
     </div>
   );
 }

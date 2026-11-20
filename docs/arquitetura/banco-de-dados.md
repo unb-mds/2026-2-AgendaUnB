@@ -29,6 +29,7 @@ Armazena as categorias para classificação e coloração dos eventos na interfa
     *   `created_at` (TIMESTAMPTZ): Data e hora de criação.
 *   **Políticas RLS:** Segurança em Nível de Linha habilitada.
     *   **Leitura (SELECT):** Permitida para todos (`USING true`). Política: *"Permitir leitura pública de categorias"*.
+    *   **Gestão:** `admin_listar_categorias` lista categorias e contagens de eventos, `admin_criar_categoria` cria uma categoria e `admin_excluir_categoria` remove categorias sem eventos vinculados. As RPCs exigem `admin` e a escrita direta por navegador foi revogada.
 
 ---
 
@@ -38,9 +39,17 @@ Armazena as categorias para classificação e coloração dos eventos na interfa
 Armazena os metadados dos usuários, sincronizada com a tabela nativa de autenticação (`auth.users`) do Supabase.
 *   **Colunas:**
     *   `id` (UUID, Primary Key): Referência em cascata para `auth.users(id)`.
-    *   *(Nota: Metadados adicionais como nome, email e papel são gerenciados via triggers de sincronização no banco).*
+    *   `nome_completo` (até 200 caracteres), `email` (imutável), `papel` (`student`, `professor`, `admin`), `avatar_url` (somente `https`), `criado_em`, `atualizado_em`.
+*   **Criação:** o trigger `on_auth_user_created` cria o perfil no cadastro. O papel `professor` exige e-mail `@unb.br` **confirmado**: cadastro ainda não confirmado nasce `student` e é promovido pelo trigger `on_auth_user_confirmed_professor_request` (S7-F04) quando o endereço é confirmado. `admin` nunca vem do cadastro.
 *   **Políticas RLS:**
-    *   **Leitura (SELECT):** Permitida para todos os visitantes e usuários (`USING true`). Política: *"perfis visiveis para todos"*.
+    *   **Leitura (SELECT):** o próprio usuário lê o seu perfil; admins leem todos. Visitantes não têm acesso.
+    *   **Atualização (UPDATE):** o próprio usuário, apenas em `nome_completo`, `avatar_url` e `papel`. A mudança de papel pelo navegador só aceita `student → professor` com e-mail institucional confirmado; as demais passam pelas RPCs administrativas.
+
+### 2.2. Tabela `auditoria_papeis`
+Registra toda mudança de papel, por qualquer caminho (RPC do painel, autopromoção, confirmação de e-mail, back-end ou SQL): `usuario_id`, `ator_id` (nulo quando não havia sessão de usuário), `papel_anterior`, `papel_novo` e `criado_em`. Somente admins leem; ninguém altera pela API.
+
+### 2.3. Privilégios e funções
+Desde `20261117130000`, o `GRANT` acompanha as políticas: visitantes só leem o catálogo público (`eventos` aprovados, `campus`, `categories`, `disciplinas`, `ofertas_turma`), `TRUNCATE` não é concedido à API e funções novas não são executáveis via `/rpc` sem `GRANT EXECUTE` explícito. As regras para novas migrações estão em [Verificação de segurança](../processo/seguranca.md#regras-para-novas-migracoes).
 
 ---
 
@@ -63,9 +72,10 @@ Eventos publicados por professor/admin e sugestões da comunidade sujeitas à mo
     *   `category_id` (UUID): Chave estrangeira para a tabela `categories(id)`.
     *   `status` (TEXT, Not Null): Controle de moderação (`DEFAULT 'pendente'`). Validação: `CHECK (status in ('pendente', 'aprovado', 'rejeitado'))`.
     *   `criado_em` (TIMESTAMPTZ, Not Null): Timestamp de criação (`DEFAULT now()`).
+    *   `interessados_count` (INTEGER): redirecionamentos acionados em **Conferir evento**, um por `click_id`. Só a função `registrar_redirecionamento_evento` o altera; a deduplicação fica em `cliques_evento` (`evento_id`, `click_id`, `criado_em`), sem usuário, IP ou agente. Ver [Conferir evento](conferir-evento.md).
 *   **Políticas RLS:** Segurança em Nível de Linha habilitada.
     *   **Leitura (SELECT):** Apenas eventos moderados. Política: *"eventos aprovados sao publicos"* (`USING (status = 'aprovado')`).
-    *   **Criação (INSERT):** Apenas o próprio autor autenticado. Política: *"usuarios logados podem criar eventos"* (`WITH CHECK (autor_id = (select auth.uid()))`).
+    *   **Escrita:** a API valida papel e autoria. Moderação usa as RPCs autorizadas. O navegador não tem política de criação direta.
 
 ### 3.2. Tabela `eventos_pessoais` (Agenda Privada - RF09)
 Agenda estritamente privada, gerenciada e visualizada unicamente por cada estudante.
@@ -100,7 +110,15 @@ Eventos coletados da Agenda UnB Notícias ficam na própria tabela `eventos`, id
 *   **Tabela `coletas_eventos`:** uma linha por execução do coletor (`status`, horários, contadores e `erro_codigo` curto). Sem conteúdo da fonte.
 *   **Revisão:** `listar_revisoes_coleta(status, offset)` para professor e admin; a decisão usa `moderar_sugestao`, que registra `moderado_por` e `moderado_em` e recusa publicar item sem data.
 
-O uso dessas estruturas pela API e pelo coletor está em [Dados de eventos](/arquitetura/dados-de-eventos).
+### 3.5. Tabela `lembretes` (S8-B03, ADR-013)
+Avisos na plataforma 24 horas antes do início de cada evento da agenda da conta.
+*   **Colunas:** `user_id` (FK `profiles`, `ON DELETE CASCADE`), `tipo_evento` (`pessoal` ou `publico_salvo`), `evento_pessoal_id` ou `evento_id` (FK com `ON DELETE CASCADE`), `inicio_referencia`, `agendado_para`, `status` (`pendente` ou `disparado`), `disparado_em`, `lido_em`.
+*   **Idempotência:** índices únicos parciais `(user_id, evento_pessoal_id, inicio_referencia)` e `(user_id, evento_id, inicio_referencia)`.
+*   **Triggers:** em `eventos_pessoais`, `eventos_salvos` e `eventos`, agendam ao entrar na agenda, trocam o aviso quando o início muda e cancelam na exclusão, na remoção do vínculo ou quando o evento sai do catálogo. Entrada na agenda com 24 horas ou menos não gera aviso.
+*   **Função** `disparar_lembretes(limite)`: torna visíveis os avisos vencidos, uma única vez cada (`FOR UPDATE SKIP LOCKED`), conferindo de novo a elegibilidade.
+*   **Políticas RLS:** a conta lê apenas os próprios avisos já disparados e só altera `lido_em`; o primeiro `lido_em` é mantido. Sem acesso para visitantes.
+
+O uso dessas estruturas pela API, pelo coletor e pelo agendador está em [Dados de eventos](/arquitetura/dados-de-eventos).
 
 ---
 
@@ -121,15 +139,15 @@ Esquema atual de uploads de plano de ensino. O campo `tipo` admite os valores le
     *   `ano` (SMALLINT, 2000–2100) e `semestre` (SMALLINT, 1 ou 2): opcionais no upload atual.
     *   `plano_oficial_id` (UUID): referência opcional ao plano oficial correspondente (`ON DELETE SET NULL`). Só em plano particular e nunca para si mesmo.
 *   **Arquivo** (bucket `syllabus_files`, #43):
-    *   `caminho_arquivo` (TEXT, Unique): `syllabus_files/<user_id>/<arquivo>.pdf`. A pasta precisa ser a do dono, a mesma exigida pelas políticas do bucket. Obrigatório em plano particular.
-    *   `nome_arquivo` (TEXT, até 255), `tamanho_bytes` (BIGINT, 1 B a 10 MB), `tipo_arquivo` (somente `pdf`), `paginas` (SMALLINT ≥ 1). O limite de 10 páginas da Sprint 06 é validado no back-end (#40).
-    *   `arquivo_url` (TEXT): legado. Use `caminho_arquivo`.
+    *   `caminho_arquivo` e `arquivo_url` referenciam apenas originais legados. Envios novos usam preparação em memória e descartam o PDF. `arquivo_descartado_em` registra o descarte que limpa as referências legadas.
+    *   `nome_arquivo`, `tamanho_bytes`, `tipo_arquivo` (`pdf` ou `text`) e `paginas` descrevem o envio. O backend valida até 10 MiB e 10 páginas para PDF.
 *   **Processamento:**
     *   `status` (TEXT, Not Null, padrão `pendente`): `pendente`, `processando`, `concluido` ou `falha`. Os valores em inglês aceitos pela #40 (`processing`, `failed`, `completed`) foram convertidos e não são mais aceitos.
     *   `quantidade_eventos` (INT ≥ 0): quantidade de candidatos extraídos.
     *   `execucao_atual` (SMALLINT, Not Null, padrão 0): número da execução mais recente. Cada novo processamento incrementa; os candidatos válidos são os desta execução.
     *   `provedor_ia`, `modelo_ia`, `versao_processamento` (TEXT): da execução mais recente.
-    *   `erro_codigo` (TEXT): obrigatório se, e somente se, `status = 'falha'`. Valores: `pdf_invalido`, `pdf_protegido`, `pdf_sem_texto`, `limite_paginas`, `falha_ia`, `tempo_esgotado`, `erro_interno`.
+    *   `ocorrencias_mascaradas` (INTEGER ≥ 0, aceita `NULL` em planos legados) registra quantas ocorrências foram mascaradas na preparação.
+    *   `erro_codigo` (TEXT) é obrigatório em `status = 'falha'` e nulo nos outros estados. Valores permitidos são `pdf_invalido`, `pdf_protegido`, `pdf_sem_texto`, `limite_paginas`, `falha_ia`, `tempo_esgotado`, `erro_interno` e `texto_com_dados_pessoais`. O último código identifica snapshots legados cujo processamento foi bloqueado por conter dados pessoais.
     *   `erro` (TEXT, até 500): mensagem curta e segura para o usuário, só em `falha`. Nunca guarda stack trace, texto do PDF ou resposta bruta da IA.
     *   `processamento_iniciado_em` (obrigatório em `processando`), `processado_em` (obrigatório se, e somente se, `concluido` ou `falha`), `criado_em`, `atualizado_em` (mantido por trigger).
     *   **Resultado vazio** é `concluido` sem candidatos, e não `falha`.
@@ -149,7 +167,7 @@ Tabela física única dos candidatos extraídos dos planos, decidida na S7-D01 c
 *   **Conteúdo compartilhado:** candidatos de versão compartilhada não são alterados, excluídos nem acrescentados (triggers `avaliacoes_compartilhada_imutavel` e `avaliacoes_zz_nao_entra_em_compartilhada`). A correção é feita em uma revisão. `status` continua editável.
 
 ### 4.3. Tabela `versoes_plano`
-Versões de um plano (ADR-010). Toda versão nasce **privada**; uma nova revisão cria nova versão e não sobrescreve calendários pessoais.
+Versões de um plano (ADR-010). A `v1` de plano concluído com turma vinculada e candidatos elegíveis é compartilhada automaticamente na jornada do autor, salvo quando retirada. Revisões criam versões próprias com sua visibilidade e preservam as cópias já importadas.
 *   **Colunas:**
     *   `id` (UUID, Primary Key) e `plano_id` (UUID, Not Null, FK, `ON DELETE CASCADE`). `numero` (SMALLINT ≥ 1) é único por plano.
     *   `autor_id` (UUID, Not Null, FK para `profiles`) e `autor_papel` (`student`, `professor` ou `admin`): papel do autor no momento da criação. Não é evidência institucional.
@@ -184,6 +202,8 @@ Um voto por conta e candidato: chave primária `(user_id, avaliacao_id)`, `valor
 O uso dessas funções pela API está em [Dados de planos](/arquitetura/dados-de-planos).
 
 ## 5. Eventos salvos e notificações
+
+Eventos públicos são gravados somente pela API e pelas RPCs de moderação: o `INSERT` direto pelo navegador foi removido em `20261117130000`. O banco valida, em qualquer caminho, que `link_externo` usa `http(s)` e que título, descrição e local respeitam os limites da API.
 
 `eventos_salvos` vincula um perfil a um evento público com chave composta `(user_id, event_id)`. `notificacoes` referencia o perfil destinatário e pode referenciar o evento que originou o aviso. Consulte as políticas, a implantação e os cenários de verificação em [eventos salvos](/eventos-salvos) e nas [ADR-001](/arquitetura/adrs/adr-001-integracao-fastapi-supabase) e [ADR-006](/arquitetura/adrs/adr-006-autorizacao-em-camadas).
 

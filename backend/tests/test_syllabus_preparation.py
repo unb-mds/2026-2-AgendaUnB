@@ -10,6 +10,8 @@ pytestmark = pytest.mark.usefixtures("published_offering")
 from sqlalchemy import select
 
 from src.database.models import AssessmentCandidate, PersonalEvent, Profile, Syllabus
+from src.modules.syllabus.extraction import TextPage, validate_candidates
+from src.modules.syllabus.preparation import minimize, text_hash
 from src.modules.syllabus.processing_config import ProcessingConfig
 from src.modules.syllabus.processing_task import process_document
 from src.modules.syllabus.worker import SyllabusWorker
@@ -35,7 +37,7 @@ def prepare(api, text=TEXT):
 
 def approval(preview, **changes):
     body = {"pages": preview["pages"], "textHash": preview["textHash"],
-            "authorize": True, "contentEligible": True, "reprocess": False}
+            "authorize": True, "reprocess": False}
     body.update(changes)
     return body
 
@@ -70,6 +72,35 @@ def test_pdf_prepares_page_references_without_using_storage(api):
         assert db.get(Syllabus, UUID(response.json()["id"])).file_path is None
 
 
+@pytest.mark.parametrize("source_type", ["text", "pdf"])
+def test_review_and_private_snapshot_use_the_same_sanitized_academic_text(api, source_type):
+    raw = "Disciplina: Estrutura de Dados 1 | Prof. Pessoa Exemplo | CPF: 000.000.000-00"
+    redacted = ("Disciplina: Estrutura de Dados 1 | Prof. [identificador removido] "
+                "| CPF: [identificador removido]")
+    if source_type == "text":
+        sid, preview = prepare(api, raw + "\n" + TEXT)
+        expected = [{"pagina": None, "texto": redacted + "\n" + TEXT}]
+    else:
+        response = api[0].post("/api/v1/syllabus/upload",
+            data={"offering_id": "70000000-0000-4000-8000-000000000071"},
+            files={"file": ("sintetico.pdf", make_pdf([raw, TEXT]), "application/pdf")})
+        assert response.status_code == 202
+        sid = response.json()["id"]
+        preview = api[0].get(f"/api/v1/syllabus/{sid}/text").json()
+        expected = [{"pagina": 1, "texto": redacted + "\n"}, {"pagina": 2, "texto": TEXT + "\n"}]
+
+    assert preview["pages"] == expected
+    assert preview["textHash"] == text_hash(expected)
+    assert preview["redactedCount"] == 2
+    assert api[0].get(f"/api/v1/syllabus/{sid}").json()["redactedCount"] == 2
+    assert preview["authorizationRequired"] is True
+    with api[1]() as db:
+        plan = db.get(Syllabus, UUID(sid))
+        assert plan.prepared_pages == expected
+        assert plan.redacted_count == 2
+        assert plan.approved_pages is None
+
+
 @pytest.mark.parametrize("changes,status", [
     ({"authorize": False}, 422), ({"contentEligible": False}, 422),
     ({"textHash": "0" * 64}, 409),
@@ -88,6 +119,128 @@ def test_terms_gate_blocks_approval(api, monkeypatch):
     monkeypatch.setenv("SYLLABUS_PROVIDER_TERMS_READY", "false")
     sid, preview = prepare(api)
     assert api[0].post(f"/api/v1/syllabus/{sid}/extractions", json=approval(preview)).status_code == 503
+
+
+def test_historic_approved_snapshot_is_blocked_without_mutating_it(api, monkeypatch, caplog):
+    monkeypatch.setenv("SYLLABUS_PROVIDER_TERMS_READY", "true")
+    sid, preview = prepare(api)
+    response = api[0].post(f"/api/v1/syllabus/{sid}/extractions", json=approval(preview))
+    assert response.status_code == 202
+
+    # Simula autorização anterior à cobertura de RG, com hash válido para aquele texto.
+    sensitive = "12.345.678-X"
+    historic = [{"pagina": None, "texto": f"RG: {sensitive}\n{TEXT}"}]
+    with api[1]() as db:
+        plan = db.get(Syllabus, UUID(sid))
+        plan.approved_pages = historic
+        plan.approved_hash = text_hash(historic)
+        db.commit()
+
+    calls = []
+
+    def provider_runner(*args):
+        calls.append(args)
+        return process_document(*args)
+
+    worker = SyllabusWorker(api[1], None, None, ProcessingConfig(), runner=provider_runner)
+    with caplog.at_level("INFO", logger="agenda_unb.syllabus.worker"):
+        assert worker.run_once()
+    assert calls == []
+    assert "texto_com_dados_pessoais" in caplog.text
+    assert sensitive not in caplog.text
+    with api[1]() as db:
+        plan = db.get(Syllabus, UUID(sid))
+        assert plan.status == "falha"
+        assert plan.erro_codigo == "texto_com_dados_pessoais"
+        assert plan.approved_pages == historic
+        assert not db.scalars(select(AssessmentCandidate)).all()
+    assert api[0].post(f"/api/v1/syllabus/{sid}/extractions",
+                       json=approval(preview, reprocess=True)).status_code == 202
+
+
+@pytest.mark.parametrize("page", [1, None])
+def test_minimization_preserves_assessment_extraction(page):
+    exam = "Prova 1 | 10/11/2026 | 14:30 | Sala 204"
+    assignment = "Trabalho Final | 2026-11-24 | 10h00 | Auditório Central"
+    raw = f"Disciplina: Cálculo Diferencial e Integral II\n{exam} | Prof. Ana Silva\n{assignment} | RG: 12.345.678-X"
+    mock_response = json.dumps({"candidatos": [
+        {"titulo": "Prova 1", "tipo": "prova", "data_sugerida": "2026-11-10",
+         "hora_sugerida": "14:30", "pagina_origem": page, "trecho_origem": exam},
+        {"titulo": "Trabalho Final", "tipo": "trabalho", "data_sugerida": "2026-11-24",
+         "hora_sugerida": "10:00", "pagina_origem": page, "trecho_origem": assignment},
+    ]})
+    baseline = validate_candidates(mock_response, [TextPage(page, raw)])
+    sanitized = validate_candidates(mock_response, [TextPage(page, minimize(raw))])
+    assert sanitized == baseline
+    assert sanitized.unsupported_dates == 0
+    assert [(item.titulo, str(item.data_sugerida), str(item.hora_sugerida),
+             item.pagina_origem, item.trecho_origem) for item in sanitized.candidates] == [
+        ("Prova 1", "2026-11-10", "14:30:00", page, exam),
+        ("Trabalho Final", "2026-11-24", "10:00:00", page, assignment),
+    ]
+
+
+def test_personal_data_reintroduced_by_edit_is_rejected_even_with_correct_hash(api, monkeypatch):
+    monkeypatch.setenv("SYLLABUS_PROVIDER_TERMS_READY", "true")
+    sid, preview = prepare(api)
+    sensitive = "pessoa@example.test"
+    edited = [{"pagina": None, "texto": f"{TEXT} | Contato: {sensitive}"}]
+    response = api[0].post(f"/api/v1/syllabus/{sid}/extractions",
+                           json=approval(preview, pages=edited, textHash=text_hash(edited)))
+    assert response.status_code == 422
+    assert "Envie o plano novamente" in response.json()["detail"]
+    assert sensitive not in response.text
+    assert api[0].get(f"/api/v1/syllabus/{sid}/text").json() == preview
+    assert not SyllabusWorker(api[1], None, None, ProcessingConfig()).claim()
+
+
+def test_private_processing_omits_masked_values_from_provider_logs_and_candidates(api, monkeypatch, caplog):
+    monkeypatch.setenv("SYLLABUS_PROVIDER_TERMS_READY", "true")
+    sensitive = ("Pessoa Exemplo", "pessoa@example.test")
+    raw = f"{TEXT} | Profa. {sensitive[0]} | E-mail: {sensitive[1]}"
+    sid, preview = prepare(api, raw)
+    received = []
+    expected = {"titulo": "Prova 1", "tipo": "prova", "data_sugerida": "2026-11-10",
+                "hora_sugerida": "14:00", "pagina_origem": None, "trecho_origem": TEXT}
+
+    class Provider:
+        def extract(self, pages):
+            received.extend(page.texto for page in pages)
+            # Uma resposta que repete valores ausentes da fonte não tem procedência.
+            return json.dumps({"candidatos": [{**expected, "trecho_origem": raw}, expected]})
+
+    worker = SyllabusWorker(api[1], None, Provider(), ProcessingConfig(), runner=process_document)
+    assert not worker.run_once()
+    assert received == []
+    assert api[0].post(f"/api/v1/syllabus/{sid}/extractions", json=approval(preview)).status_code == 202
+    with caplog.at_level("INFO", logger="agenda_unb.syllabus.worker"):
+        assert worker.run_once()
+    assert received == [preview["pages"][0]["texto"]]
+    assert "syllabus_completed" in caplog.text
+    with api[1]() as db:
+        stored = db.scalars(select(AssessmentCandidate)).one()
+        assert stored.titulo == expected["titulo"]
+        assert stored.trecho_origem == TEXT
+        assert all(value not in "".join(received) + caplog.text + stored.trecho_origem for value in sensitive)
+
+
+def test_redacted_count_distinguishes_old_records_from_zero_and_survives_edit(api, monkeypatch):
+    monkeypatch.setenv("SYLLABUS_PROVIDER_TERMS_READY", "true")
+    sid, preview = prepare(api, f"Prof. Pessoa Exemplo | {TEXT}")
+    assert preview["redactedCount"] == 1
+    edited = [{"pagina": None, "texto": TEXT}]
+    assert api[0].post(f"/api/v1/syllabus/{sid}/extractions",
+                       json=approval(preview, pages=edited, textHash=text_hash(edited))).status_code == 202
+    reviewed = api[0].get(f"/api/v1/syllabus/{sid}/text").json()
+    assert reviewed["redactedCount"] == 1 and reviewed["pages"] == edited
+    assert api[0].get(f"/api/v1/syllabus/{sid}").json()["redactedCount"] == 1
+
+    old_sid, clean = prepare(api, f"[identificador removido]\n{TEXT}")
+    assert clean["redactedCount"] == 0
+    with api[1]() as db:
+        db.get(Syllabus, UUID(old_sid)).redacted_count = None
+        db.commit()
+    assert api[0].get(f"/api/v1/syllabus/{old_sid}/text").json()["redactedCount"] is None
 
 
 def test_approved_text_is_exact_private_and_idempotent(api, monkeypatch):
@@ -215,7 +368,6 @@ def test_other_assessment_types_are_rejected():
 
 
 def test_snapshot_hash_is_stable_after_jsonb_reorders_keys():
-    from src.modules.syllabus.preparation import text_hash
     assert text_hash([{"pagina":1,"texto":TEXT}]) == text_hash([{"texto":TEXT,"pagina":1}])
 
 

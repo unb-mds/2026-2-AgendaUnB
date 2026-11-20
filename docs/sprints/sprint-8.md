@@ -13,7 +13,7 @@ Consulte os [contratos](/atualizacoes#contratos-da-release-2) e a [matriz de ace
 
 - Seleção manual de turmas pelo catálogo público Followw, com vínculo autodeclarado.
 - Planos privados durante preparação/autorização e reprocessamento; versão inicial (`v1`) vinculada a oferta é compartilhada automaticamente ao concluir a extração com candidatos (PO, 2026-11-17, [ADR-010](/arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos)), podendo ser retirada a qualquer momento sem perder cópias importadas. Edição conforme papel e visibilidade. O PDF original é descartado após a extração local.
-- IA limitada a provas e trabalhos, com revisão do texto antes do envio e confirmação antes da criação de eventos.
+- IA limitada a provas e trabalhos, com sanitização automática e autorização no envio e confirmação antes da criação de eventos.
 - A Agenda UnB Notícias alimenta o catálogo. Eventos completos são publicados automaticamente e exceções seguem para revisão. Adicionar aos meus eventos e Conferir evento são ações independentes.
 - Professores e administradores moderam eventos. Administradores gerenciam papéis e categorias.
 - Lembretes na plataforma 24 horas antes de eventos da própria agenda. Exportação direta ao Google Agenda com consentimento adicional e e-mail verificado correspondente. ICS complementa Apple Calendar e Outlook.
@@ -33,7 +33,7 @@ F identifica frontend, B backend e D dados. A numeração é independente por á
 
 #### Objetivo
 
-Permitir que usuários autenticados que seguem uma oferta consultem, avaliem e importem versões compartilhadas voluntariamente.
+Permitir que usuários autenticados que seguem uma oferta consultem, avaliem e importem suas versões compartilhadas.
 
 - **Sprint** [Sprint 08](https://github.com/unb-mds/2026-2-AgendaUnB/milestone/8)
 - **Janela** 16–18/11/2026
@@ -44,7 +44,7 @@ Permitir que usuários autenticados que seguem uma oferta consultem, avaliem e i
 
 #### Tasks
 
-- [x] Autor publica voluntariamente conteúdo revisado. Autor ou admin pode retirar uma versão. Autor pode editar o próprio plano. Professor e admin podem editar versões compartilhadas conforme o contrato.
+- [x] Compartilhar automaticamente a `v1` elegível na jornada do autor e permitir publicação de revisões. Autor ou admin pode retirar uma versão. Professor e admin podem criar revisões a partir do conteúdo compartilhado conforme o contrato.
 - [x] Explicar o conteúdo compartilhado e restringir leitura a seguidores autenticados da turma. O PDF original é descartado após extração local.
 - [x] Criar voto único ativo por conta/candidato/versão, editável pelo autor do voto. Mostrar contagem e divergência, sem alterar datas automaticamente ou tratar votação como prova.
 - [x] Gerar nova versão a cada revisão sem alterar calendários pessoais. Deduplicar importações por usuário/candidato/versão e aplicar a política de retirada.
@@ -96,33 +96,35 @@ Dar acesso à biblioteca de planos por oferta de turma, incluindo versões, vota
 - [ ] Registrar o nome do revisor e a revisão dos contratos, permissões e dados afetados por esta entrega.
 
 
-### S8-B02 - Consolidar eventos salvos, redirecionamento e histórico
+### S8-B02 - Consolidar eventos salvos e redirecionamento
 
 [Issue #79](https://github.com/unb-mds/2026-2-AgendaUnB/issues/79)
 
 #### Objetivo
 
-Consolidar a distinção entre adicionar evento à agenda pessoal e conferir a fonte. Exibir históricos separados para públicos salvos e compromissos privados.
+Consolidar a distinção entre adicionar evento à agenda pessoal e conferir a fonte. O histórico separado foi retirado do escopo da R2.
 
 - **Sprint** [Sprint 08](https://github.com/unb-mds/2026-2-AgendaUnB/milestone/8)
 - **Janela** 16–19/11/2026
 - **Responsável principal** @marrathomaz
 - **Corresponsável** @felipecduque7
-- **Apoio adicional** Gabriel apoia a integração da interface e do histórico.
+- **Apoio adicional** Gabriel apoia a integração da interface de eventos.
 - **Dependências** S7-F01 ([#67](https://github.com/unb-mds/2026-2-AgendaUnB/issues/67)) e modelo público consolidado em S7-B05 ([#75](https://github.com/unb-mds/2026-2-AgendaUnB/issues/75)).
-- **Requisitos** RF12, RF13, RF18 e RNF04.
+- **Requisitos** RF12, RF13 e RNF04.
 
 #### Tasks
 
-- [ ] Reutilizar o vínculo de evento salvo com unicidade por conta e evento. Adicionar e remover são operações idempotentes.
-- [ ] Registrar métricas agregadas de redirecionamento em Conferir evento, sem alterar os vínculos. A inscrição externa, quando exigida, ocorre no canal do organizador.
-- [ ] Mostrar eventos públicos salvos passados e compromissos privados passados em históricos separados. Remover o vínculo cancela lembretes futuros ([#81](https://github.com/unb-mds/2026-2-AgendaUnB/issues/81)).
+- [x] Reutilizar o vínculo de evento salvo com unicidade por conta e evento. Adicionar e remover são operações idempotentes.
+- [x] Registrar métricas agregadas de redirecionamento em Conferir evento, sem alterar os vínculos. A inscrição externa, quando exigida, ocorre no canal do organizador.
+- [x] Ao remover o vínculo, cancelar lembretes futuros ([#81](https://github.com/unb-mds/2026-2-AgendaUnB/issues/81)).
 
 #### Critérios de aceite
 
-- [ ] Repetir adição e remoção sem duplicar vínculo. Verificar histórico, agenda e cancelamento de lembrete futuro.
-- [ ] Abrir o link oficial, verificar incremento do redirecionamento e ausência de mudança na agenda. Repetir a mesma requisição sem duplicar o contador.
-- [ ] Recusar adição de evento indisponível e alteração de vínculo de outra conta.
+- [x] Repetir adição e remoção sem duplicar vínculo. Verificar agenda e cancelamento de lembrete futuro.
+- [x] Abrir o link oficial, verificar incremento do redirecionamento e ausência de mudança na agenda. Repetir a mesma requisição sem duplicar o contador.
+- [x] Recusar adição de evento indisponível e alteração de vínculo de outra conta.
+
+**Validação técnica:** [Conferir evento](/arquitetura/conferir-evento) descreve as operações de salvar, remover e contar redirecionamentos. A consolidação da R2 mantém um único registro de deduplicação e o cancelamento de lembretes futuros ao remover o vínculo.
 
 #### Evidências para fechamento
 
@@ -144,7 +146,7 @@ Completar e homologar agenda, eventos, filtros e moderação nos fluxos existent
 - **Corresponsável** @marrathomaz
 - **Apoio adicional** Thomas apoia a interface, os filtros e os ajustes de uso.
 - **Dependências** S7-B05 ([#75](https://github.com/unb-mds/2026-2-AgendaUnB/issues/75)) e integração final com S8-B02 ([#79](https://github.com/unb-mds/2026-2-AgendaUnB/issues/79)). Reaproveitar [#14](https://github.com/unb-mds/2026-2-AgendaUnB/issues/14), [#15](https://github.com/unb-mds/2026-2-AgendaUnB/issues/15), [#36](https://github.com/unb-mds/2026-2-AgendaUnB/issues/36), [#37](https://github.com/unb-mds/2026-2-AgendaUnB/issues/37), [#38](https://github.com/unb-mds/2026-2-AgendaUnB/issues/38) e [#42](https://github.com/unb-mds/2026-2-AgendaUnB/issues/42).
-- **Requisitos** RF08–RF11, RF12, RF14, RF15, RF18–RF20, RNF04 e RNF07–RNF09.
+- **Requisitos** RF08–RF12, RF14, RF15, RF19, RF20, RNF04 e RNF07–RNF09.
 
 #### Tasks
 
@@ -158,6 +160,8 @@ Completar e homologar agenda, eventos, filtros e moderação nos fluxos existent
 - [ ] Exercitar a matriz visitante/aluno/professor/admin. Aluno não publica diretamente e professor não altera papéis ou categorias.
 - [ ] Preservar data, horário ou dia inteiro, intervalo, local e URL do formulário à tela. Verificar fuso, eventos de vários dias e combinação de filtros.
 - [ ] Confirmar legibilidade nos dois temas e distinção entre participação e eventos particulares.
+
+**Evidências técnicas locais (18/11/2026):** implementação da migração `20261117200000_s8_f02_eventos_moderacao_categorias.sql`, endpoints FastAPI (`all_day`, `ends_at`, `start_date`, `end_date`, `location` pessoal, `POST /events/{id}/outbound-clicks` e gestão de categorias restrita a `admin`), calendário multi-dia em `America/Sao_Paulo`, fila de revisão da coleta em `/sugestoes`, gestão de categorias em `/admin`, filtros combináveis por categoria/campus/turno/intervalo, persistência de tema e filtros, confirmação de ações destrutivas e verificação `impeccable detect --json` limpa (`[]`), validados nas suítes `test_events_api.py`, `test_suggestions_api.py`, `test_saved_events_api.py`, `calendar.test.js`, `publicEventsCache.test.js` e `preferences.test.js`.
 
 #### Evidências para fechamento
 
@@ -330,7 +334,7 @@ Homologar a Release 2 com testes integrados, medições reproduzíveis e evidên
 #### Tasks
 
 - [ ] Executar na URL Vercel a jornada conectar Google → autorizar Calendar → selecionar eventos → exportar → abrir a agenda Google. Testar usuário com login Google e com e-mail/senha, reexportação repetida/concorrente, timeout após criação, falha parcial, 429, token expirado, consentimento recusado e revogado. Anexar evidências com contas sintéticas para [#82](https://github.com/unb-mds/2026-2-AgendaUnB/issues/82).
-- [ ] Exercitar cadastro → turma → plano → importação, compartilhamento → voto → importação por colega e evento coletado → adicionar à agenda → lembrete → histórico → exportação Google. Testar também o redirecionamento independente da agenda.
+- [ ] Exercitar cadastro → turma → plano → importação, compartilhamento → voto → importação por colega e evento coletado → adicionar à agenda → lembrete → exportação Google. Testar também o redirecionamento independente da agenda.
 - [ ] Definir a carga de uso normal antes de medir. Registrar dataset, concorrência, infraestrutura, cache e metodologia. Medir `GET /events` em p95 ≤ 300 ms e parser < 20 s conforme S7-B01 ([#51](https://github.com/unb-mds/2026-2-AgendaUnB/issues/51)). Ajustar índices, paginação ou consultas conforme resultados.
 - [ ] Verificar WCAG 2.1 AA, contraste nos dois temas, teclado, foco, labels, largura de 360 px e demais resoluções principais.
 - [ ] Homologar versões atuais de Chrome, Firefox, Edge e Safari real e registrar navegador/versão.

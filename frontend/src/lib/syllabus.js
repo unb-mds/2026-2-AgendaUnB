@@ -3,7 +3,7 @@ export const SYLLABUS_PAGE_SIZE = 10;
 export const isProcessing = plan => !plan?.authorizationRequired && ['pendente', 'processando'].includes(plan?.status);
 
 export const PLAN_STATES = {
-  pendente: { label: 'Pendente', icon: 'schedule', title: 'Seu plano está na fila', description: 'O arquivo foi recebido e aguarda processamento. Você pode sair desta página e acompanhar depois pelo histórico.' },
+  pendente: { label: 'Pendente', icon: 'schedule', title: 'Seu plano está na fila', description: 'O arquivo foi recebido e aguarda processamento. Você pode sair desta página e acompanhar depois na sua lista de planos.' },
   processando: { label: 'Processando', icon: 'autorenew', title: 'Analisando seu plano', description: 'Estamos procurando avaliações no documento. Esta página será atualizada automaticamente.' },
   concluido: { label: 'Concluído', icon: 'check_circle', title: 'Análise concluída', description: 'O processamento terminou. Nenhum compromisso foi adicionado à sua agenda automaticamente.' },
   falha: { label: 'Falha', icon: 'error', title: 'Não foi possível analisar o plano', description: 'Consulte a orientação abaixo. Você pode tentar novamente com PDF digital ou texto, ou cadastrar seus prazos manualmente.' },
@@ -27,6 +27,7 @@ export function normalizePlan(plan) {
     status: plan.status,
     authorizationRequired: plan.authorizationRequired === true,
     preparedTextAvailable: plan.preparedTextAvailable === true,
+    redactedCount: Number.isSafeInteger(plan.redactedCount) && plan.redactedCount >= 0 ? plan.redactedCount : null,
     fileName: plan.fileName || 'Plano de ensino.pdf',
     disciplina: plan.disciplina || '',
     semestre: plan.semestre ?? null,
@@ -65,7 +66,7 @@ function normalizeCandidates(items) {
 
 export function normalizePlanList(result) {
   if (!Array.isArray(result?.items) || !Number.isInteger(result.total) || result.total < 0) {
-    throw new Error('O histórico retornou uma resposta inválida. Tente novamente.');
+    throw new Error('A lista de planos retornou uma resposta inválida. Tente novamente.');
   }
   return { items: result.items.map(normalizePlan), total: result.total };
 }
@@ -73,12 +74,12 @@ export function normalizePlanList(result) {
 export function syllabusError(error, context = 'consulta') {
   if (error.status === 401) return 'Sua sessão expirou. Entre novamente para acessar seus planos.';
   if (error.status === 403) return 'Sua conta não tem permissão para realizar esta ação.';
-  if ([404, 405, 501].includes(error.status) && context === 'historico') return 'O histórico ainda não está disponível. Tente novamente mais tarde. Você ainda pode acompanhar um envio aberto.';
-  if (error.status === 404) return 'Plano não encontrado ou indisponível para sua conta. Abra outro plano pelo histórico.';
+  if ([404, 405, 501].includes(error.status) && context === 'historico') return 'A lista de planos ainda não está disponível. Tente novamente mais tarde. Você ainda pode acompanhar um envio aberto.';
+  if (error.status === 404) return 'Plano não encontrado ou indisponível para sua conta. Abra outro plano na lista de planos.';
   if (error.status === 429) return 'Muitas solicitações em pouco tempo. Aguarde um momento antes de tentar novamente.';
   if (error.name === 'TimeoutError' || error instanceof TypeError || error.status >= 500) {
     return context === 'envio'
-      ? 'Não foi possível confirmar o envio. Confira o histórico antes de tentar de novo para evitar um envio repetido.'
+      ? 'Não foi possível confirmar o envio. Confira seus planos antes de tentar de novo para evitar um envio repetido.'
       : 'Não foi possível atualizar os dados. Verifique sua conexão e tente novamente.';
   }
   return error.message || 'Não foi possível concluir a solicitação. Tente novamente.';

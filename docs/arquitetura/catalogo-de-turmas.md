@@ -45,7 +45,7 @@ Todas as rotas abaixo exigem a autenticação Supabase existente:
 | `PUT /api/v1/me/class-offerings/{id}` | Seguir oferta disponível, idempotente, 204 |
 | `DELETE /api/v1/me/class-offerings/{id}` | Remover somente o vínculo da sessão, idempotente, 204 |
 | `GET /api/v1/class-offerings/{id}/shared-plans` | Versões compartilhadas para seguidores com autoria, origem, votos, indicador de versão padrão e alterações pós-importação; ordenadas por votos positivos e data mais recente no empate; paginação 20/100, 403 para não seguidores; não expõe texto privado |
-| `GET /api/v1/syllabus?offering_id={id}` | Histórico particular filtrado pela oferta; sem filtro mantém o histórico legado |
+| `GET /api/v1/syllabus?offering_id={id}` | Lista de planos privados, com filtro opcional de oferta |
 | `POST /api/v1/syllabus/upload` e `/text` | `offering_id` obrigatório; 409 se oferta retirada, 503 sem publicação; disciplina/turma/período derivados do catálogo |
 
 A busca devolve `items`, `total`, `limit`, `offset`, `source_updated_at` e `stale`, com ordenação estável por código, unidade, período, turma e UUID. Cada item contém UUID, nome/código da disciplina, turma, ano/semestre, unidade, nível, professor, horário e disponibilidade. Erros seguem `detail` da API existente; filtros inválidos retornam 422.

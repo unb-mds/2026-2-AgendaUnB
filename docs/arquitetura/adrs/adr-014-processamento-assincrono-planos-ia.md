@@ -3,8 +3,6 @@ title: "ADR-014 · Processamento assíncrono resiliente de planos com fila persi
 description: "Decisão arquitetural do worker de extração de planos de ensino via IA: fila persistida em planos_ensino, lease com fencing, subprocessos isolados, orçamento controlado e validação estrita."
 ---
 
-# ADR-014 · Processamento assíncrono resiliente de planos com fila persistida, lease e orçamento
-
 | Campo | Valor |
 | --- | --- |
 | Estado | Implementada |
@@ -31,12 +29,12 @@ A extração de datas de provas e trabalhos por LLM (Google Gemini) é uma opera
 
 3. **Provedor, orçamento, deduplicação e reprocessamento controlado:**
    - Utiliza Google Gemini (`gemini-3.5-flash-lite`, Free Tier 15 RPM / 1M TPM / 1.500 RPD) via REST Interactions API (`v1beta`, `store=false`), sem ferramentas, busca, cache compartilhado, uploads remotos ou fallback silencioso de modelo. No modo `--drain`, aplica cadência mínima (`SYLLABUS_MIN_INTERVAL_SECONDS=4.0`) entre chamadas externas para respeitar 15 RPM.
-   - Antes de acionar o provedor externo, o worker verifica se já existe plano `concluido` na mesma versão de processamento (`syllabus-v3-approved-text`) com exatamente o mesmo `approved_hash` (SHA-256 canônico do texto aprovado). Em caso positivo, clona os candidatos validados para a nova versão privada sem chamar o Gemini e estorna a reserva da tentativa, reduzindo chamadas redundantes no Free Tier sem expor textos entre contas.
+   - Antes de acionar o provedor externo, o worker procura um plano `concluido` com a mesma versão de processamento (`syllabus-v5-grounded-titles`) e o mesmo `approved_hash` (SHA-256 do texto autorizado). Quando encontra, clona os candidatos validados para a nova versão privada e devolve a reserva da tentativa.
    - Antes de cada tentativa, calcula e reserva orçamento conservador por bytes de entrada (`40.000` bytes de texto + `16.000` bytes de margem para instrução/esquema) e tokens de saída (`4.096`), respeitando teto por plano (`SYLLABUS_MAX_FILE_COST_USD = 0.06`; reserva padrão `USD 0,027040` por tentativa). Alterar `GEMINI_MODEL` exige configurar explicitamente `GEMINI_INPUT_USD_PER_MILLION` e `GEMINI_OUTPUT_USD_PER_MILLION`.
    - Reprocessar um plano finalizado exige `reprocess: true` e nova autorização (`POST /api/v1/syllabus/{id}/extractions`), preserva versões compartilhadas e candidatos confirmados, descarta pendentes de versões privadas anteriores e mantém acumulados os contadores de tentativas e orçamento (`409` ao esgotar limites, oferecendo cadastro manual).
 
 4. **Validação estrita e proteção contra prompt injection:**
-   - O conteúdo do plano é enviado isolado como dados JSON não confiáveis, separado da instrução de sistema. O servidor valida a resposta com Pydantic rejeitando campos extras, tipos fora de `prova`/`trabalho`, citações ausentes na página indicada e datas sem evidência completa no trecho.
+   - O conteúdo do plano segue como dados JSON, separado da instrução de sistema. O servidor valida o esquema da resposta e verifica trecho, título, data e hora na evidência. A validação do título aceita acentos restaurados e a numeração de rótulos genéricos quando o trecho contém uma avaliação do tipo correspondente.
    - Não se inferem meia-noite, fuso horário ou início de intervalo a partir do relógio do servidor. Datas com ano abreviado (`DD/MM/AA`) ou `DD/MM` com ano explícito no plano (ex.: `2026/2`) ou na oferta vinculada resolvem o ano de referência; datas sem referência de ano no documento/oferta ou ambíguas permanecem nulas e marcadas para correção humana. Documentos sem avaliações concluem com zero candidatos sem gerar erro.
 
 5. **Gates operacionais e verificação de pré-requisitos:**
@@ -50,7 +48,7 @@ Processar em `BackgroundTasks` na API perderia jobs durante spin-down ou reiníc
 ## Consequências
 
 - A retomada após falha ou timeout pode incorrer em nova chamada ao provedor dentro do limite de tentativas (sem garantia de entrega exatamente-uma-vez externa), motivo pelo qual a reserva de orçamento permanece consumida mesmo em falha/timeout.
-- **Débito técnico registrado:** a tabela `fila_processamento_ia` (`20261109185725_cria_fila_processamento_ia.sql`) não é consumida pelo worker atual (que utiliza `planos_ensino`). Sua política de consulta referencia `professor_id` e precisa ser alinhada ao contrato de propriedade por `user_id` antes de qualquer exposição ou adoção como endpoint de status de planos particulares.
+- **Persistência da fila.** O worker usa o estado e o lease de `planos_ensino`. A migração `20261120120000_consolida_cliques_e_fila_planos.sql` retira a tabela paralela `fila_processamento_ia`, que não tinha consumidor.
 - Medições locais no corpus sintético mantiveram o fluxo de fila + provedor abaixo da meta de 20s (RNF06), descontando preparação e revisão humana; esses resultados sintéticos não substituem homologação de latência e carga no ambiente publicado.
 
 ## Orientações para contribuição e verificação

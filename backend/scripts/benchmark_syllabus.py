@@ -91,8 +91,8 @@ def main():
     for case in cases():
         started = time.monotonic()
         content = make_pdf(case["pages"])
-        from src.modules.syllabus.preparation import extract_pdf_isolated
-        prepared = extract_pdf_isolated(content, 8)
+        from src.modules.syllabus.preparation import extract_pdf_isolated, prepare_pages
+        prepared, _ = prepare_pages(extract_pdf_isolated(content, 8))
         pdf_size = len(content)
         del content
         preparation_seconds = round(time.monotonic() - started, 3)

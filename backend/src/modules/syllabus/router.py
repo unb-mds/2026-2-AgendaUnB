@@ -6,7 +6,7 @@ from datetime import datetime, time as dt_time, timedelta, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, Response, UploadFile, status
-from sqlalchemy import delete, func, select, text
+from sqlalchemy import delete, func, select, text, update
 from sqlalchemy.exc import DBAPIError, IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session, joinedload
 from starlette.concurrency import run_in_threadpool
@@ -50,7 +50,7 @@ from src.modules.syllabus.services import process_syllabus_upload, validate_pdf_
 from src.modules.syllabus.timing import duration_ms
 from src.modules.syllabus.processing_config import ProcessingConfig
 from src.modules.syllabus.preparation import (
-    TextInput, ExtractionAuthorization, PreparationPreview, checked_pages, minimize, extract_pdf_isolated,
+    TextInput, ExtractionAuthorization, PreparationPreview, checked_pages, extract_pdf_isolated,
     owned_plan, preview, authorize,
 )
 from src.modules.syllabus.services import UPLOAD_VALIDATION_TIMEOUT_SECONDS
@@ -509,9 +509,8 @@ def prepare_syllabus_text(payload: TextInput, current_user: CurrentUser = Depend
     offer = followed_available_offering(db, payload.offering_id, current_user.id)
     started = time.monotonic()
     pages = checked_pages([{"pagina": None, "texto": payload.text}])
-    pages = checked_pages([{"pagina": None, "texto": minimize(pages[0]["texto"])}])
     plan = process_syllabus_upload(user_id=current_user.id, filename="texto-revisado.txt",
-        file_size=len(payload.text.encode("utf-8")), pages=pages, file_type="text", db=db,
+        file_size=len(pages[0]["texto"].encode("utf-8")), pages=pages, file_type="text", db=db,
         preparation_duration_ms=round((time.monotonic()-started)*1000),
         offering_id=offer.id, disciplina=offer.subject.name, turma=offer.class_number, ano=offer.year, semestre=offer.semester)
     return SyllabusUploadResponse.model_validate(plan)
@@ -608,7 +607,6 @@ def get_syllabus_status(
         offeringId=syllabus.offering_id,
         userId=syllabus.user_id,
         fileName=syllabus.file_name if is_owner else None,
-        filePath=syllabus.file_path if is_owner else None,
         fileSize=syllabus.file_size if is_owner else None,
         fileType=syllabus.file_type,
         status=syllabus.status,
@@ -624,6 +622,7 @@ def get_syllabus_status(
         authorizationRequired=syllabus.authorization_required if is_owner else False,
         preparedTextAvailable=bool(syllabus.prepared_pages) if is_owner else False,
         preparationDurationMs=syllabus.preparation_duration_ms if is_owner else None,
+        redactedCount=syllabus.redacted_count if is_owner else None,
         reviewDurationMs=duration_ms(syllabus.created_at, syllabus.authorized_at) if is_owner else None,
         disciplina=syllabus.disciplina,
         turma=syllabus.turma,
@@ -735,6 +734,92 @@ def confirm_syllabus_candidates(
         payload.candidates,
         repeated=bool(result.get("repetida")),
     )
+
+
+@router.delete(
+    "/{syllabus_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Remove um plano privado do usuário e suas datas extraídas",
+)
+def delete_syllabus(
+    syllabus_id: UUID,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Response:
+    syllabus = db.scalar(
+        select(Syllabus).where(Syllabus.id == syllabus_id, Syllabus.user_id == current_user.id).with_for_update()
+    )
+    if syllabus is None:
+        raise HTTPException(status_code=404, detail="Plano de ensino não encontrado.")
+    if syllabus.status == "processando":
+        raise HTTPException(
+            status_code=409,
+            detail="Aguarde a conclusão do processamento antes de remover este plano.",
+        )
+    has_shared = db.scalar(
+        select(SyllabusVersion.id).where(
+            SyllabusVersion.syllabus_id == syllabus_id,
+            SyllabusVersion.visibility == "compartilhada",
+        ).limit(1)
+    )
+    if has_shared is not None:
+        raise HTTPException(
+            status_code=409,
+            detail="Retire o compartilhamento antes de remover este plano.",
+        )
+    has_other_authors = db.scalar(
+        select(SyllabusVersion.id).where(
+            SyllabusVersion.syllabus_id == syllabus_id,
+            SyllabusVersion.author_id != current_user.id,
+        ).limit(1)
+    )
+    if has_other_authors is not None:
+        raise HTTPException(
+            status_code=409,
+            detail="Este plano possui revisões de outros usuários e não pode ser removido.",
+        )
+    version_ids = list(
+        db.scalars(
+            select(SyllabusVersion.id).where(SyllabusVersion.syllabus_id == syllabus_id)
+        ).all()
+    )
+    if syllabus.approved_version_id is not None:
+        syllabus.approved_version_id = None
+        db.flush()
+    if version_ids:
+        db.execute(
+            update(SyllabusVersion)
+            .where(SyllabusVersion.source_version_id.in_(version_ids))
+            .values(source_version_id=None)
+        )
+        db.execute(
+            update(ImportOperation)
+            .where(ImportOperation.version_id.in_(version_ids))
+            .values(version_id=None)
+        )
+        db.execute(
+            update(PersonalEvent)
+            .where(PersonalEvent.origin_version_id.in_(version_ids))
+            .values(origin_version_id=None)
+        )
+    candidate_ids = list(
+        db.scalars(
+            select(SyllabusCandidate.id).where(SyllabusCandidate.syllabus_id == syllabus_id)
+        ).all()
+    )
+    if candidate_ids:
+        db.execute(
+            delete(CandidateVote).where(CandidateVote.candidate_id.in_(candidate_ids))
+        )
+    db.execute(
+        delete(SyllabusCandidate).where(SyllabusCandidate.syllabus_id == syllabus_id)
+    )
+    db.execute(
+        delete(SyllabusVersion).where(SyllabusVersion.syllabus_id == syllabus_id)
+    )
+    db.delete(syllabus)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.delete(
@@ -1528,5 +1613,3 @@ def withdraw_version_candidate(
     candidate.revisado_em = utcnow()
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-

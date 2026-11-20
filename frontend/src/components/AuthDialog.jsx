@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   EMAIL_RETRY_SECONDS, sendConfirmation, sendRecovery, signInWithEmail, signInWithGoogle,
-  signUpWithEmail, validateNewPassword,
+  NEW_PASSWORD_HINT, signUpWithEmail, validateNewPassword,
 } from '../lib/auth';
+import { accountApi, flushPendingSignupLegal, markPendingSignupLegal } from '../lib/accountApi';
 import GoogleMark from './GoogleMark';
 import PasswordField from './PasswordField';
 import '../styles/auth.css';
@@ -17,10 +18,13 @@ export default function AuthDialog({ mode, setMode }) {
   const navigate = useNavigate();
   const dialog = useRef(null);
   const heading = useRef(null);
+  const legalCheckbox = useRef(null);
   const busy = useRef(false);
   const [sending, setSending] = useState(false);
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('student');
+  const [legalAccepted, setLegalAccepted] = useState(false);
+  const [legalError, setLegalError] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [passwordError, setPasswordError] = useState('');
@@ -64,6 +68,8 @@ export default function AuthDialog({ mode, setMode }) {
   function changeMode(nextMode) {
     setError('');
     setPasswordError('');
+    setLegalError('');
+    setLegalAccepted(false);
     setMessage('');
     setMode(nextMode);
   }
@@ -82,6 +88,7 @@ export default function AuthDialog({ mode, setMode }) {
     if (busy.current || (emailFlow && seconds)) return;
     setError('');
     setPasswordError('');
+    setLegalError('');
     setMessage('');
     const form = new FormData(event.currentTarget);
     const password = form.get('password');
@@ -90,6 +97,11 @@ export default function AuthDialog({ mode, setMode }) {
       if (issue) {
         setPasswordError(issue);
         event.currentTarget.elements.confirmation.focus();
+        return;
+      }
+      if (!legalAccepted) {
+        setLegalError('Aceite os Termos de Uso e a Política de Privacidade para criar sua conta.');
+        legalCheckbox.current?.focus();
         return;
       }
     }
@@ -104,6 +116,9 @@ export default function AuthDialog({ mode, setMode }) {
         if (result.error) {
           setError(result.error);
         } else if (result.needsConfirmation || (signup && !result.signedIn)) {
+          if (signup) {
+            await markPendingSignupLegal(email);
+          }
           changeMode('confirm');
           if (signup) {
             startCooldown('confirm');
@@ -112,6 +127,14 @@ export default function AuthDialog({ mode, setMode }) {
             setMessage('Confirme seu e-mail para entrar. Você pode solicitar outro link abaixo.');
           }
         } else {
+          if (signup) {
+            const docs = await accountApi.getLegalDocuments().catch(() => null);
+            if (docs) {
+              await accountApi.acceptPendingLegalDocuments(docs).catch(() => null);
+            }
+          } else {
+            await flushPendingSignupLegal(email).catch(() => null);
+          }
           setMode(null);
           navigate('/eventos');
         }
@@ -148,6 +171,7 @@ export default function AuthDialog({ mode, setMode }) {
   }
 
   const action = { signup: 'Criar conta', login: 'Entrar', confirm: 'Reenviar confirmação', recover: 'Enviar link' }[mode];
+  const legalDescribedBy = legalError ? 'auth-legal-error auth-legal-hint' : 'auth-legal-hint';
 
   return (
     <dialog
@@ -192,10 +216,38 @@ export default function AuthDialog({ mode, setMode }) {
           {(signup || login) && <PasswordField label="Senha" name="password" newPassword={signup} describedBy={signup ? 'auth-password-hint' : undefined} />}
           {signup && (
             <>
-              <p className="auth-field-hint auth-password-hint" id="auth-password-hint">Use pelo menos 8 caracteres.</p>
+              <p className="auth-field-hint auth-password-hint" id="auth-password-hint">{NEW_PASSWORD_HINT}</p>
               <PasswordField label="Confirmar senha" name="confirmation" newPassword
                 invalid={Boolean(passwordError)} describedBy={passwordError ? 'auth-password-error' : undefined} />
               {passwordError && <p id="auth-password-error" className="auth-error" role="alert">{passwordError}</p>}
+              <div className="auth-legal-consent">
+                <div className="auth-checkbox-row">
+                  <input
+                    ref={legalCheckbox}
+                    id="auth-legal-accept"
+                    name="legalAccepted"
+                    type="checkbox"
+                    checked={legalAccepted}
+                    disabled={sending}
+                    aria-invalid={legalError ? 'true' : undefined}
+                    aria-describedby={legalDescribedBy}
+                    onChange={event => {
+                      setLegalAccepted(event.target.checked);
+                      if (event.target.checked) setLegalError('');
+                    }}
+                  />
+                  <label htmlFor="auth-legal-accept">
+                    Li e aceito os{' '}
+                    <a href="/termos.html" target="_blank" rel="noopener noreferrer" onClick={event => event.stopPropagation()}>Termos de Uso</a>
+                    {' '}e a{' '}
+                    <a href="/privacidade.html" target="_blank" rel="noopener noreferrer" onClick={event => event.stopPropagation()}>Política de Privacidade</a>.
+                  </label>
+                </div>
+                <p id="auth-legal-hint" className="auth-field-hint">
+                  Recursos opcionais como Google Agenda e análise de planos com IA pedem autorização própria quando você os usa.
+                </p>
+                {legalError && <p id="auth-legal-error" className="auth-error" role="alert">{legalError}</p>}
+              </div>
             </>
           )}
           {login && <button type="button" className="auth-link" disabled={sending} onClick={() => changeMode('recover')}>Esqueci minha senha</button>}
@@ -214,6 +266,14 @@ export default function AuthDialog({ mode, setMode }) {
               <GoogleMark /> Continuar com Google
             </button>
           </>
+        )}
+        {login && (
+          <p className="auth-legal-note">
+            Consulte os{' '}
+            <a href="/termos.html" target="_blank" rel="noopener noreferrer">Termos de Uso</a>
+            {' '}e a{' '}
+            <a href="/privacidade.html" target="_blank" rel="noopener noreferrer">Política de Privacidade</a>.
+          </p>
         )}
         {emailFlow && <button type="button" className="auth-link auth-back" disabled={sending} onClick={() => changeMode('login')}>Voltar para entrar</button>}
       </div>

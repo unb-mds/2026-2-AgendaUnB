@@ -13,7 +13,9 @@ const AuthReturnPage = lazy(() => import('./pages/AuthReturnPage.jsx'))
 const AdminPage = lazy(() => import('./pages/AdminPage.jsx'))
 const SuggestionsPage = lazy(() => import('./pages/SuggestionsPage.jsx'))
 const TeachingPlanPage = lazy(() => import('./pages/TeachingPlanPage.jsx'))
+const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'))
 import { ProtectedRoute } from './components/ManagementUI.jsx'
+import LegalAcceptanceGate from './components/LegalAcceptanceGate.jsx'
 import SearchMetadata from './components/SearchMetadata.jsx'
 import { Analytics } from '@vercel/analytics/react'
 
@@ -35,7 +37,9 @@ createRoot(document.getElementById('root')).render(
           <Route path="/evento/:id" element={<PaginaDeEvento />} />
           <Route path="/sugestoes" element={<><SearchMetadata /><ProtectedRoute roles={['professor', 'admin']}><SuggestionsPage /></ProtectedRoute></>} />
           <Route path="/admin" element={<><SearchMetadata /><ProtectedRoute roles={['admin']}><AdminPage /></ProtectedRoute></>} />
+          <Route path="/configuracoes" element={<><SearchMetadata /><ProtectedRoute roles={['student', 'professor', 'admin']}><SettingsPage /></ProtectedRoute></>} />
         </Routes></Suspense>
+        <LegalAcceptanceGate />
         <Analytics />
       </SemesterPlansProvider>
     </AuthProvider>

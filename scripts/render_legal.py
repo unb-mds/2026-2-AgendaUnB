@@ -16,7 +16,7 @@ DOCUMENTS = {
 }
 STYLE = '''
 body{margin:0;background:#10151c;color:#e8edf4;font:17px/1.7 system-ui,sans-serif}
-main{max-width:900px;margin:auto;padding:32px 24px 80px}a{color:#71baff}
+main{max-width:900px;margin:auto;padding:32px 24px 80px;overflow-wrap:anywhere}a{color:#71baff}
 h1,h2{line-height:1.3}h1{font-size:2.2rem}h2{margin-top:2rem}
 nav{display:flex;flex-wrap:wrap;gap:20px;margin-bottom:36px}
 .table-scroll{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:.9rem}
@@ -45,6 +45,7 @@ def render(publish=False):
 <title>{html.escape(title)} | Agenda UnB</title><style>{STYLE}</style></head>
 <body><main><nav aria-label="Navegação"><a href="/">Agenda UnB</a>
 <a href="/privacidade.html">Privacidade</a><a href="/termos.html">Termos de Uso</a></nav>
+<h1>{html.escape(title)}</h1>
 {warning}{content}</main></body></html>'''
         documents.append((filename, page))
     output = ROOT / ('frontend/public' if publish else 'output/legal-preview')

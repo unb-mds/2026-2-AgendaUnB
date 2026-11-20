@@ -3,8 +3,6 @@ title: "ADR-004 · Manter a API em uma aplicação FastAPI única"
 description: "Decisão, consequências e critérios de verificação: manter a api em uma aplicação fastapi única."
 ---
 
-# ADR-004 · Manter a API em uma aplicação FastAPI única
-
 | Campo | Valor |
 | --- | --- |
 | Estado | Implementada |

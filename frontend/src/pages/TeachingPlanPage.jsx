@@ -4,7 +4,7 @@ import { Feedback, Icon, ManagementShell } from '../components/ManagementUI';
 import CustomSelect from '../components/CustomSelect';
 import SemesterCatalog from '../components/SemesterCatalog';
 import SemesterReview from '../components/SemesterReview';
-import SemesterTextReview, { TextCapacity } from '../components/SemesterTextReview';
+import SemesterExtraction, { TextCapacity } from '../components/SemesterExtraction';
 import SharedClassPlans from '../components/SharedClassPlans';
 import { useAuth } from '../contexts/AuthContext';
 import { useSemesterPlans } from '../contexts/SemesterPlansContext';
@@ -48,17 +48,24 @@ function TextEntry({ offer }) {
   }}>
     <label className="semester-field">Texto do plano<textarea aria-label="Texto do plano" rows={5} value={text} onChange={event => { submitted.current = false; setText(event.target.value); }} /></label>
     <TextCapacity size={size} />
-    <button className="manage-button" disabled={!offer || !text.trim() || size > MAX_APPROVED_TEXT_BYTES}>Preparar texto para revisão</button>
+    <button className="manage-button" aria-describedby="semester-upload-consent"
+      disabled={!offer || !text.trim() || size > MAX_APPROVED_TEXT_BYTES}>Enviar texto e extrair</button>
   </form>;
 }
 
-function PlanQueue({ options, followed, initialOffer, onOffer, plans, selectedId, onSelect, onUploaded, history, page, changePage, onCatalog }) {
+function PlanQueue({ options, followed, initialOffer, onOffer, plans, selectedId, onSelect, onResetSend, onUploaded, history, page, changePage, onCatalog }) {
   const workspace = useSemesterPlans();
   const fileRef = useRef(null);
   const [dragging, setDragging] = useState(false);
   const [open, setOpen] = useState(true);
+  const [resetting, setResetting] = useState(false);
+  const [resetError, setResetError] = useState('');
+  const [inputMode, setInputMode] = useState(() => (workspace.rawText.text ? 'text' : 'pdf'));
   const [message, setMessage] = useState('');
   const selectedOffer = options.find(offer => offer.id === initialOffer);
+  const hasResettableUploads = workspace.uploads.some(item => item.status !== 'sending');
+  const resettablePlanIds = plans.map(plan => plan.id);
+  const canResetSend = !resetting && (hasResettableUploads || Boolean(workspace.rawText.text.trim()) || Boolean(selectedId) || resettablePlanIds.length > 0);
   const append = files => {
     if (!files?.length || !selectedOffer) return;
     workspace.addFiles(files, selectedOffer);
@@ -66,13 +73,48 @@ function PlanQueue({ options, followed, initialOffer, onOffer, plans, selectedId
     setMessage(`${files.length} arquivo(s) na fila para ${offerLabel(selectedOffer)}.`);
   };
   const chooseFiles = () => fileRef.current?.click();
+  const handleResetSend = async () => {
+    if (resetting) return;
+    setResetting(true);
+    setResetError('');
+    try {
+      const outcome = await workspace.resetSend?.(resettablePlanIds);
+      if (fileRef.current) fileRef.current.value = '';
+      setDragging(false);
+      if (selectedId) onResetSend?.();
+      onUploaded?.();
+      if (outcome?.failed?.length) {
+        const sharedConflict = outcome.failed.some(item => item.error?.status === 409);
+        setResetError(sharedConflict
+          ? 'Planos compartilhados com a turma não foram removidos. Retire o compartilhamento antes de reiniciar.'
+          : 'Alguns planos não puderam ser removidos. Tente novamente.');
+      } else {
+        setMessage('Envio reiniciado.');
+      }
+    } finally {
+      setResetting(false);
+    }
+  };
 
   return <aside className="semester-section semester-queue" aria-labelledby="semester-queue-title">
     <div className="semester-section-heading">
       <h2 id="semester-queue-title">Seus planos</h2>
-      <button className="manage-icon-button semester-queue-toggle" type="button" aria-expanded={open} aria-controls="semester-queue-body"
-        aria-label={open ? 'Recolher fila de planos' : 'Expandir fila de planos'} onClick={() => setOpen(!open)}><Icon>{open ? 'expand_less' : 'expand_more'}</Icon></button>
+      <div className="semester-queue-heading-actions">
+        <button
+          type="button"
+          className="semester-reset-send-btn"
+          onClick={handleResetSend}
+          disabled={!canResetSend}
+          title="Remove planos enviados desta visualização, limpa o texto e volta ao estado inicial"
+        >
+          <Icon>restart_alt</Icon>
+          <span>{resetting ? 'Reiniciando…' : 'Reiniciar envio'}</span>
+        </button>
+        <button className="manage-icon-button semester-queue-toggle" type="button" aria-expanded={open} aria-controls="semester-queue-body"
+          aria-label={open ? 'Recolher fila de planos' : 'Expandir fila de planos'} onClick={() => setOpen(!open)}><Icon>{open ? 'expand_less' : 'expand_more'}</Icon></button>
+      </div>
     </div>
+    <Feedback error={resetError} />
     <div className="semester-plan-offer">
       <CustomSelect value={initialOffer || ''} onChange={onOffer} ariaLabel="Turma dos planos"
         disabled={!followed.length} placeholder={followed.length ? 'Selecione uma turma' : 'Nenhuma turma seguida'}
@@ -81,19 +123,34 @@ function PlanQueue({ options, followed, initialOffer, onOffer, plans, selectedId
           label: offer.subject_name,
           detail: followed.some(other => other.id !== offer.id && other.subject_name === offer.subject_name) ? offerLabel(offer) : undefined,
         }))} />
-      {!followed.length ? <button className="management-text-button" type="button" onClick={onCatalog}>Adicione uma turma para enviar</button>
+      {!followed.length ? <button className="management-text-button" type="button" onClick={onCatalog}>Selecionar turmas na Etapa 1</button>
         : !initialOffer && <small>Selecione uma turma antes de enviar um plano.</small>}
     </div>
+    <p id="semester-upload-consent" className="semester-upload-consent">Ao enviar, você autoriza o Google Gemini a analisar o texto sanitizado. Use apenas conteúdo adequado para envio ao serviço. Ao consultar o resultado, a primeira versão com avaliações fica disponível para quem segue a turma. Você pode retirar o compartilhamento.</p>
     <input ref={fileRef} type="file" hidden accept=".pdf,application/pdf" multiple onChange={event => { append(event.target.files); event.target.value = ''; }} />
-    <div className={`semester-drop${dragging ? ' is-dragging' : ''}`}
-        onDragOver={event => { event.preventDefault(); if (selectedOffer) setDragging(true); }}
-        onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget instanceof Node ? event.relatedTarget : null)) setDragging(false); }}
-        onDrop={event => { event.preventDefault(); setDragging(false); append(event.dataTransfer.files); }}>
-        <button id="semester-add-pdfs" className="manage-button primary" type="button" onClick={chooseFiles} disabled={!selectedOffer}><Icon>upload_file</Icon>Adicionar planos</button>
-        <small>Arraste ou selecione PDFs com texto · até 10 MB e 10 páginas por arquivo</small>
+    <div className="semester-input-tabs" role="tablist" aria-label="Modo de envio do plano">
+      <button type="button" role="tab" id="queue-tab-pdf" aria-selected={inputMode === 'pdf'} aria-controls="queue-panel-pdf"
+        className={inputMode === 'pdf' ? 'is-active' : ''} onClick={() => setInputMode('pdf')}>
+        <Icon>upload_file</Icon>Arquivo PDF
+      </button>
+      <button type="button" role="tab" id="queue-tab-text" aria-selected={inputMode === 'text'} aria-controls="queue-panel-text"
+        className={inputMode === 'text' ? 'is-active' : ''} onClick={() => setInputMode('text')}>
+        <Icon>notes</Icon>Colar texto
+      </button>
+    </div>
+    <div id="queue-panel-pdf" role="tabpanel" aria-labelledby="queue-tab-pdf" hidden={inputMode !== 'pdf'}>
+      <div className={`semester-drop${dragging ? ' is-dragging' : ''}`}
+          onDragOver={event => { event.preventDefault(); if (selectedOffer) setDragging(true); }}
+          onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget instanceof Node ? event.relatedTarget : null)) setDragging(false); }}
+          onDrop={event => { event.preventDefault(); setDragging(false); append(event.dataTransfer.files); }}>
+          <button id="semester-add-pdfs" className="manage-button primary" type="button" aria-describedby="semester-upload-consent" onClick={chooseFiles} disabled={!selectedOffer}><Icon>upload_file</Icon>Enviar PDF e extrair</button>
+          <small>Arraste ou selecione PDFs com texto · até 10 MB e 10 páginas por arquivo</small>
       </div>
+    </div>
+    <div id="queue-panel-text" role="tabpanel" aria-labelledby="queue-tab-text" hidden={inputMode !== 'text'}>
       <TextEntry offer={selectedOffer} />
-      <p className="sr-only" role="status">{message}</p>
+    </div>
+    <p className="sr-only" role="status">{message}</p>
     <div id="semester-queue-body" className={open ? '' : 'semester-queue-collapsed'}>
       {!!workspace.uploads.length && <ul className="semester-queue-list">
         {workspace.uploads.map(item => <li key={item.id}>
@@ -106,6 +163,7 @@ function PlanQueue({ options, followed, initialOffer, onOffer, plans, selectedId
           {item.status === 'failed' && <button className="manage-button" onClick={() => workspace.retryUpload(item.id)}>Tentar novamente</button>}
           {item.text && item.status === 'failed' && !workspace.rawText.text && <button className="management-text-button" onClick={() => {
             workspace.setRawText({ text: item.text });
+            setInputMode('text');
             onOffer(item.offer.id);
             workspace.remove(item.id);
           }}>Editar texto</button>}
@@ -114,16 +172,17 @@ function PlanQueue({ options, followed, initialOffer, onOffer, plans, selectedId
               if (initialOffer === item.offer.id) onUploaded();
               else onOffer(item.offer.id);
               workspace.acknowledgeUpload(item.id);
-            }}>Consultar histórico</button>
+            }}>Consultar planos</button>
             {workspace.uploadNotice[item.id] && initialOffer === item.offer.id && page === 0 && !history.loading && !history.error && history.data &&
-              <button className="management-text-button" onClick={() => workspace.retryUncertainUpload(item.id)}>Não encontrei no histórico. Reenviar</button>}
+              <button className="management-text-button" onClick={() => workspace.retryUncertainUpload(item.id)}>Não encontrei o plano. Reenviar</button>}
           </>}
         </li>)}
       </ul>}
       <ul className="semester-queue-list">
         {plans.map(plan => {
           const pendingText = plan.authorizationRequired && plan.preparedTextAvailable;
-          const state = pendingText ? 'Autorizar texto' : plan.status === 'concluido' && plan.extractedEventsCount === 0 ? 'Sem avaliações' : PLAN_STATES[plan.status]?.label || 'Consultar estado';
+          const state = pendingText ? (workspace.authorizations[plan.id]?.busy ? 'Iniciando extração' : 'Extrair avaliações')
+            : plan.status === 'concluido' && plan.extractedEventsCount === 0 ? 'Sem avaliações' : PLAN_STATES[plan.status]?.label || 'Consultar estado';
           return <li key={plan.id} className={selectedId === plan.id ? 'is-current' : ''}>
             <div className="semester-queue-line"><Icon>{pendingText ? 'article' : PLAN_STATES[plan.status]?.icon || 'description'}</Icon>
               <div><strong>{plan.disciplina || plan.fileName}</strong>{plan.disciplina && <small>{plan.fileName}</small>}</div>
@@ -136,7 +195,7 @@ function PlanQueue({ options, followed, initialOffer, onOffer, plans, selectedId
       </ul>
       {history.loading && <p role="status">Carregando planos…</p>}
       <Feedback error={history.error && syllabusError(history.error, 'historico')} onRetry={history.retry} />
-      {history.data && (history.data.total > SYLLABUS_PAGE_SIZE || page > 0) && <nav aria-label="Histórico de planos" className="semester-pagination">
+      {history.data && (history.data.total > SYLLABUS_PAGE_SIZE || page > 0) && <nav aria-label="Páginas de planos" className="semester-pagination">
         <button className="manage-button" disabled={page === 0 || history.loading} onClick={() => changePage(page - 1)}>Anterior</button>
         <span>Página {page + 1}</span>
         <button className="manage-button" disabled={history.loading || (page + 1) * SYLLABUS_PAGE_SIZE >= history.data.total} onClick={() => changePage(page + 1)}>Próxima</button>
@@ -145,7 +204,7 @@ function PlanQueue({ options, followed, initialOffer, onOffer, plans, selectedId
   </aside>;
 }
 
-function PlanDetails({ plan, onClose, onOpenText, onSharedChanged }) {
+function PlanDetails({ plan, onClose, onOpenExtraction, onSharedChanged }) {
   const workspace = useSemesterPlans();
   const [confirmAction, setConfirmAction] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -189,8 +248,9 @@ function PlanDetails({ plan, onClose, onOpenText, onSharedChanged }) {
     </header>
     <p role="status">{plan.status === 'concluido' && plan.extractedEventsCount === 0 ? 'A análise terminou sem encontrar avaliações.' :
       plan.authorizationRequired ? 'O texto aguarda sua autorização.' : PLAN_STATES[plan.status]?.title || 'Estado indisponível'}</p>
+    {plan.redactedCount > 0 && <p role="status">Dados pessoais detectados foram removidos antes da análise.</p>}
     <Feedback error={plan.errorMessage || workspace.planErrors[plan.id]} onRetry={workspace.planErrors[plan.id] ? () => workspace.loadPlan(plan.id, true) : undefined} />
-    {plan.preparedTextAvailable && !isProcessing(plan) && <button className="manage-button" onClick={onOpenText}>Rever texto do plano</button>}
+    {plan.preparedTextAvailable && !isProcessing(plan) && <button className="manage-button" onClick={onOpenExtraction}>Solicitar nova análise</button>}
     {isProcessing(plan) && <p>Você já pode adicionar outros planos ou revisar as avaliações disponíveis.</p>}
     {plan.status === 'falha' && <p>Adicione outro PDF com texto ou cole o cronograma para tentar novamente.</p>}
     {canQueryVersions && (
@@ -249,16 +309,23 @@ function PlanDetails({ plan, onClose, onOpenText, onSharedChanged }) {
 function SemesterPanel({ userId }) {
   const workspace = useSemesterPlans();
   const [params, setParams] = useSearchParams();
-  const [catalogOpen, setCatalogOpen] = useState(false);
-  const [textId, setTextId] = useState(null);
+  const [autoStep, setAutoStep] = useState(null);
+  const [extractionId, setExtractionId] = useState(null);
   const [followChanges, setFollowChanges] = useState({});
   const [offerCache, setOfferCache] = useState({});
   const [waitingFor, setWaitingFor] = useState(null);
   const [libraryRefresh, setLibraryRefresh] = useState(0);
   const legacyFocus = useRef(false);
   const contentRef = useRef(null);
+  const seenPreparations = useRef(new Set(workspace.recent.map(plan => plan.id)));
   const selectedId = params.get('plano');
   const initialOffer = params.get('oferta');
+  const rawStep = params.get('etapa');
+  const explicitStep = rawStep === '1'
+    ? 1
+    : (['2', '3', '4'].includes(rawStep) || Boolean(selectedId) || Boolean(initialOffer))
+      ? 2
+      : null;
   const requestedPage = Number(params.get('pagina') || 1);
   const page = Number.isSafeInteger(requestedPage) && requestedPage > 0 && requestedPage <= 100000 ? requestedPage - 1 : 0;
   const followed = useSyllabusResource(userId, loadFollowed);
@@ -315,11 +382,34 @@ function SemesterPanel({ userId }) {
       });
     return () => controller.abort();
   }, [offerIds]);
-  const textPlan = selectedPlan?.preparedTextAvailable && (selectedPlan.authorizationRequired || textId === selectedId) ? selectedPlan : null;
+  const extractionPlan = selectedPlan?.preparedTextAvailable && (selectedPlan.authorizationRequired || extractionId === selectedId) ? selectedPlan : null;
   const wrongOffer = selectedPlan && initialOffer && selectedPlan.offeringId !== initialOffer;
   const pendingAuth = scoped.find(plan => plan.authorizationRequired && plan.preparedTextAvailable && plan.id !== selectedId);
 
+  useEffect(() => {
+    if (explicitStep !== null || autoStep !== null) return;
+    if (followed.loading || history.loading) return;
+    const hasFollowed = (followed.data?.items?.length || 0) > 0;
+    const hasPlans = (history.data?.items?.length || 0) > 0 || workspace.recent.length > 0 || Object.keys(workspace.plans).length > 0;
+    setAutoStep(hasFollowed || hasPlans ? 2 : 1);
+  }, [explicitStep, autoStep, followed.loading, followed.data, history.loading, history.data, workspace.recent.length, workspace.plans]);
+  const activeStep = explicitStep ?? autoStep;
+
   useEffect(() => { observe(historyItems); }, [historyItems, observe]);
+  useEffect(() => {
+    const prepared = workspace.recent.filter(plan => !seenPreparations.current.has(plan.id));
+    prepared.forEach(plan => seenPreparations.current.add(plan.id));
+    if (activeStep !== 2 || !initialOffer || selectedId) return;
+    const next = prepared.find(plan => plan.offeringId === initialOffer && plan.authorizationRequired && plan.preparedTextAvailable);
+    if (!next) return;
+    setWaitingFor(next.id);
+    setParams(previous => {
+      const search = new URLSearchParams(previous);
+      search.set('plano', next.id);
+      search.set('etapa', '2');
+      return search;
+    });
+  }, [activeStep, initialOffer, selectedId, setParams, workspace.recent]);
   useEffect(() => { if (selectedId) loadPlan(selectedId); }, [selectedId, loadPlan]);
   useEffect(() => {
     if (legacyFocus.current || selectedId || !['3', '4'].includes(params.get('etapa'))) return;
@@ -337,37 +427,53 @@ function SemesterPanel({ userId }) {
     update(next);
     return next;
   });
+  const goToStep = (stepNumber, options = {}) => {
+    setAutoStep(stepNumber);
+    updateParams(next => {
+      next.set('etapa', String(stepNumber));
+      if (options.offerId) {
+        next.set('oferta', options.offerId);
+        next.delete('periodo');
+        next.delete('plano');
+        next.delete('pagina');
+      }
+      if (options.view === 'shared') next.set('visao', 'compartilhados');
+      else if (options.view === 'reviews' || stepNumber === 1) next.delete('visao');
+    });
+    requestAnimationFrame(() => {
+      const targetId = stepNumber === 1 ? 'semester-catalog-title' : 'semester-review-title';
+      document.getElementById(targetId)?.focus({ preventScroll: true });
+    });
+  };
   const closePlan = () => {
-    updateParams(next => { next.delete('plano'); next.delete('etapa'); });
-    setTextId(null);
+    setAutoStep(2);
+    updateParams(next => { next.delete('plano'); next.delete('visao'); next.set('etapa', '2'); });
+    setExtractionId(null);
     requestAnimationFrame(() => document.getElementById('semester-review-title')?.focus());
   };
   const selectPlan = id => {
-    setTextId(null);
+    setExtractionId(null);
     setWaitingFor(id);
-    updateParams(next => { next.set('plano', id); next.delete('etapa'); });
+    setAutoStep(2);
+    updateParams(next => { next.set('plano', id); next.set('etapa', '2'); next.delete('visao'); });
   };
-  const selectOffer = id => {
-    setTextId(null);
+  const selectOffer = (id, view) => {
+    setExtractionId(null);
+    setAutoStep(2);
     updateParams(next => {
       if (id) {
         next.set('oferta', id);
         next.delete('periodo');
       } else next.delete('oferta');
-      for (const key of ['plano', 'pagina', 'etapa']) next.delete(key);
-    });
-  };
-  const showCatalog = () => {
-    setCatalogOpen(true);
-    requestAnimationFrame(() => {
-      const title = document.getElementById('semester-catalog-title');
-      title?.focus({ preventScroll: true });
-      title?.scrollIntoView({ block: 'nearest' });
+      next.set('etapa', '2');
+      if (view === 'reviews') next.delete('visao');
+      else if (view === 'shared') next.set('visao', 'compartilhados');
+      for (const key of ['plano', 'pagina']) next.delete(key);
     });
   };
   const onFollowed = (offer, value) => {
     if (value && periodOf(offer) && !initialOffer && period !== periodOf(offer)) {
-      updateParams(next => { next.set('periodo', periodOf(offer)); next.delete('oferta'); next.delete('plano'); next.delete('pagina'); next.delete('etapa'); });
+      updateParams(next => { next.set('periodo', periodOf(offer)); next.delete('oferta'); next.delete('plano'); next.delete('pagina'); });
     }
     setFollowChanges(current => ({ ...current, [offer.id]: value ? offer : null }));
     setOfferCache(current => ({ ...current, [offer.id]: offer }));
@@ -391,66 +497,181 @@ function SemesterPanel({ userId }) {
     : null;
   const refreshLibrary = () => setLibraryRefresh(count => count + 1);
   const uploadForOffer = offerId => {
-    selectOffer(offerId);
+    selectOffer(offerId, 'reviews');
     requestAnimationFrame(() => document.getElementById('semester-add-pdfs')?.focus());
   };
 
+  const processingCount = scoped.filter(isProcessing).length;
+  const pendingAuthCount = scoped.filter(plan => plan.authorizationRequired && plan.preparedTextAvailable).length;
+  const attentionCount = rows.filter(row => row.attention).length;
+  const addedCount = rows.filter(row => row.status === 'confirmado' && !row.candidate.removed).length;
+  const step2Summary = pendingAuthCount > 0
+    ? `${pendingAuthCount} ${pendingAuthCount === 1 ? 'extração pendente' : 'extrações pendentes'}`
+    : attentionCount > 0
+      ? `${attentionCount} ${attentionCount === 1 ? 'data a revisar' : 'datas a revisar'}`
+      : rows.length > 0
+        ? `${rows.length} ${rows.length === 1 ? 'avaliação' : 'avaliações'}`
+        : processingCount > 0
+          ? `${processingCount} em análise`
+          : 'Enviar planos e importar datas';
+  const showSharedTab = Boolean(libraryOfferId && !wrongOffer);
+  const datesTab = showSharedTab && params.get('visao') === 'compartilhados' ? 'shared' : 'reviews';
+  const setDatesTab = tab => updateParams(next => {
+    next.set('etapa', '2');
+    if (tab === 'shared') next.set('visao', 'compartilhados');
+    else next.delete('visao');
+  });
+
   return <div className="semester-panel">
-    <div className="semester-toolbar">
-      <button className={`manage-button${catalogOpen ? '' : ' primary'}`} aria-expanded={catalogOpen} aria-controls="semester-catalog"
-        onClick={() => catalogOpen ? setCatalogOpen(false) : showCatalog()}>
-        <Icon>{catalogOpen ? 'close' : 'search'}</Icon>{catalogOpen ? 'Fechar catálogo' : 'Buscar turmas'}
-      </button>
-      <CustomSelect className="custom-input semester-toolbar-period" wrapperWidth="fit-content" ariaLabel="Semestre"
-        placeholder="Selecione um semestre" value={period}
-        options={(period && !periods.includes(period) ? [period, ...periods] : periods).map(value => ({ value, label: value }))}
-        onChange={value => updateParams(next => {
-          next.set('periodo', value); next.delete('oferta'); next.delete('plano'); next.delete('pagina'); next.delete('etapa');
-        })} />
+    <div className="semester-header-bar">
+      <nav className="semester-stepper" aria-label="Etapas dos planos de ensino">
+        <button
+          type="button"
+          className={`semester-step-btn${activeStep === 1 ? ' is-active' : ''}`}
+          aria-current={activeStep === 1 ? 'step' : undefined}
+          onClick={() => goToStep(1)}
+        >
+          <span className="semester-step-num" aria-hidden="true">1</span>
+          <span className="semester-step-copy">
+            <strong>Selecionar turmas</strong>
+            <small>{followedOffers.length} {followedOffers.length === 1 ? 'turma seguida' : 'turmas seguidas'}</small>
+          </span>
+        </button>
+        <button
+          type="button"
+          className={`semester-step-btn${activeStep === 2 ? ' is-active' : ''}`}
+          aria-current={activeStep === 2 ? 'step' : undefined}
+          onClick={() => goToStep(2)}
+        >
+          <span className="semester-step-num" aria-hidden="true">2</span>
+          <span className="semester-step-copy">
+            <strong>Organizar datas</strong>
+            <small>{step2Summary}</small>
+          </span>
+        </button>
+      </nav>
+      <div className="semester-period-wrap">
+        <CustomSelect className="custom-input semester-toolbar-period" wrapperWidth="fit-content" ariaLabel="Semestre"
+          placeholder="Selecione um semestre" value={period}
+          options={(period && !periods.includes(period) ? [period, ...periods] : periods).map(value => ({ value, label: value }))}
+          onChange={value => updateParams(next => {
+            next.set('periodo', value); next.delete('oferta'); next.delete('plano'); next.delete('pagina');
+            if (activeStep) next.set('etapa', String(activeStep));
+          })} />
+      </div>
     </div>
     <Feedback error={followed.error && 'Não foi possível carregar suas turmas.'} onRetry={followed.retry} />
-    <div id="semester-catalog" hidden={!catalogOpen}>
-      <SemesterCatalog userId={userId} period={period} periods={periods} followed={followedOffers} onFollowed={onFollowed} />
+    {activeStep === null && (
+      <div className="semester-section"><p role="status">Carregando suas turmas…</p></div>
+    )}
+    <div id="semester-step-classes" hidden={activeStep !== 1}>
+      <SemesterCatalog
+        userId={userId}
+        period={period}
+        periods={periods}
+        followed={followedOffers}
+        onFollowed={onFollowed}
+        onContinue={() => goToStep(2)}
+        onPeriodChange={value => {
+          if (periods.includes(value)) {
+            updateParams(next => { next.set('periodo', value); });
+          }
+        }}
+      />
     </div>
-    <ul className="semester-metrics" aria-label="Resumo do semestre" aria-live="polite">
-      <li><Icon>autorenew</Icon><strong>{scoped.filter(isProcessing).length}</strong> em análise</li>
-      <li><Icon>article</Icon><strong>{scoped.filter(plan => plan.authorizationRequired && plan.preparedTextAvailable).length}</strong> a autorizar</li>
-      <li><Icon>edit_calendar</Icon><strong>{rows.filter(row => row.attention).length}</strong> a revisar</li>
-      <li><Icon>event_available</Icon><strong>{rows.filter(row => row.status === 'confirmado' && !row.candidate.removed).length}</strong> adicionadas</li>
-    </ul>
-    {initialOffer && <div className="semester-offer-context">
-      <strong>{offers[initialOffer] ? offerLabel(offers[initialOffer]) : 'Planos da turma'}</strong>
-      <button className="management-text-button" onClick={() => selectOffer('')}>Ver todos os planos</button>
-      {offers[initialOffer]?.available === false && <span>Oferta indisponível para novos envios.</span>}
-      <Feedback error={openOffer.error?.message} onRetry={openOffer.retry} />
-    </div>}
-    <div className="semester-layout">
-      <PlanQueue options={available} followed={followedOffers} initialOffer={initialOffer} onOffer={selectOffer} plans={queuePlans} selectedId={!wrongOffer && selectedId} onSelect={selectPlan}
-        history={history} page={page} onCatalog={showCatalog}
-        onUploaded={() => { updateParams(next => next.delete('pagina')); history.retry(); }}
-        changePage={index => updateParams(next => next.set('pagina', String(index + 1)))} />
-      <div className="semester-content" ref={contentRef}>
-        {wrongOffer ? <Feedback error="Este plano pertence a outra oferta. Abra-o pelo histórico correto." /> :
-          textPlan ? <SemesterTextReview key={textPlan.id} plan={textPlan} onClose={closePlan} /> :
-          selectedPlan ? <PlanDetails plan={selectedPlan} onClose={closePlan} onOpenText={() => setTextId(selectedId)} onSharedChanged={refreshLibrary} /> :
-          selectedId ? <div className="semester-section">{workspace.planErrors[selectedId] ?
-            <Feedback error={workspace.planErrors[selectedId]} onRetry={() => loadPlan(selectedId, true)} /> : <p role="status">Consultando plano…</p>}</div> : null}
-        {selectedPlan && !selectedPlan.authorizationRequired && pendingAuth && <button className="manage-button" onClick={() => selectPlan(pendingAuth.id)}>Revisar próximo texto <Icon>arrow_forward</Icon></button>}
-        <SemesterReview plans={allowedPlans} allPlans={scoped} rows={rows} offers={offers} onPlan={selectPlan} onOpenCatalog={showCatalog} />
-        {libraryOfferId && !wrongOffer && (
-          <SharedClassPlans
-            key={libraryOfferId}
-            offeringId={libraryOfferId}
-            offer={offers[libraryOfferId]}
-            offers={libraryPool}
-            shareablePlan={shareablePlan}
-            refreshKey={libraryRefresh}
-            onSelectOffer={selectOffer}
-            onUploadForOffer={uploadForOffer}
-            onSharedChanged={refreshLibrary}
-            onImported={() => { if (selectedId) loadPlan(selectedId, true); }}
-          />
-        )}
+    <div id="semester-step-dates" hidden={activeStep !== 2}>
+      <ul className="semester-metrics" aria-label="Resumo do semestre" aria-live="polite">
+        <li className="is-processing"><Icon>autorenew</Icon><strong>{processingCount}</strong> em análise</li>
+        <li className="is-auth"><Icon>article</Icon><strong>{pendingAuthCount}</strong> a extrair</li>
+        <li className="is-attention"><Icon>edit_calendar</Icon><strong>{attentionCount}</strong> a revisar</li>
+        <li className="is-added"><Icon>event_available</Icon><strong>{addedCount}</strong> adicionadas</li>
+      </ul>
+      {initialOffer && <div className="semester-offer-context">
+        <strong>{offers[initialOffer] ? offerLabel(offers[initialOffer]) : 'Planos da turma'}</strong>
+        <button className="management-text-button" onClick={() => selectOffer('')}>Ver todos os planos</button>
+        {offers[initialOffer]?.available === false && <span>Oferta indisponível para novos envios.</span>}
+        <Feedback error={openOffer.error?.message} onRetry={openOffer.retry} />
+      </div>}
+      <div className="semester-layout">
+        <PlanQueue options={available} followed={followedOffers} initialOffer={initialOffer} onOffer={selectOffer} plans={queuePlans} selectedId={!wrongOffer && selectedId} onSelect={selectPlan} onResetSend={closePlan}
+          history={history} page={page} onCatalog={() => goToStep(1)}
+          onUploaded={() => { updateParams(next => next.delete('pagina')); history.retry(); }}
+          changePage={index => updateParams(next => next.set('pagina', String(index + 1)))} />
+        <div className="semester-content" ref={contentRef}>
+          {wrongOffer ? <Feedback error="Este plano pertence a outra oferta. Abra-o na lista de planos da turma." /> :
+            extractionPlan && workspace.authorizations[extractionPlan.id]?.automatic
+              ? <section className="semester-section"><h2 tabIndex={-1}>Iniciando extração</h2><p role="status">Enviando o texto sanitizado para análise…</p></section> :
+            extractionPlan ? <SemesterExtraction key={extractionPlan.id} plan={extractionPlan} onClose={closePlan} /> :
+            selectedPlan ? <PlanDetails plan={selectedPlan} onClose={closePlan} onOpenExtraction={() => setExtractionId(selectedId)} onSharedChanged={refreshLibrary} /> :
+            selectedId ? <div className="semester-section">{workspace.planErrors[selectedId] ?
+              <Feedback error={workspace.planErrors[selectedId]} onRetry={() => loadPlan(selectedId, true)} /> : <p role="status">Consultando plano…</p>}</div> : null}
+          {selectedPlan && !selectedPlan.authorizationRequired && pendingAuth && <button className="manage-button" onClick={() => selectPlan(pendingAuth.id)}>Abrir próximo plano <Icon>arrow_forward</Icon></button>}
+          {showSharedTab && (
+            <div className="semester-workspace-tabs" role="tablist" aria-label="Origem das datas">
+              <button
+                type="button"
+                role="tab"
+                id="workspace-tab-reviews"
+                aria-selected={datesTab === 'reviews'}
+                aria-controls="workspace-panel-reviews"
+                className={datesTab === 'reviews' ? 'is-active' : ''}
+                onClick={() => setDatesTab('reviews')}
+              >
+                <Icon>edit_calendar</Icon>
+                <span>Minhas avaliações{rows.length > 0 ? ` (${rows.length})` : ''}</span>
+              </button>
+              <button
+                type="button"
+                role="tab"
+                id="workspace-tab-shared"
+                aria-selected={datesTab === 'shared'}
+                aria-controls="workspace-panel-shared"
+                className={datesTab === 'shared' ? 'is-active' : ''}
+                onClick={() => setDatesTab('shared')}
+              >
+                <Icon>groups</Icon>
+                <span>Planos compartilhados da turma</span>
+              </button>
+            </div>
+          )}
+          <div
+            id="workspace-panel-reviews"
+            role={showSharedTab ? 'tabpanel' : undefined}
+            aria-labelledby={showSharedTab ? 'workspace-tab-reviews' : undefined}
+            hidden={datesTab !== 'reviews'}
+          >
+            <SemesterReview
+              plans={allowedPlans}
+              allPlans={scoped}
+              rows={rows}
+              offers={offers}
+              onPlan={selectPlan}
+              onOpenCatalog={() => goToStep(1)}
+              onOpenShared={showSharedTab ? () => setDatesTab('shared') : undefined}
+            />
+          </div>
+          {showSharedTab && (
+            <div
+              id="workspace-panel-shared"
+              role="tabpanel"
+              aria-labelledby="workspace-tab-shared"
+              hidden={datesTab !== 'shared'}
+            >
+              <SharedClassPlans
+                key={libraryOfferId}
+                offeringId={libraryOfferId}
+                offer={offers[libraryOfferId]}
+                offers={libraryPool}
+                shareablePlan={shareablePlan}
+                refreshKey={libraryRefresh}
+                onSelectOffer={selectOffer}
+                onUploadForOffer={uploadForOffer}
+                onSharedChanged={refreshLibrary}
+                onImported={() => { if (selectedId) loadPlan(selectedId, true); }}
+              />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   </div>;

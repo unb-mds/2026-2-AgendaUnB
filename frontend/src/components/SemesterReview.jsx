@@ -91,7 +91,7 @@ function BulkEdit({ selected, disabled, apply, undo, hasUndo }) {
   </details>;
 }
 
-export default function SemesterReview({ plans, allPlans = plans, rows, offers, onPlan, onOpenCatalog }) {
+export default function SemesterReview({ plans, allPlans = plans, rows, offers, onPlan, onOpenCatalog, onOpenShared }) {
   const workspace = useSemesterPlans();
   const [filter, setFilter] = useState('all');
   const [course, setCourse] = useState('');
@@ -101,14 +101,10 @@ export default function SemesterReview({ plans, allPlans = plans, rows, offers, 
   const planNames = new Map(plans.map(plan => [plan.id, plan.disciplina || plan.fileName]));
   const hasFollowedOffers = Object.keys(offers || {}).length > 0;
   const pendingAuthPlan = allPlans.find(plan => plan.authorizationRequired && plan.preparedTextAvailable);
-  const activeProcessing = allPlans.some(isProcessing) || workspace.uploads.some(item => item.status === 'sending' || item.status === 'queued');
-  const petMode = rows.length
-    ? 'filtered'
-    : pendingAuthPlan
-      ? 'awaiting_auth'
-      : activeProcessing
-        ? 'processing'
-        : 'idle';
+  const activeProcessing = allPlans.some(isProcessing);
+  const petMode = activeProcessing ? 'processing'
+    : rows.length ? 'filtered'
+    : pendingAuthPlan ? 'awaiting_auth' : 'idle';
   const label = item => offers[item.offeringId]?.subject_name || planNames.get(item.planId);
   const groupKey = item => item.offeringId || item.planId;
   const courses = [...new Map(rows.map(item => [groupKey(item), offers[item.offeringId]
@@ -181,6 +177,7 @@ export default function SemesterReview({ plans, allPlans = plans, rows, offers, 
         <Icon>event_available</Icon>{workspace.confirming ? 'Adicionando…' : selected.length === 1 ? 'Adicionar 1 avaliação à agenda' : `Adicionar ${selected.length} avaliações à agenda`}
       </button>
     </div>}
+    {visible.length > 0 && activeProcessing && <HalftonePet mode={petMode} />}
     {visible.length ? <ul className="semester-candidates">{visible.map(item => <CandidateLine key={item.key} item={{ ...item, open: opened[item.key] }}
       label={label(item)} disabled={locked(item)} update={change => patch(item, change)}
       select={checked => patch(item, { selected: checked })} />)}</ul> : <div className="semester-empty">
@@ -197,13 +194,13 @@ export default function SemesterReview({ plans, allPlans = plans, rows, offers, 
                 <Icon>{hasFollowedOffers ? 'check_circle' : 'school'}</Icon>
                 <div>
                   <strong>Siga suas turmas do semestre</strong>
-                  <small>Vincule as disciplinas que você cursa para habilitar o envio e a biblioteca da turma.</small>
+                  <small>Selecione as disciplinas na Etapa 1 para liberar o envio e os planos da turma.</small>
                 </div>
               </li>
               <li className={allPlans.length > 0 ? 'is-done' : ''}>
                 <Icon>{allPlans.length > 0 ? 'check_circle' : 'upload_file'}</Icon>
                 <div>
-                  <strong>Envie o PDF digital ou cole o cronograma</strong>
+                  <strong>Envie o PDF digital, cole o texto ou importe da turma</strong>
                   <small>O texto é preparado localmente e só segue para análise após sua autorização.</small>
                 </div>
               </li>
@@ -225,17 +222,24 @@ export default function SemesterReview({ plans, allPlans = plans, rows, offers, 
                   <Icon>search</Icon>Selecionar turmas no catálogo
                 </button>
               ) : (
-                <button
-                  type="button"
-                  className="manage-button"
-                  onClick={() => {
-                    const addBtn = document.getElementById('semester-add-pdfs');
-                    if (addBtn && !addBtn.disabled) addBtn.focus();
-                    else document.querySelector('.semester-plan-offer button')?.focus();
-                  }}
-                >
-                  <Icon>upload_file</Icon>Ir para envio de plano
-                </button>
+                <>
+                  <button
+                    type="button"
+                    className="manage-button primary"
+                    onClick={() => {
+                      const addBtn = document.getElementById('semester-add-pdfs');
+                      if (addBtn && !addBtn.disabled) addBtn.focus();
+                      else document.querySelector('.semester-plan-offer button')?.focus();
+                    }}
+                  >
+                    <Icon>upload_file</Icon>Ir para envio de plano
+                  </button>
+                  {onOpenShared && (
+                    <button type="button" className="manage-button" onClick={onOpenShared}>
+                      <Icon>groups</Icon>Ver planos compartilhados da turma
+                    </button>
+                  )}
+                </>
               )}
             </div>
           </>

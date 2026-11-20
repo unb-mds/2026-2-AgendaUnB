@@ -1,6 +1,6 @@
 from datetime import date, datetime, time
 from uuid import UUID
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator, model_validator
 
 from src.modules.events.schemas import PersonalEventRead
 
@@ -14,7 +14,6 @@ class SyllabusUploadResponse(BaseModel):
     offering_id: UUID | None = Field(default=None, alias="offeringId")
     user_id: UUID = Field(alias="userId")
     file_name: str = Field(alias="fileName")
-    file_path: str | None = Field(default=None, alias="filePath")
     file_size: int | None = Field(default=None, alias="fileSize")
     file_type: str = Field(default="pdf", alias="fileType")
     status: str = Field(default="pendente")
@@ -23,11 +22,17 @@ class SyllabusUploadResponse(BaseModel):
     created_at: datetime = Field(alias="createdAt")
     authorization_required: bool = Field(default=True, alias="authorizationRequired")
     prepared_text_available: bool = Field(default=False, alias="preparedTextAvailable")
-    message: str = "Texto preparado. Revise e autorize o trecho antes de enviar ao Gemini."
+    redacted_count: int | None = Field(default=None, alias="redactedCount", ge=0)
+    message: str = "Texto sanitizado. A extração pode ser iniciada quando o serviço estiver disponível."
+
+    @computed_field(alias="filePath")
+    @property
+    def file_path(self) -> None:
+        return None
 
 
 class SyllabusListItem(BaseModel):
-    """Dados do plano no histórico, inclusive de planos anteriores ao upload."""
+    """Dados da listagem de planos, inclusive envios legados."""
 
     model_config = ConfigDict(populate_by_name=True, from_attributes=True)
 
@@ -35,7 +40,6 @@ class SyllabusListItem(BaseModel):
     offering_id: UUID | None = Field(default=None, alias="offeringId")
     user_id: UUID = Field(alias="userId")
     file_name: str | None = Field(alias="fileName")
-    file_path: str | None = Field(alias="filePath")
     file_size: int | None = Field(default=None, alias="fileSize")
     file_type: str = Field(default="pdf", alias="fileType")
     status: str
@@ -56,6 +60,11 @@ class SyllabusListItem(BaseModel):
     ano: int | None = None
     semestre: int | None = None
     created_at: datetime = Field(alias="createdAt")
+
+    @computed_field(alias="filePath")
+    @property
+    def file_path(self) -> None:
+        return None
 
 
 class SyllabusCandidateRead(BaseModel):
@@ -86,6 +95,7 @@ class SyllabusDetailResponse(SyllabusListItem):
     authorization_required: bool = Field(default=True, alias="authorizationRequired")
     preparation_duration_ms: int | None = Field(default=None, alias="preparationDurationMs")
     review_duration_ms: int | None = Field(default=None, alias="reviewDurationMs")
+    redacted_count: int | None = Field(default=None, alias="redactedCount", ge=0)
 
 
 class SyllabusListResponse(BaseModel):
