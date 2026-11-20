@@ -50,6 +50,26 @@ def test_evidence_and_invented_dates():
             validate_candidates(raw_candidate(**changes), pages)
 
 
+@pytest.mark.parametrize(("title", "expected"), [
+    ("Prova de integração", "Prova de integração"),
+    ("Prova 4 - Integração", "Prova 1 - Integração"),
+    ("Prova 4", "Prova 1"),
+])
+def test_generated_title_preserves_sources_with_unaccented_labels(title, expected):
+    evidence = "Prova de integracao - 10/11/2026 - 14:00."
+    result = validate_candidates(raw_candidate(titulo=title, trecho_origem=evidence), [TextPage(1, evidence)])
+    assert result.candidates[0].titulo == expected
+    assert result.candidates[0].trecho_origem == evidence
+    assert result.candidates[0].data_sugerida.isoformat() == "2026-11-10"
+
+
+def test_numbered_title_without_an_assessment_in_the_excerpt_is_rejected():
+    evidence = "Aula de integracao - 10/11/2026 - 14:00."
+    with pytest.raises(ProcessingError) as caught:
+        validate_candidates(raw_candidate(titulo="Prova 4", trecho_origem=evidence), [TextPage(1, evidence)])
+    assert caught.value.reason == "title_mismatch"
+
+
 def test_absent_year_and_ambiguous_dates_are_not_completed():
     evidence = "Prova 1 - 10/11 (ano nao informado)."
     result = validate_candidates(raw_candidate(trecho_origem=evidence), [TextPage(1, evidence)])

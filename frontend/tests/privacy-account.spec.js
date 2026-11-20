@@ -74,7 +74,7 @@ test('páginas legais publicadas e links no rodapé e autenticação', async ({ 
     const response = await page.goto(path);
     expect(response.status()).toBe(200);
     await expect(page.locator('aside.draft')).toHaveCount(0);
-    await expect(page.locator('body')).toContainText('Versão 2026-11-18');
+    await expect(page.locator('body')).toContainText('Versão 2026-11-20');
     await expect(page.locator('body')).not.toContainText('previsto para a Release 2');
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
     expect(overflow).toBe(false);
@@ -106,8 +106,8 @@ test('cadastro grava aceite imediato quando há sessão ativa', async ({ page })
   });
   await page.route('**/api/v1/me/legal-documents', route => route.fulfill({
     json: {
-      terms: { currentVersion: '2026-11-18', acceptedVersion: null, acceptedAt: null, pending: true },
-      privacy: { currentVersion: '2026-11-18', acceptedVersion: null, acceptedAt: null, pending: true },
+      terms: { currentVersion: '2026-11-20', acceptedVersion: null, acceptedAt: null, pending: true },
+      privacy: { currentVersion: '2026-11-20', acceptedVersion: null, acceptedAt: null, pending: true },
     },
   }));
   await page.route('**/api/v1/me/legal-acceptances/*', route => {
@@ -128,8 +128,8 @@ test('cadastro grava aceite imediato quando há sessão ativa', async ({ page })
 
   await expect(page).toHaveURL(/\/eventos$/);
   expect(acceptedImmediate).toEqual([
-    { url: expect.stringMatching(/\/api\/v1\/me\/legal-acceptances\/terms$/), body: { version: '2026-11-18' } },
-    { url: expect.stringMatching(/\/api\/v1\/me\/legal-acceptances\/privacy$/), body: { version: '2026-11-18' } },
+    { url: expect.stringMatching(/\/api\/v1\/me\/legal-acceptances\/terms$/), body: { version: '2026-11-20' } },
+    { url: expect.stringMatching(/\/api\/v1\/me\/legal-acceptances\/privacy$/), body: { version: '2026-11-20' } },
   ]);
 });
 
@@ -149,8 +149,8 @@ test('cadastro sem sessão adia aceite sem expor e-mail e registra na confirmaç
   });
   await page.route('**/api/v1/me/legal-documents', route => route.fulfill({
     json: {
-      terms: { currentVersion: '2026-11-18', acceptedVersion: null, acceptedAt: null, pending: true },
-      privacy: { currentVersion: '2026-11-18', acceptedVersion: '2026-11-11', acceptedAt: '2026-11-11T10:00:00Z', pending: true },
+      terms: { currentVersion: '2026-11-20', acceptedVersion: null, acceptedAt: null, pending: true },
+      privacy: { currentVersion: '2026-11-20', acceptedVersion: '2026-11-11', acceptedAt: '2026-11-11T10:00:00Z', pending: true },
     },
   }));
   await page.route('**/api/v1/me/legal-acceptances/*', route => {
@@ -175,7 +175,7 @@ test('cadastro sem sessão adia aceite sem expor e-mail e registra na confirmaç
   await page.getByRole('button', { name: 'Confirmar e-mail' }).click();
   await expect(page.getByRole('heading', { name: 'E-mail confirmado' })).toBeVisible();
   expect(acceptedDeferred).toEqual([
-    { url: expect.stringMatching(/\/api\/v1\/me\/legal-acceptances\/terms$/), body: { version: '2026-11-18' } },
+    { url: expect.stringMatching(/\/api\/v1\/me\/legal-acceptances\/terms$/), body: { version: '2026-11-20' } },
   ]);
 });
 
@@ -186,8 +186,8 @@ test('gate pós-login trata atualização, conflito 409 dinâmico e adiamento se
   await page.route('**/api/v1/me/saved-events', route => route.fulfill({ json: [] }));
 
   let docsState = {
-    terms: { currentVersion: '2026-11-18', acceptedVersion: '2026-11-11', acceptedAt: '2026-11-11T10:00:00Z', pending: true },
-    privacy: { currentVersion: '2026-11-18', acceptedVersion: null, acceptedAt: null, pending: true },
+    terms: { currentVersion: '2026-11-20', acceptedVersion: '2026-11-11', acceptedAt: '2026-11-11T10:00:00Z', pending: true },
+    privacy: { currentVersion: '2026-11-20', acceptedVersion: null, acceptedAt: null, pending: true },
   };
   let conflictOnce = true;
   const acceptedVersions = [];
@@ -215,7 +215,7 @@ test('gate pós-login trata atualização, conflito 409 dinâmico e adiamento se
   await page.goto('/eventos');
   const gateDialog = page.getByRole('dialog', { name: /Atualização dos documentos legais/i });
   await expect(gateDialog).toBeVisible();
-  await expect(gateDialog).toContainText('2026-11-18');
+  await expect(gateDialog).toContainText('2026-11-20');
   await expect(gateDialog).toContainText('2026-11-11');
 
   // Esc closes into non-blocking banner (no keyboard trap)
@@ -260,8 +260,8 @@ test('configurações exibe versões, revoga Google Agenda, exporta JSON e exclu
   await page.route('**/api/v1/me/saved-events', route => route.fulfill({ json: [] }));
   await page.route('**/api/v1/me/legal-documents', route => route.fulfill({
     json: {
-      terms: { currentVersion: '2026-11-18', acceptedVersion: '2026-11-18', acceptedAt: '2026-11-18T11:00:00Z', pending: false },
-      privacy: { currentVersion: '2026-11-18', acceptedVersion: '2026-11-18', acceptedAt: '2026-11-18T11:00:00Z', pending: false },
+      terms: { currentVersion: '2026-11-20', acceptedVersion: '2026-11-20', acceptedAt: '2026-11-18T11:00:00Z', pending: false },
+      privacy: { currentVersion: '2026-11-20', acceptedVersion: '2026-11-20', acceptedAt: '2026-11-18T11:00:00Z', pending: false },
     },
   }));
 
@@ -318,7 +318,7 @@ test('configurações exibe versões, revoga Google Agenda, exporta JSON e exclu
   await expect(page).toHaveURL(/\/configuracoes$/);
   await expect(page.getByRole('heading', { name: 'Configurações e privacidade' })).toBeVisible();
   await expect(page.getByText('estudante@unb.br')).toBeVisible();
-  await expect(page.getByText('Versão vigente: 2026-11-18').first()).toBeVisible();
+  await expect(page.getByText('Versão vigente: 2026-11-20').first()).toBeVisible();
 
   // Revoke Google Agenda consent
   await page.getByRole('button', { name: 'Revogar consentimento e desconectar' }).click();
@@ -407,8 +407,8 @@ test('matriz responsiva (360px, 768px, 1365px) e temas claro/escuro sem overflow
   await setupAuth(page, { session, profile: studentProfile });
   await page.route('**/api/v1/me/legal-documents', route => route.fulfill({
     json: {
-      terms: { currentVersion: '2026-11-18', acceptedVersion: '2026-11-18', acceptedAt: '2026-11-18T11:00:00Z', pending: false },
-      privacy: { currentVersion: '2026-11-18', acceptedVersion: '2026-11-18', acceptedAt: '2026-11-18T11:00:00Z', pending: false },
+      terms: { currentVersion: '2026-11-20', acceptedVersion: '2026-11-20', acceptedAt: '2026-11-18T11:00:00Z', pending: false },
+      privacy: { currentVersion: '2026-11-20', acceptedVersion: '2026-11-20', acceptedAt: '2026-11-18T11:00:00Z', pending: false },
     },
   }));
   await page.route('**/api/v1/me/consents', route => route.fulfill({ json: { items: [] } }));

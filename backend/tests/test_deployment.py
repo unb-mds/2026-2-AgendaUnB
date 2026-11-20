@@ -38,22 +38,3 @@ def test_hosted_database_requires_tls_without_exposing_credentials():
     assert "private-value" not in str(error.value)
     require_database_tls(f"{url}?sslmode=verify-full", "production")
     require_database_tls("sqlite+pysqlite:///:memory:", "local")
-
-
-def test_validate_smtp_configuration_in_deployment():
-    from src.deployment import validate_smtp_configuration
-    env_valid = {
-        "SMTP_HOST": "smtp.example.com",
-        "SMTP_PORT": "587",
-        "SMTP_USER": "mailer@example.com",
-        "SMTP_PASS": "secret-pass",
-        "SMTP_SENDER_EMAIL": "noreply@example.com",
-    }
-    status = validate_smtp_configuration(env_valid)
-    assert status["ok"] is True
-    assert status["summary"]["host"] == "smtp.example.com"
-    assert "secret-pass" not in str(status)
-
-    status_invalid = validate_smtp_configuration({})
-    assert status_invalid["ok"] is False
-    assert len(status_invalid["errors"]) > 0

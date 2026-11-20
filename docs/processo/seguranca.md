@@ -3,8 +3,6 @@ title: "Verificação de segurança"
 description: "Achados, correções, matriz de acesso e configuração segura do Agenda UnB (S8-D02)."
 ---
 
-# Verificação de segurança
-
 Registro da [S8-D02 (#84)](https://github.com/unb-mds/2026-2-AgendaUnB/issues/84). Estado em **09/11/2026**, na fase de testes preventivos da Sprint 07. Este documento descreve o que foi avaliado, o que foi corrigido e o que continua pendente. Ele não é um laudo de teste de invasão.
 
 ## Escopo e método
@@ -40,7 +38,7 @@ Severidade segundo o impacto no produto: **Alta** permite agir como outra conta 
 | A14 | Baixa | `npm audit` aponta 2 vulnerabilidades altas em dependências de desenvolvimento (`vite`, `source-map-js`), com correção disponível. Não entram no bundle publicado. | `npm audit fix` no front-end, com build e testes. | **Pendente** (front-end) |
 | A15 | Baixa | Dependências Python sem versão fixada: o mesmo commit pode instalar versões diferentes. `pip-audit` não encontrou vulnerabilidade conhecida em 09/11/2026. | Fixar versões ao definir o runtime do Render. | **Pendente** ([#76](https://github.com/unb-mds/2026-2-AgendaUnB/issues/76)) |
 | A16 | Info | Não havia registro de quem mudou o papel de quem. | Tabela `auditoria_papeis`, alimentada por trigger e legível só por admins. | Corrigido |
-| A17 | Média | `fila_processamento_ia` (#92, já na `dev`) dava INSERT, UPDATE e DELETE a contas logadas sem política, e a leitura usava `professor_id`, nulo em plano particular: o dono não via o próprio job. A tabela também não é usada pelo worker, que controla a fila em `planos_ensino`. | Escrita só pelo servidor, leitura pelo dono via `user_id`, `erro_tecnico` limitado a um código curto. | Corrigido. **Decisão pendente:** manter ou remover a tabela, para não haver duas filas |
+| A17 | Média | A tabela paralela `fila_processamento_ia` não tinha consumidor. | A migração de consolidação a remove. A fila ativa, usada pelo worker, permanece em `planos_ensino`. | Corrigido na R2 |
 
 A varredura de todo o histórico Git, incluindo as branches remotas, por chaves do Google, do Supabase, JWT de serviço, URLs de banco com senha e chaves privadas **não encontrou segredos versionados**. Credenciais que tenham circulado fora do repositório devem ser trocadas antes da produção.
 
@@ -102,7 +100,7 @@ Os testes estruturais falham se uma dessas regras for esquecida.
 | --- | --- |
 | `CORS_ORIGINS` | Somente a URL HTTPS da SPA do ambiente. Curinga impede a API de iniciar. |
 | `API_DOCS_ENABLED` | `false` |
-| `TRUSTED_PROXY_HOPS` | Número de proxies da hospedagem à frente da API. Começar com `1` e conferir nos logs que o endereço registrado é o do cliente, não o do proxy. |
+| `TRUSTED_PROXY_HOPS` | Configuração para hospedagem própria. No Render, o limitador usa o IP inserido pela borda em `CF-Connecting-IP`. |
 | `RATE_LIMIT_PER_MINUTE`, `RATE_LIMIT_WRITE_PER_MINUTE` | Padrões `240` e `60`; ajustar após medir o uso real. |
 | `DATABASE_URL` | Com TLS (`sslmode=require` quando o provedor não o impuser). |
 
@@ -111,7 +109,7 @@ Iniciar com `uvicorn src.main:app --host 0.0.0.0 --port $PORT --no-server-header
 ### SPA (Vercel)
 
 - [ ] Apenas `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` e `VITE_API_URL` no build.
-- [ ] Cabeçalhos de segurança e fallback de SPA no `vercel.json` ([#76](https://github.com/unb-mds/2026-2-AgendaUnB/issues/76)).
+- [ ] Cabeçalhos de segurança e fallback de SPA no `frontend/vercel.json` ([#76](https://github.com/unb-mds/2026-2-AgendaUnB/issues/76)).
 - [ ] Previews sem credenciais de produção.
 
 ## Como repetir a verificação
@@ -132,9 +130,9 @@ cd ../frontend && npm audit
 | --- | --- | --- |
 | Repetir a matriz no ambiente publicado (JWT real, Storage real, TLS, CORS) | Luis, com Felipe | [#84](https://github.com/unb-mds/2026-2-AgendaUnB/issues/84), [#76](https://github.com/unb-mds/2026-2-AgendaUnB/issues/76) |
 | Conferir o checklist do painel Supabase no projeto de homologação | Felipe | [#84](https://github.com/unb-mds/2026-2-AgendaUnB/issues/84) |
-| Remover os PDFs antigos (`scripts/descartar_pdfs.py`) e parar de devolver `filePath` (A12) | Felipe, com Heitor | [#83](https://github.com/unb-mds/2026-2-AgendaUnB/issues/83), [#51](https://github.com/unb-mds/2026-2-AgendaUnB/issues/51) |
+| Conferir o inventário de PDFs legados com `backend/scripts/descartar_pdfs.py` antes da publicação. As respostas HTTP mantêm `filePath: null` por compatibilidade. | Felipe, com Heitor | [#83](https://github.com/unb-mds/2026-2-AgendaUnB/issues/83), [#51](https://github.com/unb-mds/2026-2-AgendaUnB/issues/51) |
 | Política de senha e fluxo de confirmação (A13) | Thomas, com Thomaz | [#74](https://github.com/unb-mds/2026-2-AgendaUnB/issues/74) |
-| `npm audit fix` e versões Python fixadas (A14, A15) | Front-end e Luis | [#76](https://github.com/unb-mds/2026-2-AgendaUnB/issues/76) |
+| Manter auditoria de dependências. A consolidação atualizou Vite, `source-map-js` e `cryptography`. `npm audit` e `pip-audit` passaram em 20/11. As demais dependências Python continuam resolvidas no build. | Front-end e Luis | [#76](https://github.com/unb-mds/2026-2-AgendaUnB/issues/76) |
 | Isolamento de tokens e mapeamentos do Google Calendar | Luis, com Thomaz | [#82](https://github.com/unb-mds/2026-2-AgendaUnB/issues/82) |
 | Matriz de votos, lembretes, coleta e importação: testes de isolamento nos PRs de cada issue; repetir no ambiente publicado quando integrados | Felipe | [#75](https://github.com/unb-mds/2026-2-AgendaUnB/issues/75), [#72](https://github.com/unb-mds/2026-2-AgendaUnB/issues/72), [#77](https://github.com/unb-mds/2026-2-AgendaUnB/issues/77), [#81](https://github.com/unb-mds/2026-2-AgendaUnB/issues/81) |
 

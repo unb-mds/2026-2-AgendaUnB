@@ -172,7 +172,7 @@ def test_upload_syllabus_quota_is_ten_in_five_days(api, storage_mock):
         response = client.post("/api/v1/syllabus/upload", data={"offering_id": "70000000-0000-4000-8000-000000000071"}, files={
             "file": ("plano.pdf", io.BytesIO(make_valid_pdf_bytes()), "application/pdf")
         })
-        assert response.status_code == 202
+        assert response.status_code == 202, response.json().get("detail")
     response = client.post("/api/v1/syllabus/upload", data={"offering_id": "70000000-0000-4000-8000-000000000071"}, files={
         "file": ("plano.pdf", io.BytesIO(make_valid_pdf_bytes()), "application/pdf")
     })
@@ -396,6 +396,7 @@ def test_get_syllabus_status(api):
     assert body["id"] == str(syllabus_id)
     assert body["status"] == "pendente"
     assert body["fileName"] == "plano.pdf"
+    assert body["filePath"] is None
     assert body["disciplina"] == "Cálculo 1"
 
 
@@ -443,6 +444,7 @@ def test_list_syllabus_owned_paginated_and_stable(api):
     assert response.json()["total"] == 3
     assert [item["id"] for item in response.json()["items"]] == [str(ids[2]), str(ids[1])]
     assert all(item["userId"] == str(owner) for item in response.json()["items"])
+    assert all(item["filePath"] is None for item in response.json()["items"])
     second = client.get("/api/v1/syllabus?limit=2&offset=2").json()
     assert second["total"] == 3
     assert [item["id"] for item in second["items"]] == [str(ids[0])]

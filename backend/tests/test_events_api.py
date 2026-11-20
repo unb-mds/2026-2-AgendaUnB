@@ -517,6 +517,3 @@ def test_public_event_update_is_restricted_to_professors_and_admins(api):
     # Evento pendente ou inexistente retorna 404
     assert client.put(f"/api/v1/events/{pending_id}", json=payload).status_code == 404
     assert client.put(f"/api/v1/events/{uuid4()}", json=payload).status_code == 404
-
-
-

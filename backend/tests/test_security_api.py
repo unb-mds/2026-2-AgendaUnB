@@ -16,6 +16,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
 from fastapi.testclient import TestClient
 
+from src.deployment import cors_origins
 from src.middlewares.auth import get_current_user
 from src.middlewares.security import (
     BodyLimitMiddleware,
@@ -23,7 +24,6 @@ from src.middlewares.security import (
     SecurityHeadersMiddleware,
     client_address,
     escape_like,
-    parse_cors_origins,
 )
 from tests.test_events_api import make_public_event
 
@@ -100,12 +100,12 @@ def test_cors_preflight_accepts_only_known_headers(api):
 
 @pytest.mark.parametrize("raw", ["*", "https://*.vercel.app", "https://app.exemplo.br/caminho", "app.exemplo.br", "ftp://app.exemplo.br"])
 def test_cors_configuration_refuses_wildcards_and_malformed_origins(raw):
-    with pytest.raises(RuntimeError):
-        parse_cors_origins(raw)
+    with pytest.raises(ValueError):
+        cors_origins({"CORS_ORIGINS": raw})
 
 
-def test_cors_configuration_normalizes_exact_origins():
-    assert parse_cors_origins(" https://app.exemplo.br/ , http://localhost:5173,, https://app.exemplo.br") == [
+def test_cors_configuration_deduplicates_exact_origins():
+    assert cors_origins({"CORS_ORIGINS": " https://app.exemplo.br , http://localhost:5173,, https://app.exemplo.br"}) == [
         "https://app.exemplo.br", "http://localhost:5173"]
 
 
@@ -196,6 +196,15 @@ def test_client_address_ignores_forwarded_values_written_by_the_client():
     assert client_address(scope, 1) == "10.0.0.2"       # o último trecho é do proxy da hospedagem
     assert client_address(scope, 2) == "203.0.113.7"
     assert client_address({"client": ("10.0.0.9", 1), "headers": []}, 2) == "10.0.0.9"
+
+
+def test_rate_limit_on_render_uses_the_edge_address(monkeypatch):
+    monkeypatch.setenv("RENDER", "true")
+    client, _ = limited_app(per_minute=1, write_per_minute=0)
+    edge = {"CF-Connecting-IP": "203.0.113.7"}
+    assert client.get("/x", headers={**edge, "X-Forwarded-For": "203.0.113.8"}).status_code == 200
+    assert client.get("/x", headers={**edge, "X-Forwarded-For": "203.0.113.9"}).status_code == 429
+    assert client.get("/x", headers={"CF-Connecting-IP": "203.0.113.8"}).status_code == 200
 
 
 # ---------------------------------------------------------------------------

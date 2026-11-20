@@ -4,7 +4,7 @@ description: "Padrões, preservação de conteúdo acadêmico e evidências da S
 ---
 
 A preparação determinística trata PDFs com texto selecionável e textos colados
-no mesmo fluxo. O descarte do PDF e a autorização sobre o texto revisado
+no mesmo fluxo. O descarte do PDF e a autorização sobre o texto sanitizado
 seguem o [ADR-003](/arquitetura/adrs/adr-003-minimizar-dados-de-planos).
 
 | Categoria | Formatos de referência e casos sintéticos |

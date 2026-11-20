@@ -4,7 +4,6 @@ from unittest.mock import create_autospec
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -13,7 +12,7 @@ os.environ.setdefault("DATABASE_URL", "sqlite+pysqlite:///:memory:")
 os.environ["RATE_LIMIT_PER_MINUTE"] = "0"
 os.environ["RATE_LIMIT_WRITE_PER_MINUTE"] = "0"
 
-from src.database.connection import get_db
+from src.database.connection import create_database_engine, get_db
 from src.database.models import Base, Campus, Category, PersonalEvent, PublicEvent
 from src.main import app
 from src.middlewares.auth import CurrentUser, get_current_user
@@ -22,7 +21,7 @@ from src.services.storage import SupabaseStorageService, get_storage_service
 
 @pytest.fixture
 def api():
-    engine = create_engine(
+    engine = create_database_engine(
         "sqlite+pysqlite://",
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,

@@ -11,7 +11,7 @@ from pypdf import PdfReader
 
 from src.modules.syllabus.processing_config import ProcessingConfig, ProcessingError
 
-VERSION = "syllabus-v4-structured-titles"
+VERSION = "syllabus-v5-grounded-titles"
 Kind = Literal["prova", "trabalho"]
 AmbiguousField = Literal["titulo", "tipo", "data", "hora"]
 
@@ -178,6 +178,11 @@ _STRUCTURED_PREFIX_BY_KIND = {
     "prova": {"prova", "avaliação", "avaliacao", "exame"},
     "trabalho": {"trabalho", "entrega", "projeto", "seminário", "seminario"},
 }
+_ORDINAL_TITLE_RE = re.compile(r"^(prova|trabalho)\s+[1-9]\d{0,2}$")
+_ASSESSMENT_MARKER = {
+    "prova": re.compile(r"\b(provas?|exames?|p[1-9]|pf|ps|substitutiva|avalia(?:ç|c)[ãa]o|avalia(?:ç|c)[õo]es)\b"),
+    "trabalho": re.compile(r"\b(trabalhos?|t[1-9]|entregas?\s+avaliativas?|projetos?\s+(?:final|avaliativos?)|semin[áa]rios?\s+avaliativos?|relat[óo]rios?\s+avaliativos?)\b"),
+}
 _VERBOSE_TITLE_VERB_RE = re.compile(
     r"\b(?:ser[áa]\s+(?:realizada?|aplicada?|feita|a\s+de)|ocorrer[áa]|acontecer[áa]|foi\s+definid[ao]|marcad[ao]\s+para|est[áa]\s+agendad[ao]|encerrando\s+o\s+ciclo|teremos\s+a\s+(?:prova|avalia[çc][ãa]o))\b",
     re.IGNORECASE,
@@ -308,8 +313,23 @@ def _title_grounded_in_evidence(
     tipo: Kind,
     page_source: str = "",
 ) -> bool:
-    if _evidence_in_source(titulo, trecho_origem, max_gap=4, allow_same_line=False):
+    def title_matches(label: str, source: str) -> bool:
+        # Títulos podem restaurar acentos perdidos pelo PDF. A validação do
+        # próprio trecho de origem continua independente e mais estrita.
+        def unaccented(text: str) -> str:
+            return "".join(char for char in unicodedata.normalize("NFD", text) if not unicodedata.combining(char))
+
+        return _evidence_in_source(unaccented(label), unaccented(source), max_gap=4, allow_same_line=False)
+
+    if title_matches(titulo, trecho_origem):
         return True
+    ordinal = _ORDINAL_TITLE_RE.fullmatch(normalize(titulo))
+    if ordinal:
+        return (
+            ordinal.group(1) == tipo
+            and not _EXPLICIT_FIXED_LABEL_RE.search(trecho_origem)
+            and bool(_ASSESSMENT_MARKER[tipo].search(normalize(trecho_origem)))
+        )
     match = _STRUCTURED_TITLE_RE.match(titulo.strip())
     if not match:
         return False
@@ -319,9 +339,7 @@ def _title_grounded_in_evidence(
     tail = match.group(3).strip()
     if not _tokens(tail):
         return False
-    if _evidence_in_source(tail, trecho_origem, max_gap=4, allow_same_line=False):
-        return True
-    return bool(page_source) and _evidence_in_source(tail, page_source, max_gap=4, allow_same_line=False)
+    return title_matches(tail, trecho_origem) or (bool(page_source) and title_matches(tail, page_source))
 
 
 def _clean_verbose_title(titulo: str, tipo: Kind) -> str:
@@ -355,14 +373,14 @@ def _sort_and_index_candidates(candidates: list[CandidateData]) -> list[Candidat
     counters = {"prova": 0, "trabalho": 0}
     for item in ordered:
         match = _STRUCTURED_TITLE_RE.match(item.titulo.strip())
-        if not match:
-            continue
-        if _EXPLICIT_FIXED_LABEL_RE.search(item.trecho_origem):
+        ordinal = _ORDINAL_TITLE_RE.fullmatch(normalize(item.titulo))
+        if not (match or ordinal) or _EXPLICIT_FIXED_LABEL_RE.search(item.trecho_origem):
             continue
         prefix = "Prova" if item.tipo == "prova" else "Trabalho"
-        tail = match.group(3).strip()
         counters[item.tipo] += 1
-        item.titulo = f"{prefix} {counters[item.tipo]} - {tail}"
+        item.titulo = f"{prefix} {counters[item.tipo]}"
+        if match:
+            item.titulo += f" - {match.group(3).strip()}"
     return ordered
 
 
@@ -394,12 +412,8 @@ def validate_candidates(raw: str, pages: list[TextPage], *, default_year: int | 
             continue
         if item.data_sugerida is None and _ADMIN_POLICY_RE.search(item.trecho_origem):
             continue
-        marker = (
-            r"\b(provas?|exames?|p[1-9]|pf|ps|substitutiva|avalia(?:ç|c)[ãa]o|avalia(?:ç|c)[õo]es)\b"
-            if item.tipo == "prova"
-            else r"\b(trabalhos?|t[1-9]|entregas?\s+avaliativas?|projetos?\s+(?:final|avaliativos?)|semin[áa]rios?\s+avaliativos?|relat[óo]rios?\s+avaliativos?)\b"
-        )
-        if not (re.search(marker, title) or re.search(marker, evidence)):
+        marker = _ASSESSMENT_MARKER[item.tipo]
+        if not (marker.search(title) or marker.search(evidence)):
             continue
         ambiguous = set(item.campos_ambiguos)
         # Aceitar ano completo, abreviado (DD/MM/AA) ou ano de referência explícito no plano/oferta.

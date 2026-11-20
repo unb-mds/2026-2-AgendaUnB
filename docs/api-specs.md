@@ -2,7 +2,7 @@
 
 ## Referência e limites
 
-Este inventário descreve o backend atual. Para os contratos planejados, consulte [Release 2](/atualizacoes#contratos-da-release-2).
+Este inventário descreve o backend atual. Para as decisões de produto e os fluxos integrados, consulte [Release 2](/atualizacoes#contratos-da-release-2).
 
 A API possui operações HTTP de aplicação (inventário abaixo), incluindo `/health`. `/docs`, `/redoc` e `/openapi.json` são recursos de documentação gerados pelo FastAPI, não operações de negócio. Consulte também [Arquitetura](/arquitetura/visao-geral), [Padrões](/produto/padroes) e [Implantação](/implantacao).
 
@@ -17,7 +17,7 @@ Fontes: `backend/src/main.py`, `modules/events/router.py`, `modules/events/schem
 - `{event_id}` é UUID. UUID malformado gera falha de validação; UUID válido ausente recebe o comportamento indicado em cada operação.
 - Toda resposta leva cabeçalhos de proteção (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Content-Security-Policy`); respostas com dados da conta levam `Cache-Control: no-store`. O CORS aceita somente as origens de `CORS_ORIGINS` e os cabeçalhos `Authorization`, `Content-Type`, `Accept` e `Idempotency-Key`. Detalhes em [Verificação de segurança](processo/seguranca.md).
 - A busca `q` trata `%` e `_` como texto.
-- GET e DELETE não têm corpo definido; PUT de evento salvo também não. Listas de eventos retornam arrays, e listas vazias retornam `[]`. O histórico de planos usa um envelope de paginação.
+- GET e DELETE não têm corpo definido; PUT de evento salvo também não. Listas de eventos retornam arrays, e listas vazias retornam `[]`. A listagem de planos usa um envelope de paginação.
 - Os schemas ignoram campos extras; enviar `status` ou `author_id` não altera os valores definidos pelo servidor. Isso não equivale a rejeitar esses campos com 422.
 
 ## Payloads e respostas
@@ -144,7 +144,6 @@ Todas as operações exigem sessão. O vínculo não copia o evento e não const
 | `GET /api/v1/me/saved-events/{event_id}` | UUID | 200, `SavedEventStatus`; false se vínculo ausente, evento inexistente ou não aprovado | 422, UUID |
 | `PUT /api/v1/me/saved-events/{event_id}` | UUID, sem corpo | 200, `{ "saved": true }`, inclusive se já salvo | 422, UUID; 404, evento ausente/não aprovado; 409, conflito não recuperável |
 | `DELETE /api/v1/me/saved-events/{event_id}` | UUID | 204, inclusive se não houver vínculo/evento; cancela lembretes futuros pendentes do vínculo | 422, UUID; 409 |
-| `GET /api/v1/me/events/history` | `before` opcional (datetime ISO 8601 com fuso; padrão `now()`) | 200, `{ saved_public_events: EventRead[], personal_events: PersonalEventRead[] }`, em listas separadas ordenadas do mais recente ao mais antigo | 422, data sem fuso |
 
 PUT e DELETE são idempotentes. O PUT recupera colisão de inserção concorrente quando o vínculo já foi criado. DELETE só remove o vínculo do usuário atual.
 
@@ -155,12 +154,12 @@ As operações exigem autenticação. Planos privados ficam restritos ao autor; 
 | Operação | Entrada | Resposta |
 | --- | --- | --- |
 | `POST /api/v1/syllabus/upload` | `multipart/form-data` com `file` (PDF), `disciplina`, `turma`, `ano` (2000 a 2100) e `semestre` (1 ou 2). `file` e `offering_id` são obrigatórios; disciplina, turma e período são derivados da oferta disponível. | 202, plano registrado como `pendente`. Ano e semestre são persistidos quando informados. |
-| `GET /api/v1/syllabus` | `limit` de 1 a 100 (padrão 20), `offset` a partir de 0 (padrão 0). | 200, `{ "items": [], "total": 0, "limit": 20, "offset": 0 }` para histórico vazio. Ordena por criação e ID decrescentes. |
+| `GET /api/v1/syllabus` | `limit` de 1 a 100 (padrão 20), `offset` a partir de 0 (padrão 0). | 200, `{ "items": [], "total": 0, "limit": 20, "offset": 0 }` para uma lista vazia. Ordena por criação e ID decrescentes. |
 | `GET /api/v1/syllabus/{syllabus_id}` | UUID do plano. | 200, dados e candidatos da versão aprovada. Para compartilhamento, aplica a permissão por autor/seguidor; 404 para versões indisponíveis. |
 | `POST /api/v1/syllabus/{syllabus_id}/confirm` | Cabeçalho `Idempotency-Key` (8 a 200 caracteres) e `candidates` selecionados, com `candidateId`, `title`, `description`, `type`, `startsAt` e `category` opcionais. Datas com instante incluem fuso ISO 8601. | 200, `{ operationId, repeated, items, events }`. A resposta indica candidatos criados/importados, evento removido e procedência. Reutilize a mesma chave somente ao repetir a mesma ação; use chave nova para uma nova confirmação após excluir o evento. |
 | `DELETE /api/v1/syllabus/{syllabus_id}/candidates/{candidate_id}` | UUIDs do plano privado concluído e do candidato. | 204, marca o candidato como descartado sem remover sua evidência. Não descarta decisões de versões compartilhadas. |
 
-O histórico e o detalhe retornam `ano` e `semestre`. Planos antigos podem ter esses campos, `fileName` e `filePath` nulos. O upload aplica a cota de 10 envios em cinco dias (429 ao exceder) e valida o PDF antes de gravar. O cliente autenticado consulta os próprios planos e PDFs, enquanto o backend grava o arquivo e o registro de acompanhamento.
+A listagem e o detalhe retornam `ano` e `semestre`, derivados da oferta para novos envios. O limite é de 10 envios em cinco dias (429 ao exceder). O backend guarda texto sanitizado e dados de acompanhamento após descartar o PDF. `filePath` é sempre `null`, inclusive em planos legados.
 
 ### Conta e privacidade — S8-D01
 
@@ -186,7 +185,7 @@ O login Google do Supabase solicita identidade. A permissão do Calendar é opci
 | Operação | Entrada | Resposta |
 | --- | --- | --- |
 | `POST /api/v1/me/google-calendar/authorization` | Bearer Supabase. | 200 com `authorization_url` e `expires_in_seconds`. O desafio de uso único usa `state` e PKCE S256 e expira em 10 minutos. |
-| `POST /api/v1/me/google-calendar/callback` | Formulário do Google com `state` e `code` ou `error`. | 303 para a URL configurada com `google_calendar` indicando o resultado. Confere o escopo `calendar.app.created` e o e-mail Google verificado com o e-mail confirmado atual da Agenda UnB. |
+| `GET /api/v1/me/google-calendar/callback` | Query string do Google com `state` e `code` ou `error`. O POST com formulário continua aceito para autorizações em trânsito. | 303 para a URL configurada com `google_calendar` indicando o resultado. Confere o escopo `calendar.app.created` e o e-mail Google verificado com o e-mail confirmado atual da Agenda UnB. |
 | `GET /api/v1/me/google-calendar/connection` | Bearer Supabase. | 200 com `connected` e `recovery_required`. |
 | `DELETE /api/v1/me/google-calendar/connection` | Bearer Supabase. | 200 com `disconnected` e `revocation`. Revoga o acesso no Google, remove as credenciais locais e invalida autorizações em andamento. Se a revogação remota falhar, o retorno orienta removê-la na Conta Google. |
 | `PUT /api/v1/me/google-calendar/destination` | Bearer Supabase e `calendar_id` (string ou `null`). | 204 após validar no Google o ID da agenda secundária Agenda UnB. Se o usuário confirmar que a agenda não existe ou foi excluída, envia `calendar_id: null` para limpar o destino e invalidar os mapeamentos do calendário anterior em `google_calendar_event_exports`, liberando nova criação. |
@@ -224,14 +223,12 @@ Exemplo de validação de título curto:
   "errors": [{
     "type": "string_too_short",
     "loc": ["body", "title"],
-    "msg": "String should have at least 3 characters",
-    "input": "AB",
-    "ctx": {"min_length": 3}
+    "msg": "String should have at least 3 characters"
   }]
 }
 ```
 
-O conteúdo auxiliar de `errors` depende da versão do Pydantic, que não está fixada nas dependências. Erros inesperados não têm envelope de aplicação garantido. **Dívida conhecida:** o handler passa `exc.errors()` diretamente a `JSONResponse`; erros de validadores com objetos não serializáveis em `ctx` podem resultar em 500, apesar da intenção de retornar 422. A especificação não promete 422 para esse caso sem correção e teste específicos. O upload já responde 202 para o registro do plano. A execução do worker externo e sua integração são parte da Release 2.
+O array `errors` inclui somente `type`, `loc` e `msg`. Falhas inesperadas recebem 500 com `detail` genérico. A validação evita devolver entrada bruta e contexto de exceções.
 
 ## Exemplos cURL
 
@@ -316,7 +313,7 @@ As duas rotas exigem uma sessão válida e um perfil com e-mail confirmado. Reto
 
 Conferir inventário com `app.openapi()` e revisar manualmente handlers, permissões e SQL. Os testes de eventos, sugestões e salvos usam SQLite e substituem dependências de autenticação: não comprovam integração real com Auth nem RLS. Os testes de moderação de banco exigem Supabase local descartável. Ver [Contribuição](/processo/contribuindo) e o registro de validação em [Arquitetura](/arquitetura/visao-geral#9-verificacao).
 
-Qualquer alteração de rota, schema, autorização, erro ou RPC deve atualizar este documento no mesmo PR. Inscrições, categorias REST e atualização pública não são contratos disponíveis.
+Qualquer alteração de rota, schema, autorização, erro ou RPC deve atualizar este documento no mesmo PR. A inscrição acontece na fonte oficial. Alterar eventos públicos exige perfil autorizado e a gestão de categorias exige `admin`.
 
 ## Planos particulares — atualização S6-B01 (09/11/2026)
 
@@ -370,15 +367,15 @@ Este contrato substitui o fluxo de upload/extração S6 descrito acima.
 | `POST /api/v1/syllabus/upload` | Multipart PDF validado, até 10 MiB/dez páginas; metadados existentes | 202, texto preparado privado, `filePath: null`, `authorizationRequired: true`, `preparedTextAvailable: true`. O PDF é descartado e não vai ao Storage. |
 | `POST /api/v1/syllabus/text` | JSON `text` e `offering_id` obrigatórios; até 40.000 bytes UTF-8 | 202, preparação privada, `fileType: text`; página de origem nula. |
 | `GET /api/v1/syllabus/{id}/text` | Sessão do dono | 200 com `pages: [{pagina, texto}]`, `textHash`, `authorizationRequired`, `provider`, `providerAvailable`, `maxTextBytes`, `warning`, `preparationDurationMs`, `textRevision` e `redactedCount`. Resposta `no-store`. |
-| `POST /api/v1/syllabus/{id}/extractions` | JSON `pages`, `textHash`, `authorize: true`, `contentEligible: true`, `reprocess` opcional | 202, autorização registrada e elegibilidade para a fila persistente. Repetir o mesmo hash sem reprocessar não cria execução adicional. |
+| `POST /api/v1/syllabus/{id}/extractions` | JSON `pages`, `textHash`, `authorize: true`, `reprocess` opcional | 202, autorização registrada e elegibilidade para a fila persistente. Repetir o mesmo hash sem reprocessar não cria execução adicional. |
 
 O hash usa SHA-256 do JSON UTF-8 compacto, com `pagina`/`texto` nessa ordem em
-cada página; não é assinatura de autorização. O servidor valida JWT/dono, limites,
-referências, integridade e declarações, recusa identificadores comuns ainda
+cada página; não é assinatura de autorização. O servidor valida sessão, propriedade, limites,
+referências e integridade, recusa identificadores comuns ainda
 presentes e não altera o texto aprovado antes de enviá-lo ao provedor.
 
 Erros: 400 PDF inválido/protegido/sem texto; 401 sem sessão; 404 para plano alheio/inexistente; 413 excesso de bytes;
-422 conteúdo, referências, declarações ou hash malformados; 409 hash divergente,
+422 conteúdo, referências, autorização ausente ou hash malformado; 409 hash divergente,
 execução em andamento, preparação antiga sem texto ou limite acumulado atingido;
 503 indisponibilidade/bloqueio operacional do provedor. O corpo continua
 `{"detail": "mensagem sanitizada"}`. Não há persistência do PDF após falha.
@@ -388,17 +385,16 @@ preparado. `redactedCount` é um inteiro não negativo com o total de trechos
 mascarados na preparação inicial, somado entre as páginas. As respostas de
 preparação, autorização e detalhe do próprio plano incluem essa contagem para
 exibir o aviso durante e após a análise. É `null` nos planos
-preparados antes da contagem. O valor continua disponível após edição manual,
-fica fora de `pages` e do cálculo de `textHash` e não é enviado ao provedor.
-A autorização devolve `422` se a edição introduzir PII detectável. Um snapshot
-legado autorizado que ainda contenha PII detectável falha antes de chamar o
-provedor, com `errorCode: texto_com_dados_pessoais`. Nesse caso, o dono pode
-revisar o texto novamente e solicitar reprocessamento dentro dos limites do plano.
+preparados antes da contagem. O valor fica fora de `pages` e de `textHash`.
+O cliente autoriza as páginas sanitizadas no fluxo iniciado pelo botão de envio.
+A autorização devolve `422` quando encontra identificadores detectáveis. Um
+snapshot legado com esses dados falha antes da chamada ao provedor, com
+`errorCode: texto_com_dados_pessoais`. Reenviar o plano aplica a preparação atual.
 
 Detalhe/listagem preservam estados anteriores. `authorizationRequired` distingue
-a revisão inicial da fila pronta; `preparedTextAvailable` identifica o protocolo
+texto preparado de uma extração já autorizada; `preparedTextAvailable` identifica o protocolo
 S7. Detalhe inclui `preparationDurationMs`, `reviewDurationMs` e
-`totalDurationMs` desde a autorização, separando a espera do estudante. Planos
+`totalDurationMs` desde a autorização. `reviewDurationMs` mede o intervalo entre criação e autorização. Planos
 históricos sem preparação mantêm a revisão legada e não recebem autorização
 retroativa. A consulta e a confirmação usam `avaliacoes`, a mesma tabela do worker,
 filtrando a versão aprovada e aplicando a permissão da versão. Cada candidato inclui `suggestedDate`,
@@ -418,7 +414,7 @@ A integração autenticada, rotas de catálogo/filtros/vínculos e operação es
 [Catálogo de turmas](/arquitetura/catalogo-de-turmas). PDF multipart e texto JSON
 passam a exigir `offering_id` (UUID da oferta disponível). O servidor deriva
 nome da disciplina, turma e período, ignorando metadados livres para associação.
-Histórico particular aceita `offering_id` opcional; dados privados continuam
+A listagem particular aceita `offering_id` opcional; dados privados continuam
 restritos ao proprietário. `GET /class-offerings/{id}/shared-plans` expõe apenas
 versões compartilhadas a seguidores da oferta, sem o texto privado do autor.
 
@@ -433,7 +429,7 @@ continua retornando 409; catálogo sem publicação retorna 503.
 
 A interface consulta a oferta e `GET /me/class-offerings` antes de habilitar
 PDF/texto. Falhas ou respostas inválidas bloqueiam o envio e oferecem nova consulta.
-Histórico e planos particulares continuam acessíveis ao dono após deixar de seguir.
+Planos particulares continuam acessíveis ao dono após deixar de seguir.
 
 ### Compartilhamento, versões, procedência e votos — S8-B01 (#77)
 

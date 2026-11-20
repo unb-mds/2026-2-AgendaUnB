@@ -3,7 +3,7 @@
 Tudo aqui é ASGI puro, sem dependência nova. Os valores vêm do ambiente
 para que homologação e produção sejam configuradas sem alterar código:
 
-    API_DOCS_ENABLED            true|false  (padrão: true; usar false em produção)
+    API_DOCS_ENABLED            true|false  (padrão: true somente em APP_ENV=local)
     CORS_ORIGINS                origens exatas da SPA, separadas por vírgula
     RATE_LIMIT_PER_MINUTE       requisições por cliente/minuto (padrão: 240; 0 desliga)
     RATE_LIMIT_WRITE_PER_MINUTE escritas por cliente/minuto   (padrão: 60;  0 desliga)
@@ -14,7 +14,7 @@ import os
 import threading
 import time
 from collections import deque
-from urllib.parse import urlsplit
+from ipaddress import ip_address
 
 from starlette.responses import JSONResponse
 
@@ -38,27 +38,6 @@ def env_int(name: str, default: int, *, minimum: int = 0) -> int:
         return default
 
 
-def parse_cors_origins(raw: str) -> list[str]:
-    """Aceita somente origens exatas (esquema + host [+ porta]).
-
-    Curinga, caminho ou esquema diferente de http(s) derrubam a inicialização:
-    é melhor a API não subir do que subir aberta para qualquer site.
-    """
-    origins: list[str] = []
-    for item in raw.split(","):
-        origin = item.strip().rstrip("/")
-        if not origin:
-            continue
-        parts = urlsplit(origin)
-        if "*" in origin or parts.scheme not in {"http", "https"} or not parts.netloc or parts.path or parts.query:
-            raise RuntimeError(
-                f"CORS_ORIGINS inválido: '{item.strip()}'. Use origens exatas, como https://app.exemplo.br."
-            )
-        if origin not in origins:
-            origins.append(origin)
-    return origins
-
-
 def escape_like(term: str, escape: str = "\\") -> str:
     """Trata % e _ digitados pelo usuário como texto, não como curingas do LIKE."""
     return (
@@ -68,14 +47,21 @@ def escape_like(term: str, escape: str = "\\") -> str:
     )
 
 
-def client_address(scope, trusted_proxy_hops: int) -> str:
+def client_address(scope, trusted_proxy_hops: int, *, render_edge: bool = False) -> str:
     """Endereço do cliente para limitar abuso.
 
     X-Forwarded-For é escrito pelo cliente e só o trecho acrescentado pelos
     proxies da hospedagem é confiável. Com N proxies confiáveis, o cliente é
     o N-ésimo endereço contado a partir do fim. Com 0, usa a conexão direta.
     """
-    if trusted_proxy_hops > 0:
+    if render_edge:
+        # A borda pública do Render sobrescreve este cabeçalho com o IP do cliente.
+        raw = dict(scope.get("headers", [])).get(b"cf-connecting-ip", b"")
+        try:
+            return str(ip_address(raw.decode("ascii")))
+        except (UnicodeError, ValueError):
+            pass
+    elif trusted_proxy_hops > 0:
         for name, value in scope.get("headers", []):
             if name == b"x-forwarded-for":
                 chain = [part.strip() for part in value.decode("latin-1").split(",") if part.strip()]
@@ -223,6 +209,7 @@ class RateLimitMiddleware:
         self.trusted_proxy_hops = (
             trusted_proxy_hops if trusted_proxy_hops is not None else env_int("TRUSTED_PROXY_HOPS", 0)
         )
+        self.render_edge = env_flag("RENDER", False)
         self.clock = clock
         self._hits: dict[tuple[str, str], deque[float]] = {}
         self._lock = threading.Lock()
@@ -250,7 +237,7 @@ class RateLimitMiddleware:
             await self.app(scope, receive, send)
             return
 
-        client = client_address(scope, self.trusted_proxy_hops)
+        client = client_address(scope, self.trusted_proxy_hops, render_edge=self.render_edge)
         is_write = scope["method"] not in {"GET", "HEAD"}
         checks = [("all", self.per_minute)]
         if is_write:

@@ -52,7 +52,7 @@ test('oito planos e 60 avaliações: vínculo, upload concorrente, autorização
   await page.route('**/api/v1/syllabus/*/extractions', route => {
     const id = route.request().url().split('/').at(-2);
     const body = route.request().postDataJSON();
-    expect(body).toMatchObject({ pages: textPayload.pages, textHash: hash, authorize: true, contentEligible: true });
+    expect(body).toMatchObject({ pages: textPayload.pages, textHash: hash, authorize: true });
     authorized++;
     const plan = { ...data.get(id), authorizationRequired: false, status: 'processando' };
     data.set(id, plan);
@@ -82,7 +82,7 @@ test('oito planos e 60 avaliações: vínculo, upload concorrente, autorização
   await chooseUploadClass(page, 1);
   await files(page).setInputFiles(makePdf(1));
   await expect(queue(page).getByRole('button', { name: 'Processando: plano-1.pdf', exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Confirmar e extrair', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Iniciar extração', exact: true })).toHaveCount(0);
 
   for (let index = 2; index <= 8; index++) {
     await chooseUploadClass(page, index);
@@ -283,7 +283,7 @@ for (const width of [360, 768, 1365]) for (const theme of ['light', 'dark']) {
     })).toEqual([]);
     if (width < 820) {
       await page.getByRole('button', { name: 'Recolher fila de planos' }).press('Enter');
-      await expect(page.getByRole('button', { name: 'Autorizar texto: plano-2.pdf' })).toBeHidden();
+      await expect(page.getByRole('button', { name: 'Extrair avaliações: plano-2.pdf' })).toBeHidden();
       await expect(page.getByRole('button', { name: 'Enviar PDF e extrair' })).toBeVisible();
       await page.getByRole('button', { name: 'Expandir fila de planos' }).press('Enter');
     }

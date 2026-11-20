@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { eventsApi, toUiEvent } from '../lib/api';
 import { formatEventSchedule } from '../lib/calendar';
+import { safeEventUrl } from '../lib/moderation';
 import { getStoredTheme, setStoredTheme } from '../lib/preferences';
 import NavBar from '../components/NavBar';
 import SaveEventButton from '../components/SaveEventButton';
@@ -10,7 +11,7 @@ import SearchMetadata from '../components/SearchMetadata.jsx';
 import { eventDescription, eventTitle } from '../lib/searchPages.js';
 import '../styles/global.css';
 
-function createSessionClickId() {
+function createClickId() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID();
   }
@@ -19,16 +20,6 @@ function createSessionClickId() {
     const val = char === 'x' ? rand : (rand & 0x3) | 0x8;
     return val.toString(16);
   });
-}
-
-function safeHttpUrl(value) {
-  if (!value) return '';
-  try {
-    const parsed = new URL(value);
-    return parsed.protocol === 'http:' || parsed.protocol === 'https:' ? parsed.href : '';
-  } catch {
-    return '';
-  }
 }
 
 export default function PaginaDeEvento() {
@@ -45,7 +36,6 @@ export default function PaginaDeEvento() {
   const [outboundError, setOutboundError] = useState('');
   const [registeringClick, setRegisteringClick] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
-  const clickIdRef = useRef(createSessionClickId());
 
   const [theme, setTheme] = useState(() => getStoredTheme());
 
@@ -54,7 +44,6 @@ export default function PaginaDeEvento() {
   }, [theme]);
 
   useEffect(() => {
-    clickIdRef.current = createSessionClickId();
     setOutboundError('');
   }, [id]);
 
@@ -137,7 +126,7 @@ export default function PaginaDeEvento() {
 
   const dataEvento = eventoCarregado || {};
   const scheduleLabel = formatEventSchedule(dataEvento) || (dataEvento.data ? `${dataEvento.data}${dataEvento.horario ? ` · ${dataEvento.horario}` : ''}` : 'Data não informada');
-  const safeExternalLink = safeHttpUrl(dataEvento.linkExterno);
+  const safeExternalLink = safeEventUrl(dataEvento.linkExterno);
   const isPersonalEvent = Boolean(dataEvento.criadoPorMim || dataEvento.visibilidade === 'Privado');
   const kindBadgeLabel = isPersonalEvent
     ? 'Compromisso privado'
@@ -164,7 +153,7 @@ export default function PaginaDeEvento() {
     if (isPersonalEvent) return;
     setRegisteringClick(true);
     try {
-      const result = await eventsApi.registerOutboundClick(id, clickIdRef.current);
+      const result = await eventsApi.registerOutboundClick(id, createClickId());
       if (typeof result?.outbound_clicks_count === 'number') {
         setInteressados(result.outbound_clicks_count);
       }
