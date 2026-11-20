@@ -33,6 +33,22 @@ O campo **verificado** é o mais importante. Sem ele, a entrada declara o uso ma
 
 ## Entradas
 
+### 19/11/2026 — Minimização de dados pessoais em planos de ensino (#132)
+
+- **Quem** — Heitor Gomes Monteiro, com assistência do Codex.
+- **Ferramentas** — Codex, Impeccable, pytest e Playwright.
+- **O que foi pedido** — Aprimorar a sanitização de PDF e texto colado,
+  manter o conteúdo acadêmico e mostrar as ocorrências mascaradas na revisão.
+- **O que entrou no repositório** — Regras determinísticas, preparação
+  compartilhada, contagem persistida, bloqueio de texto legado detectável,
+  aviso acessível e testes de regressão e integração.
+- **O que foi verificado** — Hash do snapshot privado, controle de acesso,
+  procedência dos candidatos, privacidade no fluxo com provedor simulado e
+  edição em celular e desktop. [Exemplos e resultados](/arquitetura/minimizacao-planos).
+- **Ajuste durante a validação** — O teste de upload concorrente passou a
+  manter o segundo envio aberto até o terceiro ter começado, permitindo
+  medir a concorrência em ambientes com tempo de resposta diferente.
+
 ### 18/11/2026 — S8-F02: eventos, moderação, agenda, filtros múltiplos e melhorias de uso (#80)
 
 - **Quem:** Gabriel Escramin (solicitante).

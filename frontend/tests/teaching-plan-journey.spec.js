@@ -83,7 +83,7 @@ test('Nyx brinca com a ampulheta apenas durante o processamento do plano', async
   await expect(toy).toHaveCount(0);
 
   await page.getByRole('button', { name: `Autorizar texto: ${plan.fileName}`, exact: true }).click();
-  await page.getByRole('button', { name: 'Autorizar envio', exact: true }).click();
+  await page.getByRole('button', { name: 'Confirmar e extrair', exact: true }).click();
   await expect(toy).toBeVisible();
 
   data.set(plan.id, { ...plan, authorizationRequired: false, status: 'processando' });

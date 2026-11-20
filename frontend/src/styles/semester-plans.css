@@ -392,6 +392,7 @@ body.light .semester-panel :is(.semester-step-btn, .semester-metrics, .semester-
 .semester-panel .semester-field { display: grid; gap: 5px; font-size: .875rem; min-width: 0; }
 .semester-raw, .semester-queue-list, .semester-preview form { display: grid; gap: 10px; }
 .semester-raw { padding-top: 2px; }
+.semester-upload-consent { margin-block: 12px; font-size: .875rem; }
 .semester-panel .custom-select-trigger { padding: 10px 12px; font: inherit; }
 .semester-panel .custom-select-trigger, .semester-panel .custom-select-popup { background: var(--semester-field); }
 .semester-panel .custom-select-placeholder, .semester-panel .custom-select-chevron { color: var(--semester-muted); }
