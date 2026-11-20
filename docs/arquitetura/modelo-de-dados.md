@@ -72,6 +72,12 @@ erDiagram
         TIMESTAMPTZ criado_em
     }
 
+    CLIQUES_EVENTO {
+        UUID evento_id PK,FK
+        UUID click_id PK
+        TIMESTAMPTZ criado_em
+    }
+
     NOTIFICACOES {
         UUID id PK
         UUID usuario_id FK
@@ -168,6 +174,7 @@ erDiagram
     EVENTOS_PESSOAIS o|--o{ LEMBRETES : "avisa o dono"
     PROFILES ||--o{ LEMBRETES : "recebe"
     EVENTOS o|--o{ NOTIFICACOES : "origina"
+    EVENTOS ||--o{ CLIQUES_EVENTO : "conta redirecionamentos"
     PLANOS_ENSINO ||--o{ AVALIACOES : "tem"
     PLANOS_ENSINO ||--|{ VERSOES_PLANO : "versiona"
     VERSOES_PLANO ||--o{ AVALIACOES : "contem"

@@ -4,7 +4,7 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { eventsApi, toApiEvent, toUiEvent } from '../lib/api';
-import { formatEventSchedule } from '../lib/calendar';
+import { formatEventSchedule, splitMyEventsByHistory } from '../lib/calendar';
 import {
   clearStoredEventFilters,
   getStoredEventFilters,
@@ -839,6 +839,18 @@ export default function SegundaPagina() {
     });
   }, [eventos, visaoEventos, searchQuery, filtroArea, filtroCampus, filtroTurno, filtroDataInicio, filtroDataFim]);
 
+  const {
+    upcomingEvents: meusEventosAtivos,
+    pastSavedPublicEvents: historicoPublicosSalvos,
+    pastPersonalEvents: historicoPrivadosPassados,
+  } = useMemo(
+    () => (visaoEventos === 'MEUS'
+      ? splitMyEventsByHistory(eventosFiltrados)
+      : { upcomingEvents: eventosFiltrados, pastSavedPublicEvents: [], pastPersonalEvents: [] }),
+    [eventosFiltrados, visaoEventos],
+  );
+  const temHistoricoMeus = historicoPublicosSalvos.length > 0 || historicoPrivadosPassados.length > 0;
+
   // --- ESTILIZAÇÃO DINÂMICA ---
   const bgColor = isDark ? '#080c16' : '#f0f4f8';
   const cardBg = isDark ? '#1a2235' : '#ffffff';
@@ -1036,6 +1048,88 @@ export default function SegundaPagina() {
                 </button>
               )}
             </div>
+          </div>
+        ) : visaoEventos === 'MEUS' && temHistoricoMeus ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
+            {meusEventosAtivos.length > 0 && (
+              <section aria-label="Próximos eventos da agenda">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))', gap: '20px' }}>
+                  {meusEventosAtivos.map((evento) => (
+                    <EventCardItem
+                      key={`${evento.visibilidade}-${evento.id}`}
+                      evento={evento}
+                      visaoEventos={visaoEventos}
+                      isProfessor={isProfessor}
+                      isAdmin={isAdmin}
+                      textColor={textColor}
+                      onOpen={ev => navigate(`/evento/${ev.id}`, { state: { evento: ev } })}
+                      onEdit={handleEditarEvento}
+                      onRemove={handleSolicitarRemocao}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            <section aria-labelledby="history-saved-public-heading" style={{ borderTop: `1px solid ${borderColor}`, paddingTop: '1.75rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1rem' }}>
+                <span className="material-symbols-outlined" aria-hidden="true" style={{ color: accentColor }}>history</span>
+                <h3 id="history-saved-public-heading" style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0, color: textColor }}>
+                  Histórico — Eventos públicos salvos passados ({historicoPublicosSalvos.length})
+                </h3>
+              </div>
+              {historicoPublicosSalvos.length === 0 ? (
+                <p style={{ color: textMuted, margin: 0, fontSize: '0.95rem' }}>
+                  Nenhum evento público salvo encerrado até o momento.
+                </p>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))', gap: '20px' }}>
+                  {historicoPublicosSalvos.map((evento) => (
+                    <EventCardItem
+                      key={`hist-public-${evento.id}`}
+                      evento={evento}
+                      visaoEventos={visaoEventos}
+                      isProfessor={isProfessor}
+                      isAdmin={isAdmin}
+                      textColor={textColor}
+                      onOpen={ev => navigate(`/evento/${ev.id}`, { state: { evento: ev } })}
+                      onEdit={handleEditarEvento}
+                      onRemove={handleSolicitarRemocao}
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <section aria-labelledby="history-personal-heading" style={{ borderTop: `1px solid ${borderColor}`, paddingTop: '1.75rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1rem' }}>
+                <span className="material-symbols-outlined" aria-hidden="true" style={{ color: accentColor }}>event_available</span>
+                <h3 id="history-personal-heading" style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0, color: textColor }}>
+                  Histórico — Compromissos privados passados ({historicoPrivadosPassados.length})
+                </h3>
+              </div>
+              {historicoPrivadosPassados.length === 0 ? (
+                <p style={{ color: textMuted, margin: 0, fontSize: '0.95rem' }}>
+                  Nenhum compromisso privado encerrado até o momento.
+                </p>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))', gap: '20px' }}>
+                  {historicoPrivadosPassados.map((evento) => (
+                    <EventCardItem
+                      key={`hist-personal-${evento.id}`}
+                      evento={evento}
+                      visaoEventos={visaoEventos}
+                      isProfessor={isProfessor}
+                      isAdmin={isAdmin}
+                      textColor={textColor}
+                      onOpen={ev => navigate(`/evento/${ev.id}`, { state: { evento: ev } })}
+                      onEdit={handleEditarEvento}
+                      onRemove={handleSolicitarRemocao}
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))', gap: '20px' }}>

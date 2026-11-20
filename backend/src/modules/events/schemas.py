@@ -105,7 +105,9 @@ class EventRead(BaseModel):
 
 
 class OutboundClickCreate(BaseModel):
-    click_id: UUID
+    model_config = ConfigDict(populate_by_name=True)
+
+    click_id: UUID = Field(alias="clickId")
 
 
 class OutboundClickRead(BaseModel):
@@ -175,3 +177,8 @@ class PersonalEventCreate(EventInput):
 
 class PersonalEventUpdate(EventInput):
     pass
+
+
+class EventHistoryRead(BaseModel):
+    saved_public_events: list[EventRead]
+    personal_events: list[PersonalEventRead]

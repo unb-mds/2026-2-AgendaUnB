@@ -136,9 +136,11 @@ class PublicEvent(Base):
     )
 
     justificativa_recusa: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Redirecionamentos em "Conferir evento", um por click_id (S8-B02).
     outbound_clicks_count: Mapped[int] = mapped_column(
-        "interessados_count", Integer, default=0, nullable=False
+        "interessados_count", Integer, default=0, server_default="0", nullable=False
     )
+    redirect_count = synonym("outbound_clicks_count")
 
     # Procedência da coleta (S7-B05). Só registrar_evento_coletado() preenche.
     source: Mapped[str | None] = mapped_column("fonte", String, nullable=True)
@@ -175,6 +177,20 @@ class SavedPublicEvent(Base):
     event_id: Mapped[UUID] = mapped_column(
         Uuid(as_uuid=True), ForeignKey("eventos.id", ondelete="CASCADE"), primary_key=True, index=True
     )
+    created_at: Mapped[datetime] = mapped_column(
+        "criado_em", DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class EventClick(Base):
+    """Deduplicação de redirecionamentos (S8-B02). Gravado por registrar_clique_evento()."""
+
+    __tablename__ = "cliques_evento"
+
+    event_id: Mapped[UUID] = mapped_column(
+        "evento_id", Uuid(as_uuid=True), ForeignKey("eventos.id", ondelete="CASCADE"), primary_key=True
+    )
+    click_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True)
     created_at: Mapped[datetime] = mapped_column(
         "criado_em", DateTime(timezone=True), server_default=func.now(), nullable=False
     )

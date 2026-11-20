@@ -70,6 +70,7 @@
           "arquitetura/minimizacao-planos",
           "arquitetura/banco-de-dados",
           "arquitetura/dados-de-eventos",
+          "arquitetura/conferir-evento",
           "arquitetura/catalogo-de-turmas",
           "arquitetura/frontend",
           "eventos-salvos",
