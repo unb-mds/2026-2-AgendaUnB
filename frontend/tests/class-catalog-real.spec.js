@@ -121,3 +121,38 @@ for (const width of [360, 768, 1365]) for (const theme of ['dark', 'light']) {
     await expect(catalog(page).getByRole('button', { name: 'Seguir 1 turma selecionada', exact: true })).toHaveCount(0);
   });
 }
+
+test('menu de Unidade fica sobreposto a Suas turmas', async ({ page }) => {
+  await setupSemester(page, { followed: [makeOffer(1)] });
+  await page.route('**/api/v1/class-offerings/filters', route => route.fulfill({ json: {
+    periods: ['2026.2'],
+    units: [
+      { id: 'u1', code: 'FCTE', name: 'Faculdade de Ciências e Tecnologias em Engenharia' },
+      { id: 'u2', code: 'CIC', name: 'Departamento de Ciência da Computação' },
+      { id: 'u3', code: 'MAT', name: 'Departamento de Matemática' },
+      { id: 'u4', code: 'IFD', name: 'Instituto de Física' },
+      { id: 'u5', code: 'FD', name: 'Faculdade de Direito' },
+    ],
+  } }));
+  await openCatalog(page);
+  await catalog(page).getByRole('button', { name: 'Unidade' }).click();
+  const popup = catalog(page).locator('.semester-unit-filter .custom-select-popup');
+  await expect(popup).toBeVisible();
+  const overlap = await page.evaluate(() => {
+    const popupEl = document.querySelector('.semester-unit-filter .custom-select-popup');
+    const followedEl = document.querySelector('.semester-followed-panel');
+    const pRect = popupEl.getBoundingClientRect();
+    const fRect = followedEl.getBoundingClientRect();
+    const x = pRect.left + pRect.width / 2;
+    const y = Math.min(pRect.bottom - 10, fRect.top + 20);
+    const hit = document.elementFromPoint(x, y);
+    return {
+      overlapsFollowed: pRect.bottom > fRect.top,
+      hitInsidePopup: Boolean(hit && popupEl.contains(hit)),
+      bg: getComputedStyle(popupEl).backgroundColor,
+    };
+  });
+  expect(overlap.overlapsFollowed).toBe(true);
+  expect(overlap.hitInsidePopup).toBe(true);
+  expect(overlap.bg).not.toMatch(/rgba\([^)]+,\s*0\.\d+\)/);
+});
