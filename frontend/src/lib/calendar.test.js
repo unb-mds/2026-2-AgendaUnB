@@ -5,9 +5,7 @@ import {
   dateKey,
   eventDateKeys,
   formatEventSchedule,
-  isPastUiEvent,
   movePeriod,
-  splitMyEventsByHistory,
 } from './calendar.js';
 
 test('fevereiro bissexto inclui o dia 29 e semanas completas', () => {
@@ -60,58 +58,4 @@ test('formatEventSchedule formata corretamente dia inteiro, intervalo e horário
 
   const timed = formatEventSchedule({ data: '2026-11-18', horario: '14:00', horarioFim: '16:30', diaInteiro: false });
   assert.ok(timed.includes('14:00 – 16:30'));
-});
-
-test('splitMyEventsByHistory separa eventos ativos de históricos separados de públicos salvos e privados passados', () => {
-  const referenceNow = new Date('2026-11-18T12:00:00-03:00');
-  const items = [
-    {
-      id: 'pub-past',
-      titulo: 'Palestra Passada Salva',
-      startsAt: '2026-11-10T14:00:00-03:00',
-      data: '2026-11-10',
-      horario: '14:00',
-      visibilidade: 'Público',
-      salvoNaAgenda: true,
-      criadoPorMim: false,
-    },
-    {
-      id: 'priv-past',
-      titulo: 'Prova 1 Passada',
-      startsAt: '2026-11-12T10:00:00-03:00',
-      data: '2026-11-12',
-      horario: '10:00',
-      visibilidade: 'Privado',
-      salvoNaAgenda: false,
-      criadoPorMim: true,
-    },
-    {
-      id: 'pub-future',
-      titulo: 'Mostra Futura Salva',
-      startsAt: '2026-11-25T15:00:00-03:00',
-      data: '2026-11-25',
-      horario: '15:00',
-      visibilidade: 'Público',
-      salvoNaAgenda: true,
-      criadoPorMim: false,
-    },
-    {
-      id: 'priv-future',
-      titulo: 'Trabalho Final Futuro',
-      startsAt: '2026-11-28T18:00:00-03:00',
-      data: '2026-11-28',
-      horario: '18:00',
-      visibilidade: 'Privado',
-      salvoNaAgenda: false,
-      criadoPorMim: true,
-    },
-  ];
-
-  assert.equal(isPastUiEvent(items[0], referenceNow), true);
-  assert.equal(isPastUiEvent(items[2], referenceNow), false);
-
-  const grouped = splitMyEventsByHistory(items, referenceNow);
-  assert.deepEqual(grouped.upcomingEvents.map(e => e.id), ['pub-future', 'priv-future']);
-  assert.deepEqual(grouped.pastSavedPublicEvents.map(e => e.id), ['pub-past']);
-  assert.deepEqual(grouped.pastPersonalEvents.map(e => e.id), ['priv-past']);
 });

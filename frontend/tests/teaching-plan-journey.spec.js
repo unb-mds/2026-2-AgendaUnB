@@ -82,8 +82,8 @@ test('Nyx brinca com a ampulheta apenas durante o processamento do plano', async
   await expect(page.getByRole('button', { name: /demo/i })).toHaveCount(0);
   await expect(toy).toHaveCount(0);
 
-  await page.getByRole('button', { name: `Autorizar texto: ${plan.fileName}`, exact: true }).click();
-  await page.getByRole('button', { name: 'Confirmar e extrair', exact: true }).click();
+  await page.getByRole('button', { name: `Extrair avaliações: ${plan.fileName}`, exact: true }).click();
+  await page.getByRole('button', { name: 'Iniciar extração', exact: true }).click();
   await expect(toy).toBeVisible();
 
   data.set(plan.id, { ...plan, authorizationRequired: false, status: 'processando' });
@@ -381,8 +381,8 @@ test('novo seguidor importa sem reenviar arquivo, vota com divergência e autor 
   await library.getByLabel('Título').fill('Prova 1 Remarcada');
   await library.getByLabel('Data').fill('2026-12-02');
   await library.getByRole('button', { name: 'Publicar versão revisada' }).click();
-  expect(revisionCalls[0].share).toBe(true);
   await expect(library.getByText('Alterações disponíveis na Versão 2')).toBeVisible();
+  expect(revisionCalls[0]).toMatchObject({ share: true });
   await expect(library.getByText('Atualizado', { exact: true })).toBeVisible();
 
   // Autor da revisão retira o evento individual e depois retira a versão inteira.

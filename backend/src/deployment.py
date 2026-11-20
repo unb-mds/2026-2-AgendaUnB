@@ -34,9 +34,3 @@ def require_database_tls(database_url: str, app_env: str) -> None:
         raise ValueError(message) from None
     if url.get_backend_name() != "postgresql" or url.query.get("sslmode") not in ("require", "verify-ca", "verify-full"):
         raise ValueError(message)
-
-
-def validate_smtp_configuration(env: dict) -> dict:
-    """Valida o status da configuração SMTP para deploy sem expor credenciais."""
-    from src.services.email import smtp_config_status
-    return smtp_config_status(env)

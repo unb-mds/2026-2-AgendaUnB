@@ -5,6 +5,6 @@ sqlalchemy
 psycopg[binary]
 python-dotenv
 httpx
-cryptography>=41,<47
+cryptography>=50.0.2,<51
 python-multipart
 pypdf

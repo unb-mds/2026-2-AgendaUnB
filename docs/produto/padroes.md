@@ -89,7 +89,7 @@ candidato são `pendente`, `descartado` e `confirmado`. O extrator só grava
 
 O esquema atual guarda metadados do envio e os estados `pendente`, `processando`, `concluido` e `falha`. O [contrato de plano e versão](/atualizacoes#contratos-da-release-2) detalha seleção de oferta, descarte do PDF e migração.
 
-O produtor S7 prepara PDF/texto localmente, descarta o original e exige autorização do texto antes da IA. Consulte a [ADR-003](/arquitetura/adrs/adr-003-minimizar-dados-de-planos) e a [ADR-014](/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia).
+A API prepara e sanitiza PDF/texto localmente, descarta o PDF e registra a autorização sobre o texto exato antes do envio à IA. Consulte a [ADR-003](/arquitetura/adrs/adr-003-minimizar-dados-de-planos) e a [ADR-014](/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia).
 
 ### 🏷️ `Category` / `categories` (Categoria)
 * `id`: Identificador da categoria (`UUID`)

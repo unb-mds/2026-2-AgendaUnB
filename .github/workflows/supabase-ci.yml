@@ -67,3 +67,14 @@ jobs:
           export TEST_LOCAL_SUPABASE_ANON_KEY TEST_LOCAL_SUPABASE_SERVICE_ROLE_KEY
           cd backend
           python -m pytest tests/*_database.py tests/test_syllabus_http_integration.py -q -ra
+      - name: Validar publicação atômica em banco dedicado
+        run: |
+          local_status="$(supabase status --output json)"
+          catalog_url="$(jq -er '.DB_URL | sub("^postgresql:"; "postgresql+psycopg:") | sub("/postgres$"; "/agenda_catalog_ci")' <<< "$local_status")"
+          db_container="$(docker ps --filter 'name=^/supabase_db_' --format '{{.Names}}')"
+          docker exec "$db_container" pg_dump -U supabase_admin -d postgres -Fc -f /tmp/agenda-catalog-ci.dump
+          docker exec "$db_container" createdb -U supabase_admin -T template0 agenda_catalog_ci
+          docker exec "$db_container" pg_restore -U supabase_admin --exit-on-error -d agenda_catalog_ci /tmp/agenda-catalog-ci.dump
+          cd backend
+          DATABASE_URL="sqlite+pysqlite:///:memory:" TEST_SUPABASE_DB_URL="$catalog_url" \
+            python -m pytest tests/test_catalog_publication_database.py -q -ra

@@ -3,7 +3,7 @@ title: "Política de Privacidade"
 description: "Quais dados o Agenda UnB trata, para quê, com quem compartilha e como exercer seus direitos."
 ---
 
-**Versão 2026-11-18.** Esta política descreve como o Agenda UnB trata os seus dados pessoais.
+**Versão 2026-11-20.** Esta política descreve como o Agenda UnB trata os seus dados pessoais.
 
 O Agenda UnB é um projeto acadêmico da disciplina Métodos de Desenvolvimento de Software (UnB, 2026/2), sem fins comerciais. Ele não é um serviço oficial da Universidade de Brasília. Adotamos a Lei Geral de Proteção de Dados (Lei 13.709/2018, LGPD) como referência para todo o tratamento descrito aqui.
 
@@ -33,10 +33,10 @@ Não pedimos matrícula, CPF, notas, nem senha do SIGAA ou de outros sistemas. N
 ## 3. Planos de ensino
 
 - O envio em PDF aceita arquivos de até **10 páginas** e **10 MB**. O texto é extraído localmente em memória no servidor e o PDF **não é guardado** após a leitura. Arquivos antigos que ainda existiam no armazenamento seguem rotina de eliminação definitiva.
-- Antes de qualquer envio à inteligência artificial, o sistema aceita até **40.000 bytes UTF-8** de texto (até 10 páginas) e aplica uma limpeza automática simples por regras fixas (para substituir e-mails, telefones brasileiros, sequências de 9 a 11 dígitos ou CPF e linhas iniciadas por rótulos como professor, aluno, nome, matrícula ou CPF). **Essa remoção automática é limitada e não substitui a sua revisão.**
-- Mostramos **o trecho exato** que seria enviado e pedimos a sua **autorização específica** para aquele plano. Se ainda houver algum padrão identificado ou se você não confirmar a revisão, o envio é bloqueado. Se o texto mudar, pedimos nova autorização.
+- Antes de qualquer envio à inteligência artificial, o sistema aceita até **40.000 bytes UTF-8** de texto (até 10 páginas) e aplica uma limpeza automática simples por regras fixas (para substituir e-mails, telefones brasileiros, sequências de 9 a 11 dígitos ou CPF e linhas iniciadas por rótulos como professor, aluno, nome, matrícula ou CPF). A remoção automática cobre os padrões detectáveis e pode deixar passar dados fora desses padrões.
+- Ao escolher **Enviar PDF e extrair** ou **Enviar texto e extrair**, você autoriza a análise do texto sanitizado daquele plano. A plataforma verifica novamente o texto antes de enviá-lo ao Gemini e impede o processamento de textos antigos com identificadores detectáveis.
 - Toda data extraída é uma sugestão e só entra na sua agenda quando você confirma.
-- Um plano começa **privado**. Ele só fica visível para quem segue a mesma turma se você decidir compartilhar. Professores e administradores não têm acesso ao seu conteúdo privado.
+- Um plano começa **privado**. Ao consultar ou confirmar o resultado, a primeira versão com avaliações extraídas, incluindo as evidências dessas datas, fica disponível para quem segue a turma. Você pode retirar o compartilhamento. O texto integral preparado fica restrito à sua conta.
 - Quem já importou datas de um plano compartilhado mantém as cópias independentes na própria agenda, mesmo que o compartilhamento seja retirado ou a conta de origem seja excluída.
 
 ## 4. Com quem compartilhamos
@@ -49,8 +49,8 @@ Usamos fornecedores para hospedar e operar a plataforma. Eles tratam dados em no
 | Render | Hospeda a API | Dados em trânsito e registros técnicos | Estados Unidos |
 | Vercel | Hospeda o site e mede acessos agregados (`@vercel/analytics/react`) | Registros técnicos de acesso, páginas visitadas, país ou região aproximada e tipo de dispositivo/navegador (sem cookies de publicidade) | Rede global |
 | Google (login) | Entrada com conta Google | Nome, e-mail e foto, se você usar essa opção | Estados Unidos e outros |
-| Google (Gemini) | Extrai datas do texto de um plano | Somente o trecho revisado e autorizado por você (até 40.000 bytes UTF-8), enviado com armazenamento de interação desativado (`store: false`) | Estados Unidos e outros |
-| Google (Agenda) | Exporta eventos para a agenda secundária "Agenda UnB", se você conectar | Identificador técnico do item, título, data e horário de início e fim (fuso de Brasília, duração padrão de 1 hora) dos eventos escolhidos | Estados Unidos e outros |
+| Google (Gemini) | Extrai datas do texto de um plano | Somente o texto sanitizado cuja análise você autorizou (até 40.000 bytes UTF-8), enviado com armazenamento de interação desativado (`store: false`) | Estados Unidos e outros |
+| Google (Agenda) | Exporta eventos para a agenda secundária "Agenda UnB", se você conectar | Identificador técnico, título, datas e horários dos eventos selecionados, local quando disponível e descrição quando escolhida | Estados Unidos e outros |
 | Google Fonts | Fontes e ícones do site | Endereço IP, ao carregar os arquivos de fonte | Rede global |
 
 Parte desses fornecedores fica fora do Brasil, o que caracteriza transferência internacional de dados.
@@ -64,7 +64,7 @@ Podemos fornecer dados a autoridades quando houver obrigação legal.
 - A exportação para o Google Agenda é **opcional** e separada do login.
 - Ao conectar, solicitamos apenas os escopos `openid`, `email` (para conferir que a conta Google tem o mesmo e-mail verificado da sua conta no Agenda UnB) e `https://www.googleapis.com/auth/calendar.app.created` (acesso restrito à agenda secundária **"Agenda UnB"** criada pela aplicação, sem acesso às suas outras agendas).
 - Os tokens de acesso e atualização ficam **criptografados no servidor** (Fernet) apenas enquanto a conexão estiver ativa. O estado temporário do pedido de autorização expira em **10 minutos**.
-- Em cada exportação, você seleciona até **20 eventos** pessoais ou públicos salvos. São enviados apenas o identificador técnico do item, o título e os horários de início e fim no fuso `America/Sao_Paulo` (com duração padrão de 1 hora).
+- Em cada exportação, você seleciona até **20 eventos** pessoais ou públicos salvos. São enviados o identificador técnico, título, início e fim (com duração padrão de 1 hora para eventos com horário sem término), local quando disponível e descrição se você escolher incluí-la. Eventos de dia inteiro mantêm suas datas civis.
 - Ao desconectar em **Meus Eventos**, ao revogar o consentimento em **Configurações** ou ao excluir sua conta, apagamos os tokens guardados e solicitamos ao Google a revogação do acesso. Se o Google não confirmar a revogação remota na hora, mostramos um aviso para que você remova o acesso nas permissões da sua Conta Google.
 - **Aviso sobre eventos já exportados:** desconectar a integração ou excluir sua conta no Agenda UnB **não apaga** os eventos que já foram exportados. Para removê-los:
     1. Acesse [calendar.google.com](https://calendar.google.com) com a sua Conta Google.
@@ -89,7 +89,7 @@ Você pode exercer os direitos abaixo diretamente na plataforma, em **Configura�
 
 - **acessar e baixar** os seus dados em formato JSON em **Configurações** → **Baixar meus dados**;
 - **corrigir** dados da conta pelo canal da seção 1 (nome e foto exibidos no perfil vêm da conta Google ou do cadastro inicial);
-- **revogar** o consentimento do Google Agenda em **Configurações** ou desconectar em **Meus Eventos**; a autorização para enviar texto de um plano à IA é dada por plano após revisão em **Plano de Ensino**;
+- **revogar** o consentimento do Google Agenda em **Configurações** ou desconectar em **Meus Eventos**; a autorização para enviar texto de um plano à IA é dada por plano ao solicitar a extração em **Plano de Ensino**;
 - **gerenciar ou retirar o compartilhamento** de planos compartilhados em **Plano de Ensino** (as cópias já importadas por colegas continuam nas agendas deles);
 - **excluir sua conta** diretamente em **Configurações** → **Excluir conta**, mediante digitação da frase de confirmação;
 - pedir informações ou apresentar reclamação pelo canal da seção 1. Você também pode recorrer à Autoridade Nacional de Proteção de Dados (ANPD).

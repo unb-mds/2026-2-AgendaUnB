@@ -33,6 +33,13 @@ O campo **verificado** é o mais importante. Sem ele, a entrada declara o uso ma
 
 ## Entradas
 
+### 20/11/2026 — Integração da Release 2 e endurecimento
+
+- **Solicitante:** Thomas. **Ferramenta:** Codex.
+- **Pedido:** Integrar a `dev` a `fix/s8-d02-endurecimento` e alinhar a documentação, o escopo e a preparação do deploy.
+- **Entrega:** Revisão das descrições e discussões dos PRs pós-Sprint 6, incluindo o [#94](https://github.com/unb-mds/2026-2-AgendaUnB/pull/94). Retirada do histórico separado da agenda e da revisão manual do texto. Consolidação de cliques e fila de IA, correções de compatibilidade dos runtimes, retorno OAuth e atualização dos documentos legais.
+- **Verificação** — 523 testes de backend, 62 unitários de frontend e 69 cenários de Playwright em cada navegador, Chromium, Edge e Firefox. A publicação atômica do catálogo passou em PostgreSQL isolado. Com Supabase local, um PDF sintético gerou dois candidatos em 7,91 s usando Gemini real e a confirmação criou um compromisso. Também passaram o ensaio de atualização a partir das versões remotas, o job local de lembretes, o container Render, o build Vercel e a verificação da documentação. Os ambientes hospedados foram consultados em leitura. [Evidências e ordem de publicação](/implantacao#estado-verificado-em-20112026).
+
 ### 19/11/2026 — S8-B02: consolidação de eventos salvos, redirecionamento deduplicado e históricos separados (#79)
 
 - **Quem:** Thomaz Marra (solicitante).

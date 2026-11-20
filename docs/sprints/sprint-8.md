@@ -13,7 +13,7 @@ Consulte os [contratos](/atualizacoes#contratos-da-release-2) e a [matriz de ace
 
 - Seleção manual de turmas pelo catálogo público Followw, com vínculo autodeclarado.
 - Planos privados durante preparação/autorização e reprocessamento; versão inicial (`v1`) vinculada a oferta é compartilhada automaticamente ao concluir a extração com candidatos (PO, 2026-11-17, [ADR-010](/arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos)), podendo ser retirada a qualquer momento sem perder cópias importadas. Edição conforme papel e visibilidade. O PDF original é descartado após a extração local.
-- IA limitada a provas e trabalhos, com revisão do texto antes do envio e confirmação antes da criação de eventos.
+- IA limitada a provas e trabalhos, com sanitização automática e autorização no envio e confirmação antes da criação de eventos.
 - A Agenda UnB Notícias alimenta o catálogo. Eventos completos são publicados automaticamente e exceções seguem para revisão. Adicionar aos meus eventos e Conferir evento são ações independentes.
 - Professores e administradores moderam eventos. Administradores gerenciam papéis e categorias.
 - Lembretes na plataforma 24 horas antes de eventos da própria agenda. Exportação direta ao Google Agenda com consentimento adicional e e-mail verificado correspondente. ICS complementa Apple Calendar e Outlook.
@@ -96,19 +96,19 @@ Dar acesso à biblioteca de planos por oferta de turma, incluindo versões, vota
 - [ ] Registrar o nome do revisor e a revisão dos contratos, permissões e dados afetados por esta entrega.
 
 
-### S8-B02 - Consolidar eventos salvos, redirecionamento e histórico
+### S8-B02 - Consolidar eventos salvos e redirecionamento
 
 [Issue #79](https://github.com/unb-mds/2026-2-AgendaUnB/issues/79)
 
 #### Objetivo
 
-Consolidar a distinção entre adicionar evento à agenda pessoal e conferir a fonte. Exibir históricos separados para públicos salvos e compromissos privados.
+Consolidar a distinção entre adicionar evento à agenda pessoal e conferir a fonte. O histórico separado foi retirado do escopo da R2.
 
 - **Sprint** [Sprint 08](https://github.com/unb-mds/2026-2-AgendaUnB/milestone/8)
 - **Janela** 16–19/11/2026
 - **Responsável principal** @marrathomaz
 - **Corresponsável** @felipecduque7
-- **Apoio adicional** Gabriel apoia a integração da interface e do histórico.
+- **Apoio adicional** Gabriel apoia a integração da interface de eventos.
 - **Dependências** S7-F01 ([#67](https://github.com/unb-mds/2026-2-AgendaUnB/issues/67)) e modelo público consolidado em S7-B05 ([#75](https://github.com/unb-mds/2026-2-AgendaUnB/issues/75)).
 - **Requisitos** RF12, RF13, RF18 e RNF04.
 
@@ -116,15 +116,15 @@ Consolidar a distinção entre adicionar evento à agenda pessoal e conferir a f
 
 - [x] Reutilizar o vínculo de evento salvo com unicidade por conta e evento. Adicionar e remover são operações idempotentes.
 - [x] Registrar métricas agregadas de redirecionamento em Conferir evento, sem alterar os vínculos. A inscrição externa, quando exigida, ocorre no canal do organizador.
-- [x] Mostrar eventos públicos salvos passados e compromissos privados passados em históricos separados. Remover o vínculo cancela lembretes futuros ([#81](https://github.com/unb-mds/2026-2-AgendaUnB/issues/81)).
+- [x] Ao remover o vínculo, cancelar lembretes futuros ([#81](https://github.com/unb-mds/2026-2-AgendaUnB/issues/81)).
 
 #### Critérios de aceite
 
-- [x] Repetir adição e remoção sem duplicar vínculo. Verificar histórico, agenda e cancelamento de lembrete futuro.
+- [x] Repetir adição e remoção sem duplicar vínculo. Verificar agenda e cancelamento de lembrete futuro.
 - [x] Abrir o link oficial, verificar incremento do redirecionamento e ausência de mudança na agenda. Repetir a mesma requisição sem duplicar o contador.
 - [x] Recusar adição de evento indisponível e alteração de vínculo de outra conta.
 
-**Evidências consolidadas em 19/11/2026:** decisões e validação técnica registradas em [Dados de Conferir evento: redirecionamento por clique e histórico](/arquitetura/conferir-evento) e [Eventos públicos na agenda pessoal](/eventos-salvos). Migração `20261117151000_eventos_conferir_evento.sql` conciliada com `20261117200000_s8_f02_eventos_moderacao_categorias.sql` e `20261117152000_eventos_lembretes.sql`, endpoints FastAPI (`PUT/DELETE /api/v1/me/saved-events/{event_id}`, `POST /api/v1/events/{event_id}/outbound-clicks` e `GET /api/v1/me/events/history`), cancelamento de lembretes futuros ao remover vínculo e seções separadas de histórico em `SecondPage.jsx` (`splitMyEventsByHistory`) validados em `test_event_clicks_database.py`, `test_saved_events_api.py`, `test_events_api.py` e `calendar.test.js`.
+**Validação técnica:** [Conferir evento](/arquitetura/conferir-evento) descreve as operações de salvar, remover e contar redirecionamentos. A consolidação da R2 mantém um único registro de deduplicação e o cancelamento de lembretes futuros ao remover o vínculo.
 
 #### Evidências para fechamento
 
@@ -334,7 +334,7 @@ Homologar a Release 2 com testes integrados, medições reproduzíveis e evidên
 #### Tasks
 
 - [ ] Executar na URL Vercel a jornada conectar Google → autorizar Calendar → selecionar eventos → exportar → abrir a agenda Google. Testar usuário com login Google e com e-mail/senha, reexportação repetida/concorrente, timeout após criação, falha parcial, 429, token expirado, consentimento recusado e revogado. Anexar evidências com contas sintéticas para [#82](https://github.com/unb-mds/2026-2-AgendaUnB/issues/82).
-- [ ] Exercitar cadastro → turma → plano → importação, compartilhamento → voto → importação por colega e evento coletado → adicionar à agenda → lembrete → histórico → exportação Google. Testar também o redirecionamento independente da agenda.
+- [ ] Exercitar cadastro → turma → plano → importação, compartilhamento → voto → importação por colega e evento coletado → adicionar à agenda → lembrete → exportação Google. Testar também o redirecionamento independente da agenda.
 - [ ] Definir a carga de uso normal antes de medir. Registrar dataset, concorrência, infraestrutura, cache e metodologia. Medir `GET /events` em p95 ≤ 300 ms e parser < 20 s conforme S7-B01 ([#51](https://github.com/unb-mds/2026-2-AgendaUnB/issues/51)). Ajustar índices, paginação ou consultas conforme resultados.
 - [ ] Verificar WCAG 2.1 AA, contraste nos dois temas, teclado, foco, labels, largura de 360 px e demais resoluções principais.
 - [ ] Homologar versões atuais de Chrome, Firefox, Edge e Safari real e registrar navegador/versão.

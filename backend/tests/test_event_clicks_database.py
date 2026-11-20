@@ -84,10 +84,16 @@ def test_redirect_is_counted_once_per_click(database):
     conn, users = database
     event_id = manual_event(conn, users['professor'], link_externo='https://exemplo.unb.br/inscricao')
     click = str(uuid4())
-    call = 'select public.registrar_clique_evento(:e, :c)'
+    call = 'select public.registrar_redirecionamento_evento(:e, :c)'
 
-    assert scalar(conn, call, {'e': event_id, 'c': click}) == 'https://exemplo.unb.br/inscricao'
-    scalar(conn, call, {'e': event_id, 'c': click})   # retry ou duplo clique
+    first = scalar(conn, call, {'e': event_id, 'c': click})
+    assert first == {
+        'external_url': 'https://exemplo.unb.br/inscricao',
+        'outbound_clicks_count': 1,
+        'incremented': True,
+    }
+    retry = scalar(conn, call, {'e': event_id, 'c': click})
+    assert retry == {**first, 'incremented': False}
     assert scalar(conn, 'select interessados_count from public.eventos where id=:id', {'id': event_id}) == 1
 
     scalar(conn, call, {'e': event_id, 'c': str(uuid4())})   # outro acionamento
@@ -104,14 +110,14 @@ def test_redirect_is_counted_once_per_click(database):
 def test_click_log_holds_no_person_and_is_closed_to_the_browser(database):
     conn, users = database
     event_id = manual_event(conn, users['professor'], link_externo='https://exemplo.unb.br/inscricao')
-    scalar(conn, 'select public.registrar_clique_evento(:e, :c)', {'e': event_id, 'c': str(uuid4())})
+    scalar(conn, 'select public.registrar_redirecionamento_evento(:e, :c)', {'e': event_id, 'c': str(uuid4())})
     columns = conn.execute(text("""select column_name from information_schema.columns
         where table_schema='public' and table_name='cliques_evento' order by 1""")).scalars().all()
     assert columns == ['click_id', 'criado_em', 'evento_id']
 
     for uid in (None, users['ana']):
         assume(conn, uid)
-        denied(conn, 'select public.registrar_clique_evento(:e, :c)', {'e': event_id, 'c': str(uuid4())})
+        denied(conn, 'select public.registrar_redirecionamento_evento(:e, :c)', {'e': event_id, 'c': str(uuid4())})
         denied(conn, 'select count(*) from public.cliques_evento')
         blocked(conn, 'update public.eventos set interessados_count = 999 where id=:id', {'id': event_id})
     as_backend(conn)

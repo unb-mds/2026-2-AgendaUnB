@@ -121,7 +121,7 @@ def test_saved_endpoints_require_authentication(saved_api):
         app.dependency_overrides[get_current_user] = override
 
 
-def test_removing_saved_event_cancels_future_reminder_and_history_separates_past_lists(saved_api):
+def test_removing_saved_event_cancels_future_reminder_without_removing_private_events(saved_api):
     client, sessions, authenticated, _ = saved_api
     owner_id = authenticated['value'].id
     future_start = datetime.now(timezone.utc) + timedelta(days=5)
@@ -196,7 +196,7 @@ def test_removing_saved_event_cancels_future_reminder_and_history_separates_past
         )
         assert pending_count == 1
 
-    # Salvar evento público passado (entra no histórico de públicos salvos, sem lembrete retroativo).
+    # Salvar evento público passado (sem lembrete retroativo).
     assert client.put(f'/api/v1/me/saved-events/{past_public_saved_id}').status_code == 200
     with sessions() as db:
         retro_count = db.scalar(
@@ -209,7 +209,7 @@ def test_removing_saved_event_cancels_future_reminder_and_history_separates_past
         )
         assert retro_count == 0
 
-    # Acionar Conferir evento em um evento passado NÃO o adiciona à agenda nem ao histórico.
+    # Acionar Conferir evento em um evento passado não o adiciona à agenda.
     click_res = client.post(
         f'/api/v1/events/{past_public_clicked_id}/outbound-clicks',
         json={'clickId': str(uuid4())},
@@ -217,11 +217,9 @@ def test_removing_saved_event_cancels_future_reminder_and_history_separates_past
     assert click_res.status_code == 200
     assert click_res.json()['outbound_clicks_count'] == 1
 
-    history = client.get('/api/v1/me/events/history')
-    assert history.status_code == 200
-    body = history.json()
-    assert [item['id'] for item in body['saved_public_events']] == [str(past_public_saved_id)]
-    assert [item['id'] for item in body['personal_events']] == [str(past_personal_id)]
+    saved = client.get('/api/v1/me/saved-events').json()
+    assert {item['id'] for item in saved} == {str(past_public_saved_id), str(future_public_id)}
+    assert str(past_personal_id) in {item['id'] for item in client.get('/api/v1/me/events').json()}
 
     # Remover o vínculo do evento futuro cancela o lembrete pendente; repetir DELETE é seguro (204).
     for _ in range(2):
@@ -239,8 +237,6 @@ def test_removing_saved_event_cancels_future_reminder_and_history_separates_past
         )
         assert remaining_reminders == 0
 
-    # Remover o vínculo do evento passado retira-o do histórico de públicos salvos, mantendo o privado.
     assert client.delete(f'/api/v1/me/saved-events/{past_public_saved_id}').status_code == 204
-    after_unsave = client.get('/api/v1/me/events/history').json()
-    assert after_unsave['saved_public_events'] == []
-    assert [item['id'] for item in after_unsave['personal_events']] == [str(past_personal_id)]
+    assert client.get('/api/v1/me/saved-events').json() == []
+    assert str(past_personal_id) in {item['id'] for item in client.get('/api/v1/me/events').json()}

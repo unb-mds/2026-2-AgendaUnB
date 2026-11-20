@@ -210,7 +210,6 @@ def create_authorization(db: Session, user: CurrentUser, settings: GoogleOAuthSe
         "client_id": settings.client_id,
         "redirect_uri": settings.redirect_uri,
         "response_type": "code",
-        "response_mode": "form_post",
         "scope": f"openid email {CALENDAR_SCOPE}",
         "state": state,
         "code_challenge": challenge,

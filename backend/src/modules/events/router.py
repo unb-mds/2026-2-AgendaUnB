@@ -13,7 +13,6 @@ from src.database.models import (
     Campus,
     Category,
     EventClick,
-    EventOutboundClick,
     PersonalEvent,
     PublicEvent,
     Reminder,
@@ -25,7 +24,6 @@ from src.modules.events.schemas import (
     CategoryCreate,
     CategoryRead,
     EventCreate,
-    EventHistoryRead,
     EventRead,
     EventUpdate,
     OutboundClickCreate,
@@ -387,8 +385,7 @@ def register_outbound_click(
 
     key = (event_id, payload.click_id)
     incremented = False
-    if db.get(EventOutboundClick, key) is None and db.get(EventClick, key) is None:
-        db.add(EventOutboundClick(event_id=event_id, click_id=payload.click_id))
+    if db.get(EventClick, key) is None:
         db.add(EventClick(event_id=event_id, click_id=payload.click_id))
         event.outbound_clicks_count = (event.outbound_clicks_count or 0) + 1
         try:
@@ -622,55 +619,6 @@ def remove_saved_event(
         )
         db.commit()
     return Response(status_code=204)
-
-
-@router.get("/me/events/history", response_model=EventHistoryRead)
-def list_event_history(
-    response: Response,
-    reference_at: Annotated[datetime | None, Query(alias="before")] = None,
-    current_user: CurrentUser = Depends(get_current_user),
-    db: Session = Depends(get_db),
-) -> EventHistoryRead:
-    _check_date_range(reference_at, None)
-    cutoff = reference_at or datetime.now(timezone.utc)
-    response.headers["Cache-Control"] = "no-store"
-
-    saved_past = db.scalars(
-        select(PublicEvent)
-        .join(SavedPublicEvent, SavedPublicEvent.event_id == PublicEvent.id)
-        .where(
-            SavedPublicEvent.user_id == current_user.id,
-            PublicEvent.status == "aprovado",
-            or_(
-                (PublicEvent.ends_at.is_not(None)) & (PublicEvent.ends_at < cutoff),
-                (PublicEvent.ends_at.is_(None)) & (PublicEvent.starts_at < cutoff),
-            ),
-        )
-        .options(
-            joinedload(PublicEvent.campus),
-            joinedload(PublicEvent.category),
-            joinedload(PublicEvent.author),
-        )
-        .order_by(PublicEvent.starts_at.desc(), PublicEvent.id.asc())
-    ).all()
-
-    personal_past = db.scalars(
-        select(PersonalEvent)
-        .where(
-            PersonalEvent.user_id == current_user.id,
-            or_(
-                (PersonalEvent.ends_at.is_not(None)) & (PersonalEvent.ends_at < cutoff),
-                (PersonalEvent.ends_at.is_(None)) & (PersonalEvent.starts_at < cutoff),
-            ),
-        )
-        .options(joinedload(PersonalEvent.campus), joinedload(PersonalEvent.category))
-        .order_by(PersonalEvent.starts_at.desc(), PersonalEvent.id.asc())
-    ).all()
-
-    return EventHistoryRead(
-        saved_public_events=[_public_read(event) for event in saved_past],
-        personal_events=[_personal_read(event) for event in personal_past],
-    )
 
 
 @router.get("/me/events", response_model=list[PersonalEventRead])

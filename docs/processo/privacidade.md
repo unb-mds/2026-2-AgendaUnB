@@ -30,7 +30,7 @@ Base legal: referência aos incisos do art. 7º da LGPD. O projeto tem finalidad
 | Eventos sugeridos ou publicados | `eventos` (`autor_id`) | Agenda pública; nome do autor como organizador | Execução do serviço (V) | Enquanto a conta existir | Cascata (ver D2) |
 | Turmas seguidas | `vinculos_turma` | Acesso a conteúdo da turma | Execução do serviço (V) | Enquanto a conta existir | Cascata |
 | PDF do plano | Não é guardado nos envios novos (extraído em memória no upload). Planos legados: Storage `syllabus_files` | Extração local do texto | Execução do serviço (V) | Envios novos: não armazenado. Legados: até descarte | `scripts/descartar_pdfs.py` e passo 4 do `DELETE /api/v1/me` |
-| Texto preparado e texto autorizado do plano | `planos_ensino.texto_preparado`, `texto_aprovado`, `hash_texto_aprovado` | Revisão pelo titular e envio autorizado à IA | Execução do serviço (V) e **consentimento** para envio (I) | Enquanto a conta existir | Cascata; incluído em `/me/data-export` |
+| Texto preparado e texto autorizado do plano | `planos_ensino.texto_preparado`, `texto_aprovado`, `hash_texto_aprovado` | Preparação automática e envio autorizado à IA | Execução do serviço (V) e **consentimento** para envio (I) | Enquanto a conta existir | Cascata; incluído em `/me/data-export` |
 | Metadados do plano, versões e candidatos | `planos_ensino`, `versoes_plano`, `avaliacoes` | Sugerir datas | Execução do serviço (V) | Enquanto a conta existir | Cascata (ver D3) |
 | Texto enviado ao provedor de IA | Não é guardado pela plataforma além do snapshot revisado | Extração de datas | **Consentimento** específico por plano (I) | Envio com `store: false` na API do Gemini | Revogação operacional: não autorizar novos envios |
 | Operações de importação | `operacoes_importacao`, `itens_importacao` | Evitar duplicar eventos em retries | Execução do serviço (V) | Enquanto a conta existir | Cascata |
@@ -50,7 +50,7 @@ Base legal: referência aos incisos do art. 7º da LGPD. O projeto tem finalidad
 | Render | API FastAPI | Dados em trânsito e logs técnicos (sem corpos, conteúdo acadêmico ou tokens) | EUA |
 | Vercel | SPA e `@vercel/analytics/react` | Logs de acesso e métricas agregadas do Vercel Web Analytics (sem cookies publicitários) | Rede global |
 | Google Identity | Login OAuth | Nome, e-mail e foto | EUA e outros |
-| Google Gemini | Extração de datas | Apenas o trecho revisado e autorizado após minimização local (`preparation.py`: limite de **10 páginas** / **10 MB** no PDF, **40.000 bytes UTF-8**, 4 expressões regulares simples para rótulos, e-mails, 9–11 dígitos/CPF e telefones BR, mais revisão humana obrigatória) e enviado com `"store": false` (`gemini.py`) | EUA e outros |
+| Google Gemini | Extração de datas | Texto sanitizado autorizado em **Plano de Ensino**, até 40.000 bytes UTF-8, com `store: false` em `gemini.py`. A [minimização automática](/arquitetura/minimizacao-planos) cobre padrões detectáveis, incluindo e-mails, telefones, documentos e campos rotulados. | EUA e outros |
 | Google Calendar | Exportação | Escopos `openid`, `email` e `https://www.googleapis.com/auth/calendar.app.created` (restrito à agenda secundária `"Agenda UnB"`). `export.py` envia até 20 eventos selecionados com `id` (SHA-256), `summary`, `start` e `end` (`America/Sao_Paulo`, +1h padrão). Expansões futuras de período/campos constam na `#82` | EUA e outros |
 | Google Fonts | Fontes e ícones | Endereço IP ao baixar fontes (`index.html`) | Rede global (ver D5) |
 
@@ -68,7 +68,7 @@ Base legal: referência aos incisos do art. 7º da LGPD. O projeto tem finalidad
 | Pode ser revogado | Não se aplica | Sim, a qualquer momento (`revogar_consentimento` e `DELETE /api/v1/me/consents/google_agenda`) |
 | Vínculo com o conteúdo | Versão do documento (data de vigência) | `referencia_id` e `conteudo_hash` (SHA-256 do escopo autorizado) |
 
-**Envio ao provedor de IA.** A autorização é registrada no próprio plano pela S7-B01: `texto_aprovado` (o trecho exato mostrado ao usuário), `hash_texto_aprovado` e `autorizado_em`. O worker confere o hash antes de chamar o provedor, e o trigger `tg_preserva_texto_autorizado` impede alterar o snapshot durante o processamento (`status = 'processando'`). Por isso `consentimentos` não aceita `envio_texto_ia`.
+**Envio ao provedor de IA.** A autorização é registrada no próprio plano pela S7-B01: `texto_aprovado` (as páginas sanitizadas autorizadas no envio), `hash_texto_aprovado` e `autorizado_em`. O worker confere o hash antes de chamar o provedor, e o trigger `tg_preserva_texto_autorizado` impede alterar o snapshot durante o processamento (`status = 'processando'`). Por isso `consentimentos` não aceita `envio_texto_ia`.
 
 ## Direitos do titular na API e na interface
 

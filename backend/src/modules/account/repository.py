@@ -29,8 +29,8 @@ from src.database.models import (
 from src.middlewares.auth import CurrentUser
 
 CURRENT_LEGAL_VERSIONS: dict[str, str] = {
-    "terms": "2026-11-18",
-    "privacy": "2026-11-18",
+    "terms": "2026-11-20",
+    "privacy": "2026-11-20",
 }
 
 CONFIRMATION_PHRASE = "EXCLUIR MINHA CONTA"

@@ -29,7 +29,7 @@ from src.deployment import cors_origins
 
 # A documentação interativa descreve toda a superfície da API. Em
 # homologação/produção, definir API_DOCS_ENABLED=false.
-docs_enabled = env_flag("API_DOCS_ENABLED", True)
+docs_enabled = env_flag("API_DOCS_ENABLED", os.environ.get("APP_ENV", "local") == "local")
 
 app = FastAPI(
     title="Agenda UnB API",

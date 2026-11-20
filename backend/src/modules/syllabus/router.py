@@ -607,7 +607,6 @@ def get_syllabus_status(
         offeringId=syllabus.offering_id,
         userId=syllabus.user_id,
         fileName=syllabus.file_name if is_owner else None,
-        filePath=syllabus.file_path if is_owner else None,
         fileSize=syllabus.file_size if is_owner else None,
         fileType=syllabus.file_type,
         status=syllabus.status,
@@ -1565,5 +1564,3 @@ def withdraw_version_candidate(
     candidate.revisado_em = utcnow()
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-

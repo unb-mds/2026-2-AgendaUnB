@@ -1,7 +1,7 @@
 import os
 
 from dotenv import load_dotenv, find_dotenv
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 from src.deployment import require_database_tls
 
@@ -12,9 +12,25 @@ if not database_url:
     raise RuntimeError("DATABASE_URL não foi definida em backend/.env")
 
 require_database_tls(database_url, os.getenv("APP_ENV", "local"))
+
+
+def create_database_engine(url: str, **options):
+    engine = create_engine(url, hide_parameters=True, **options)
+    if engine.dialect.name == "sqlite":
+        # SQLite não oferece translate() e versões antigas não aceitam dezenas
+        # de replace() aninhados. A busca usa a mesma expressão do PostgreSQL.
+        @event.listens_for(engine, "connect")
+        def register_translate(connection, _record):
+            def translate(value, source, target):
+                return value.translate(str.maketrans(source, target)) if value is not None else None
+
+            connection.create_function("translate", 3, translate, deterministic=True)
+    return engine
+
+
 # hide_parameters: mensagens de erro e logs do SQLAlchemy não incluem os valores
 # das consultas (títulos, descrições, e-mails, texto de planos).
-engine = create_engine(database_url, pool_pre_ping=True, hide_parameters=True)
+engine = create_database_engine(database_url, pool_pre_ping=True)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 

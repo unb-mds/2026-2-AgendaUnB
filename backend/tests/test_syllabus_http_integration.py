@@ -209,10 +209,10 @@ def test_authenticated_upload_private_download_processing_and_review(local_http,
             assert hidden.status_code == (401 if role is None else 404)
     with ctx.sessions() as session:
         assert session.execute(text("select count(*) from storage.objects where bucket_id='syllabus_files'")).scalar() == 0
-    # Snapshot sintético conhecido: autorização explícita após conferir o conteúdo.
+    # A autorização do envio é vinculada às páginas sanitizadas.
     preview = preview.json()
     authorized = client.post(f"/api/v1/syllabus/{sid}/extractions",headers=ctx.headers("owner"), json={
-        "pages":preview["pages"],"textHash":preview["textHash"],"authorize":True,"contentEligible":True})
+        "pages":preview["pages"],"textHash":preview["textHash"],"authorize":True})
     assert authorized.status_code == 202
     queue_started = time.monotonic()
     provider = GeminiProvider(config) if provider_kind == "gemini" else ReferenceProvider()
@@ -225,7 +225,8 @@ def test_authenticated_upload_private_download_processing_and_review(local_http,
             break
         time.sleep(config.retry_delay_seconds)
     status = client.get(f"/api/v1/syllabus/{sid}",headers=ctx.headers("owner"))
-    assert status.status_code == 200 and status.json()["status"] == "concluido"
+    assert status.status_code == 200
+    assert status.json()["status"] == "concluido", status.json().get("errorCode")
     assert status.json()["extractedEventsCount"] == 2
     upload_to_candidates_ms = round((time.monotonic()-started)*1000)
     total_processing_ms = status.json()["totalDurationMs"]

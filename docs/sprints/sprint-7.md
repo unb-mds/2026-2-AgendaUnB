@@ -13,7 +13,7 @@ Consulte os [contratos](/atualizacoes#contratos-da-release-2) e a [matriz de ace
 
 - Seleção manual de turmas pelo catálogo público Followw, com vínculo autodeclarado.
 - Planos privados por padrão, com edição conforme papel e visibilidade. Compartilhamento voluntário de conteúdo revisado. O PDF original é descartado após a extração local.
-- IA limitada a provas e trabalhos, com revisão do texto antes do envio e confirmação antes da criação de eventos.
+- IA limitada a provas e trabalhos. O plano original da S7 previa revisão de texto. Na R2 a sanitização tornou-se automática e a autorização passou para o envio. A confirmação das avaliações continua necessária.
 - A Agenda UnB Notícias alimenta o catálogo. Eventos completos são publicados automaticamente e exceções seguem para revisão. Adicionar aos meus eventos e Conferir evento são ações independentes.
 - Professores e administradores moderam eventos. Administradores gerenciam papéis e categorias.
 - Lembretes na plataforma 24 horas antes de eventos da própria agenda. Exportação direta ao Google Agenda com consentimento adicional e e-mail verificado correspondente. ICS complementa Apple Calendar e Outlook.
@@ -304,14 +304,14 @@ Completar em homologação a jornada de plano particular até a agenda com dados
 
 #### Tasks
 
-- [ ] Integrar PDF/texto, escolha da turma, histórico de envios e acompanhamento do processamento. Trocar o editor vazio/desabilitado em `SyllabusReviewPanel.jsx` pelos dados reais.
+- [ ] Integrar PDF/texto, escolha da turma, listagem de planos, acompanhamento do processamento e editor de candidatos com os dados reais.
 - [ ] Exibir antes do processamento o texto minimizado editável, o destino e a autorização separada para enviar ao provedor.
 - [ ] Mostrar candidatos com origem e alertas, seleção individual/em lote e correção. Chamar o endpoint real de confirmação e atualizar a agenda.
 - [ ] Tratar recarga, envio duplicado, falhas recuperáveis e PDF inválido/escaneado com alternativa por texto ou organização manual. Fornecer feedback acessível.
 
 #### Critérios de aceite
 
-- [ ] Demonstrar em homologação, sem mocks: seguir turma → enviar → revisar texto → autorizar → acompanhar → corrigir avaliações → importar → abrir na agenda.
+- [ ] Demonstrar em homologação, sem mocks: seguir turma → enviar com autorização → acompanhar extração → corrigir avaliações → importar → abrir na agenda.
 - [ ] Verificar que o envio ao provedor começa após autorização, que o evento só é criado após confirmação e que o progresso persiste após recarga.
 
 #### Evidências para fechamento

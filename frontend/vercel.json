@@ -26,10 +26,6 @@
       "source": "/eventos",
       "has": [{ "type": "query", "key": "aba", "value": "meus" }],
       "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }]
-    },
-    {
-      "source": "/prototipo-plano-de-ensino/:path*",
-      "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }]
     }
   ],
   "rewrites": [

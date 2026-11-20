@@ -454,4 +454,3 @@ def test_cli_arguments_support_single_run_interval_and_daemon_flag():
 
     with pytest.raises(SystemExit):
         _parse_args(["--interval-hours", "0.5"])
-

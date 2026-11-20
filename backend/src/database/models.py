@@ -183,26 +183,12 @@ class SavedPublicEvent(Base):
 
 
 class EventClick(Base):
-    """Deduplicação de redirecionamentos (S8-B02). Gravado por registrar_clique_evento()."""
+    """Deduplicação de redirecionamentos (S8-B02). Gravado por registrar_redirecionamento_evento()."""
 
     __tablename__ = "cliques_evento"
 
     event_id: Mapped[UUID] = mapped_column(
         "evento_id", Uuid(as_uuid=True), ForeignKey("eventos.id", ondelete="CASCADE"), primary_key=True
-    )
-    click_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True)
-    created_at: Mapped[datetime] = mapped_column(
-        "criado_em", DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-
-
-class EventOutboundClick(Base):
-    """Deduplicação de redirecionamentos de Conferir evento por (event_id, click_id)."""
-
-    __tablename__ = "eventos_cliques_redirecionamento"
-
-    event_id: Mapped[UUID] = mapped_column(
-        Uuid(as_uuid=True), ForeignKey("eventos.id", ondelete="CASCADE"), primary_key=True, index=True
     )
     click_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True)
     created_at: Mapped[datetime] = mapped_column(
