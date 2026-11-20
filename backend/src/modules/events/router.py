@@ -1,20 +1,22 @@
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import Annotated
 from urllib.parse import urlparse
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
-from sqlalchemy import func, or_, select
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy import delete, func, or_, select, text
+from sqlalchemy.exc import DBAPIError, IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
 from src.database.connection import get_db
 from src.database.models import (
     Campus,
     Category,
+    EventClick,
     EventOutboundClick,
     PersonalEvent,
     PublicEvent,
+    Reminder,
     SavedPublicEvent,
 )
 from src.middlewares.auth import CurrentUser, get_current_user, require_admin, require_event_manager
@@ -22,6 +24,7 @@ from src.modules.events.schemas import (
     CategoryCreate,
     CategoryRead,
     EventCreate,
+    EventHistoryRead,
     EventRead,
     EventUpdate,
     OutboundClickCreate,
@@ -78,6 +81,76 @@ def _is_valid_http_url(url: str | None) -> bool:
         return False
     parsed = urlparse(url.strip())
     return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
+
+
+def _as_utc(value: datetime | None) -> datetime | None:
+    if value is None:
+        return None
+    if value.tzinfo is None or value.utcoffset() is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+def _sync_sqlite_reminder(
+    db: Session,
+    *,
+    user_id: UUID,
+    personal_event_id: UUID | None = None,
+    public_event_id: UUID | None = None,
+    starts_at: datetime | None = None,
+) -> None:
+    if db.get_bind().dialect.name == "postgresql":
+        return
+
+    filters = [
+        Reminder.user_id == user_id,
+        Reminder.status == "pendente",
+        Reminder.personal_event_id == personal_event_id,
+        Reminder.public_event_id == public_event_id,
+    ]
+    start_utc = _as_utc(starts_at)
+    if start_utc is None:
+        db.execute(delete(Reminder).where(*filters))
+        return
+
+    db.execute(delete(Reminder).where(*filters, Reminder.event_starts_at != starts_at))
+    scheduled_for = start_utc - timedelta(hours=24)
+    if scheduled_for <= datetime.now(timezone.utc):
+        db.execute(delete(Reminder).where(*filters))
+        return
+
+    existing = db.scalar(select(Reminder).where(*filters, Reminder.event_starts_at == starts_at))
+    if existing is None:
+        db.add(
+            Reminder(
+                user_id=user_id,
+                event_kind="pessoal" if personal_event_id is not None else "publico_salvo",
+                personal_event_id=personal_event_id,
+                public_event_id=public_event_id,
+                event_starts_at=starts_at,
+                scheduled_for=starts_at - timedelta(hours=24),
+                status="pendente",
+            )
+        )
+
+
+def _cancel_sqlite_pending_reminders(
+    db: Session,
+    *,
+    user_id: UUID | None = None,
+    personal_event_id: UUID | None = None,
+    public_event_id: UUID | None = None,
+) -> None:
+    if db.get_bind().dialect.name == "postgresql":
+        return
+    filters = [Reminder.status == "pendente"]
+    if user_id is not None:
+        filters.append(Reminder.user_id == user_id)
+    if personal_event_id is not None:
+        filters.append(Reminder.personal_event_id == personal_event_id)
+    if public_event_id is not None:
+        filters.append(Reminder.public_event_id == public_event_id)
+    db.execute(delete(Reminder).where(*filters))
 
 
 def _public_read(event: PublicEvent) -> EventRead:
@@ -267,6 +340,30 @@ def register_outbound_click(
     payload: OutboundClickCreate,
     db: Session = Depends(get_db),
 ) -> OutboundClickRead:
+    if db.get_bind().dialect.name == "postgresql":
+        try:
+            data = db.execute(
+                text("select public.registrar_redirecionamento_evento(:e, :c)"),
+                {"e": event_id, "c": payload.click_id},
+            ).scalar_one()
+            db.commit()
+        except DBAPIError as exc:
+            db.rollback()
+            sqlstate = getattr(exc.orig, "sqlstate", None)
+            if sqlstate == "P0002":
+                raise HTTPException(status_code=404, detail="Evento não encontrado") from None
+            if sqlstate == "22023":
+                raise HTTPException(
+                    status_code=422,
+                    detail="Este evento não possui link oficial disponível",
+                ) from None
+            raise
+        return OutboundClickRead(
+            external_url=data["external_url"],
+            outbound_clicks_count=int(data.get("outbound_clicks_count") or 0),
+            incremented=bool(data.get("incremented")),
+        )
+
     event = db.scalar(
         select(PublicEvent).where(
             PublicEvent.id == event_id,
@@ -283,8 +380,9 @@ def register_outbound_click(
 
     key = (event_id, payload.click_id)
     incremented = False
-    if db.get(EventOutboundClick, key) is None:
+    if db.get(EventOutboundClick, key) is None and db.get(EventClick, key) is None:
         db.add(EventOutboundClick(event_id=event_id, click_id=payload.click_id))
+        db.add(EventClick(event_id=event_id, click_id=payload.click_id))
         event.outbound_clicks_count = (event.outbound_clicks_count or 0) + 1
         try:
             db.commit()
@@ -364,6 +462,12 @@ def update_public_event(
     event.external_url = str(payload.external_url) if payload.external_url else None
     event.campus_id = _campus_id(db, payload.campus)
     event.category_id = _category_id(db, payload.category)
+    if db.get_bind().dialect.name != "postgresql":
+        saved_user_ids = db.scalars(
+            select(SavedPublicEvent.user_id).where(SavedPublicEvent.event_id == event_id)
+        ).all()
+        for uid in saved_user_ids:
+            _sync_sqlite_reminder(db, user_id=uid, public_event_id=event_id, starts_at=event.starts_at)
     db.commit()
     db.expire(event, ["campus", "category"])
     updated = db.scalar(
@@ -389,6 +493,7 @@ def delete_public_event(
         raise HTTPException(status_code=404, detail="Evento não encontrado")
     if current_user.role != "admin" and event.author_id != current_user.id:
         raise HTTPException(status_code=403, detail="Apenas o autor ou um administrador pode excluir este evento")
+    _cancel_sqlite_pending_reminders(db, public_event_id=event_id)
     db.delete(event)
     db.commit()
     return Response(status_code=204)
@@ -468,6 +573,12 @@ def save_public_event(
     key = (current_user.id, event_id)
     if db.get(SavedPublicEvent, key) is None:
         db.add(SavedPublicEvent(user_id=current_user.id, event_id=event_id))
+        _sync_sqlite_reminder(
+            db,
+            user_id=current_user.id,
+            public_event_id=event_id,
+            starts_at=event.starts_at,
+        )
         try:
             db.commit()
         except IntegrityError:
@@ -487,8 +598,62 @@ def remove_saved_event(
     saved = db.get(SavedPublicEvent, (current_user.id, event_id))
     if saved is not None:
         db.delete(saved)
+        _cancel_sqlite_pending_reminders(
+            db,
+            user_id=current_user.id,
+            public_event_id=event_id,
+        )
         db.commit()
     return Response(status_code=204)
+
+
+@router.get("/me/events/history", response_model=EventHistoryRead)
+def list_event_history(
+    response: Response,
+    reference_at: Annotated[datetime | None, Query(alias="before")] = None,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> EventHistoryRead:
+    _check_date_range(reference_at, None)
+    cutoff = reference_at or datetime.now(timezone.utc)
+    response.headers["Cache-Control"] = "no-store"
+
+    saved_past = db.scalars(
+        select(PublicEvent)
+        .join(SavedPublicEvent, SavedPublicEvent.event_id == PublicEvent.id)
+        .where(
+            SavedPublicEvent.user_id == current_user.id,
+            PublicEvent.status == "aprovado",
+            or_(
+                (PublicEvent.ends_at.is_not(None)) & (PublicEvent.ends_at < cutoff),
+                (PublicEvent.ends_at.is_(None)) & (PublicEvent.starts_at < cutoff),
+            ),
+        )
+        .options(
+            joinedload(PublicEvent.campus),
+            joinedload(PublicEvent.category),
+            joinedload(PublicEvent.author),
+        )
+        .order_by(PublicEvent.starts_at.desc(), PublicEvent.id.asc())
+    ).all()
+
+    personal_past = db.scalars(
+        select(PersonalEvent)
+        .where(
+            PersonalEvent.user_id == current_user.id,
+            or_(
+                (PersonalEvent.ends_at.is_not(None)) & (PersonalEvent.ends_at < cutoff),
+                (PersonalEvent.ends_at.is_(None)) & (PersonalEvent.starts_at < cutoff),
+            ),
+        )
+        .options(joinedload(PersonalEvent.campus), joinedload(PersonalEvent.category))
+        .order_by(PersonalEvent.starts_at.desc(), PersonalEvent.id.asc())
+    ).all()
+
+    return EventHistoryRead(
+        saved_public_events=[_public_read(event) for event in saved_past],
+        personal_events=[_personal_read(event) for event in personal_past],
+    )
 
 
 @router.get("/me/events", response_model=list[PersonalEventRead])
@@ -544,6 +709,13 @@ def create_personal_event(
         category_id=_category_id(db, payload.category),
     )
     db.add(event)
+    db.flush()
+    _sync_sqlite_reminder(
+        db,
+        user_id=current_user.id,
+        personal_event_id=event.id,
+        starts_at=event.starts_at,
+    )
     db.commit()
     db.refresh(event)
     return _personal_read(event)
@@ -575,6 +747,12 @@ def update_personal_event(
     event.location = payload.location
     event.campus_id = _campus_id(db, payload.campus)
     event.category_id = _category_id(db, payload.category)
+    _sync_sqlite_reminder(
+        db,
+        user_id=current_user.id,
+        personal_event_id=event.id,
+        starts_at=event.starts_at,
+    )
     db.commit()
     db.refresh(event)
     return _personal_read(event)
@@ -594,6 +772,11 @@ def delete_personal_event(
     )
     if event is None:
         raise HTTPException(status_code=404, detail="Evento pessoal não encontrado")
+    _cancel_sqlite_pending_reminders(
+        db,
+        user_id=current_user.id,
+        personal_event_id=event.id,
+    )
     db.delete(event)
     db.commit()
     return Response(status_code=204)
