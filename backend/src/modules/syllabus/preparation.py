@@ -5,7 +5,6 @@ import json
 import logging
 import multiprocessing
 import os
-import re
 import time
 from datetime import datetime, timezone
 
@@ -16,6 +15,7 @@ from sqlalchemy import select, update
 from src.database.models import AssessmentCandidate, Syllabus, SyllabusVersion
 from src.modules.syllabus.versions import private_version
 from src.modules.syllabus.extraction import extract_pages
+from src.modules.syllabus.minimization import minimize, minimize_with_count
 from src.modules.syllabus.processing_config import ProcessingConfig, ProcessingError
 
 MAX_TEXT_BYTES = 40000
@@ -55,6 +55,7 @@ class PreparationPreview(BaseModel):
     max_text_bytes: int = Field(alias="maxTextBytes")
     warning: str
     preparation_duration_ms: int | None = Field(alias="preparationDurationMs")
+    redacted_count: int | None = Field(default=None, alias="redactedCount", ge=0)
     text_revision: int = Field(alias="textRevision")
 
 
@@ -81,12 +82,18 @@ def text_hash(pages):
     return hashlib.sha256(json.dumps(snapshot, ensure_ascii=False, separators=(",", ":")).encode("utf-8")).hexdigest()
 
 
-def minimize(text):
-    text = re.sub(r"(?im)^(?:professor(?:a)?|docente|aluno(?:a)?|discente|nome|matr[ií]cula|cpf|nascimento)\s*[:=].*$", "[identificador removido]", text)
-    text = re.sub(r"[\w.+-]+@[\w.-]+\.[a-zA-Z]{2,}", "[email removido]", text)
-    text = re.sub(r"(?<!\d)(?:\d{3}[.]\d{3}[.]\d{3}-\d{2}|\d{9,11})(?!\d)", "[identificador removido]", text)
-    text = re.sub(r"(?:\+55\s*)?\(?\d{2}\)?[ -]\d{4,5}-\d{4}", "[telefone removido]", text)
-    return text
+def prepare_pages(pages) -> tuple[list[dict], int]:
+    minimized_pages = []
+    count = 0
+    for page in checked_pages(pages):
+        text, masked = minimize_with_count(page["texto"])
+        minimized_pages.append({"pagina": page["pagina"], "texto": text})
+        count += masked
+    return checked_pages(minimized_pages), count
+
+
+def contains_personal_data(pages: list[dict]) -> bool:
+    return any(minimize(page["texto"]) != page["texto"] for page in pages)
 
 
 def _prepare_child(send, content):
@@ -104,6 +111,7 @@ def _prepare_child(send, content):
 
 
 def extract_pdf_isolated(content, timeout):
+    """Extrai páginas localmente para a etapa privada de preparação."""
     context = multiprocessing.get_context("spawn")
     receive, send = context.Pipe(duplex=False)
     process = context.Process(target=_prepare_child, args=(send, content), daemon=True)
@@ -116,7 +124,7 @@ def extract_pdf_isolated(content, timeout):
         output = json.loads(receive.recv_bytes(maxlength=512000))
         if "error" in output:
             raise HTTPException(400, "Não foi possível preparar o PDF. Use texto selecionável ou a organização manual.")
-        return checked_pages([{"pagina": page["pagina"], "texto": minimize(page["texto"])} for page in output["pages"]])
+        return checked_pages(output["pages"])
     except (EOFError, OSError, ValueError, KeyError, TypeError):
         raise HTTPException(503, "A preparação do PDF está indisponível. Tente novamente ou organize manualmente.") from None
     finally:
@@ -151,6 +159,7 @@ def preview(plan):
             "provider": "Google Gemini API", "providerAvailable": os.getenv("SYLLABUS_PROVIDER_TERMS_READY", "false").lower() == "true", "maxTextBytes": MAX_TEXT_BYTES,
             "warning": "A remoção automática de identificadores é limitada. Revise o texto exato. Não envie conteúdo pessoal, sensível ou confidencial. A autorização não substitui os termos do provedor.",
             "preparationDurationMs": plan.preparation_duration_ms,
+            "redactedCount": plan.redacted_count,
             "textRevision": plan.text_revision}
 
 
@@ -164,7 +173,7 @@ def authorize(db, plan, payload, config):
     digest = text_hash(pages)
     if digest != payload.text_hash:
         raise HTTPException(409, "O texto aprovado não corresponde ao hash informado. Revise novamente.")
-    if any(minimize(page["texto"]) != page["texto"] for page in pages):
+    if contains_personal_data(pages):
         raise HTTPException(422, "Remova os identificadores detectados antes de autorizar o envio.")
     if not config.provider_terms_ready:
         raise HTTPException(503, "A análise com Gemini ainda não está disponível. Use a organização manual.")

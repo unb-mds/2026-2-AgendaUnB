@@ -33,6 +33,7 @@ nav:
   - Plano de Implantação: implantacao.md
   - Modelo de Dados: arquitetura/modelo-de-dados.md
   - Dados de planos: arquitetura/dados-de-planos.md
+  - Minimização de dados pessoais: arquitetura/minimizacao-planos.md
   - Especificação do Banco: arquitetura/banco-de-dados.md
   - Dados de eventos: arquitetura/dados-de-eventos.md
   - Eventos salvos: eventos-salvos.md

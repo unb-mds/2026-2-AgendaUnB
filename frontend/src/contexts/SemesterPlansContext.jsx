@@ -163,6 +163,41 @@ function SemesterPlansSession({ children, userId }) {
     setRecent(current => upsert(current, plan));
   }, [savePlan]);
 
+  const authorize = useCallback(async (id, pages, reprocess) => {
+    const key = `authorize:${id}`;
+    const automatic = pages === null;
+    if (requests.current.has(key) || (!automatic && confirmLock.current)) return;
+    requests.current.get(`read:${id}`)?.abort();
+    const controller = new AbortController();
+    requests.current.set(key, controller);
+    setAuthorizations(current => ({ ...current, [id]: { busy: true, automatic } }));
+    let submitting = false;
+    try {
+      if (automatic) {
+        const preview = await syllabusApi.text(id, controller.signal);
+        if (controller.signal.aborted) return;
+        if (!preview.providerAvailable) {
+          setAuthorizations(current => ({ ...current, [id]: {} }));
+          return;
+        }
+        pages = preview.pages;
+      }
+      submitting = true;
+      const response = await syllabusApi.authorize(id, pages, reprocess, controller.signal);
+      if (controller.signal.aborted) return;
+      if (response.id !== id || (response.userId && response.userId !== userId)) throw new Error('Resposta da autorização inválida.');
+      setPlans(current => ({ ...current, [id]: { ...current[id], ...response } }));
+      setTexts(current => ({ ...current, [id]: undefined }));
+      setAuthorizations(current => ({ ...current, [id]: {} }));
+    } catch (error) {
+      if (!controller.signal.aborted) setAuthorizations(current => ({
+        ...current, [id]: { error: syllabusError(error), uncertain: submitting && (uncertain(error) || error.status === 409) },
+      }));
+    } finally {
+      requests.current.delete(key);
+    }
+  }, [userId]);
+
   useEffect(() => {
     const signal = session.current?.signal;
     if (!signal || signal.aborted) return;
@@ -177,6 +212,7 @@ function SemesterPlansSession({ children, userId }) {
         if (signal.aborted) return;
         if (plan.offeringId !== item.offer.id || (plan.userId && plan.userId !== userId)) throw new Error('O envio retornou uma turma diferente. Consulte o histórico.');
         onPrepared(plan);
+        if (plan.authorizationRequired && plan.preparedTextAvailable) void authorize(plan.id, null, false);
         setUploads(current => current.filter(row => row.id !== item.id));
       }).catch(error => {
         if (signal.aborted) return;
@@ -186,31 +222,7 @@ function SemesterPlansSession({ children, userId }) {
           } : row));
       }).finally(() => prepared.current.delete(item.id));
     }
-  }, [uploads, onPrepared, userId]);
-
-  const authorize = async (id, pages, reprocess) => {
-    const key = `authorize:${id}`;
-    if (confirmLock.current || requests.current.has(key)) return;
-    // Invalidate any read started before this write.
-    requests.current.get(`read:${id}`)?.abort();
-    const controller = new AbortController();
-    requests.current.set(key, controller);
-    setAuthorizations(current => ({ ...current, [id]: { busy: true } }));
-    try {
-      const response = await syllabusApi.authorize(id, pages, reprocess, controller.signal);
-      if (controller.signal.aborted) return;
-      if (response.id !== id || (response.userId && response.userId !== userId)) throw new Error('Resposta da autorização inválida.');
-      setPlans(current => ({ ...current, [id]: { ...current[id], ...response } }));
-      setTexts(current => ({ ...current, [id]: undefined }));
-      setAuthorizations(current => ({ ...current, [id]: {} }));
-    } catch (error) {
-      if (!controller.signal.aborted) setAuthorizations(current => ({
-        ...current, [id]: { error: syllabusError(error), uncertain: uncertain(error) || error.status === 409 },
-      }));
-    } finally {
-      requests.current.delete(key);
-    }
-  };
+  }, [uploads, onPrepared, authorize, userId]);
 
   const checkAuthorization = async id => {
     const plan = await loadPlan(id, true);

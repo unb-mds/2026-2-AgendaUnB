@@ -19,7 +19,8 @@ def test_prepared_and_approved_text_are_owner_only(database):
     sid = plan(conn, users["student"])
     for role in ("student", "other", "professor", "admin"):
         assume(conn, users[role])
-        rows = conn.execute(text("select texto_preparado,texto_aprovado from public.planos_ensino where id=:sid"), {"sid":sid}).all()
+        rows = conn.execute(text("select texto_preparado,texto_aprovado,ocorrencias_mascaradas "
+                                 "from public.planos_ensino where id=:sid"), {"sid":sid}).all()
         assert len(rows) == (1 if role == "student" else 0)
         reject(conn, lambda: conn.execute(text("update public.planos_ensino set texto_aprovado='[]' where id=:sid"), {"sid":sid}), "42501")
 
