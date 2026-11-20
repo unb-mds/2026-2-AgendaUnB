@@ -24,7 +24,7 @@ Fontes: `backend/src/main.py`, `modules/events/router.py`, `modules/events/schem
 
 ### Entrada de evento
 
-`EventCreate` é usado na criação pública e na sugestão. `PersonalEventCreate` e `PersonalEventUpdate` usam os mesmos campos comuns, sem `external_url`.
+`EventCreate` é usado na criação pública e na sugestão. `EventUpdate` usa os mesmos campos na edição pública. `PersonalEventCreate` e `PersonalEventUpdate` usam os campos comuns, sem `external_url`.
 
 | Campo | Tipo | Obrigatório | Regra |
 | --- | --- | --- | --- |
@@ -42,7 +42,7 @@ Fontes: `backend/src/main.py`, `modules/events/router.py`, `modules/events/schem
 
 Strings são aparadas. Strings vazias ou contendo somente espaços em `description`, `campus`, `category` e `location` viram null. Isso não se aplica a `external_url`: para ausência de link, omitir ou enviar null. Campus e categoria são resolvidos por nome, ignorando maiúsculas/minúsculas, e não por UUID. Nome desconhecido na escrita retorna 422.
 
-O PUT pessoal exige `title` e `starts_at`, assim como o POST. Não é uma atualização parcial: omitir descrição, campus ou categoria substitui esses valores por null. Não existe PATCH nem rota de atualização pública, embora exista um schema `EventUpdate` sem rota associada.
+Os PUTs de eventos substituem os campos editáveis. `title` e os campos de data e hora seguem as mesmas regras do POST. Omitir campos opcionais limpa seus valores, com descrição vazia armazenada no caso público.
 
 Exemplo `EventCreate`:
 
@@ -95,24 +95,26 @@ Nas tabelas, as rotas iniciadas por `/api/v1` usam os schemas acima. Todas as op
 | `GET /api/v1/events/{event_id}` | Público | UUID no caminho | 200, `EventRead` aprovado | 422, UUID; 404, ausente ou não aprovado |
 | `POST /api/v1/events/{event_id}/outbound-clicks` | Público | UUID + `{"click_id": UUID}` | 200, `{external_url, outbound_clicks_count, incremented}` (deduplicado por `click_id`) | 422, sem link oficial; 404, ausente/não aprovado |
 | `POST /api/v1/events` | Professor/admin | `EventCreate` | 201, `EventRead`; autoria da sessão e status `aprovado` | 403, papel; 422, payload/referências; 409 |
-| `DELETE /api/v1/events/{event_id}` | Professor/admin | UUID no caminho | 204; exclui o evento e vínculos em cascata | 403, papel; 422, UUID; 404, ausente; 409 |
+| `GET /api/v1/me/published-event-ids` | Professor/admin | — | 200, UUIDs dos próprios eventos aprovados, sem cache | 403, papel |
+| `PUT /api/v1/events/{event_id}` | Professor autor ou admin | UUID no caminho e `EventUpdate` | 200, `EventRead` atualizado para evento aprovado | 403, papel ou autoria; 422, UUID/payload/referências; 404, ausente ou não aprovado; 409 |
+| `DELETE /api/v1/events/{event_id}` | Professor autor ou admin | UUID no caminho | 204, exclui o evento e vínculos em cascata | 403, papel ou autoria; 422, UUID; 404, ausente; 409 |
 | `GET /api/v1/categories` | Público | — | 200, `CategoryRead[]` | — |
 | `POST /api/v1/categories` | Admin | `CategoryCreate` (`name`, `color`) | 201, `CategoryRead` | 403, papel; 409, nome duplicado; 422 |
 | `DELETE /api/v1/categories/{category_id}` | Admin | UUID no caminho | 204 | 403, papel; 404, ausente; 409, categoria em uso |
 
-A exclusão pública não exige que o gestor seja o autor e não filtra status. A autorização é por papel.
+Administradores podem editar qualquer evento aprovado, inclusive coletado. A exclusão autorizada pode atingir eventos em qualquer status.
 
 | Query de listagem pública | Tipo e padrão | Semântica |
 | --- | --- | --- |
 | `campus` | string opcional, 2–120 caracteres | Nome exato sem diferenciar caixa, aparado; nome desconhecido produz lista vazia |
 | `category` | string opcional, 2–80 caracteres | Mesma regra de campus |
-| `startDate` | datetime opcional | Limite inferior inclusivo sobre `starts_at`; exige fuso |
+| `startDate` | datetime opcional | Exige fuso. Com fim, inclui intervalos com `ends_at > startDate`. Sem fim, inclui eventos com `starts_at >= startDate`. |
 | `endDate` | datetime opcional | Limite superior inclusivo; exige fuso e não pode preceder `startDate` |
-| `q` | string opcional, 1–120 caracteres | Busca no título via `ILIKE '%texto%'`; `%` e `_` conservam semântica de curingas SQL |
+| `q` | string opcional, 1–120 caracteres | Busca parcial no título sem diferenciar caixa. `%` e `_` são caracteres literais. |
 | `limit` | inteiro, padrão 50 | De 1 a 100 |
 | `offset` | inteiro, padrão 0 | Maior ou igual a zero |
 
-Não há filtro de turno no backend: ele é aplicado pela interface. O frontend percorre páginas de 100; a API não fornece total nem cursor. A ordenação pública usa apenas data, sem desempate por ID.
+O filtro de turno é aplicado pela interface. O frontend percorre páginas de 100 por `offset`. A ordenação pública é `starts_at ASC, id ASC`.
 
 ### Agenda pessoal — R1
 
@@ -169,7 +171,7 @@ A listagem e o detalhe retornam `ano` e `semestre`, derivados da oferta para nov
 | `PUT` | `/api/v1/me/legal-acceptances/{terms\|privacy}` | Autenticado | 204; 409 se a versão enviada não é a vigente |
 | `GET` | `/api/v1/me/consents` | Autenticado | 200 com os consentimentos opcionais registrados |
 | `DELETE` | `/api/v1/me/consents/{purpose}` | Autenticado | 204; revoga consentimento opcional (ex.: `google_agenda`) |
-| `GET` | `/api/v1/me/data-export` | Autenticado | 200 com o JSON dos dados da conta, para download |
+| `GET` | `/api/v1/me/data-export` | Autenticado | 200 com o JSON dos dados da conta, incluindo `reminders` e `googleCalendarExports`, para download |
 | `DELETE` | `/api/v1/me` | Autenticado | 204; 422 sem a frase de confirmação; 409 para o último administrador |
 
 Detalhes em [Privacidade e ciclo de vida dos dados](/processo/privacidade#direitos-do-titular-na-api-e-na-interface).
@@ -264,7 +266,7 @@ curl 'http://127.0.0.1:8000/health'
 
 ## Contratos Supabase separados da API FastAPI
 
-O frontend usa o SDK autenticado, conforme `frontend/src/lib/moderation.js`. As quatro RPCs abaixo são definidas na migração `20261018000000_moderacao_e_notificacoes.sql`. Não existem rotas FastAPI `/admin` ou de decisão de sugestão. Funções auxiliares/legadas do banco não são enumeradas como operações da interface.
+O frontend usa o SDK autenticado para as operações abaixo, conforme `frontend/src/lib/moderation.js`. A decisão de sugestões é feita pelo SDK. O registro de redirecionamentos passa pela rota HTTP e usa a RPC `registrar_redirecionamento_evento` com acesso restrito ao servidor.
 
 | RPC | Acesso | Parâmetros | Resultado |
 | --- | --- | --- | --- |
@@ -276,7 +278,6 @@ O frontend usa o SDK autenticado, conforme `frontend/src/lib/moderation.js`. As 
 | `admin_listar_categorias` | Admin | — | Lista de categorias com `id`, `nome`, `cor` e `events_count` |
 | `admin_criar_categoria` | Admin | `p_nome` texto (2–80), `p_cor` hex `#rrggbb` | Cria e retorna categoria (`42501` fora de admin; `22023` duplicada) |
 | `admin_excluir_categoria` | Admin | `p_categoria_id` UUID | Retorno void; bloqueia exclusão se houver eventos vinculados |
-| `registrar_redirecionamento_evento` | Público | `p_evento_id` UUID, `p_click_id` UUID | Incrementa `interessados_count` apenas no primeiro acionamento por `(event_id, click_id)` |
 
 Enviar filtros opcionais omitidos ou com seus padrões, não null como substituto indiscriminado. Itens de sugestão: `id`, `titulo`, `descricao`, `data_evento`, `localizacao`, `link_externo`, `status`, `justificativa_recusa`, `criado_em`, `autor_nome`, `campus`, `categoria`. Itens de usuário: `id`, `email`, `nome_completo`, `papel`, `criado_em`, `ultimo_login` (pode ser null), `email_confirmado` booleano. Listas vazias têm `items: []` e contagens numéricas.
 

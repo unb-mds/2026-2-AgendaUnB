@@ -82,8 +82,8 @@ Prova 1 - 10/11/2026 - 14:00.
 - **Privacidade e LGPD:** nos cenários sintéticos, a preparação local reduz
   os dados retidos no snapshot privado e o texto enviado ao provedor simulado.
   Os logs e candidatos persistidos foram verificados com valores sintéticos.
-  A revisão humana continua necessária para reconhecer informações fora dos
-  formatos cobertos.
+  A detecção cobre os formatos documentados. A revisão humana ocorre nas
+  avaliações extraídas, antes da importação para a agenda.
 - **Contrato:** a alteração na prévia é aditiva. Os `POST` mantêm `202` e
   as páginas, permissões e regras de hash seguem o contrato existente.
   A coluna de contagem e o novo código de falha exigem as duas migrações

@@ -369,3 +369,21 @@ def test_votes_are_private_and_written_only_by_the_server(database):
     denied(conn, "update public.votos_avaliacao set valor='confirma'")
     assume(conn)
     denied(conn, 'select count(*) from public.votos_avaliacao')
+
+
+def test_vote_summary_omits_withdrawn_assessments(database):
+    conn, users = database
+    turma = offering(conn)
+    _, version_id, candidates = plan(conn, users['ana'], turma)
+    follow(conn, users['bruno'], turma)
+    share(conn, users['ana'], version_id)
+    scalar(conn, 'select public.votar_avaliacao(:a, :c, :v)',
+           {'a': users['bruno'], 'c': candidates[0], 'v': 'contesta'})
+    conn.execute(text("update public.avaliacoes set status='descartado', revisado_em=now() where id=:id"),
+                 {'id': candidates[0]})
+
+    entries = conn.execute(text('select * from public.resumo_votos_versao(:a, :v)'),
+                           {'a': users['bruno'], 'v': version_id}).mappings().all()
+    assert [str(row['avaliacao_id']) for row in entries] == [candidates[1]]
+    assert scalar(conn, 'select count(*) from public.votos_avaliacao where avaliacao_id=:id',
+                  {'id': candidates[0]}) == 1

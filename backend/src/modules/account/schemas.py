@@ -63,6 +63,8 @@ class DataExportResponse(BaseModel):
     import_operations: list[dict[str, Any]] = Field(alias="importOperations")
     votes: list[dict[str, Any]]
     notifications: list[dict[str, Any]]
+    reminders: list[dict[str, Any]]
     legal_acceptances: list[dict[str, Any]] = Field(alias="legalAcceptances")
     consents: list[dict[str, Any]]
     google_calendar: dict[str, Any] | None = Field(default=None, alias="googleCalendar")
+    google_calendar_exports: list[dict[str, Any]] = Field(alias="googleCalendarExports")

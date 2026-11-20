@@ -14,7 +14,6 @@ class SyllabusUploadResponse(BaseModel):
     offering_id: UUID | None = Field(default=None, alias="offeringId")
     user_id: UUID = Field(alias="userId")
     file_name: str = Field(alias="fileName")
-    file_path: str | None = Field(default=None, alias="filePath")
     file_size: int | None = Field(default=None, alias="fileSize")
     file_type: str = Field(default="pdf", alias="fileType")
     status: str = Field(default="pendente")
@@ -25,6 +24,11 @@ class SyllabusUploadResponse(BaseModel):
     prepared_text_available: bool = Field(default=False, alias="preparedTextAvailable")
     redacted_count: int | None = Field(default=None, alias="redactedCount", ge=0)
     message: str = "Texto sanitizado. A extração pode ser iniciada quando o serviço estiver disponível."
+
+    @computed_field(alias="filePath")
+    @property
+    def file_path(self) -> None:
+        return None
 
 
 class SyllabusListItem(BaseModel):

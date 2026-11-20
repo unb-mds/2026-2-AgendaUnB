@@ -47,6 +47,8 @@ def test_every_response_carries_protection_headers(api):
 def test_private_responses_are_never_cached_and_hsts_follows_https(api):
     client, _, _, _ = api
     assert client.get("/api/v1/me/events").headers["cache-control"] == "no-store"
+    for path in ("/api/v1/classes/followed", "/api/v1/class-offerings/invalid/shared-plans"):
+        assert client.get(path).headers["cache-control"] == "no-store"
     assert client.get("/api/v1/me/events", headers={"Authorization": "Bearer x"}).headers["cache-control"] == "no-store"
     # A agenda pública não depende de quem pede e declara a própria política de
     # cache (20261114190000); o middleware não a sobrescreve.
@@ -161,6 +163,7 @@ def limited_app(**options):
         return {"ok": True}
 
     @app.get("/health")
+    @app.get("/api/health")
     def health():
         return {"status": "ok"}
 
@@ -176,6 +179,7 @@ def test_rate_limit_blocks_bursts_and_recovers_after_the_window():
     assert "Muitas requisições" in blocked.json()["detail"]
     # Verificação de saúde e preflight nunca são limitados.
     assert client.get("/health").status_code == 200
+    assert client.get("/api/health").status_code == 200
     assert client.options("/x").status_code in (200, 405)
 
     clock.now += 61

@@ -3,18 +3,18 @@ title: "Verificação de segurança"
 description: "Achados, correções, matriz de acesso e configuração segura do Agenda UnB (S8-D02)."
 ---
 
-Registro da [S8-D02 (#84)](https://github.com/unb-mds/2026-2-AgendaUnB/issues/84). Estado em **09/11/2026**, na fase de testes preventivos da Sprint 07. Este documento descreve o que foi avaliado, o que foi corrigido e o que continua pendente. Ele não é um laudo de teste de invasão.
+Registro da [S8-D02 (#84)](https://github.com/unb-mds/2026-2-AgendaUnB/issues/84). Estado em **20/11/2026** na branch `fix/s8-d02-endurecimento`, após a integração da Release 2 e a auditoria de QA.
 
 ## Escopo e método
 
 | Camada | Como foi avaliada |
 | --- | --- |
-| Banco exposto (PostgREST/supabase-js) | Leitura das 23 migrações e testes em PostgreSQL 16 assumindo os papéis `anon`, `authenticated` e o back-end, com `auth.uid()` simulado. Cada teste desfaz as próprias alterações. |
+| Banco exposto (PostgREST/supabase-js) | Revisão das migrações da R2 e testes no Supabase local com PostgreSQL 17. Os testes assumem `anon`, `authenticated` e o papel do backend, simulam `auth.uid()` e desfazem suas alterações. |
 | API FastAPI | Leitura de `backend/src` e testes com `TestClient` para cabeçalhos, CORS, limites e regras de abuso. |
 | Front-end | Busca por pontos que interpretam conteúdo vindo do banco (links, HTML) e pelas chamadas diretas ao Supabase. |
 | Dependências e segredos | `pip-audit`, `npm audit` e varredura do histórico Git por padrões de chave. |
 
-**Limites da avaliação.** Os testes de banco rodam em PostgreSQL local com um substituto mínimo do Supabase (papéis, `auth.users`, `storage.objects`). Auth, Storage, TLS, CORS no domínio publicado e a configuração do painel do Supabase **não foram exercitados em ambiente hospedado**; ficam para a homologação da [#76](https://github.com/unb-mds/2026-2-AgendaUnB/issues/76) e da [#85](https://github.com/unb-mds/2026-2-AgendaUnB/issues/85). Google Calendar, lembretes, votos e coleta ainda não existem na API e entram nesta verificação quando forem integrados.
+O escopo inclui Google Agenda, lembretes, votos, coleta, importação e ciclo de vida dos dados. Auth e Storage foram exercitados no Supabase local. O aceite hospedado de TLS, CORS, SMTP, OAuth e configuração do painel segue na [#76](https://github.com/unb-mds/2026-2-AgendaUnB/issues/76) e na [#85](https://github.com/unb-mds/2026-2-AgendaUnB/issues/85).
 
 ## Achados
 
@@ -33,10 +33,10 @@ Severidade segundo o impacto no produto: **Alta** permite agir como outra conta 
 | A9 | Baixa | `%` e `_` da busca eram interpretados como curingas do `LIKE`. | Termo tratado como texto literal. | Corrigido |
 | A10 | Baixa | O próprio usuário alterava colunas não previstas do perfil (por exemplo `criado_em`) e gravava qualquer valor em `avatar_url`. | UPDATE restrito a `nome_completo`, `avatar_url` e `papel` (este protegido por trigger); avatar só `https`. | Corrigido |
 | A11 | Baixa | O usuário pode gravar na própria agenda um evento com campos de procedência (`origem_*`) forjados. | Sem efeito sobre outras contas desde A3. A API é o único caminho que preenche procedência legítima. Avaliar fechar a escrita direta em `eventos_pessoais` quando nenhum fluxo depender dela. | Aceito e registrado |
-| A12 | Média | PDFs originais continuam no Storage e `filePath` é devolvido ao dono, em desacordo com o [ADR-003](../arquitetura/adrs/adr-003-minimizar-dados-de-planos.md). | Descarte após extração local na [#51](https://github.com/unb-mds/2026-2-AgendaUnB/issues/51); remoção dos originais legados na [#83](https://github.com/unb-mds/2026-2-AgendaUnB/issues/83). | Envios novos já não guardam o PDF (S7-B01, na `dev`). **Pendente:** remover os PDFs antigos com o script da [#83](https://github.com/unb-mds/2026-2-AgendaUnB/issues/83) e parar de devolver `filePath` |
-| A13 | Média | Política de senha fraca na configuração versionada: mínimo de 6 caracteres, sem exigência de composição, `secure_password_change` desligado. | Ajustar no painel do projeto hospedado (ver checklist) e alinhar `supabase/config.toml` na [#74](https://github.com/unb-mds/2026-2-AgendaUnB/issues/74). | **Pendente** |
-| A14 | Baixa | `npm audit` aponta 2 vulnerabilidades altas em dependências de desenvolvimento (`vite`, `source-map-js`), com correção disponível. Não entram no bundle publicado. | `npm audit fix` no front-end, com build e testes. | **Pendente** (front-end) |
-| A15 | Baixa | Dependências Python sem versão fixada: o mesmo commit pode instalar versões diferentes. `pip-audit` não encontrou vulnerabilidade conhecida em 09/11/2026. | Fixar versões ao definir o runtime do Render. | **Pendente** ([#76](https://github.com/unb-mds/2026-2-AgendaUnB/issues/76)) |
+| A12 | Média | Originais legados e caminhos de PDF podiam continuar acessíveis. | O upload descarta o PDF após extração. Upload, listagem e detalhes respondem `filePath: null` por compatibilidade. O script da [#83](https://github.com/unb-mds/2026-2-AgendaUnB/issues/83) inventaria e descarta legados. | Corrigido no contrato. Conferir o inventário hospedado antes da publicação. |
+| A13 | Média | A configuração versionada tinha composição de senha e troca segura desabilitadas. | `supabase/config.toml` exige pelo menos 8 caracteres com letras e dígitos e habilita `secure_password_change`. | Configuração local corrigida. Conferir painel e recuperação no projeto hospedado ([#74](https://github.com/unb-mds/2026-2-AgendaUnB/issues/74)). |
+| A14 | Baixa | A auditoria anterior apontou vulnerabilidades em `vite` e `source-map-js`. | Versões corrigidas no lockfile, com build e testes. | `npm audit` passou em 20/11. |
+| A15 | Baixa | Dependências Python sem lock integral permitem resoluções diferentes do mesmo commit. | `requirements.txt` restringe `cryptography` às versões `>=50.0.2,<51`. Os demais pacotes seguem as restrições declaradas e são resolvidos no build. | `pip-audit` passou em 20/11. A reprodução integral da resolução segue na [#76](https://github.com/unb-mds/2026-2-AgendaUnB/issues/76). |
 | A16 | Info | Não havia registro de quem mudou o papel de quem. | Tabela `auditoria_papeis`, alimentada por trigger e legível só por admins. | Corrigido |
 | A17 | Média | A tabela paralela `fila_processamento_ia` não tinha consumidor. | A migração de consolidação a remove. A fila ativa, usada pelo worker, permanece em `planos_ensino`. | Corrigido na R2 |
 
@@ -60,6 +60,12 @@ Cenários automatizados em `backend/tests/test_security_database.py`, `test_clas
 | `planos_ensino`, `versoes_plano`, `avaliacoes` | Recusado | Não lê plano privado | Lê; escrita só pela API | Sem acesso a privados por papel |
 | Storage `syllabus_files` | Recusado | Não lê arquivo alheio | Lê os próprios; sem envio ou exclusão direta | Sem acesso por papel |
 | `vinculos_turma` | Recusado | Não lê | Lê os próprios; escrita só pela API | — |
+| `votos_avaliacao` | Recusado | Não lê votos individuais de outra conta | Lê o próprio voto. Escrita e contagens passam pela API. | Sem acesso adicional por papel |
+| `lembretes` | Recusado | Não lê nem altera | Lê os próprios disparados e altera apenas `lido_em`. | Sem acesso adicional por papel |
+| `operacoes_importacao`, `itens_importacao` | Recusado | Não lê nem altera | Lê as próprias operações e seus itens. | Sem acesso adicional por papel |
+| `aceites_termos`, `consentimentos` | Recusado | Não lê nem altera | Conta confirmada lê os próprios registros. Escritas passam pela API. | Sem acesso adicional por papel |
+| `google_calendar_connections`, `google_calendar_oauth_states`, `google_calendar_event_exports` | Recusado | Recusado | Consulta e exportação pelos contratos da API | Nenhum acesso direto pelo navegador |
+| `cliques_evento`, `coletas_eventos`, `sincronizacoes_catalogo`, `exclusoes_conta` | Recusado | Recusado | Recusado | Nenhum acesso direto pelo navegador |
 | `auditoria_papeis` | Recusado | Recusado | Recusado | Só admin lê |
 | RPCs administrativas | Recusado | Recusado | Recusado | Só admin; moderação também para professor |
 
@@ -109,7 +115,7 @@ Iniciar com `uvicorn src.main:app --host 0.0.0.0 --port $PORT --no-server-header
 ### SPA (Vercel)
 
 - [ ] Apenas `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` e `VITE_API_URL` no build.
-- [ ] Cabeçalhos de segurança e fallback de SPA no `frontend/vercel.json` ([#76](https://github.com/unb-mds/2026-2-AgendaUnB/issues/76)).
+- [x] Cabeçalhos globais de segurança e fallback de SPA versionados em `frontend/vercel.json`. O retorno OAuth mantém `Referrer-Policy: no-referrer`. A resposta hospedada fica no aceite da [#76](https://github.com/unb-mds/2026-2-AgendaUnB/issues/76).
 - [ ] Previews sem credenciais de produção.
 
 ## Como repetir a verificação
@@ -134,6 +140,6 @@ cd ../frontend && npm audit
 | Política de senha e fluxo de confirmação (A13) | Thomas, com Thomaz | [#74](https://github.com/unb-mds/2026-2-AgendaUnB/issues/74) |
 | Manter auditoria de dependências. A consolidação atualizou Vite, `source-map-js` e `cryptography`. `npm audit` e `pip-audit` passaram em 20/11. As demais dependências Python continuam resolvidas no build. | Front-end e Luis | [#76](https://github.com/unb-mds/2026-2-AgendaUnB/issues/76) |
 | Isolamento de tokens e mapeamentos do Google Calendar | Luis, com Thomaz | [#82](https://github.com/unb-mds/2026-2-AgendaUnB/issues/82) |
-| Matriz de votos, lembretes, coleta e importação: testes de isolamento nos PRs de cada issue; repetir no ambiente publicado quando integrados | Felipe | [#75](https://github.com/unb-mds/2026-2-AgendaUnB/issues/75), [#72](https://github.com/unb-mds/2026-2-AgendaUnB/issues/72), [#77](https://github.com/unb-mds/2026-2-AgendaUnB/issues/77), [#81](https://github.com/unb-mds/2026-2-AgendaUnB/issues/81) |
+| Repetir a matriz integrada de votos, lembretes, coleta e importação no ambiente publicado. | Felipe | [#75](https://github.com/unb-mds/2026-2-AgendaUnB/issues/75), [#72](https://github.com/unb-mds/2026-2-AgendaUnB/issues/72), [#77](https://github.com/unb-mds/2026-2-AgendaUnB/issues/77), [#81](https://github.com/unb-mds/2026-2-AgendaUnB/issues/81) |
 
 Consulte também [ADR-006](../arquitetura/adrs/adr-006-autorizacao-em-camadas.md), [Banco de dados](../arquitetura/banco-de-dados.md) e [Implantação](../implantacao.md).

@@ -7,7 +7,7 @@ description: "Decisão, consequências e critérios de verificação: salvar ví
 | --- | --- |
 | Estado | Implementada |
 | Data do registro | 2026-11-08 |
-| Rastreabilidade | DA-06; RF08, RF12, RF13, RF18 |
+| Rastreabilidade | DA-06; RF08, RF12, RF13 |
 | Substitui | Nenhuma ADR |
 
 Registro retrospectivo; a motivação histórica e as alternativas avaliadas na época não estão documentadas.
