@@ -1,46 +1,36 @@
-name: Deploy Docs
+name: Validate Docs (Mintlify)
 
 on:
   push:
     branches:
       - main
+      - dev
     paths:
       - 'docs/**'
-      - '.github/mkdocs.yml'
-      - '.github/mkdocs_links.py'
+      - '.github/workflows/docs.yml'
+  pull_request:
+    paths:
+      - 'docs/**'
       - '.github/workflows/docs.yml'
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
-  docs:
-    name: mkdocs deploy
+  validate:
+    name: mintlify validate
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Set up Node
+        uses: actions/setup-node@v4
         with:
-          python-version: "3.11"
+          node-version: "20"
 
-      - name: Cache dependencies
-        uses: actions/cache@v4
-        with:
-          key: mkdocs-material-${{ runner.os }}-${{ hashFiles('.github/mkdocs.yml') }}
-          path: ~/.cache/pip
-          restore-keys: |
-            mkdocs-material-${{ runner.os }}-
-
-      - name: Install MkDocs Material
-        run: pip install mkdocs-material mkdocs-redirects
-
-      - name: Deploy Docs
+      - name: Validate Mintlify docs, links and contrast
+        working-directory: docs
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          mkdocs gh-deploy -f .github/mkdocs.yml --force
+          npx -y mint validate
+          npx -y mint broken-links --check-redirects
+          npx -y mint a11y

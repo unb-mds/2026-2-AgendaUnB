@@ -11,9 +11,11 @@ from fastapi.requests import Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from src.modules.account.router import router as account_router
 from src.modules.classes.router import router as classes_router
 from src.modules.events.router import router as events_router
 from src.modules.google_calendar.router import router as google_calendar_router
+from src.modules.reminders.router import router as reminders_router
 from src.modules.syllabus.router import router as syllabus_router
 from src.middlewares.security import (
     BodyLimitMiddleware,
@@ -37,6 +39,8 @@ app = FastAPI(
     openapi_url="/openapi.json" if docs_enabled else None,
 )
 logger = logging.getLogger("agenda_unb.api")
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
 if os.environ.get("APP_ENV", "local") != "local":
     logging.getLogger("uvicorn.access").disabled = True
 
@@ -52,7 +56,13 @@ async def handle_integrity_error(request: Request, exc: IntegrityError) -> JSONR
 
 @app.exception_handler(SQLAlchemyError)
 async def handle_database_error(request: Request, exc: SQLAlchemyError) -> JSONResponse:
-    logger.error("Database failure on %s %s", request.method, request.url.path)
+    # Sem traceback: a mensagem do PostgreSQL pode trazer a linha recusada
+    # (títulos, descrições, texto de planos). Tipo e SQLSTATE bastam ao diagnóstico.
+    logger.error(
+        "Database failure on %s %s (%s, sqlstate=%s)",
+        request.method, request.url.path, type(exc).__name__,
+        getattr(getattr(exc, "orig", None), "sqlstate", None),
+    )
     return JSONResponse(
         status_code=503,
         content={"detail": "O serviço de dados está indisponível no momento."},
@@ -66,10 +76,17 @@ async def handle_validation_error(request: Request, exc: RequestValidationError)
         "title": "Título",
         "description": "Descrição",
         "starts_at": "Data e horário",
+        "ends_at": "Horário de término",
+        "start_date": "Data inicial",
+        "end_date": "Data final",
+        "all_day": "Dia inteiro",
         "campus": "Campus",
         "category": "Área / Categoria",
         "location": "Local",
         "external_url": "Link externo",
+        "click_id": "Identificador do clique",
+        "name": "Nome da categoria",
+        "color": "Cor da categoria",
     }
     messages = []
     for error in exc.errors():
@@ -86,6 +103,14 @@ async def handle_validation_error(request: Request, exc: RequestValidationError)
     return JSONResponse(
         status_code=422,
         content={"detail": "; ".join(messages), "errors": [{"loc": e["loc"], "msg": e["msg"], "type": e["type"]} for e in exc.errors()]},
+    )
+
+@app.exception_handler(Exception)
+async def handle_unexpected_error(request: Request, exc: Exception) -> JSONResponse:
+    logger.error("Unhandled %s on %s %s", type(exc).__name__, request.method, request.url.path)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Erro interno inesperado. Tente novamente."},
     )
 
 # Origens exatas, validadas por src.deployment (https obrigatório fora do ambiente local).
@@ -109,9 +134,11 @@ app.add_middleware(
 )
 app.add_middleware(SecurityHeadersMiddleware)
 
+app.include_router(account_router, prefix="/api/v1")
 app.include_router(classes_router, prefix="/api/v1")
 app.include_router(events_router, prefix="/api/v1")
 app.include_router(google_calendar_router, prefix="/api/v1")
+app.include_router(reminders_router, prefix="/api/v1")
 app.include_router(syllabus_router, prefix="/api/v1")
 
 

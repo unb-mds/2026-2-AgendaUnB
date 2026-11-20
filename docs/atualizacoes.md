@@ -36,9 +36,9 @@ Após as cinco migrações da base R1, o repositório inclui:
 
 Aplique as migrações pendentes em ordem antes de disponibilizar o código atualizado. No ambiente local já iniciado: `npx supabase migration up --local`. Os detalhes estão em [eventos salvos](/eventos-salvos) e nas [ADR-001](/arquitetura/adrs/adr-001-integracao-fastapi-supabase) e [ADR-006](/arquitetura/adrs/adr-006-autorizacao-em-camadas).
 
-## Ainda em preparação
+## Estado de referência no início da R2
 
-`/plano-de-ensino` continua informativo e oferece organização manual da agenda.
+No início da R2, `/plano-de-ensino` oferecia informações e acesso à organização manual da agenda.
 No backend, #40/S6-B01 disponibilizam upload autenticado e worker separado para
 candidatos privados com procedência, recuperação e limite de custo. O worker fica
 desativado por padrão. As políticas e a revisão transacional S6-D02 foram validadas
@@ -48,6 +48,15 @@ Ver [ADR-003](/arquitetura/adrs/adr-003-minimizar-dados-de-planos), [ADR-010](/a
 Upload de atestados e validação colaborativa continuam planejados, assim como
 inscrições, histórico de participação, lembretes de proximidade, exportação `.ics`
 e coleta externa.
+
+## Painel do semestre para planos de ensino
+
+Em `/plano-de-ensino`, a área autenticada reúne vínculo com turmas, envio de vários planos, autorização de texto por documento e revisão consolidada das avaliações. O usuário pode continuar enviando ou revisando outros planos durante a extração. A confirmação em lote informa o resultado de cada plano e encaminha para **Meus Eventos**. Veja o [fluxo e o roteiro de homologação](/arquitetura/frontend#painel-do-semestre).
+
+A preparação de PDF e texto colado mascara os dados pessoais detectados antes
+de salvar o texto para revisão. Quando houver ocorrências mascaradas, o editor
+exibe o total e permite ajustar o texto antes de autorizar o envio.
+Veja o [catálogo e os exemplos de minimização](/arquitetura/minimizacao-planos).
 
 ## Verificação disponível
 
@@ -91,7 +100,7 @@ A decisão sobre retenção de PDFs e autorização do texto está no [ADR-003](
 
 - **Envio.** `POST /api/v1/syllabus/upload` mantém `multipart/form-data` e devolve 202. Para novos planos, exige `class_offering_id` de uma turma disponível que o usuário segue e exatamente um de `file` (PDF digital até 10 MB e 10 páginas) ou `text` (texto bruto, com limite de entrada a confirmar na [#51](https://github.com/unb-mds/2026-2-AgendaUnB/issues/51)). As leituras existentes em `GET /syllabus` e `GET /syllabus/{id}` continuam disponíveis ao dono, inclusive para registros antigos sem oferta.
 - **PDF e revisão.** O arquivo passa apenas pela extração local. Descartar bytes, arquivos temporários e caminhos acessíveis assim que essa etapa terminar, inclusive em erro ou interrupção. Persistir somente texto necessário, metadados e candidatos autorizados. A versão começa privada. A interface exibe o texto minimizado exato e o destino antes de enviar `POST /api/v1/syllabus/{id}/versions/{version_id}/processing-jobs`. O detalhe privado do plano devolve `version_id`, `phase` e `review_text` ao autor na etapa de autorização. O POST recebe `{"approved_text":"Trecho revisado e minimizado"}`. O servidor registra a autorização daquela versão e do texto aprovado. Mudança de texto exige nova revisão e autorização. Ao Gemini vai apenas o texto autorizado. Repetir a mesma operação retoma o job e preserva a unicidade dos candidatos.
-- **Edição e visibilidade.** O autor edita suas versões privadas e compartilhadas. Professor e admin podem editar o conteúdo de uma versão já compartilhada, criando uma revisão separada. O papel por si só não dá acesso a PDF, texto original, candidatos privados ou agenda alheia. `POST /api/v1/syllabus/{id}/versions` cria uma revisão e mantém a versão anterior e as cópias na agenda. `PUT /api/v1/syllabus/{id}/versions/{version_id}/sharing` publica conteúdo revisado mediante decisão do autor. Professor e admin também podem publicar diretamente as revisões que criam a partir de conteúdo já compartilhado, sem aprovação adicional do autor original. Essa permissão não permite tornar público material privado alheio. `DELETE` no mesmo recurso retira o compartilhamento pelo autor ou admin, bloqueando novos acessos, votos e importações. Retirar o compartilhamento da versão original não retira nem exclui suas revisões: elas mantêm sua própria visibilidade e continuam disponíveis quando compartilhadas. Cópias já importadas na agenda também permanecem. Essa regra trata da retirada de compartilhamento, não define a política de exclusão de conta. O PDF original fica fora do compartilhamento e da retenção.
+- **Edição e visibilidade.** O autor edita suas versões privadas e compartilhadas. Professor e admin podem editar o conteúdo de uma versão já compartilhada, criando uma revisão separada. O papel por si só não dá acesso a PDF, texto original, candidatos privados ou agenda alheia. Por decisão de produto (PO, 2026-11-17, [ADR-010](/arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos)), a versão inicial (`v1`) vinculada a uma oferta concluída com candidatos extraídos é compartilhada automaticamente ao ser consultada/confirmada pelo autor (salvo se já retirada); `POST /api/v1/syllabus/{id}/versions` cria uma revisão e mantém a versão anterior e as cópias na agenda. `PUT /api/v1/syllabus/{id}/versions/{version_id}/sharing` publica versões privadas ou republica versão retirada mediante decisão do autor. Professor e admin também podem publicar diretamente as revisões que criam a partir de conteúdo já compartilhado, sem aprovação adicional do autor original. Essa permissão não permite tornar público material privado alheio. `DELETE` no mesmo recurso retira o compartilhamento pelo autor ou admin, bloqueando novos acessos, votos e importações e impedindo novo compartilhamento automático. Retirar o compartilhamento da versão original não retira nem exclui suas revisões: elas mantêm sua própria visibilidade e continuam disponíveis quando compartilhadas. Cópias já importadas na agenda também permanecem. Essa regra trata da retirada de compartilhamento, não define a política de exclusão de conta. O PDF original fica fora do compartilhamento e da retenção.
 - **Procedência.** Registrar `author_role` com o papel da conta no momento do envio e `institutional_source_url` separadamente. A atribuição inicial de origem institucional exige evidência pública oficial vinculada à versão, validada por admin. Uma revisão feita por professor ou admin mantém a procedência institucional já validada da versão de origem. Registrar a versão de origem, a evidência institucional herdada, o autor da revisão e seu papel no momento da alteração. A interface distingue documento institucional de origem e alterações posteriores da comunidade. Papel professor/admin não cria procedência institucional quando a origem não a possuía; revisões estudantis não recebem essa herança automaticamente. Voto, vínculo autodeclarado e papel `professor` não constituem essa evidência.
 - **Colaboração.** Seguidores autenticados da turma leem versões compartilhadas e votam por `PUT /api/v1/syllabus/{id}/versions/{version_id}/candidates/{candidate_id}/vote`, com `{"value":"confirm"}` ou `{"value":"contest"}`. Um voto ativo por usuário, candidato e versão. Repetir ou alterar voto não multiplica o total. A votação não altera datas automaticamente.
 - **Confirmação.** Preservar `POST /api/v1/syllabus/{id}/confirm` para o fluxo particular e acrescentar `version_id` para selecionar explicitamente a versão compartilhada. O servidor verifica acesso, versão, seleção e datas antes de gravar o lote em transação. A decisão na versão compartilhada é por usuário. Deduplicar por `(user_id, version_id, candidate_id)` e manter a procedência do evento pessoal. Requisição antiga não restaura evento apagado. Uma nova importação exige ação explícita do usuário.
@@ -187,42 +196,56 @@ A [#81](https://github.com/unb-mds/2026-2-AgendaUnB/issues/81) prevê um aviso p
   "id": "66666666-6666-4666-8666-666666666666",
   "event_kind": "saved_public",
   "event_id": "77777777-7777-4777-8777-777777777777",
+  "title": "Palestra no campus",
+  "starts_at": "2026-11-18T17:00:00Z",
   "scheduled_at": "2026-11-17T17:00:00Z",
   "read_at": null
 }
 ```
 
-`GET /api/v1/me/reminders?limit=20&offset=0` lista avisos disparados para a conta. `PUT /api/v1/me/reminders/{id}/read` marca o próprio aviso como lido e mantém o primeiro `read_at` em retries. E-mail transacional permanece no fluxo de autenticação.
+`GET /api/v1/me/reminders?limit=20&offset=0` retorna um array de avisos disparados para a conta. `PUT /api/v1/me/reminders/{id}/read` retorna o ID e o primeiro `read_at`, inclusive em novas tentativas. O usuário consulta os avisos pelo sino. E-mail transacional permanece no fluxo de autenticação. [Contrato de lembretes](/api-specs#lembretes-da-agenda).
 
 ## Google Agenda e ICS
 
 1. **Autorizar.** Em **Meus Eventos**, a ação **Conectar Google Agenda** solicita o escopo [`calendar.app.created`](https://developers.google.com/workspace/calendar/api/auth) durante o OAuth. O backend valida o retorno OAuth, a identidade Google e a correspondência com o e-mail confirmado da Agenda UnB antes de guardar as credenciais cifradas. Sessões por senha também podem conectar. A exportação fica disponível em **Meus Eventos** após consentimento.
-2. **Exportar.** O fluxo atual permite selecionar até 20 eventos pessoais ou públicos salvos. A cópia usa título, horário de Brasília e duração de uma hora, com ID estável por evento. A primeira exportação cria uma agenda secundária **Agenda UnB**. Falhas são apresentadas por item e a seleção mantém os itens que precisam de nova tentativa.
-3. **Revogar.** A ação **Desconectar Google Agenda** remove as credenciais locais e revoga o acesso no Google. Um novo consentimento com a mesma conta permite reutilizar a agenda. Se a resposta de criação se perder, o usuário pode informar o ID da agenda ou confirmar que ela não existe.
+2. **Prévia e Exportação.** Em **Meus Eventos**, o usuário pode filtrar por período (`start_date` e `end_date`), optar por incluir a descrição selecionada (`include_description`) e selecionar até 20 eventos pessoais (`personal`) ou públicos salvos (`saved`). Antes do envio, `POST /api/v1/me/google-calendar/exports/preview` classifica cada item em `create`, `update` ou `unchanged` com base no mapeamento persistido em `google_calendar_event_exports` (`exported_version` SHA-256 dos campos geridos) e informa `requires_overwrite_confirmation`. Na primeira exportação, o backend cria a agenda secundária **Agenda UnB**. Eventos de dia inteiro usam `start.date` e `end.date` exclusivo (`YYYY-MM-DD`), e eventos com horário usam `dateTime` em `America/Sao_Paulo` com `ends_at` (quando posterior a `starts_at`) ou duração padrão de uma hora, sempre com ID determinístico base32hex por evento (`sha256("{user_id}:{kind}:{event_id}").hexdigest()`). Na reexportação explícita com `allow_managed_field_updates: true`, os campos geridos são atualizados via `PUT` remoto (`status: "updated"`); sem essa confirmação, itens já exportados retornam `already_exported` sem sobrescrever o calendário remoto. Exclusões locais não apagam cópias no Google Agenda. Falhas são apresentadas por item (`exported`, `updated`, `already_exported`, `failed`), preservando apenas os pendentes/falhos selecionados para **Tentar novamente** com `Idempotency-Key`.
+3. **Revogar e Recuperar Destino.** A ação **Desconectar Google Agenda** remove as credenciais locais e revoga o acesso no Google, preservando os eventos já exportados. Um novo consentimento com a mesma conta permite reutilizar a agenda. Se a resposta de criação se perder ou se a agenda secundária **Agenda UnB** for excluída no Google (`404`/`410`), o usuário pode informar o ID da agenda existente ou confirmar sua recriação (`PUT /api/v1/me/google-calendar/destination` com `calendar_id: null`, limpando o destino antigo e os mapeamentos associados).
+4. **Arquivo `.ics` complementar.** Mesmo sem conexão Google ativa, **Meus Eventos** e o modal de exportação permitem baixar o arquivo `.ics` (RFC 5545) compatível com Apple Calendar e Outlook, com `VTIMEZONE` `America/Sao_Paulo`, `UID` determinístico (`<kind>-<id>@agendaunb.unb.br`), `DTSTAMP` UTC, `DTSTART`/`DTEND` com fuso ou `VALUE=DATE` exclusivo, codificação UTF-8, escape de caracteres especiais e line folding de 75 octetos.
 
-Os contratos abaixo descrevem a ampliação prevista na S8-F03 (#82), incluindo seleção por período, lotes assíncronos, confirmação de sobrescrita, reconciliação do destino e exportação ICS.
+Exemplo de prévia (`POST /api/v1/me/google-calendar/exports/preview`):
 
 ```json
 {
-  "start_date": "2026-11-18",
-  "end_date": "2026-11-22",
-  "items": [{"event_kind": "saved_public", "event_id": "77777777-7777-4777-8777-777777777777"}],
-  "allow_managed_field_updates": false
+  "requires_overwrite_confirmation": true,
+  "items": [
+    {"id": "77777777-7777-4777-8777-777777777777", "kind": "saved", "action": "create"},
+    {"id": "99999999-9999-4999-8999-999999999999", "kind": "personal", "action": "update"}
+  ]
 }
 ```
 
-O detalhe do lote retorna `pending`, `running`, `completed`, `partial_failure` ou `failed`. A tentativa de cada item tem resultado próprio, incluindo `created`, `updated`, `unchanged` ou `failed`. Usar `Idempotency-Key` por confirmação do lote e verificar se a conexão e os itens continuam autorizados antes da escrita externa. Um retry do mesmo lote não autoriza atualizar campos que o usuário não aprovou.
+Exemplo de envio (`POST /api/v1/me/google-calendar/exports` com cabeçalho opcional `Idempotency-Key`):
 
 ```json
 {
-  "id": "88888888-8888-4888-8888-888888888888",
-  "status": "partial_failure",
-  "items": [
-    {"event_id": "77777777-7777-4777-8777-777777777777", "status": "created"},
-    {"event_id": "99999999-9999-4999-8999-999999999999", "status": "failed",
-     "code": "END_REQUIRED", "retryable": false}
-  ]
+  "events": [
+    {"id": "77777777-7777-4777-8777-777777777777", "kind": "saved"},
+    {"id": "99999999-9999-4999-8999-999999999999", "kind": "personal"}
+  ],
+  "allow_managed_field_updates": true,
+  "include_description": true,
+  "start_date": "2026-11-18",
+  "end_date": "2026-11-22"
 }
+```
+
+Resposta (`200 OK`, `Cache-Control: no-store`):
+
+```json
+[
+  {"id": "77777777-7777-4777-8777-777777777777", "kind": "saved", "status": "exported"},
+  {"id": "99999999-9999-4999-8999-999999999999", "kind": "personal", "status": "updated"}
+]
 ```
 
 ## Permissões e erros {#permissoes-e-erros}

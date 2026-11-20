@@ -12,6 +12,7 @@ ERROR_MESSAGES = {
     "limite_paginas": "O documento ultrapassa os limites de processamento.",
     "falha_ia": "Não foi possível extrair as avaliações. Tente outro arquivo ou use o cadastro manual.",
     "tempo_esgotado": "O processamento excedeu o tempo disponível.",
+    "texto_com_dados_pessoais": "Remova os dados pessoais na revisão e autorize uma nova análise.",
     "erro_interno": "Não foi possível concluir o processamento. Use o cadastro manual.",
 }
 
