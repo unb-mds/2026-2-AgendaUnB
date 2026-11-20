@@ -78,8 +78,8 @@ Links para documentação, requisitos e ADRs relacionadas.
 
 ## Limites e decisões ainda abertas
 
-A prova de infraestrutura ainda deve validar o provedor da API, execução de jobs e viabilidade do catálogo público. Estes registros não escolhem um scheduler nem aprovam a hospedagem proposta. O limite de entrada de texto bruto também permanece pendente no contrato da R2.
+A [ADR-002](/arquitetura/adrs/adr-002-separar-hospedagem-e-ambientes) registra a hospedagem e a execução de jobs da R2. A [ADR-013](/arquitetura/adrs/adr-013-lembretes-persistentes) descreve o agendamento de lembretes no Supabase Cron. O [guia de implantação](/implantacao) indica o que ainda depende de validação hospedada.
 
-A documentação contém trechos históricos de planos ainda indisponíveis e uma visão mais recente com upload e confirmação. Consulte o inventário da API e o código antes de assumir disponibilidade. A ADR-011 explicita a transição do fuso do navegador para o contrato da R2.
+O [contrato de planos](/api-specs#preparacao-e-autorizacao-de-planos) fixa o limite de texto em 40.000 bytes UTF-8 e descreve o envio e a autorização. A [ADR-011](/arquitetura/adrs/adr-011-datas-civis-e-instantes) define as datas civis e o fuso usados na agenda.
 
 [Visão arquitetural](/arquitetura/visao-geral) · [Padrões](/produto/padroes) · [Matriz de aceite](/matriz-release-2)

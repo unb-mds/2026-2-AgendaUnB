@@ -114,7 +114,7 @@ Iniciar com `uvicorn src.main:app --host 0.0.0.0 --port $PORT --no-server-header
 
 ### SPA (Vercel)
 
-- [ ] Apenas `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` e `VITE_API_URL` no build.
+- [ ] Configure `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` e `VITE_API_URL` no build. `VITE_SUPABASE_ANON_KEY` é a alternativa pública para projetos com chave legada. Credenciais de servidor ficam fora do prefixo `VITE_`.
 - [x] Cabeçalhos globais de segurança e fallback de SPA versionados em `frontend/vercel.json`. O retorno OAuth mantém `Referrer-Policy: no-referrer`. A resposta hospedada fica no aceite da [#76](https://github.com/unb-mds/2026-2-AgendaUnB/issues/76).
 - [ ] Previews sem credenciais de produção.
 
