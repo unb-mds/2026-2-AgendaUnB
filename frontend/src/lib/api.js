@@ -205,6 +205,7 @@ export const eventsApi = {
   }),
   listPersonal: () => request('/me/events', { auth: true }),
   listSaved: () => request('/me/saved-events', { auth: true }),
+  listHistory: () => request('/me/events/history', { auth: true }),
   savedStatus: (id) => request(`/me/saved-events/${encodeURIComponent(id)}`, { auth: true }),
   savePublic: (id) => request(`/me/saved-events/${encodeURIComponent(id)}`, { auth: true, method: 'PUT' }),
   removeSaved: (id) => request(`/me/saved-events/${encodeURIComponent(id)}`, { auth: true, method: 'DELETE' }),

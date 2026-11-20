@@ -49,7 +49,13 @@ comment on table public.eventos_cliques_redirecionamento is
   'Deduplicação de acionamentos de Conferir evento por (event_id, click_id), sem identificar o usuário.';
 
 -- Impede que o caminho legado incremente o contador sem validar URL e click_id.
-revoke all on function public.registrar_interesse(uuid) from public, anon, authenticated;
+do $$
+begin
+  if to_regprocedure('public.registrar_interesse(uuid)') is not null then
+    revoke all on function public.registrar_interesse(uuid) from public, anon, authenticated;
+  end if;
+end;
+$$;
 
 create or replace function public.registrar_redirecionamento_evento(
   p_evento_id uuid,
@@ -93,10 +99,18 @@ begin
 
   if found then
     v_novo := true;
-    update public.eventos
-       set interessados_count = interessados_count + 1
-     where id = p_evento_id
-    returning interessados_count into v_count;
+    insert into public.cliques_evento (evento_id, click_id)
+    values (p_evento_id, p_click_id)
+    on conflict (evento_id, click_id) do nothing;
+
+    if found then
+      update public.eventos
+         set interessados_count = interessados_count + 1
+       where id = p_evento_id
+      returning interessados_count into v_count;
+    else
+      v_novo := false;
+    end if;
   end if;
 
   return jsonb_build_object(

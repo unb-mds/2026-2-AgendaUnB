@@ -28,6 +28,7 @@ nav:
     - ADR-013 — Persistir lembretes com agendamento idempotente e revalidação: arquitetura/adrs/adr-013-lembretes-persistentes.md
     - ADR-014 — Processamento assíncrono resiliente de planos com fila persistida, lease e orçamento: arquitetura/adrs/adr-014-processamento-assincrono-planos-ia.md
   - Contratos do Backend: api-specs.md
+  - Dados de Conferir evento: arquitetura/conferir-evento.md
   - Matriz de aceite da Release 2: matriz-release-2.md
   - Plano de Implantação: implantacao.md
   - Modelo de Dados: arquitetura/modelo-de-dados.md
