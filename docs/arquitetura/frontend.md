@@ -122,7 +122,7 @@ A responsividade da aplicação permite que os usuários acessem o AgendaUnB por
 
 ### 3.6. Simplicidade, transparência e intuitividade
 
-A organização dos elementos visuais, a divisão das funcionalidades e a utilização de componentes padronizados buscam reduzir a complexidade de utilização do sistema. O objetivo é permitir que os estudantes realizem suas atividades de maneira simples, sem precisar percorrer caminhos desnecessários para encontrar os recursos desejados. A adoção de indicadores de carregamento e áreas de moderação humana em processos densos (como a leitura dos PDFs) garantem que a pessoa mantenha controle total sem se perder na intuição da plataforma.
+A interface informa o andamento da extração do plano de ensino. Após o processamento, o usuário revisa as provas e os trabalhos sugeridos, corrige os campos necessários e seleciona o que será importado para a agenda. Consulte os estados e as rotas no [contrato de preparação e autorização](/api-specs#preparacao-e-autorizacao-de-planos).
 
 ### Refinamento do catálogo de turmas
 

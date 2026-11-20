@@ -155,7 +155,7 @@ As operações exigem autenticação. Planos privados ficam restritos ao autor; 
 
 | Operação | Entrada | Resposta |
 | --- | --- | --- |
-| `POST /api/v1/syllabus/upload` | `multipart/form-data` com `file` (PDF), `disciplina`, `turma`, `ano` (2000 a 2100) e `semestre` (1 ou 2). `file` e `offering_id` são obrigatórios; disciplina, turma e período são derivados da oferta disponível. | 202, plano registrado como `pendente`. Ano e semestre são persistidos quando informados. |
+| `POST /api/v1/syllabus/upload` | `multipart/form-data` com `file` (PDF) e `offering_id` de uma oferta disponível que a conta segue. | 202, plano registrado como `pendente`. Disciplina, turma e período são derivados da oferta. |
 | `GET /api/v1/syllabus` | `limit` de 1 a 100 (padrão 20), `offset` a partir de 0 (padrão 0). | 200, `{ "items": [], "total": 0, "limit": 20, "offset": 0 }` para uma lista vazia. Ordena por criação e ID decrescentes. |
 | `GET /api/v1/syllabus/{syllabus_id}` | UUID do plano. | 200, dados e candidatos da versão aprovada. Para compartilhamento, aplica a permissão por autor/seguidor; 404 para versões indisponíveis. |
 | `POST /api/v1/syllabus/{syllabus_id}/confirm` | Cabeçalho `Idempotency-Key` (8 a 200 caracteres) e `candidates` selecionados, com `candidateId`, `title`, `description`, `type`, `startsAt` e `category` opcionais. Datas com instante incluem fuso ISO 8601. | 200, `{ operationId, repeated, items, events }`. A resposta indica candidatos criados/importados, evento removido e procedência. Reutilize a mesma chave somente ao repetir a mesma ação; use chave nova para uma nova confirmação após excluir o evento. |
@@ -318,54 +318,17 @@ Qualquer alteração de rota, schema, autorização, erro ou RPC deve atualizar 
 
 ## Planos particulares — atualização S6-B01 (09/11/2026)
 
-### POST `/api/v1/syllabus/upload`
+Registro histórico da primeira implementação. Na S6, o PDF era armazenado em bucket privado e o worker escrevia em uma tabela separada de candidatos.
 
-Autenticação obrigatória. Recebe `multipart/form-data` com `file` PDF e campos
-`offering_id` obrigatório, com disciplina e turma derivadas do catálogo. Valida extensão, MIME, assinatura, integridade,
-senha, tamanho (10 MB), quantidade (dez páginas) e presença de texto selecionável.
-Lê no máximo limite + 1 byte antes de rejeitar excesso. O parser roda em processo
-separado com prazo de 8s (`SYLLABUS_UPLOAD_VALIDATION_TIMEOUT_SECONDS`); a espera
-e o acesso síncrono ao Storage/banco não bloqueiam o event loop da API.
-Salva o arquivo no bucket privado e a linha do dono como `pendente`; retorna
-**202**, sem esperar por IA. Se o banco falhar, compensa o arquivo no Storage.
+Na Release 2, o PDF é descartado após a leitura e o worker usa `avaliacoes`, a mesma tabela da consulta e da confirmação. Consulte o [contrato vigente de preparação e autorização](#preparacao-e-autorizacao-de-planos).
 
-Resposta: `id`, `userId`, `fileName`, `filePath`, `fileSize`, `fileType`, `status`,
-`createdAt` e `message`. `filePath` é referência privada, não URL pública assinada.
-401 sem sessão; 400 arquivo inválido/protegido/sem texto/excesso de páginas; 413
-excesso de bytes; 422 prazo de pré-validação excedido; 502/503 indisponibilidade
-de Storage, banco ou processo de validação. Timeout/falha da pré-validação não
-persistem arquivo ou tarefa. A pré-validação é aguardada antes do 202; o prazo
-inclui criação do processo e admite até 2,2s adicionais para encerrá-lo.
+## Preparação e autorização de planos {#preparacao-e-autorizacao-de-planos}
 
-### GET `/api/v1/syllabus/{syllabus_id}`
-
-Autenticado e restrito ao proprietário: UUID válido de outro dono ou inexistente
-retorna **404**. Retorna metadados do upload e `status`, `extractedEventsCount`,
-`errorMessage`, `errorCode`, `pageCount`, `attempts`, `processingStartedAt`,
-`processedAt`, `processingDurationMs`, `totalDurationMs`, `disciplina` e `turma`. Campos ainda não
-disponíveis são nulos; `attempts` começa em zero. Estados: `pendente`,
-`processando`, `concluido` e `falha`. Erros são mensagens fixas e códigos da S6-D01.
-Concluído com contagem zero significa documento sem cronograma identificado.
-`processingDurationMs` mede a última tentativa; `totalDurationMs` mede da criação
-do registro ao término, incluindo fila/retentativas, e é nulo antes de finalizar.
-
-O [worker independente](/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia) consome a fila. Ele fica
-desativado até a configuração explícita e a validação das políticas S6-D02.
-Upload e worker não criam compromissos. As rotas de listagem, detalhe e confirmação
-S6-B02 já existentes, descritas acima, operam sobre `avaliacoes` legadas; os
-candidatos privados do worker em `candidatos_avaliacao` ainda exigem conciliação
-com esse contrato antes da integração no ambiente da equipe.
-O contrato transacional de banco S6-D02 já está disponível em
-[`revisar_candidatos_plano`](/arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos).
-
-
-## Atualização S7-B01 — preparação e autorização do texto (10/11/2026)
-
-Este contrato substitui o fluxo de upload/extração S6 descrito acima.
+O envio pela interface autoriza a extração. O servidor prepara e sanitiza o texto. A revisão do usuário ocorre nas avaliações extraídas, antes da importação para a agenda.
 
 | Operação | Entrada | Resultado |
 | --- | --- | --- |
-| `POST /api/v1/syllabus/upload` | Multipart PDF validado, até 10 MiB/dez páginas; metadados existentes | 202, texto preparado privado, `filePath: null`, `authorizationRequired: true`, `preparedTextAvailable: true`. O PDF é descartado e não vai ao Storage. |
+| `POST /api/v1/syllabus/upload` | Multipart com `file` (PDF de até 10 MiB e dez páginas) e `offering_id` | 202, texto preparado privado, `filePath: null`, `authorizationRequired: true`, `preparedTextAvailable: true`. O PDF é descartado após a leitura. |
 | `POST /api/v1/syllabus/text` | JSON `text` e `offering_id` obrigatórios; até 40.000 bytes UTF-8 | 202, preparação privada, `fileType: text`; página de origem nula. |
 | `GET /api/v1/syllabus/{id}/text` | Sessão do dono | 200 com `pages: [{pagina, texto}]`, `textHash`, `authorizationRequired`, `provider`, `providerAvailable`, `maxTextBytes`, `warning`, `preparationDurationMs`, `textRevision` e `redactedCount`. Resposta `no-store`. |
 | `POST /api/v1/syllabus/{id}/extractions` | JSON `pages`, `textHash`, `authorize: true`, `reprocess` opcional | 202, autorização registrada e elegibilidade para a fila persistente. Repetir o mesmo hash sem reprocessar não cria execução adicional. |
