@@ -48,7 +48,7 @@ function TextEntry({ offer }) {
   }}>
     <label className="semester-field">Texto do plano<textarea aria-label="Texto do plano" rows={5} value={text} onChange={event => { submitted.current = false; setText(event.target.value); }} /></label>
     <TextCapacity size={size} />
-    <button className="manage-button" aria-describedby="semester-upload-consent"
+    <button className="manage-button"
       disabled={!offer || !text.trim() || size > MAX_APPROVED_TEXT_BYTES}>Enviar texto e extrair</button>
   </form>;
 }
@@ -126,7 +126,6 @@ function PlanQueue({ options, followed, initialOffer, onOffer, plans, selectedId
       {!followed.length ? <button className="management-text-button" type="button" onClick={onCatalog}>Selecionar turmas na Etapa 1</button>
         : !initialOffer && <small>Selecione uma turma antes de enviar um plano.</small>}
     </div>
-    <p id="semester-upload-consent" className="semester-upload-consent">Ao enviar, você autoriza o Google Gemini a analisar o texto sanitizado. Use apenas conteúdo adequado para envio ao serviço. Ao consultar o resultado, a primeira versão com avaliações fica disponível para quem segue a turma. Você pode retirar o compartilhamento.</p>
     <input ref={fileRef} type="file" hidden accept=".pdf,application/pdf" multiple onChange={event => { append(event.target.files); event.target.value = ''; }} />
     <div className="semester-input-tabs" role="tablist" aria-label="Modo de envio do plano">
       <button type="button" role="tab" id="queue-tab-pdf" aria-selected={inputMode === 'pdf'} aria-controls="queue-panel-pdf"
@@ -143,7 +142,7 @@ function PlanQueue({ options, followed, initialOffer, onOffer, plans, selectedId
           onDragOver={event => { event.preventDefault(); if (selectedOffer) setDragging(true); }}
           onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget instanceof Node ? event.relatedTarget : null)) setDragging(false); }}
           onDrop={event => { event.preventDefault(); setDragging(false); append(event.dataTransfer.files); }}>
-          <button id="semester-add-pdfs" className="manage-button primary" type="button" aria-describedby="semester-upload-consent" onClick={chooseFiles} disabled={!selectedOffer}><Icon>upload_file</Icon>Enviar PDF e extrair</button>
+          <button id="semester-add-pdfs" className="manage-button primary" type="button" onClick={chooseFiles} disabled={!selectedOffer}><Icon>upload_file</Icon>Enviar PDF e extrair</button>
           <small>Arraste ou selecione PDFs com texto · até 10 MB e 10 páginas por arquivo</small>
       </div>
     </div>
