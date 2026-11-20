@@ -53,6 +53,11 @@ e coleta externa.
 
 Em `/plano-de-ensino`, a área autenticada reúne vínculo com turmas, envio de vários planos, autorização de texto por documento e revisão consolidada das avaliações. O usuário pode continuar enviando ou revisando outros planos durante a extração. A confirmação em lote informa o resultado de cada plano e encaminha para **Meus Eventos**. Veja o [fluxo e o roteiro de homologação](/arquitetura/frontend#painel-do-semestre).
 
+A preparação de PDF e texto colado mascara os dados pessoais detectados antes
+de salvar o texto para revisão. Quando houver ocorrências mascaradas, o editor
+exibe o total e permite ajustar o texto antes de autorizar o envio.
+Veja o [catálogo e os exemplos de minimização](/arquitetura/minimizacao-planos).
+
 ## Verificação disponível
 
 O projeto contém testes pytest da API (eventos, sugestões e vínculos salvos), testes Node de calendário e testes PostgreSQL de RLS/RPC/triggers. Estes últimos exigem `TEST_SUPABASE_DB_URL` local e são ignorados se ela não estiver configurada. Consulte [Contribuição](/processo/contribuindo). A existência das suítes não afirma execução ou aprovação em um ambiente de produção.

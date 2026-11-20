@@ -27,6 +27,7 @@ export function normalizePlan(plan) {
     status: plan.status,
     authorizationRequired: plan.authorizationRequired === true,
     preparedTextAvailable: plan.preparedTextAvailable === true,
+    redactedCount: Number.isSafeInteger(plan.redactedCount) && plan.redactedCount >= 0 ? plan.redactedCount : null,
     fileName: plan.fileName || 'Plano de ensino.pdf',
     disciplina: plan.disciplina || '',
     semestre: plan.semestre ?? null,
