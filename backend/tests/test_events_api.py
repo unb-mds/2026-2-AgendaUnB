@@ -454,8 +454,9 @@ def test_categories_management_is_restricted_to_admin(api):
     assert client.delete(f"/api/v1/categories/{new_id}").status_code == 204
 
 
-def test_public_event_update_is_restricted_to_professors_and_admins(api):
+def test_public_event_update_is_restricted_to_authoring_professors_and_admins(api):
     client, session_factory, authenticated_user, ids = api
+    actor = authenticated_user["value"]
     with session_factory() as db:
         event = make_public_event(
             ids,
@@ -464,11 +465,15 @@ def test_public_event_update_is_restricted_to_professors_and_admins(api):
             source="agenda_unb_noticias",
             source_url="https://noticias.unb.br/component/agenda/agenda/777",
         )
-        pending = make_public_event(ids, title="Sugestão Pendente", status="pendente")
-        db.add_all([event, pending])
+        pending = make_public_event(ids, author_id=actor.id, title="Sugestão Pendente", status="pendente")
+        own = make_public_event(ids, author_id=actor.id, title="Evento Próprio")
+        other = make_public_event(ids, title="Evento de Outro Autor")
+        db.add_all([event, pending, own, other])
         db.commit()
         event_id = event.id
         pending_id = pending.id
+        own_id = own.id
+        other_id = other.id
 
     payload = {
         "title": "Evento Atualizado",
@@ -482,13 +487,17 @@ def test_public_event_update_is_restricted_to_professors_and_admins(api):
         "external_url": "https://unb.br/evento-atualizado",
     }
 
-    # Estudante recebe 403
-    assert client.put(f"/api/v1/events/{event_id}", json=payload).status_code == 403
+    assert client.put(f"/api/v1/events/{own_id}", json=payload).status_code == 403
+    assert client.get("/api/v1/me/published-event-ids").status_code == 403
 
-    # Professor e admin podem editar eventos públicos aprovados (incluindo coletados)
-    actor = authenticated_user["value"]
     authenticated_user["value"] = actor.__class__(id=actor.id, role="professor")
-    prof_res = client.put(f"/api/v1/events/{event_id}", json=payload)
+    own_events = client.get("/api/v1/me/published-event-ids")
+    assert own_events.json() == [str(own_id)]
+    assert own_events.headers["cache-control"] == "no-store"
+    assert client.put(f"/api/v1/events/{event_id}", json=payload).status_code == 403
+    assert client.put(f"/api/v1/events/{other_id}", json=payload).status_code == 403
+    assert client.get(f"/api/v1/events/{other_id}").json()["title"] == "Evento de Outro Autor"
+    prof_res = client.put(f"/api/v1/events/{own_id}", json=payload)
     assert prof_res.status_code == 200
     assert prof_res.json()["title"] == "Evento Atualizado"
     assert prof_res.json()["all_day"] is True

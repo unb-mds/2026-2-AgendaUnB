@@ -14,12 +14,14 @@ from src.database.models import (
     ClassOffering,
     Consent,
     GoogleCalendarConnection,
+    GoogleCalendarEventExport,
     GoogleCalendarOAuthState,
     ImportItem,
     ImportOperation,
     PersonalEvent,
     Profile,
     PublicEvent,
+    Reminder,
     SavedPublicEvent,
     Subject,
     Syllabus,
@@ -478,6 +480,44 @@ def collect_user_export_data(db: Session, user: CurrentUser) -> dict[str, Any]:
             "updated_at": _iso(gcal.updated_at),
         }
 
+    reminder_rows = db.scalars(
+        select(Reminder).where(Reminder.user_id == user.id)
+        .order_by(Reminder.scheduled_for.asc(), Reminder.id.asc())
+    ).all()
+    reminders = [
+        {
+            "id": str(row.id),
+            "event_kind": row.event_kind,
+            "personal_event_id": _iso(row.personal_event_id),
+            "public_event_id": _iso(row.public_event_id),
+            "event_starts_at": _iso(row.event_starts_at),
+            "scheduled_for": _iso(row.scheduled_for),
+            "status": row.status,
+            "fired_at": _iso(row.fired_at),
+            "read_at": _iso(row.read_at),
+            "created_at": _iso(row.created_at),
+        }
+        for row in reminder_rows
+    ]
+
+    calendar_export_rows = db.scalars(
+        select(GoogleCalendarEventExport).where(GoogleCalendarEventExport.user_id == user.id)
+        .order_by(GoogleCalendarEventExport.created_at.asc(), GoogleCalendarEventExport.event_kind.asc(),
+                  GoogleCalendarEventExport.local_event_id.asc())
+    ).all()
+    google_calendar_exports = [
+        {
+            "event_kind": row.event_kind,
+            "local_event_id": str(row.local_event_id),
+            "calendar_id": row.calendar_id,
+            "google_event_id": row.google_event_id,
+            "status": row.status,
+            "created_at": _iso(row.created_at),
+            "updated_at": _iso(row.updated_at),
+        }
+        for row in calendar_export_rows
+    ]
+
     return {
         "exported_at": _utcnow(),
         "profile": profile_data,
@@ -490,9 +530,11 @@ def collect_user_export_data(db: Session, user: CurrentUser) -> dict[str, Any]:
         "import_operations": import_operations,
         "votes": votes,
         "notifications": notifications,
+        "reminders": reminders,
         "legal_acceptances": legal_acceptances,
         "consents": consents,
         "google_calendar": google_calendar,
+        "google_calendar_exports": google_calendar_exports,
     }
 
 

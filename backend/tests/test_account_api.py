@@ -23,11 +23,13 @@ from src.database.models import (
     ClassOffering,
     Consent,
     GoogleCalendarConnection,
+    GoogleCalendarEventExport,
     ImportItem,
     ImportOperation,
     PersonalEvent,
     Profile,
     PublicEvent,
+    Reminder,
     SavedPublicEvent,
     Subject,
     Syllabus,
@@ -352,6 +354,16 @@ def test_export_contains_the_account_data_and_nobody_elses(api):
             TermAcceptance(user_id=bruno.id, document="terms", version="2026-11-18"),
             Consent(user_id=ana.id, purpose="google_agenda"),
             Consent(user_id=bruno.id, purpose="google_agenda"),
+            Reminder(user_id=ana.id, event_kind="publico_salvo", public_event_id=ana_pub.id,
+                     event_starts_at=ana_pub.starts_at, scheduled_for=datetime(2026, 11, 19, 14, tzinfo=timezone.utc)),
+            Reminder(user_id=bruno.id, event_kind="publico_salvo", public_event_id=bruno_pub.id,
+                     event_starts_at=bruno_pub.starts_at, scheduled_for=datetime(2026, 11, 20, 14, tzinfo=timezone.utc)),
+            GoogleCalendarEventExport(user_id=ana.id, event_kind="saved", local_event_id=ana_pub.id,
+                                      calendar_id="cal-ana", google_event_id="agenda-event-ana",
+                                      exported_version="d" * 64, last_idempotency_key="private-export-key"),
+            GoogleCalendarEventExport(user_id=bruno.id, event_kind="saved", local_event_id=bruno_pub.id,
+                                      calendar_id="cal-bruno", google_event_id="agenda-event-bruno",
+                                      exported_version="e" * 64),
             GoogleCalendarConnection(
                 user_id=ana.id,
                 google_sub="secret-google-sub-ana",
@@ -386,6 +398,11 @@ def test_export_contains_the_account_data_and_nobody_elses(api):
     assert len(data["importOperations"]) == 1
     assert data["votes"] == []
     assert data["googleCalendar"]["calendar_id"] == "cal-ana"
+    public_event_id = data["publicEvents"][0]["id"]
+    assert [(row["public_event_id"], row["status"]) for row in data["reminders"]] == [(public_event_id, "pendente")]
+    assert [(row["local_event_id"], row["google_event_id"]) for row in data["googleCalendarExports"]] == [
+        (public_event_id, "agenda-event-ana")
+    ]
 
     # Nenhum dado de outro usuário ou segredo interno aparece na exportação.
     for forbidden in (
@@ -396,6 +413,9 @@ def test_export_contains_the_account_data_and_nobody_elses(api):
         "encrypted-access-secret",
         "encrypted-refresh-secret",
         "secret-google-sub-ana",
+        "agenda-event-bruno",
+        "private-export-key",
+        "d" * 64,
         "a" * 64,
     ):
         assert forbidden not in raw

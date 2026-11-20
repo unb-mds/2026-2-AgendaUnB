@@ -27,7 +27,7 @@ A data do registro não é a data da decisão. Referências DA preservam os iden
 | [ADR-005](/arquitetura/adrs/adr-005-validacao-de-sessao) | Validar a sessão no Supabase Auth e consultar o papel no banco | Implementada | DA-03; RF01, RF03, RF04 |
 | [ADR-006](/arquitetura/adrs/adr-006-autorizacao-em-camadas) | Aplicar autorização na API, nas RPCs e nas políticas RLS | Implementada | DA-04; RF04, RF09, RF11; RNF02, RNF04 |
 | [ADR-007](/arquitetura/adrs/adr-007-migracoes-sql) | Usar migrações SQL como referência do esquema completo | Implementada | DA-05; RNF13 |
-| [ADR-008](/arquitetura/adrs/adr-008-vinculos-de-eventos-publicos) | Salvar vínculos aos eventos públicos na agenda pessoal | Implementada | DA-06; RF08, RF12, RF13, RF18 |
+| [ADR-008](/arquitetura/adrs/adr-008-vinculos-de-eventos-publicos) | Salvar vínculos aos eventos públicos na agenda pessoal | Implementada | DA-06; RF08, RF12, RF13 |
 | [ADR-009](/arquitetura/adrs/adr-009-catalogo-publico-de-turmas) | Integrar o catálogo público de turmas com identidade local e cache | Implementada | RF05; RNF11 |
 | [ADR-010](/arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos) | Versionar planos e exigir confirmação individual para importar candidatos | Implementada | RF06, RF07; RNF02, RNF04 |
 | [ADR-011](/arquitetura/adrs/adr-011-datas-civis-e-instantes) | Distinguir datas civis de instantes e usar fim exclusivo | Aceita para a Release 2 | RF06, RF08, RF17, RF21 |

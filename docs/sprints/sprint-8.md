@@ -33,7 +33,7 @@ F identifica frontend, B backend e D dados. A numeração é independente por á
 
 #### Objetivo
 
-Permitir que usuários autenticados que seguem uma oferta consultem, avaliem e importem versões compartilhadas voluntariamente.
+Permitir que usuários autenticados que seguem uma oferta consultem, avaliem e importem suas versões compartilhadas.
 
 - **Sprint** [Sprint 08](https://github.com/unb-mds/2026-2-AgendaUnB/milestone/8)
 - **Janela** 16–18/11/2026
@@ -44,7 +44,7 @@ Permitir que usuários autenticados que seguem uma oferta consultem, avaliem e i
 
 #### Tasks
 
-- [x] Autor publica voluntariamente conteúdo revisado. Autor ou admin pode retirar uma versão. Autor pode editar o próprio plano. Professor e admin podem editar versões compartilhadas conforme o contrato.
+- [x] Compartilhar automaticamente a `v1` elegível na jornada do autor e permitir publicação de revisões. Autor ou admin pode retirar uma versão. Professor e admin podem criar revisões a partir do conteúdo compartilhado conforme o contrato.
 - [x] Explicar o conteúdo compartilhado e restringir leitura a seguidores autenticados da turma. O PDF original é descartado após extração local.
 - [x] Criar voto único ativo por conta/candidato/versão, editável pelo autor do voto. Mostrar contagem e divergência, sem alterar datas automaticamente ou tratar votação como prova.
 - [x] Gerar nova versão a cada revisão sem alterar calendários pessoais. Deduplicar importações por usuário/candidato/versão e aplicar a política de retirada.
@@ -110,7 +110,7 @@ Consolidar a distinção entre adicionar evento à agenda pessoal e conferir a f
 - **Corresponsável** @felipecduque7
 - **Apoio adicional** Gabriel apoia a integração da interface de eventos.
 - **Dependências** S7-F01 ([#67](https://github.com/unb-mds/2026-2-AgendaUnB/issues/67)) e modelo público consolidado em S7-B05 ([#75](https://github.com/unb-mds/2026-2-AgendaUnB/issues/75)).
-- **Requisitos** RF12, RF13, RF18 e RNF04.
+- **Requisitos** RF12, RF13 e RNF04.
 
 #### Tasks
 
@@ -146,7 +146,7 @@ Completar e homologar agenda, eventos, filtros e moderação nos fluxos existent
 - **Corresponsável** @marrathomaz
 - **Apoio adicional** Thomas apoia a interface, os filtros e os ajustes de uso.
 - **Dependências** S7-B05 ([#75](https://github.com/unb-mds/2026-2-AgendaUnB/issues/75)) e integração final com S8-B02 ([#79](https://github.com/unb-mds/2026-2-AgendaUnB/issues/79)). Reaproveitar [#14](https://github.com/unb-mds/2026-2-AgendaUnB/issues/14), [#15](https://github.com/unb-mds/2026-2-AgendaUnB/issues/15), [#36](https://github.com/unb-mds/2026-2-AgendaUnB/issues/36), [#37](https://github.com/unb-mds/2026-2-AgendaUnB/issues/37), [#38](https://github.com/unb-mds/2026-2-AgendaUnB/issues/38) e [#42](https://github.com/unb-mds/2026-2-AgendaUnB/issues/42).
-- **Requisitos** RF08–RF11, RF12, RF14, RF15, RF18–RF20, RNF04 e RNF07–RNF09.
+- **Requisitos** RF08–RF12, RF14, RF15, RF19, RF20, RNF04 e RNF07–RNF09.
 
 #### Tasks
 

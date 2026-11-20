@@ -441,7 +441,7 @@ def update_public_event(
     event_id: UUID,
     payload: EventUpdate,
     db: Session = Depends(get_db),
-    _: CurrentUser = Depends(require_event_manager),
+    current_user: CurrentUser = Depends(require_event_manager),
 ) -> EventRead:
     event = db.scalar(
         select(PublicEvent)
@@ -454,6 +454,8 @@ def update_public_event(
     )
     if event is None:
         raise HTTPException(status_code=404, detail="Evento não encontrado")
+    if current_user.role != "admin" and event.author_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Apenas o autor ou um administrador pode editar este evento")
 
     event.title = payload.title
     event.description = payload.description or ""
@@ -501,6 +503,18 @@ def delete_public_event(
     db.delete(event)
     db.commit()
     return Response(status_code=204)
+
+
+@router.get("/me/published-event-ids", response_model=list[UUID])
+def list_own_published_event_ids(
+    db: Session = Depends(get_db),
+    current_user: CurrentUser = Depends(require_event_manager),
+) -> list[UUID]:
+    return list(db.scalars(
+        select(PublicEvent.id)
+        .where(PublicEvent.author_id == current_user.id, PublicEvent.status == "aprovado")
+        .order_by(PublicEvent.id)
+    ))
 
 
 @router.post("/suggestions", response_model=EventRead, status_code=201)

@@ -353,8 +353,7 @@ function getAreaIcon(areaName) {
 function EventCardItem({
   evento,
   visaoEventos,
-  isProfessor,
-  isAdmin,
+  canManagePublic,
   textColor,
   onOpen,
   onEdit,
@@ -362,10 +361,10 @@ function EventCardItem({
 }) {
   const canEdit = visaoEventos === 'MEUS'
     ? Boolean(evento.criadoPorMim)
-    : Boolean(isProfessor || isAdmin);
+    : canManagePublic;
   const canRemove = visaoEventos === 'MEUS'
     ? (evento.criadoPorMim || evento.salvoNaAgenda)
-    : (isProfessor || isAdmin);
+    : canManagePublic;
 
   return (
     <div
@@ -463,6 +462,11 @@ export default function SegundaPagina() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user, profile, isProfessor, isAdmin } = useAuth();
+  const professorId = isProfessor && !isAdmin ? user?.id : null;
+  const [publishedEvents, setPublishedEvents] = useState(null);
+  const canManagePublic = (event) => isAdmin || Boolean(
+    professorId && publishedEvents?.userId === professorId && publishedEvents.ids.has(event.id),
+  );
 
   // --- GERENCIAMENTO DE TEMA PERSISTENTE ---
   const [theme, setTheme] = useState(() => getStoredTheme());
@@ -564,6 +568,18 @@ export default function SegundaPagina() {
       ...(profile?.papel === 'student' ? [{ label: 'Sugerir evento', value: 'Sugestão' }] : []),
       { label: 'Apenas para mim', value: 'Privado' },
     ];
+
+  useEffect(() => {
+    setPublishedEvents(null);
+    if (!professorId || visaoEventos !== 'Públicos') return undefined;
+    let active = true;
+    eventsApi.listOwnPublishedIds()
+      .then((ids) => {
+        if (active) setPublishedEvents({ userId: professorId, ids: new Set(ids) });
+      })
+      .catch(() => {});
+    return () => { active = false; };
+  }, [professorId, visaoEventos, reloadRevision]);
 
   useEffect(() => {
     let active = true;
@@ -702,14 +718,15 @@ export default function SegundaPagina() {
         return;
       }
       if (editingPublic) {
-        if (!isProfessor && !isAdmin) {
-          throw new Error('Apenas professores e administradores podem editar eventos públicos.');
+        if (!canManagePublic(eventoEmEdicao)) {
+          throw new Error('Apenas o autor ou um administrador pode editar este evento.');
         }
         savedEvent = await eventsApi.updatePublic(eventoEmEdicao.id, payload);
       } else if (eventoEmEdicao) {
         savedEvent = await eventsApi.updatePersonal(eventoEmEdicao.id, payload);
       } else if (visibilidade === 'Público') {
         savedEvent = await eventsApi.createPublic(payload);
+        if (professorId) setReloadRevision(value => value + 1);
       } else {
         savedEvent = await eventsApi.createPersonal(payload);
       }
@@ -752,7 +769,7 @@ export default function SegundaPagina() {
 
   const handleEditarEvento = (evento) => {
     const isPublicEdit = evento.visibilidade === 'Público' && !evento.criadoPorMim;
-    if (isPublicEdit && !isProfessor && !isAdmin) return;
+    if (isPublicEdit && !canManagePublic(evento)) return;
     setErroEventos('');
     setEventoEmEdicao(evento);
     setTitulo(evento.titulo);
@@ -1044,8 +1061,7 @@ export default function SegundaPagina() {
                 key={`${evento.visibilidade}-${evento.id}`}
                 evento={evento}
                 visaoEventos={visaoEventos}
-                isProfessor={isProfessor}
-                isAdmin={isAdmin}
+                canManagePublic={canManagePublic(evento)}
                 textColor={textColor}
                 onOpen={ev => navigate(`/evento/${ev.id}`, { state: { evento: ev } })}
                 onEdit={handleEditarEvento}

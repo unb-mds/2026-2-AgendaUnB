@@ -29,6 +29,7 @@ Armazena as categorias para classificação e coloração dos eventos na interfa
     *   `created_at` (TIMESTAMPTZ): Data e hora de criação.
 *   **Políticas RLS:** Segurança em Nível de Linha habilitada.
     *   **Leitura (SELECT):** Permitida para todos (`USING true`). Política: *"Permitir leitura pública de categorias"*.
+    *   **Gestão:** `admin_listar_categorias` lista categorias e contagens de eventos, `admin_criar_categoria` cria uma categoria e `admin_excluir_categoria` remove categorias sem eventos vinculados. As RPCs exigem `admin` e a escrita direta por navegador foi revogada.
 
 ---
 
@@ -74,7 +75,7 @@ Eventos publicados por professor/admin e sugestões da comunidade sujeitas à mo
     *   `interessados_count` (INTEGER): redirecionamentos acionados em **Conferir evento**, um por `click_id`. Só a função `registrar_redirecionamento_evento` o altera; a deduplicação fica em `cliques_evento` (`evento_id`, `click_id`, `criado_em`), sem usuário, IP ou agente. Ver [Conferir evento](conferir-evento.md).
 *   **Políticas RLS:** Segurança em Nível de Linha habilitada.
     *   **Leitura (SELECT):** Apenas eventos moderados. Política: *"eventos aprovados sao publicos"* (`USING (status = 'aprovado')`).
-    *   **Criação (INSERT):** Apenas o próprio autor autenticado. Política: *"usuarios logados podem criar eventos"* (`WITH CHECK (autor_id = (select auth.uid()))`).
+    *   **Escrita:** a API valida papel e autoria. Moderação usa as RPCs autorizadas. O navegador não tem política de criação direta.
 
 ### 3.2. Tabela `eventos_pessoais` (Agenda Privada - RF09)
 Agenda estritamente privada, gerenciada e visualizada unicamente por cada estudante.
@@ -138,14 +139,14 @@ Esquema atual de uploads de plano de ensino. O campo `tipo` admite os valores le
     *   `ano` (SMALLINT, 2000–2100) e `semestre` (SMALLINT, 1 ou 2): opcionais no upload atual.
     *   `plano_oficial_id` (UUID): referência opcional ao plano oficial correspondente (`ON DELETE SET NULL`). Só em plano particular e nunca para si mesmo.
 *   **Arquivo** (bucket `syllabus_files`, #43):
-    *   `caminho_arquivo` (TEXT, Unique): `syllabus_files/<user_id>/<arquivo>.pdf`. A pasta precisa ser a do dono, a mesma exigida pelas políticas do bucket. Obrigatório em plano particular.
-    *   `nome_arquivo` (TEXT, até 255), `tamanho_bytes` (BIGINT, 1 B a 10 MB), `tipo_arquivo` (somente `pdf`), `paginas` (SMALLINT ≥ 1). O limite de 10 páginas da Sprint 06 é validado no back-end (#40).
-    *   `arquivo_url` (TEXT): legado. Use `caminho_arquivo`.
+    *   `caminho_arquivo` e `arquivo_url` referenciam apenas originais legados. Envios novos usam preparação em memória e descartam o PDF. `arquivo_descartado_em` registra o descarte que limpa as referências legadas.
+    *   `nome_arquivo`, `tamanho_bytes`, `tipo_arquivo` (`pdf` ou `text`) e `paginas` descrevem o envio. O backend valida até 10 MiB e 10 páginas para PDF.
 *   **Processamento:**
     *   `status` (TEXT, Not Null, padrão `pendente`): `pendente`, `processando`, `concluido` ou `falha`. Os valores em inglês aceitos pela #40 (`processing`, `failed`, `completed`) foram convertidos e não são mais aceitos.
     *   `quantidade_eventos` (INT ≥ 0): quantidade de candidatos extraídos.
     *   `execucao_atual` (SMALLINT, Not Null, padrão 0): número da execução mais recente. Cada novo processamento incrementa; os candidatos válidos são os desta execução.
     *   `provedor_ia`, `modelo_ia`, `versao_processamento` (TEXT): da execução mais recente.
+    *   `texto_com_dados_pessoais` sinaliza a detecção de dados pessoais na preparação e `ocorrencias_mascaradas` registra quantas ocorrências foram mascaradas.
     *   `erro_codigo` (TEXT): obrigatório se, e somente se, `status = 'falha'`. Valores: `pdf_invalido`, `pdf_protegido`, `pdf_sem_texto`, `limite_paginas`, `falha_ia`, `tempo_esgotado`, `erro_interno`.
     *   `erro` (TEXT, até 500): mensagem curta e segura para o usuário, só em `falha`. Nunca guarda stack trace, texto do PDF ou resposta bruta da IA.
     *   `processamento_iniciado_em` (obrigatório em `processando`), `processado_em` (obrigatório se, e somente se, `concluido` ou `falha`), `criado_em`, `atualizado_em` (mantido por trigger).
@@ -166,7 +167,7 @@ Tabela física única dos candidatos extraídos dos planos, decidida na S7-D01 c
 *   **Conteúdo compartilhado:** candidatos de versão compartilhada não são alterados, excluídos nem acrescentados (triggers `avaliacoes_compartilhada_imutavel` e `avaliacoes_zz_nao_entra_em_compartilhada`). A correção é feita em uma revisão. `status` continua editável.
 
 ### 4.3. Tabela `versoes_plano`
-Versões de um plano (ADR-010). Toda versão nasce **privada**; uma nova revisão cria nova versão e não sobrescreve calendários pessoais.
+Versões de um plano (ADR-010). A `v1` de plano concluído com turma vinculada e candidatos elegíveis é compartilhada automaticamente na jornada do autor, salvo quando retirada. Revisões criam versões próprias com sua visibilidade e preservam as cópias já importadas.
 *   **Colunas:**
     *   `id` (UUID, Primary Key) e `plano_id` (UUID, Not Null, FK, `ON DELETE CASCADE`). `numero` (SMALLINT ≥ 1) é único por plano.
     *   `autor_id` (UUID, Not Null, FK para `profiles`) e `autor_papel` (`student`, `professor` ou `admin`): papel do autor no momento da criação. Não é evidência institucional.

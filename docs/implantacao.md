@@ -19,7 +19,7 @@ A SPA envia o PDF diretamente ao Render com a sessão Supabase via `Authorizatio
 | --- | --- |
 | Vercel | `VITE_API_URL=https://agenda-unb-api-homolog.onrender.com/api/v1`, `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` da mesma instância Supabase. A função de busca também usa a URL e a chave pública em runtime. |
 | Render | `APP_ENV=production`, `DATABASE_URL` com TLS, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` e `CORS_ORIGINS=https://agendaunb.com.br,https://2026-2-agendaunb-agenda-un-b.vercel.app`. |
-| Supabase Auth | Site URL `https://agendaunb.com.br`. Cadastre as URLs exatas de retorno para `/auth/retorno`, `/?auth=login` e `/eventos` nas origens oficiais em uso. Configure SMTP customizado e os templates de confirmação/recuperação no próprio Supabase. |
+| Supabase Auth | Site URL `https://agendaunb.com.br`. Cadastre as URLs exatas de retorno para `/auth/retorno`, `/?auth=login` e `/eventos` nas origens oficiais em uso. Configure SMTP e templates de confirmação/recuperação. Confira no painel o mesmo contrato de senha do `supabase/config.toml`, com pelo menos 8 caracteres, letras e dígitos e troca segura habilitada. |
 
 Previews Vercel precisam de Auth, banco e API separados quando `VERCEL_ENV=preview` estiver disponível para o build. A verificação usa `VITE_DEPLOYMENT_ENV=preview`, `PRODUCTION_SUPABASE_URL` e `PRODUCTION_API_ORIGIN`. Reserve segredos de banco, Storage, Gemini e OAuth aos serviços servidores que os consomem.
 

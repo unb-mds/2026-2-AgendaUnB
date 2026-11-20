@@ -1,6 +1,6 @@
 """S8-D02 (#84): matriz cross-user e travas de segurança do banco exposto.
 
-Testes preventivos (Sprint 07) contra o Supabase LOCAL migrado; cada teste
+Testes da Release 2 contra o Supabase LOCAL migrado; cada teste
 desfaz suas alterações. Rode com TEST_SUPABASE_DB_URL (nunca produção).
 
 Cobre o que o navegador consegue fazer direto pelo banco (supabase-js), sem
@@ -117,6 +117,42 @@ def test_security_definer_functions_pin_search_path(database):
           and not exists (select 1 from unnest(coalesce(p.proconfig, '{}')) c where c like 'search_path=%')
         order by 1""")).scalars().all()
     assert unpinned == [], f'Funções SECURITY DEFINER sem search_path fixo: {unpinned}'
+
+
+@pytest.mark.parametrize(('table_name', 'signed_in_access'), [
+    ('votos_avaliacao', ('SELECT',)),
+    ('lembretes', ('SELECT', 'UPDATE')),
+    ('cliques_evento', ()),
+    ('coletas_eventos', ()),
+    ('sincronizacoes_catalogo', ()),
+    ('operacoes_importacao', ('SELECT',)),
+    ('itens_importacao', ('SELECT',)),
+    ('google_calendar_connections', ()),
+    ('google_calendar_oauth_states', ()),
+    ('google_calendar_event_exports', ()),
+    ('aceites_termos', ('SELECT',)),
+    ('consentimentos', ('SELECT',)),
+    ('exclusoes_conta', ()),
+    ('auditoria_papeis', ('SELECT',)),
+])
+def test_release_tables_enforce_browser_grants(database, table_name, signed_in_access):
+    conn, _ = database
+    relation = f'public.{table_name}'
+    assert scalar(conn, 'select to_regclass(:relation)', {'relation': relation}) is not None
+    for role, expected in [('anon', ()), ('authenticated', signed_in_access)]:
+        for privilege in ('SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'):
+            params = {'role': role, 'relation': relation, 'privilege': privilege}
+            if privilege in ('SELECT', 'INSERT', 'UPDATE', 'REFERENCES'):
+                expression = 'select has_any_column_privilege(:role, :relation, :privilege)'
+            else:
+                expression = 'select has_table_privilege(:role, :relation, :privilege)'
+            assert scalar(conn, expression, params) == (privilege in expected), (role, relation, privilege)
+
+    if table_name == 'lembretes':
+        writable_columns = conn.execute(text("""select attname from pg_attribute
+            where attrelid = 'public.lembretes'::regclass and attnum > 0 and not attisdropped
+              and has_column_privilege('authenticated', attrelid, attnum, 'UPDATE')""")).scalars().all()
+        assert writable_columns == ['lido_em']
 
 
 # ---------------------------------------------------------------------------

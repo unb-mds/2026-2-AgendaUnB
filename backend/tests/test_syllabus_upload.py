@@ -15,8 +15,22 @@ from sqlalchemy import select
 from src.database.models import Profile, Syllabus
 from src.main import app
 from src.middlewares.auth import CurrentUser, get_current_user
+from src.modules.syllabus.schemas import SyllabusUploadResponse
 from src.modules.syllabus.services import validate_pdf_file
 from src.services.storage import SupabaseStorageService, get_storage_service
+
+
+def test_upload_response_never_serializes_legacy_storage_path():
+    row = Syllabus(
+        id=uuid4(),
+        user_id=uuid4(),
+        file_name="plano.pdf",
+        file_path="syllabus_files/arquivo-legado.pdf",
+        file_type="pdf",
+        status="pendente",
+        created_at=datetime.now(timezone.utc),
+    )
+    assert SyllabusUploadResponse.model_validate(row).model_dump(by_alias=True)["filePath"] is None
 
 
 @pytest.fixture(autouse=True)

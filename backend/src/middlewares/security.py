@@ -21,7 +21,9 @@ from starlette.responses import JSONResponse
 UPLOAD_PATH = "/api/v1/syllabus/upload"
 DOCS_PATHS = ("/docs", "/redoc", "/openapi.json")
 # Respostas com dados da conta nunca ficam em cache de navegador ou proxy.
-PRIVATE_PREFIXES = ("/api/v1/me", "/api/v1/syllabus", "/api/v1/suggestions")
+PRIVATE_PREFIXES = (
+    "/api/v1/me", "/api/v1/syllabus", "/api/v1/suggestions", "/api/v1/classes", "/api/v1/class-offerings",
+)
 
 
 def env_flag(name: str, default: bool) -> bool:
@@ -233,7 +235,7 @@ class RateLimitMiddleware:
             return None
 
     async def __call__(self, scope, receive, send):
-        if scope["type"] != "http" or scope["method"] == "OPTIONS" or scope.get("path") == "/health":
+        if scope["type"] != "http" or scope["method"] == "OPTIONS" or scope.get("path") in {"/health", "/api/health"}:
             await self.app(scope, receive, send)
             return
 

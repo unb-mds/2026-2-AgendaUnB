@@ -3,6 +3,7 @@ import { supabase } from './supabase';
 export const MIN_PASSWORD_LENGTH = 8;
 export const EMAIL_RETRY_SECONDS = 60;
 export const AUTH_RETURN_PATH = '/auth/retorno';
+export const NEW_PASSWORD_HINT = 'Use pelo menos 8 caracteres, com letras e números.';
 
 const EMAIL_INSTITUCIONAL = /@unb\.br$/i;
 const normalizeEmail = email => email.trim().toLowerCase();
@@ -13,7 +14,7 @@ function authFailure(error, fallback) {
     return { error: 'Aguarde um minuto antes de solicitar outro e-mail.', rateLimited: true };
   }
   if (error?.code === 'weak_password') {
-    return { error: 'Escolha uma senha mais forte, com pelo menos 8 caracteres.' };
+    return { error: NEW_PASSWORD_HINT };
   }
   return { error: fallback };
 }
@@ -69,7 +70,9 @@ export async function signInWithGoogle() {
 }
 
 export function validateNewPassword(password, confirmation) {
-  if (password.length < MIN_PASSWORD_LENGTH) return 'Use pelo menos 8 caracteres na senha.';
+  if (password.length < MIN_PASSWORD_LENGTH || !/[a-z]/i.test(password) || !/[0-9]/.test(password)) {
+    return NEW_PASSWORD_HINT;
+  }
   if (password !== confirmation) return 'As senhas não coincidem.';
   return '';
 }

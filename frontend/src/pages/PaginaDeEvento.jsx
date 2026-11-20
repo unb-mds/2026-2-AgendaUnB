@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { eventsApi, toUiEvent } from '../lib/api';
@@ -35,6 +35,7 @@ export default function PaginaDeEvento() {
   const [salvoNaAgenda, setSalvoNaAgenda] = useState(() => Boolean(eventoState?.salvoNaAgenda));
   const [outboundError, setOutboundError] = useState('');
   const [registeringClick, setRegisteringClick] = useState(false);
+  const clickIdRef = useRef(null);
   const [isCopied, setIsCopied] = useState(false);
 
   const [theme, setTheme] = useState(() => getStoredTheme());
@@ -44,7 +45,9 @@ export default function PaginaDeEvento() {
   }, [theme]);
 
   useEffect(() => {
+    clickIdRef.current = null;
     setOutboundError('');
+    setRegisteringClick(false);
   }, [id]);
 
   useEffect(() => {
@@ -151,16 +154,19 @@ export default function PaginaDeEvento() {
     window.open(evento.linkOriginal, '_blank', 'noopener,noreferrer');
 
     if (isPersonalEvent) return;
+    const clickId = clickIdRef.current ??= createClickId();
     setRegisteringClick(true);
     try {
-      const result = await eventsApi.registerOutboundClick(id, createClickId());
-      if (typeof result?.outbound_clicks_count === 'number') {
+      const result = await eventsApi.registerOutboundClick(id, clickId);
+      if (clickIdRef.current === clickId && typeof result?.outbound_clicks_count === 'number') {
         setInteressados(result.outbound_clicks_count);
       }
     } catch (error) {
-      setOutboundError(error.message || 'Não foi possível registrar o acesso ao link oficial.');
+      if (clickIdRef.current === clickId) {
+        setOutboundError(error.message || 'Não foi possível registrar o acesso ao link oficial.');
+      }
     } finally {
-      setRegisteringClick(false);
+      if (clickIdRef.current === clickId) setRegisteringClick(false);
     }
   };
 
