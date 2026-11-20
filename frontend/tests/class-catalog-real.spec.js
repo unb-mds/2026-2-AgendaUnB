@@ -13,6 +13,7 @@ async function openCatalog(page) {
 test('vínculo persiste na recarga, abre a biblioteca e pode ser removido', async ({ page }) => {
   await setupSemester(page, { followed: [] });
   await openCatalog(page);
+  await expect(catalog(page).getByRole('button', { name: 'Buscar turmas' })).toBeEnabled();
   const search = catalog(page).getByRole('searchbox');
   await search.fill('FGA0101');
   await search.press('Enter');
