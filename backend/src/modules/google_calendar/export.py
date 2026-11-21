@@ -265,7 +265,7 @@ def _access_token(db: Session, connection: GoogleCalendarConnection, settings: G
         return get_access_token(connection, settings)
     except HTTPException as exc:
         if exc.status_code == 409:
-            clear_credentials(connection)
+            clear_credentials(db, connection)
             db.commit()
         raise
 
@@ -298,7 +298,7 @@ def recover_calendar(db: Session, user: CurrentUser, calendar_id: str | None) ->
             timeout=8,
         )
         if response.status_code == 401:
-            clear_credentials(connection)
+            clear_credentials(db, connection)
             db.commit()
             raise HTTPException(409, REAUTHORIZE)
         if response.status_code in (403, 404, 410):
@@ -336,7 +336,7 @@ def _calendar_id(
         if 400 <= response.status_code < 500:
             is_rate_limit = _is_rate_limited(response)
             if response.status_code == 401 or (response.status_code == 403 and not is_rate_limit):
-                clear_credentials(connection)
+                clear_credentials(db, connection)
             db.commit()
             if is_rate_limit:
                 raise HTTPException(
@@ -670,7 +670,7 @@ def _handle_error_response(
             and current.calendar_id == destination
         ):
             if is_auth_revoked:
-                clear_credentials(current)
+                clear_credentials(db, current)
             else:
                 current.calendar_id = PENDING_CALENDAR
         db.commit()
