@@ -14,7 +14,7 @@ from uuid import uuid4
 import pytest
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
-from sqlalchemy.exc import DBAPIError
+from sqlalchemy.exc import DBAPIError, IntegrityError
 
 
 @pytest.fixture
@@ -153,6 +153,35 @@ def test_release_tables_enforce_browser_grants(database, table_name, signed_in_a
             where attrelid = 'public.lembretes'::regclass and attnum > 0 and not attisdropped
               and has_column_privilege('authenticated', attrelid, attnum, 'UPDATE')""")).scalars().all()
         assert writable_columns == ['lido_em']
+
+
+@pytest.mark.parametrize(('google_event_id', 'valid'), [
+    ('a0v91', True),
+    ('a0' * 32, True),
+    ('v' * 1024, True),
+    ('v' * 4, False),
+    ('v' * 1025, False),
+    ('W' + '0' * 63, False),
+])
+def test_google_calendar_mapping_validates_event_id(database, google_event_id, valid):
+    conn, users = database
+    insert = text("""insert into public.google_calendar_event_exports
+        (user_id, event_kind, local_event_id, calendar_id, google_event_id, exported_version)
+        values (:user_id, 'personal', :local_event_id, 'agenda-de-teste', :google_event_id, :version)
+        returning google_event_id""")
+    params = {
+        'user_id': users['ana'],
+        'local_event_id': str(uuid4()),
+        'google_event_id': google_event_id,
+        'version': 'a' * 64,
+    }
+    if valid:
+        assert conn.execute(insert, params).scalar_one() == google_event_id
+    else:
+        with pytest.raises(IntegrityError) as rejected:
+            with conn.begin_nested():
+                conn.execute(insert, params)
+        assert rejected.value.orig.diag.constraint_name == 'google_calendar_event_exports_google_event_id_check'
 
 
 # ---------------------------------------------------------------------------
