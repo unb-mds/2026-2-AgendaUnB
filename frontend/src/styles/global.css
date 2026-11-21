@@ -569,11 +569,18 @@ body.light .event-tag--personal { background: #005fd2; color: #ffffff; }
 body.light .event-tag--saved { background: #1e293b; color: #ffffff; }
 
 /* Cards de Evento */
+.events-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  grid-auto-rows: 1fr;
+  gap: 20px;
+}
 .event-card {
-  background: var(--card-bg); border-radius: 20px; overflow: hidden;
+  background: var(--card-bg); border-radius: 20px; overflow: clip;
   border: 1px solid var(--border-color); box-shadow: var(--shadow-dark);
   position: relative; display: flex; flex-direction: column; transition: transform 0.2s, border-color 0.2s;
-  min-height: 210px;
+  height: 100%;
+  min-height: 264px;
   isolation: isolate;
   will-change: transform;
   color: var(--text-color);

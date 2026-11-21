@@ -10,6 +10,7 @@ import httpx
 import pytest
 
 from src.database.models import (
+    Consent,
     GoogleCalendarConnection,
     GoogleCalendarEventExport,
     GoogleCalendarOAuthState,
@@ -188,13 +189,27 @@ def test_expired_grant_can_be_replaced_by_new_authorization(api, actor, monkeypa
     assert _grant(api, actor, monkeypatch) == "connected"
     with api[1]() as db:
         item = _personal(db, actor.id)
+        consent = db.query(Consent).filter_by(user_id=actor.id, purpose="google_agenda").one()
+        assert consent.revoked_at is None
+        consent_id = consent.id
         db.get(GoogleCalendarConnection, actor.id).access_token_expires_at = datetime.now(timezone.utc) - timedelta(seconds=1)
         db.commit()
     monkeypatch.setattr(httpx, "post", lambda *args, **kwargs: httpx.Response(400, json={"error": "invalid_grant"}))
     assert api[0].post(f"{ROOT}/exports", json={"events": [item]}).status_code == 409
     assert api[0].get(f"{ROOT}/connection").json()["connected"] is False
+    with api[1]() as db:
+        connection = db.get(GoogleCalendarConnection, actor.id)
+        assert connection.encrypted_access_token is None
+        assert connection.encrypted_refresh_token is None
+        assert db.get(Consent, consent_id).revoked_at is not None
+
     assert _grant(api, actor, monkeypatch) == "connected"
     assert api[0].get(f"{ROOT}/connection").json()["connected"] is True
+    with api[1]() as db:
+        active_consent = db.query(Consent).filter_by(
+            user_id=actor.id, purpose="google_agenda", revoked_at=None
+        ).one()
+        assert active_consent.id != consent_id
 
 
 def test_expired_access_token_is_refreshed_on_server(api, actor, monkeypatch):

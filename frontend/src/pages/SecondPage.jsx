@@ -1079,7 +1079,7 @@ export default function SegundaPagina() {
             </div>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))', gap: '20px' }}>
+          <div className="events-grid">
             {eventosFiltrados.map((evento) => (
               <EventCardItem
                 key={`${evento.visibilidade}-${evento.id}`}
