@@ -499,3 +499,38 @@ test('destino Agenda UnB removido no Google permite confirmar recriação', asyn
   expect(destinationPayload).toEqual({ calendar_id: null });
   await expect(page.getByText('A próxima exportação criará a agenda Agenda UnB.')).toBeVisible();
 });
+
+test('cards de eventos mantêm altura padronizada mesmo com títulos, descrições e tags diferentes', async ({ page }) => {
+  const session = calendarSession('email');
+  await authClient(page, `async getSession() { return { data: { session: ${JSON.stringify(session)} } }; },`, session);
+  await page.route('**/api/v1/me/events', route => route.fulfill({
+    json: [
+      { id: '11111111-1111-4111-8111-111111111111', title: 'Prova 1', starts_at: '2026-11-20T15:00:00Z' },
+      { id: '22222222-2222-4222-8222-222222222222', title: 'Prova 2 com título bem mais longo para ocupar duas linhas no card', description: 'Descrição completa ocupando duas linhas para testar altura.', starts_at: '2026-11-21T15:00:00Z', location: 'Auditório Central' },
+      { id: '33333333-3333-4333-8333-333333333333', title: 'Prova 3', starts_at: '2026-11-22T15:00:00Z' },
+      { id: '44444444-4444-4444-8444-444444444444', title: 'Prova 4', starts_at: '2026-11-23T15:00:00Z' },
+    ],
+  }));
+  await page.route('**/api/v1/me/saved-events', route => route.fulfill({
+    json: [
+      {
+        id: '55555555-5555-4555-8555-555555555555',
+        title: 'Lançamento - Agenda UnB',
+        description: 'No dia 25 de novembro acontece o lançamento exclusivo com transmissão.',
+        starts_at: '2026-11-25T17:00:00Z',
+        campus_id: 'fga',
+        location: 'MOCAP',
+        external_url: 'https://noticias.unb.br/evento',
+      },
+    ],
+  }));
+  await page.route('**/api/v1/me/google-calendar/connection', route => route.fulfill({
+    json: { connected: false, recovery_required: false },
+  }));
+
+  await page.goto('/eventos?aba=meus');
+  const cards = page.locator('.events-grid .event-card');
+  await expect(cards).toHaveCount(5);
+  const heights = await cards.evaluateAll(elements => elements.map(el => Math.round(el.getBoundingClientRect().height)));
+  expect(new Set(heights).size).toBe(1);
+});

@@ -95,11 +95,12 @@ def get_connection(db: Session, user: CurrentUser) -> GoogleCalendarConnection |
     return None
 
 
-def clear_credentials(connection: GoogleCalendarConnection) -> None:
+def clear_credentials(db: Session, connection: GoogleCalendarConnection) -> None:
     connection.encrypted_access_token = None
     connection.encrypted_refresh_token = None
     connection.access_token_expires_at = None
     connection.granted_scope = ""
+    account_repository.revoke_active_consents(db, connection.user_id, "google_agenda")
 
 
 def disconnect(db: Session, user: CurrentUser) -> str:
@@ -116,8 +117,7 @@ def disconnect(db: Session, user: CurrentUser) -> str:
         revoked = revoke_token(refresh_token)
     except (HTTPException, InvalidToken):
         revoked = False
-    clear_credentials(connection)
-    account_repository.revoke_active_consents(db, user.id, "google_agenda")
+    clear_credentials(db, connection)
     db.commit()
     return "confirmed" if revoked else "not_confirmed_remove_access_in_google"
 

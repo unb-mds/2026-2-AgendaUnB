@@ -7,6 +7,7 @@
   --semester-muted: #93a7c2;
   --semester-surface: rgba(12, 18, 32, 0.78);
   --semester-field: rgba(6, 12, 24, 0.68);
+  --semester-popup: #0c1424;
   --semester-line: rgba(140, 174, 218, 0.14);
   --semester-line-subtle: rgba(140, 174, 218, 0.09);
   --semester-line-accent: rgba(0, 139, 255, 0.34);
@@ -30,6 +31,7 @@ body.light .semester-panel {
   --semester-muted: #52637c;
   --semester-surface: #ffffff;
   --semester-field: #f4f7fb;
+  --semester-popup: #ffffff;
   --semester-line: rgba(21, 34, 56, 0.12);
   --semester-line-subtle: rgba(21, 34, 56, 0.08);
   --semester-line-accent: rgba(0, 139, 255, 0.38);
@@ -392,9 +394,17 @@ body.light .semester-panel :is(.semester-step-btn, .semester-metrics, .semester-
 .semester-panel .semester-field { display: grid; gap: 5px; font-size: .875rem; min-width: 0; }
 .semester-raw, .semester-queue-list, .semester-preview form { display: grid; gap: 10px; }
 .semester-raw { padding-top: 2px; }
-.semester-upload-consent { margin-block: 12px; font-size: .875rem; }
-.semester-panel .custom-select-trigger { padding: 10px 12px; font: inherit; }
-.semester-panel .custom-select-trigger, .semester-panel .custom-select-popup { background: var(--semester-field); }
+.semester-panel .custom-select-trigger { padding: 10px 12px; font: inherit; background: var(--semester-field); }
+.semester-panel .custom-select-popup {
+  background: var(--semester-popup);
+  border-color: var(--semester-line-accent);
+  box-shadow: var(--shadow-strong), var(--semester-glow);
+}
+.semester-header-bar:has(.custom-select[data-open="true"]),
+.semester-section:has(.custom-select[data-open="true"]) {
+  position: relative;
+  z-index: 30;
+}
 .semester-panel .custom-select-placeholder, .semester-panel .custom-select-chevron { color: var(--semester-muted); }
 .semester-queue-list, .semester-candidates { list-style: none; padding: 0; margin: 12px 0 0; }
 .semester-queue-list:empty { display: none; }
@@ -749,11 +759,14 @@ body.light .pixel-cat-eye-glow { fill: #6ee6ff; }
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
+.semester-unit-filter .custom-select-popup { padding-top: 0; }
 .semester-unit-filter .custom-select-search {
   position: sticky;
   inset-block-start: 0;
-  padding: 6px 10px 8px;
-  background: var(--semester-field);
+  z-index: 1;
+  padding: 10px 10px 8px;
+  border-bottom: 1px solid var(--semester-line);
+  background: var(--semester-popup);
 }
 .semester-unit-filter .custom-select-search input { width: 100%; }
 .semester-unit-filter .custom-select-empty { margin: 0; padding: 10px 14px; color: var(--semester-muted); }
