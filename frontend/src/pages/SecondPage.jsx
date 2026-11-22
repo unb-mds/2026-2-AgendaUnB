@@ -426,7 +426,7 @@ function EventCardItem({
       {(canEdit || canRemove) && (
         <div
           onClick={(event) => event.stopPropagation()}
-          style={{ position: 'absolute', top: '12px', right: '12px', display: 'flex', gap: '6px' }}
+          style={{ position: 'absolute', top: '9px', right: '10px', display: 'flex', gap: '6px' }}
         >
           {canEdit && (
             <button

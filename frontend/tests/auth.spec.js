@@ -531,6 +531,10 @@ test('cards de eventos mantêm altura padronizada mesmo com títulos, descriçõ
   await page.goto('/eventos?aba=meus');
   const cards = page.locator('.events-grid .event-card');
   await expect(cards).toHaveCount(5);
-  const heights = await cards.evaluateAll(elements => elements.map(el => Math.round(el.getBoundingClientRect().height)));
-  expect(new Set(heights).size).toBe(1);
+  const boxes = await cards.evaluateAll(elements => elements.map(el => {
+    const rect = el.getBoundingClientRect();
+    return { width: Math.round(rect.width), height: Math.round(rect.height) };
+  }));
+  expect(new Set(boxes.map(box => box.height)).size).toBe(1);
+  expect(boxes[0].width).toBeGreaterThan(boxes[0].height * 1.35);
 });
