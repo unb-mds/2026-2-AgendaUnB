@@ -3,7 +3,7 @@ title: "Visão do produto"
 description: "Documento de visão do produto Agenda UnB, descrevendo propósito, escopo, posicionamento, stakeholders, recursos e prioridades."
 ---
 
-**Versão** 2.0 (escopo da Release 2)<br />**Equipe** Agenda UnB — Métodos de Desenvolvimento de Software, 2026/2
+**Versão** 2.0<br />**Equipe** Agenda UnB — Métodos de Desenvolvimento de Software, 2026/2
 
 ---
 
@@ -11,7 +11,7 @@ description: "Documento de visão do produto Agenda UnB, descrevendo propósito,
 
 ### 1.1 Propósito
 
-Este documento descreve a visão do produto Agenda UnB: qual problema ele resolve, para quem, e quais capacidades ele deve ter. Serve de referência comum para a equipe e de base para o backlog. Não detalha os requisitos funcionais e não funcionais, que estão em [requisitos](/produto/requisitos), nem os padrões de código, dados e API, que estão em [padrões](/produto/padroes). As decisões técnicas de arquitetura e infraestrutura estão consolidadas em [Architecture](/arquitetura/visao-geral). A identidade visual e as especificações de interface e design system estão em [DESIGN.md](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/DESIGN.md), [PRODUCT.md](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/PRODUCT.md) e [especificacao-frontend](/arquitetura/frontend). O planejamento ágil por sprint está em [sprints](/sprints/sprint-1), as entregas e notas de versão em [release-notes](/processo/release-notes/v0-1-0), e o registro de uso de IA em [AI-USAGE](/processo/uso-de-ia).
+Este documento descreve a visão do produto Agenda UnB: qual problema ele resolve, para quem, e quais capacidades ele deve ter. Serve de referência comum para a equipe e de base para o backlog. Não detalha os requisitos funcionais e não funcionais, que estão em [Requisitos](/produto/requisitos), nem os padrões de código, dados e API, que estão em [Padrões de projeto](/produto/padroes). As decisões técnicas de arquitetura e infraestrutura estão consolidadas em [Arquitetura](/arquitetura/visao-geral). A identidade visual e as especificações de interface e design system estão em [DESIGN.md](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/DESIGN.md), [PRODUCT.md](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/PRODUCT.md) e [Interface e design](/arquitetura/frontend). O histórico de ciclos está em [Sprints](/sprints/sprint-1), as notas de versão em [Notas de versão](/processo/release-notes/v0-2-0), e o registro de uso de IA em [Uso de IA](/processo/uso-de-ia).
 
 ### 1.2 Escopo
 
@@ -27,7 +27,7 @@ Está fora do escopo: aplicativo nativo para celular e gestão acadêmica propri
 | Avaliação | Prova, trabalho ou entrega de uma turma específica |
 | Plano de ensino | Documento em PDF ou texto bruto contendo a ementa e o cronograma de atividades da disciplina |
 | Turma | Oferta de uma disciplina em um período letivo. O catálogo identifica a oferta e o usuário declara seu vínculo ao selecioná-la. |
-| Campus | Localidade física da universidade atendida pelo sistema (Darcy Ribeiro, FGA, FCE, FUP e FAL) |
+| Campus | Localidade física da universidade atendida pelo sistema (Darcy Ribeiro (Plano Piloto), FCTE (Gama), FCTS (Ceilândia), FUP (Planaltina) e FAL) |
 
 ---
 
@@ -35,7 +35,7 @@ Está fora do escopo: aplicativo nativo para celular e gestão acadêmica propri
 
 ### 2.1 Oportunidade de negócio
 
-A informação que organiza a rotina de um estudante da UnB está fragmentada em canais que não se relacionam. A grade está no SIGAA. As datas de prova estão em um PDF de plano de ensino que geralmente é aberto apenas na primeira semana de aula. Os eventos circulam por meio do Instagram de centros acadêmicos, murais e grupos de WhatsApp.
+A informação que organiza a rotina de um estudante da UnB está fragmentada em canais que não se relacionam. A grade está no SIGAA. As datas de prova estão em um PDF de plano de ensino que geralmente é aberto apenas na primeira semana de aula. Os eventos circulam por meio de redes sociais de centros acadêmicos, murais e grupos de WhatsApp.
 
 Não existe um lugar único onde o estudante visualize de forma integrada o que vai acontecer com ele e com o campus nas próximas semanas.
 
@@ -104,20 +104,20 @@ Aplicação web responsiva com catálogo público de eventos e área autenticada
 
 ## 5. Recursos do produto
 
-O detalhamento completo dos 21 requisitos funcionais está em [requisitos](/produto/requisitos).
+O detalhamento completo dos requisitos funcionais e não funcionais está em [requisitos](/produto/requisitos).
 
 | # | Recurso | Descrição |
 | --- | --- | --- |
-| R1 | Acesso e Perfis Diferenciados | Autenticação local (e-mail/senha), Google OAuth para estudantes, validação estrita com `@unb.br` para professores, moderação administrativa (`admin`) e modo visitante sem autenticação (RF01–RF04) |
+| R1 | Acesso e Perfis Diferenciados | Autenticação local (e-mail/senha), Google OAuth para estudantes, validação com `@unb.br` para autocadastro/promoção de professores, gestão de papéis por administradores e modo visitante sem autenticação (RF01–RF04) |
 | R2 | Agenda Unificada e Eventos Pessoais | Calendário visual com compromissos pessoais e gestão completa (CRUD) de prazos acadêmicos privados do usuário (RF08, RF09) |
-| R3 | Catálogo Multi-campus de Eventos | Consulta pública de eventos dos campi (Darcy Ribeiro, FGA, FCE, FUP, FAL), com busca textual e filtros por categoria, campus e turno (RF14, RF15, RF19) |
+| R3 | Catálogo Multi-campus de Eventos | Consulta pública de eventos dos campi (Darcy Ribeiro (Plano Piloto), FCTE (Gama), FCTS (Ceilândia), FUP (Planaltina) e FAL), com busca textual e filtros por categoria, campus e turno (RF14, RF15, RF19) |
 | R4 | Publicação, moderação e administração | Professor e admin moderam sugestões. Somente admin gerencia papéis e categorias (RF10, RF11). |
 | R5 | Seleção de turmas | Seleção manual de oferta do catálogo público Followw e vínculo autodeclarado (RF05). |
 | R6 | Extração assistida de avaliações | Provas e trabalhos são extraídos como candidatos com evidência de origem (RF06). |
 | R7 | Revisão, compartilhamento e colaboração | Revisão de candidatos, confirmação explícita, compartilhamento na turma, revisões e votos (RF07). |
 | R8 | Eventos públicos na agenda pessoal | Adicionar ou remover eventos públicos da agenda e acessar separadamente o link oficial (RF12, RF13). |
 | R9 | Lembretes na plataforma | Avisos persistentes 24 horas antes de eventos da própria agenda (RF17). |
-| R10 | Exportação de calendário | Envio solicitado pelo usuário a uma agenda secundária Agenda UnB na conta Google de mesmo e-mail verificado. Reexportação idempotente e ICS complementar (RF21). |
+| R10 | Exportação de calendário | Envio solicitado pelo usuário a uma agenda secundária Agenda UnB na conta Google de mesmo e-mail verificado. Reexportação idempotente e ICS complementar (RF18). |
 | R11 | Design System e Bivalência de Temas | Alternância entre modo escuro (_Dark_) e claro (_Light_), ancorado na identidade "The Neon Campus" com estilo _halftone_, _glassmorphism_ e _glow_ em Azul `#008bff` (RF20, DESIGN.md, PRODUCT.md) |
 | R12 | Coleta institucional | Agenda UnB Notícias como primeira fonte. Eventos completos seguem ao catálogo e exceções seguem para revisão (RF16). |
 
@@ -127,9 +127,9 @@ O detalhamento completo dos 21 requisitos funcionais está em [requisitos](/prod
 
 **De equipe** — Seis integrantes com responsabilidades distribuídas entre frontend (2), backend (2) e banco de dados (2). Todos cursando a disciplina em paralelo a outras atividades acadêmicas.
 
-**De prazo** — Semestre letivo 2026/2 com entregas intermediárias rígidas. A Release 1 foi entregue na Sprint 04 (28/09/2026), e o ciclo atual atende aos prazos da Release 2.
+**De prazo** — Semestre letivo 2026/2 com entregas organizadas em ciclos de desenvolvimento da disciplina.
 
-**De front-end** — SPA construída em React 19 com Vite 6 e React Router 7. A interface segue estritamente o Design System "The Neon Campus" ([DESIGN.md](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/DESIGN.md) e [PRODUCT.md](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/PRODUCT.md)): uso da cor primária Azul Glow `#008bff`, tipografia Orbitron (display) e Inter (body/labels), iconografia padronizada em Material Symbols, preenchimentos sólidos (flat) ou glassmorphism neutro, e proibição explícita de _linear gradients_ e sombras com opacidade superior a 20%.
+**De front-end** — SPA construída em React 19 com Vite 6 e React Router 7. A interface segue estritamente o Design System "The Neon Campus" ([DESIGN.md](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/DESIGN.md) e [PRODUCT.md](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/PRODUCT.md)): uso da cor primária Azul Glow `#008bff`, tipografia Orbitron (display) e Inter (body/labels), iconografia padronizada em Material Symbols, preenchimentos sólidos (flat) ou glassmorphism neutro, proibição de _linear gradients_ e sombras pretas em cards acima de 20% de opacidade (com exceções documentadas para backdrops de modais e brilhos neon azuis).
 
 **De back-end e API** — API REST desenvolvida em Python com FastAPI, SQLAlchemy 2 para ORM, Pydantic 2 para validação e httpx para comunicação assíncrona. Os endpoints seguem o padrão RESTful com prefixo `/api/v1` documentado em [padrões](/produto/padroes).
 
@@ -141,9 +141,9 @@ O CI do backend e o Dockerfile de implantação usam **Python 3.11**. Consulte o
 
 ---
 
-## 7. Riscos e questões em aberto
+## 7. Riscos e mitigações
 
-| Item | Situação e Mitigação Consolidada |
+| Item | Situação e Mitigação |
 | --- | --- |
 | Legibilidade de planos | PDFs escaneados, protegidos ou corrompidos recebem orientação de recuperação por texto bruto ou cadastro manual (RNF10). |
 | Disponibilidade de fontes | A falha do Followw preserva os vínculos e o último catálogo válido. A falha da Agenda UnB Notícias preserva os eventos já coletados. |
@@ -153,20 +153,19 @@ O CI do backend e o Dockerfile de implantação usam **Python 3.11**. Consulte o
 
 ## 8. Prioridade dos recursos
 
-A ordem de prioridade segue o planejamento por ciclos acordado pela equipe:
+A organização dos recursos divide-se entre o núcleo essencial da plataforma e as capacidades acadêmicas integradas:
 
-**Fase 1 — Essencial (Entregue na Release 1 - v0.1.0 / Sprint 04)**
+**Núcleo essencial — Agenda e Catálogo Público**
 
-- R1: Acesso com autenticação local, Google OAuth e perfis `student` / `professor` (RF01, RF02, RF03, RF04)
-- R3: Catálogo público multi-campus de eventos com busca textual e filtros de campus, categoria e turno (RF14, RF15, RF19)
-- R2: Gestão completa de eventos pessoais do estudante (CRUD / RF09)
-- R4 (parcial): Criação de eventos públicos por professores e administradores (RF10)
+- R1: Acesso com autenticação local, Google OAuth e perfis `student`, `professor` e `admin` (RF01–RF04)
+- R3: Catálogo público multi-campus de eventos com busca textual e filtros por campus, categoria e turno (RF14, RF15, RF19)
+- R2: Gestão completa de eventos pessoais do estudante (CRUD / RF08, RF09)
+- R4: Publicação direta por professores e administradores, moderação de sugestões estudantis e gestão administrativa de papéis e categorias (RF10, RF11)
 - R11: Bivalência de temas (Dark / Light) com identidade "The Neon Campus" (RF20)
 
-**Fase 2 — Release 2 (Sprints 7 e 8)**
+**Capacidades acadêmicas e integrações**
 
-- R5, R6 e R7: seleção de turma, extração assistida, revisão e compartilhamento de planos (RF05–RF07).
-- R4: homologação da moderação por professor/admin e da gestão de papéis e categorias por admin (RF10, RF11).
-- R8, R9, R10 e R12: eventos públicos na agenda, lembretes, exportação direta e coleta da Agenda UnB Notícias entram nesta entrega (RF12, RF13, RF16, RF17, RF21).
+- R5, R6 e R7: Seleção de turma, extração assistida, revisão e compartilhamento de planos de ensino (RF05–RF07)
+- R8, R9, R10 e R12: Vínculo de eventos públicos na agenda pessoal, lembretes persistentes, exportação para Google Agenda / ICS e coleta institucional da Agenda UnB Notícias (RF12, RF13, RF16, RF17, RF18)
 
-A Release 2 cobre a organização acadêmica e a exportação sob demanda. Matrícula oficial, atestados, notas, avisos privados do Followw/SIGAA e sincronização automática de calendário ficam fora do recorte.
+A plataforma cobre a organização acadêmica pessoal, a descoberta de eventos e a exportação sob demanda. Matrícula oficial, atestados, notas, avisos privados do Followw/SIGAA e sincronização automática bidirecional de calendário ficam fora do escopo.

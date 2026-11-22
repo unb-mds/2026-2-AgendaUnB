@@ -1,7 +1,9 @@
 ---
 title: "ADR-005 · Validar a sessão no Supabase Auth e consultar o papel no banco"
-description: "Decisão, consequências e critérios de verificação: validar a sessão no supabase auth e consultar o papel no banco."
+description: "Decisão de validar o token Bearer no Supabase Auth e carregar o papel persistido em profiles."
 ---
+
+# ADR-005 · Validar a sessão no Supabase Auth e consultar o papel no banco
 
 | Campo | Valor |
 | --- | --- |
@@ -10,29 +12,25 @@ description: "Decisão, consequências e critérios de verificação: validar a 
 | Rastreabilidade | DA-03; RF01, RF03, RF04 |
 | Substitui | Nenhuma ADR |
 
-Registro retrospectivo; a motivação histórica e as alternativas avaliadas na época não estão documentadas.
-
 ## Contexto
 
-A API precisa identificar a conta e seu papel sem confiar em valores enviados pelo navegador.
+A API precisa identificar a conta autenticada, exigir confirmação de e-mail e verificar seu papel (`student`, `professor`, `admin`) sem confiar em metadados ou valores declarados pelo navegador.
 
 ## Decisão
 
-Validar o Bearer consultando Supabase Auth e carregar profiles.papel pelo ID autenticado. O middleware atual usa timeout de cinco segundos. Sessão inválida resulta em 401; falha do serviço de autenticação resulta em 503; perfil ausente resulta em 403.
+Validar o token `Authorization: Bearer <token>` consultando o Supabase Auth (com timeout de 5 segundos), exigir endereço de e-mail confirmado e carregar `profiles.papel` a partir do banco de dados pelo ID autenticado. Sessão ausente ou inválida retorna `401`; falha do serviço de autenticação retorna `503`; perfil ausente ou e-mail não confirmado retorna `403`.
 
 ## Alternativas para comparação
 
-As opções abaixo explicitam os trade-offs; não afirmam uma avaliação histórica da equipe.
-
-Validar JWT localmente reduziria chamadas externas, mas exigiria gerir chaves e regras de validação. Usar o papel informado pelo cliente não preservaria a autorização.
+Validar JWT apenas localmente reduziria chamadas ao serviço de autenticação, mas exigiria gestão de chaves públicas e não refletiria imediatamente revogações de conta. Confiar no papel informado pelo cliente violaria o controle de acesso.
 
 ## Consequências
 
-Rotas protegidas dependem da disponibilidade do Auth e acrescentam uma consulta de perfil. Mudanças de papel são lidas do banco, sem confiar no estado da interface.
+Rotas protegidas dependem da disponibilidade do Supabase Auth e acrescentam uma consulta de perfil. Alterações de papel no banco passam a valer de imediato, sem depender do estado em cache no cliente.
 
 ## Orientações para contribuição e verificação
 
-A referência é backend/src/middlewares/auth.py. Verificar sessão ausente, inválida, indisponibilidade do Auth e perfil ausente. Testes que substituem a dependência de autenticação não validam essa integração.
+A referência de implementação está em `backend/src/middlewares/auth.py`. Verificar cenários de sessão ausente, token inválido, e-mail não confirmado, perfil ausente e indisponibilidade do Auth. Testes unitários que substituem a dependência de autenticação não validam a integração real com o Supabase Auth.
 
 ## Fontes e relações
 

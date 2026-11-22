@@ -29,7 +29,7 @@ nav:
     - ADR-014 — Processamento assíncrono resiliente de planos com fila persistida, lease e orçamento: arquitetura/adrs/adr-014-processamento-assincrono-planos-ia.md
   - Contratos do Backend: api-specs.md
   - Dados de Conferir evento: arquitetura/conferir-evento.md
-  - Matriz de aceite da Release 2: matriz-release-2.md
+  - Matriz de rastreabilidade: matriz-rastreabilidade.md
   - Plano de Implantação: implantacao.md
   - Modelo de Dados: arquitetura/modelo-de-dados.md
   - Dados de planos: arquitetura/dados-de-planos.md
@@ -55,12 +55,10 @@ nav:
     - v0.1.0: processo/release-notes/v0-1-0.md
     - v0.2.0-beta.1: processo/release-notes/v0-2-0-beta-1.md
     - v0.2.0: processo/release-notes/v0-2-0.md
-    - Atualizações e contratos da R2: atualizacoes.md
   - Uso de IA: processo/uso-de-ia.md
   - Como Contribuir: processo/contribuindo.md
   - Verificação de segurança: processo/seguranca.md
   - Privacidade e ciclo de vida: processo/privacidade.md
-  - Roteiro de entrega: processo/roteiro-entrega.md
   - Política de Privacidade: produto/politica-de-privacidade.md
   - Termos de Uso: produto/termos-de-uso.md
 
@@ -68,7 +66,9 @@ plugins:
   - search
   - redirects:
       redirect_maps:
-        contratos-release-2.md: 'atualizacoes.md#contratos-da-release-2'
+        atualizacoes.md: api-specs.md
+        processo/roteiro-entrega.md: implantacao.md
+        matriz-release-2.md: matriz-rastreabilidade.md
         Architecture.md: arquitetura/visao-geral.md
         modelo-de-dados.md: arquitetura/modelo-de-dados.md
         especificacao-banco-de-dados.md: arquitetura/banco-de-dados.md
@@ -83,17 +83,13 @@ plugins:
         arquitetura/padroes.md: produto/padroes.md
         AI-USAGE.md: processo/uso-de-ia.md
         release-notes/v0.1.0.md: processo/release-notes/v0-1-0.md
-        planejamento-r2-sprints-7-8.md: matriz-release-2.md
         prototipo-planos-react.md: arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos.md
-        s6-f02-editor-parcial.md: 'sprints/sprint-6.md#s6-f02'
         arquitetura.md: arquitetura/visao-geral.md
         processamento-planos.md: arquitetura/adrs/adr-014-processamento-assincrono-planos-ia.md
         processamento-planos-s7.md: arquitetura/adrs/adr-014-processamento-assincrono-planos-ia.md
         privacidade-planos.md: arquitetura/adrs/adr-003-minimizar-dados-de-planos.md
         planos-de-ensino-frontend.md: arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos.md
         painel-administrativo.md: arquitetura/adrs/adr-006-autorizacao-em-camadas.md
-        s7-b01-validacao.md: 'sprints/sprint-7.md#s7-b01'
-        s7-b02-validacao.md: 'sprints/sprint-7.md#s7-b02'
         processo/sprints/sprint-1.md: sprints/sprint-1.md
         processo/sprints/sprint-2.md: sprints/sprint-2.md
         processo/sprints/sprint-3.md: sprints/sprint-3.md

@@ -21,7 +21,8 @@ No AgendaUnB, Pedro pode visualizar os eventos públicos publicados por organiza
 - Visualizar os detalhes de cada evento.
 - Encontrar oportunidades acadêmicas e de integração.
 - Criar e consultar seus próprios eventos privados.
-- Salvar eventos públicos na agenda e consultar lista ou calendário.
+- Salvar eventos públicos na agenda e consultar em lista ou calendário.
+- Selecionar turmas, enviar planos de ensino, revisar datas extraídas e acompanhar lembretes ou exportar sua agenda.
 - Sugerir atividades e acompanhar a decisão pelo sino de notificações.
 
 # 3. Persona 02 — Professora / Organizadora de Eventos
@@ -32,15 +33,16 @@ No AgendaUnB, Pedro pode visualizar os eventos públicos publicados por organiza
 
 ### Descrição:
 
-Marina é uma professora da Universidade de Brasília (UnB) que, além de ministrar aulas, participa da organização de palestras, workshops, seminários e outras atividades acadêmicas.
+Mariana é uma professora da Universidade de Brasília (UnB) que, além de ministrar aulas, participa da organização de palestras, workshops, seminários e outras atividades acadêmicas.
 Ela precisa divulgar essas oportunidades para os estudantes de maneira rápida e eficiente, garantindo que todos tenham acesso às informações necessárias.
-No AgendaUnB, Marina utiliza a plataforma para cadastrar e publicar eventos públicos, informando datas, horários, locais e descrições. Além disso, pode atualizar as informações dos eventos sob sua responsabilidade, facilitando a comunicação entre professores e estudantes.
-Marina valoriza uma interface intuitiva, formulários simples e ferramentas que permitam organizar suas publicações sem precisar recorrer a diferentes canais de comunicação.
+No AgendaUnB, Mariana utiliza a plataforma para cadastrar e publicar eventos públicos, informando datas, horários, locais e descrições, além de moderar sugestões estudantis e colaborar em versões de planos de ensino. Além disso, pode atualizar as informações dos eventos sob sua responsabilidade, facilitando a comunicação entre professores e estudantes.
+Mariana valoriza uma interface intuitiva, formulários simples e ferramentas que permitam organizar suas publicações sem precisar recorrer a diferentes canais de comunicação.
 
 ### Necessidades principais:
-- Cadastrar e divulgar eventos acadêmicos.
+- Cadastrar e divulgar eventos acadêmicos diretamente.
 - Informar datas, horários, locais e descrições dos eventos.
-- Editar e atualizar eventos sob sua responsabilidade.
+- Moderar sugestões estudantis de eventos públicos.
+- Editar e atualizar eventos sob sua responsabilidade e revisar planos de ensino compartilhados.
 - Facilitar a comunicação de atividades acadêmicas aos estudantes.
 
 # 4. Persona 03 — Administrador da Plataforma
@@ -51,17 +53,16 @@ Marina valoriza uma interface intuitiva, formulários simples e ferramentas que 
 
 ### Descrição:
 
-Rafael é um profissional responsável pela administração e pelo gerenciamento do AgendaUnB, garantindo que a plataforma seja utilizada de maneira organizada e segura pela comunidade universitária.
-No AgendaUnB, Rafael acompanha os eventos públicos cadastrados pelos professores e organizadores, verificando se as informações estão adequadas às regras estabelecidas para a plataforma. Seu papel envolve gerenciar publicações, acompanhar solicitações de divulgação e, conforme as permissões previstas no sistema, aprovar, rejeitar ou moderar eventos.
+Rafael é responsável pela administração e pelo gerenciamento do AgendaUnB, garantindo que a plataforma seja utilizada de maneira organizada e segura pela comunidade universitária.
+No AgendaUnB, Rafael acompanha os eventos públicos cadastrados na plataforma e as sugestões enviadas por estudantes ou originadas da coleta institucional, verificando se as informações estão adequadas às regras estabelecidas. Seu papel envolve moderar solicitações pendentes, gerenciar categorias e papéis de usuários e, conforme as permissões previstas no sistema, aprovar, rejeitar ou ajustar registros públicos.
 Seu principal objetivo é manter a plataforma confiável e organizada, permitindo que os estudantes encontrem informações relevantes e que os professores possam divulgar suas atividades acadêmicas de maneira adequada.
 Rafael valoriza uma interface administrativa clara, com ferramentas que facilitem o acompanhamento das publicações, a identificação de problemas e o gerenciamento das informações.
 
 ### Necessidades principais:
-- Gerenciar e acompanhar eventos públicos cadastrados.
-- Verificar se as publicações seguem as regras da plataforma.
-- Aprovar, rejeitar ou moderar eventos, conforme as permissões definidas.
-- Manter as informações organizadas e atualizadas.
-- Garantir uma experiência confiável para estudantes e professores.
+- Moderar sugestões estudantis e revisões de coleta institucional, aprovando ou rejeitando com justificativa.
+- Gerenciar categorias do catálogo e papéis de usuários (`student`, `professor`, `admin`).
+- Publicar e manter eventos públicos organizados e atualizados.
+- Garantir uma experiência confiável e segura para estudantes e professores.
 
 # 5. Relação das personas com o sistema
 
@@ -76,6 +77,6 @@ Os nomes e os perfis descritos são fictícios e devem ser tratados como hipóte
 e das funcionalidades do AgendaUnB. Todos esses detalhes estão organizados de uma forma visual em nosso Figma na seção "Persona Básica 1", "Persona Básica 2" e "Persona Básica 3".
 
 
-# 7. Permissões na navegação atual
+# 7. Permissões e rotas por perfil
 
-Estudantes gerenciam compromissos privados, salvam públicos aprovados e enviam sugestões. Professores e administradores publicam diretamente e moderam sugestões em `/sugestoes`. Apenas administradores acessam `/admin` para consultar usuários e alterar cargos. A persona organizadora reúne necessidades que, na implementação, são distribuídas entre esses dois papéis. Consulte [ADR-001](/arquitetura/adrs/adr-001-integracao-fastapi-supabase) e [ADR-006](/arquitetura/adrs/adr-006-autorizacao-em-camadas).
+Estudantes gerenciam compromissos privados, salvam eventos públicos aprovados, acompanham turmas e planos em `/plano-de-ensino` e enviam sugestões de eventos. Professores e administradores publicam eventos diretamente e moderam sugestões em `/sugestoes`. Apenas administradores acessam `/admin` para consultar usuários, alterar cargos e gerenciar categorias. A persona organizadora reúne necessidades que, na implementação, são distribuídas entre os papéis de professor e administrador. Consulte [ADR-001](/arquitetura/adrs/adr-001-integracao-fastapi-supabase) e [ADR-006](/arquitetura/adrs/adr-006-autorizacao-em-camadas).

@@ -11,10 +11,10 @@ description: "Instale as dependências e rode o Agenda UnB com React, FastAPI e 
 - [Docker Desktop ou Docker Engine](https://docs.docker.com/get-docker/) em execução
 - [GNU Make](https://www.gnu.org/software/make/) para a execução automatizada. No Windows, use Git Bash com Make instalado ou instale os pré-requisitos no WSL.
 
-Clone a branch de desenvolvimento:
+Clone a branch principal do repositório:
 
 ```bash
-git clone --branch dev https://github.com/unb-mds/2026-2-AgendaUnB.git
+git clone --branch main https://github.com/unb-mds/2026-2-AgendaUnB.git
 cd 2026-2-AgendaUnB
 ```
 
@@ -65,7 +65,7 @@ npm ci
 npm run dev -- --port 5173 --strictPort
 ```
 
-Pressione `Ctrl+C` em cada terminal e rode `npx supabase stop` na raiz para encerrar. Se o catálogo de turmas estiver vazio, carregue o período em uso com `python -m src.modules.classes.sync --period 2026.2` a partir de `backend/`, usando o Python do ambiente virtual. `make dev` tenta fazer essa primeira carga automaticamente.
+Pressione `Ctrl+C` em cada terminal e rode `npx supabase stop` na raiz para encerrar. Se o catálogo de turmas estiver vazio, carregue o período letivo desejado a partir de `backend/`, usando o Python do ambiente virtual (por exemplo, `python -m src.modules.classes.sync --period 2026.2`). `make dev` tenta fazer essa primeira carga automaticamente.
 
 ## Variáveis de ambiente {#variaveis-de-ambiente}
 

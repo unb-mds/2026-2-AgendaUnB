@@ -8,7 +8,7 @@ Especificamente:
 * **Seja gentil. Seja cortês. Seja acolhedor(a).**
 * **Ouça. Considere e reconheça os pontos de vista das outras pessoas antes de responder.**
 
-Caso você vivencie ou presencie qualquer situação que faça você se sentir desconfortável ou não acolhido(a) na comunidade do AgendaUnb, entre em contato pelo e-mail `unbagenda@gmail.com` ou, se preferir, fale diretamente com alguma pessoa mantenedora do projeto (por exemplo, [@thomas4ugust0](https://github.com/thomas4ugust0) ou qualquer integrante da [equipe](README.md#equipe)).
+Caso você vivencie ou presencie qualquer situação que faça você se sentir desconfortável ou não acolhido(a) na comunidade do AgendaUnb, entre em contato pelo e-mail `unbagenda@gmail.com` ou procure qualquer integrante da [equipe mantenedora](README.md#criadores).
 
 O projeto AgendaUnb **não tolerará assédio** em sua comunidade, mesmo fora dos canais públicos de comunicação do projeto.
 
@@ -23,5 +23,3 @@ Tenha cautela com o **acordo por desgaste**, quando uma pessoa insiste repetidam
 ## Dúvidas
 
 É sempre tranquilo fazer perguntas! Nosso sistema integra frontend, backend, banco de dados e automações, e ninguém precisa ser especialista em todas as partes desde o início. Assim que você encontrar a resposta para uma dúvida, documente-a no primeiro lugar onde você procurou (no `README.md`, no `CONTRIBUTING.md` ou na pasta `docs/`). Dessa forma, a próxima pessoa contribuidora será integrada ainda mais rápido.
-
-> *"Nunca zombe de alguém por admitir que não sabe algo — a cada dia, centenas de novos estudantes descobrem ferramentas e conceitos pela primeira vez. Acolher dúvidas fortalece toda a comunidade."*

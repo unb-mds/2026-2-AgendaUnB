@@ -3,219 +3,176 @@ title: "Especificação do banco de dados"
 description: "Documento que descreve a estrutura física DDL e as políticas de segurança RLS do banco de dados da Agenda UnB no Supabase."
 ---
 
-Este documento descreve a estrutura física (DDL) atualizada do banco de dados do projeto **Agenda UnB**, com as tabelas e as regras de acesso no Supabase. Consulte o [diagrama de relacionamentos](/arquitetura/modelo-de-dados) e as migrações em `supabase/migrations/`.
+Este documento descreve a estrutura física (DDL), funções, triggers e políticas de segurança em nível de linha (RLS) do banco de dados PostgreSQL do **Agenda UnB** no Supabase. Consulte o [diagrama de relacionamentos](/arquitetura/modelo-de-dados) e os arquivos versionados em `supabase/migrations/`.
 
 ---
 
 ## 1. Tabelas de Domínio e Catálogos Globais
 
-Estas tabelas armazenam informações estruturais transversais, utilizadas tanto em eventos públicos quanto privados.
-
 ### 1.1. Tabela `campus`
-Armazena as localizações físicas da Universidade de Brasília.
-*   **Colunas:**
-    *   `id` (UUID, Primary Key): Identificador único gerado automaticamente (`gen_random_uuid()`).
-    *   `nome` (TEXT, Not Null, Unique): Nome oficial do campus (ex: Darcy Ribeiro, FGA).
-    *   `created_at` (TIMESTAMPTZ): Data e hora de criação.
-*   **Políticas RLS:** Segurança em Nível de Linha habilitada.
-    *   **Leitura (SELECT):** Permitida para todos (`USING true`). Política: *"Permitir leitura pública de campus"*.
+Armazena as localizações físicas da Universidade de Brasília (`Darcy Ribeiro (Plano Piloto)`, `FCTE (Gama)`, `FCTS (Ceilândia)`, `FUP (Planaltina)` e `FAL`).
+
+* **Colunas:** `id` (UUID, PK, `gen_random_uuid()`), `nome` (TEXT, Not Null, Unique), `created_at` (TIMESTAMPTZ).
+* **Políticas RLS:** leitura pública para todos (`USING true`).
 
 ### 1.2. Tabela `categories`
 Armazena as categorias para classificação e coloração dos eventos na interface.
-*   **Colunas:**
-    *   `id` (UUID, Primary Key): Identificador único.
-    *   `nome` (TEXT, Not Null, Unique): Nome da categoria (ex: Prova, Aula, Lazer).
-    *   `cor` (TEXT): Código hexadecimal da cor.
-    *   `created_at` (TIMESTAMPTZ): Data e hora de criação.
-*   **Políticas RLS:** Segurança em Nível de Linha habilitada.
-    *   **Leitura (SELECT):** Permitida para todos (`USING true`). Política: *"Permitir leitura pública de categorias"*.
-    *   **Gestão:** `admin_listar_categorias` lista categorias e contagens de eventos, `admin_criar_categoria` cria uma categoria e `admin_excluir_categoria` remove categorias sem eventos vinculados. As RPCs exigem `admin` e a escrita direta por navegador foi revogada.
+
+* **Colunas:** `id` (UUID, PK), `nome` (TEXT, Not Null, Unique), `cor` (TEXT, hexadecimal), `created_at` (TIMESTAMPTZ).
+* **Políticas RLS e gestão:** leitura pública para todos (`USING true`). A escrita direta pelo navegador foi revogada; a gestão administrativa usa `admin_listar_categorias`, `admin_criar_categoria` e `admin_excluir_categoria` (restritas a `admin`, impedindo exclusão quando há eventos vinculados) ou as rotas administrativas da API FastAPI.
 
 ---
 
-## 2. Usuários e Perfis
+## 2. Usuários, Perfis e Auditoria
 
 ### 2.1. Tabela `profiles` (Esquema `public`)
-Armazena os metadados dos usuários, sincronizada com a tabela nativa de autenticação (`auth.users`) do Supabase.
-*   **Colunas:**
-    *   `id` (UUID, Primary Key): Referência em cascata para `auth.users(id)`.
-    *   `nome_completo` (até 200 caracteres), `email` (imutável), `papel` (`student`, `professor`, `admin`), `avatar_url` (somente `https`), `criado_em`, `atualizado_em`.
-*   **Criação:** o trigger `on_auth_user_created` cria o perfil no cadastro. O papel `professor` exige e-mail `@unb.br` **confirmado**: cadastro ainda não confirmado nasce `student` e é promovido pelo trigger `on_auth_user_confirmed_professor_request` (S7-F04) quando o endereço é confirmado. `admin` nunca vem do cadastro.
-*   **Políticas RLS:**
-    *   **Leitura (SELECT):** o próprio usuário lê o seu perfil; admins leem todos. Visitantes não têm acesso.
-    *   **Atualização (UPDATE):** o próprio usuário, apenas em `nome_completo`, `avatar_url` e `papel`. A mudança de papel pelo navegador só aceita `student → professor` com e-mail institucional confirmado; as demais passam pelas RPCs administrativas.
+Armazena os metadados das contas, sincronizada com `auth.users` do Supabase.
+
+* **Colunas:** `id` (UUID, PK, FK em cascata para `auth.users(id)`), `nome_completo` (até 200 caracteres), `email` (imutável), `papel` (`student`, `professor`, `admin`), `avatar_url` (somente `https`), `criado_em`, `atualizado_em`.
+* **Criação e promoção:** o trigger `on_auth_user_created` (`tg_cria_perfil`) cria o perfil no cadastro. O papel `professor` exige e-mail `@unb.br` **confirmado**: cadastros ainda não confirmados nascem `student` e são promovidos pelo trigger `on_auth_user_confirmed_professor_request` (`tg_promove_professor_confirmado`) após a confirmação do e-mail. `admin` nunca é atribuído no cadastro.
+* **Políticas RLS:** o próprio usuário lê seu perfil (exigindo e-mail confirmado via política restritiva `confirmed_account`); administradores leem todos. Visitantes não têm acesso. A atualização direta pelo navegador aceita apenas `nome_completo`, `avatar_url` e autopromoção `student → professor` com e-mail `@unb.br` confirmado; alterações de terceiros passam por `admin_definir_papel`.
 
 ### 2.2. Tabela `auditoria_papeis`
-Registra toda mudança de papel, por qualquer caminho (RPC do painel, autopromoção, confirmação de e-mail, back-end ou SQL): `usuario_id`, `ator_id` (nulo quando não havia sessão de usuário), `papel_anterior`, `papel_novo` e `criado_em`. Somente admins leem; ninguém altera pela API.
+Registra toda alteração de papel, por qualquer caminho (RPC administrativa, autopromoção, confirmação de e-mail, backend ou SQL).
 
-### 2.3. Privilégios e funções
-Desde `20261117130000`, o `GRANT` acompanha as políticas: visitantes só leem o catálogo público (`eventos` aprovados, `campus`, `categories`, `disciplinas`, `ofertas_turma`), `TRUNCATE` não é concedido à API e funções novas não são executáveis via `/rpc` sem `GRANT EXECUTE` explícito. As regras para novas migrações estão em [Verificação de segurança](../processo/seguranca.md#regras-para-novas-migracoes).
+* **Colunas:** `id` (BIGINT identity, PK), `usuario_id` (UUID, FK `profiles`, `ON DELETE CASCADE`), `ator_id` (UUID, FK `profiles`, `ON DELETE SET NULL`, nulo quando não há sessão de usuário), `papel_anterior` (TEXT), `papel_novo` (TEXT), `criado_em` (TIMESTAMPTZ).
+* **Políticas RLS:** leitura restrita a administradores (`is_admin()`); nenhuma escrita direta pela API ou navegador (preenchida pelo trigger `tg_audita_papel`).
 
----
-
-## 3. Tabelas Core: Eventos e Agenda
-
-### 3.1. Tabela `eventos` (Agenda Pública Institucional - RF14)
-Eventos publicados por professor/admin e sugestões da comunidade sujeitas à moderação. As regras posteriores à R1 estão nas [ADR-001](/arquitetura/adrs/adr-001-integracao-fastapi-supabase) e [ADR-006](/arquitetura/adrs/adr-006-autorizacao-em-camadas).
-*   **Colunas:**
-    *   `id` (UUID, Primary Key): Identificador único.
-    *   `autor_id` (UUID): Chave estrangeira para `profiles(id)` (`ON DELETE CASCADE`). Nulo apenas em evento coletado, que é identificado pela fonte (`CHECK (autor_id is not null or fonte is not null)`).
-    *   `titulo` (TEXT, Not Null): Título do evento. Validação: Mínimo de 3 caracteres (`CHECK (char_length(trim(titulo)) >= 3)`).
-    *   `descricao` (TEXT, Not Null): Detalhamento do evento.
-    *   `data_evento` (TIMESTAMPTZ): Início do evento. Obrigatório para publicar (`CHECK (status <> 'aprovado' or data_evento is not null)`); só um item coletado em revisão pode ficar sem data.
-    *   `data_fim`, `dia_inteiro`, `data_inicio_civil`, `data_fim_civil`: intervalo e dia inteiro, descritos em [3.3](#33-datas-e-intervalos-adr-011).
-    *   `fonte`, `fonte_id`, `fonte_url`, `fonte_tipo`, `fonte_hash`, `coletado_em`, `campos_editados`, `motivo_revisao`, `possivel_duplicata_de`: procedência da coleta, descrita em [3.4](#34-coleta-de-eventos-s7-b05).
-    *   `moderado_por`, `moderado_em`: quem decidiu sobre o evento e quando.
-    *   `localizacao` (TEXT): Local físico específico (ex: Sala S1, Auditório).
-    *   `link_externo` (TEXT): Link auxiliar ou de inscrição.
-    *   `campus_id` (UUID): Chave estrangeira para a tabela `campus(id)`.
-    *   `category_id` (UUID): Chave estrangeira para a tabela `categories(id)`.
-    *   `status` (TEXT, Not Null): Controle de moderação (`DEFAULT 'pendente'`). Validação: `CHECK (status in ('pendente', 'aprovado', 'rejeitado'))`.
-    *   `criado_em` (TIMESTAMPTZ, Not Null): Timestamp de criação (`DEFAULT now()`).
-    *   `interessados_count` (INTEGER): redirecionamentos acionados em **Conferir evento**, um por `click_id`. Só a função `registrar_redirecionamento_evento` o altera; a deduplicação fica em `cliques_evento` (`evento_id`, `click_id`, `criado_em`), sem usuário, IP ou agente. Ver [Conferir evento](conferir-evento.md).
-*   **Políticas RLS:** Segurança em Nível de Linha habilitada.
-    *   **Leitura (SELECT):** Apenas eventos moderados. Política: *"eventos aprovados sao publicos"* (`USING (status = 'aprovado')`).
-    *   **Escrita:** a API valida papel e autoria. Moderação usa as RPCs autorizadas. O navegador não tem política de criação direta.
-
-### 3.2. Tabela `eventos_pessoais` (Agenda Privada - RF09)
-Agenda estritamente privada, gerenciada e visualizada unicamente por cada estudante.
-*   **Colunas:**
-    *   `id` (UUID, Primary Key): Identificador único.
-    *   `user_id` (UUID, Not Null): Chave estrangeira para `auth.users(id)` (`DEFAULT auth.uid()`).
-    *   `titulo` (TEXT, Not Null): Título do compromisso. Validação: Mínimo de 3 caracteres.
-    *   `descricao` (TEXT): Notas extras.
-    *   `data_hora` (TIMESTAMPTZ, Not Null): Início do compromisso.
-    *   `data_fim`, `dia_inteiro`, `data_inicio_civil`, `data_fim_civil`: intervalo e dia inteiro, descritos em [3.3](#33-datas-e-intervalos-adr-011).
-    *   `campus_id` (UUID): Chave estrangeira para a tabela `campus(id)`.
-    *   `category_id` (UUID): Chave estrangeira para a tabela `categories(id)`.
-    *   `criado_em` (TIMESTAMPTZ, Not Null): Timestamp de criação.
-*   **Políticas RLS:** Segurança em Nível de Linha habilitada (Isolamento Total).
-    *   **Leitura (SELECT):** Política *"utilizadores podem ver os seus proprios eventos"* (`USING (auth.uid() = user_id)`).
-    *   **Criação (INSERT):** Política *"utilizadores podem criar eventos"* (`WITH CHECK (auth.uid() = user_id)`).
-    *   **Edição (UPDATE):** Política *"utilizadores podem atualizar os seus proprios eventos"* (`USING (auth.uid() = user_id)` e `WITH CHECK`).
-    *   **Exclusão (DELETE):** Política *"utilizadores podem deletar os seus proprios eventos"* (`USING (auth.uid() = user_id)`).
-
-### 3.3. Datas e intervalos (ADR-011) {#33-datas-e-intervalos-adr-011}
-Instantes ficam em `data_evento`/`data_hora` e `data_fim` (`TIMESTAMPTZ`). Dia inteiro usa datas civis em `data_inicio_civil` e `data_fim_civil` (`DATE`), com `dia_inteiro = true`. O fim é sempre **exclusivo**: 18 a 20/11 inclusive é início 18 e fim 21.
-*   **Triggers** `eventos_normaliza_datas` e `eventos_pessoais_normaliza_datas`: em dia inteiro, preenchem o início e o fim como a meia-noite de `America/Sao_Paulo` dos dias civis, para que ordenação, filtros e lembretes tratem os dois tipos da mesma forma.
-*   **Validações:** dia inteiro exige as duas datas civis e fim posterior ao início; evento com horário não tem data civil; `data_fim`, quando existe, é posterior ao início.
-*   **Índices:** `idx_eventos_aprovados_data` (parcial, `status = 'aprovado'`) e `idx_eventos_pessoais_usuario_data (user_id, data_hora)`.
-*   Registros anteriores não foram reclassificados: `00:00` em um evento legado não prova dia inteiro.
-
-### 3.4. Coleta de eventos (S7-B05) {#34-coleta-de-eventos-s7-b05}
-Eventos coletados da Agenda UnB Notícias ficam na própria tabela `eventos`, identificados pela procedência.
-*   **Chave da origem:** índice único parcial `uq_eventos_fonte (fonte, fonte_id)`. Coletas sucessivas ou concorrentes atualizam o mesmo registro.
-*   **Função** `registrar_evento_coletado(jsonb)`: uma chamada por item, atômica. Publica itens completos e inequívocos; envia à revisão (`motivo_revisao` em `incompleto`, `ambiguo`, `possivel_duplicata`, `informe`); concilia URL idêntica à de um evento cadastrado na plataforma; nunca desfaz edição local nem decisão de moderação.
-*   **Edições locais:** o trigger `eventos_registra_edicao_local` anota em `campos_editados` o que foi alterado fora da coleta. O trigger `eventos_protege_procedencia` impede que o navegador grave procedência ou registro de moderação.
-*   **Tabela `coletas_eventos`:** uma linha por execução do coletor (`status`, horários, contadores e `erro_codigo` curto). Sem conteúdo da fonte.
-*   **Revisão:** `listar_revisoes_coleta(status, offset)` para professor e admin; a decisão usa `moderar_sugestao`, que registra `moderado_por` e `moderado_em` e recusa publicar item sem data.
-
-### 3.5. Tabela `lembretes` (S8-B03, ADR-013)
-Avisos na plataforma 24 horas antes do início de cada evento da agenda da conta.
-*   **Colunas:** `user_id` (FK `profiles`, `ON DELETE CASCADE`), `tipo_evento` (`pessoal` ou `publico_salvo`), `evento_pessoal_id` ou `evento_id` (FK com `ON DELETE CASCADE`), `inicio_referencia`, `agendado_para`, `status` (`pendente` ou `disparado`), `disparado_em`, `lido_em`.
-*   **Idempotência:** índices únicos parciais `(user_id, evento_pessoal_id, inicio_referencia)` e `(user_id, evento_id, inicio_referencia)`.
-*   **Triggers:** em `eventos_pessoais`, `eventos_salvos` e `eventos`, agendam ao entrar na agenda, trocam o aviso quando o início muda e cancelam na exclusão, na remoção do vínculo ou quando o evento sai do catálogo. Entrada na agenda com 24 horas ou menos não gera aviso.
-*   **Função** `disparar_lembretes(limite)`: torna visíveis os avisos vencidos, uma única vez cada (`FOR UPDATE SKIP LOCKED`), conferindo de novo a elegibilidade.
-*   **Políticas RLS:** a conta lê apenas os próprios avisos já disparados e só altera `lido_em`; o primeiro `lido_em` é mantido. Sem acesso para visitantes.
-
-O uso dessas estruturas pela API, pelo coletor e pelo agendador está em [Dados de eventos](/arquitetura/dados-de-eventos).
+### 2.3. Privilégios, e-mail confirmado e funções
+Visitantes acessam apenas o catálogo público (`eventos` aprovados, `campus`, `categories`, `disciplinas`, `ofertas_turma`). `TRUNCATE` não é concedido à API e funções novas exigem `GRANT EXECUTE` explícito. Políticas restritivas `confirmed_account` garantem via `current_account_has_confirmed_email()` que contas não confirmadas não operem recursos privados autenticados. As regras para novas migrações constam em [Verificação de segurança](/processo/seguranca#regras-para-novas-migracoes).
 
 ---
 
-## 4. Organizador Acadêmico
+## 3. Tabelas Core: Eventos, Coleta, Cliques e Lembretes
 
-Migrações de referência: `20261026120000_upload_planos_ensino.sql` (#40), `20261027120000_planos_particulares_e_candidatos.sql` (S6-D01, #53), `20261029160000_syllabus_review_confirmation.sql` (S6-B02), `20261107000000_planos_escrita_via_backend.sql` e `20261109120000_turmas_vinculos_versoes.sql` (S7-D01, #69).
+### 3.1. Tabela `eventos` (Agenda Pública Institucional — RF14)
+Eventos publicados por professor ou administrador, sugestões da comunidade e itens coletados da Agenda UnB Notícias.
 
-Fluxo: o upload (#40) cria o plano como `pendente`; o processamento (S6-B01) passa para `processando`, grava candidatos e termina em `concluido` ou `falha`; a revisão (S6-B02) marca cada candidato como `confirmado` ou `descartado`. Nenhum evento pessoal é criado sem confirmação do estudante.
+* **Colunas principais:**
+  * `id` (UUID, PK), `autor_id` (UUID, FK `profiles(id)` `ON DELETE CASCADE`, nulo apenas em eventos coletados: `CHECK (autor_id is not null or fonte is not null)`).
+  * `titulo` (TEXT, Not Null, mínimo 3 caracteres), `descricao` (TEXT, Not Null).
+  * `data_evento` (TIMESTAMPTZ, obrigatório quando `status = 'aprovado'`), `data_fim` (TIMESTAMPTZ), `dia_inteiro` (BOOLEAN), `data_inicio_civil` (DATE), `data_fim_civil` (DATE).
+  * `localizacao` (TEXT), `link_externo` (TEXT, validado `http(s)`), `campus_id` (UUID, FK `campus`), `category_id` (UUID, FK `categories`).
+  * `status` (TEXT, Not Null, `DEFAULT 'pendente'`, `CHECK (status in ('pendente', 'aprovado', 'rejeitado'))`), `justificativa_recusa` (TEXT), `sugestao_estudante` (BOOLEAN), `criado_em` (TIMESTAMPTZ).
+  * `fonte`, `fonte_id`, `fonte_url`, `fonte_tipo`, `fonte_hash`, `coletado_em`, `campos_editados`, `motivo_revisao`, `possivel_duplicata_de`: metadados de coleta.
+  * `moderado_por`, `moderado_em`: registro da decisão de moderação.
+  * `interessados_count` (INTEGER): contador agregado de redirecionamentos em **Conferir evento**, atualizado exclusivamente por `registrar_redirecionamento_evento`.
+* **Políticas RLS:** leitura pública apenas quando `status = 'aprovado'`; autores veem suas próprias sugestões e moderadores leem todos os itens. Escrita direta de criação pelo navegador foi removida; criação, edição e moderação passam pela API ou pelas RPCs autorizadas.
+
+### 3.2. Tabela `cliques_evento` (RF12)
+Registra a deduplicação anônima de acionamentos em **Conferir evento**.
+
+* **Colunas:** `evento_id` (UUID, PK, FK `eventos(id)` `ON DELETE CASCADE`), `click_id` (UUID, PK), `criado_em` (TIMESTAMPTZ). Não armazena `user_id`, IP ou `User-Agent`.
+* **Políticas RLS e função:** acesso bloqueado para `anon` e `authenticated`. A função `registrar_redirecionamento_evento(p_evento_id, p_click_id)` (restrita a `service_role`) valida que o evento está aprovado e possui `link_externo` `http(s)`, insere `(evento_id, click_id)` com `ON CONFLICT DO NOTHING` e incrementa `eventos.interessados_count` na mesma transação.
+
+### 3.3. Tabela `eventos_pessoais` (Agenda Privada — RF09)
+Agenda privada gerenciada exclusivamente por cada conta autenticada.
+
+* **Colunas:**
+  * `id` (UUID, PK), `user_id` (UUID, Not Null, FK `auth.users(id)` `ON DELETE CASCADE`).
+  * `titulo` (TEXT, Not Null, mínimo 3 caracteres), `descricao` (TEXT), `localizacao` (TEXT, até 250 caracteres).
+  * `data_hora` (TIMESTAMPTZ, Not Null), `data_fim` (TIMESTAMPTZ), `dia_inteiro` (BOOLEAN), `data_inicio_civil` (DATE), `data_fim_civil` (DATE).
+  * `campus_id` (UUID, FK `campus`), `category_id` (UUID, FK `categories`).
+  * `origem_plano_id` (UUID), `origem_avaliacao_id` (UUID), `origem_versao_id` (UUID, FK `versoes_plano(id)` `ON DELETE SET NULL`), `origem_pagina` (INTEGER), `origem_trecho` (TEXT), `criado_em` (TIMESTAMPTZ).
+* **Políticas RLS:** isolamento total por `auth.uid() = user_id` em SELECT, INSERT, UPDATE e DELETE, combinado com a política restritiva `confirmed_account`.
+
+### 3.4. Datas e intervalos (ADR-011) {#34-datas-e-intervalos-adr-011}
+Instantes ficam em `data_evento`/`data_hora` e `data_fim` (`TIMESTAMPTZ`). Eventos de dia inteiro usam `dia_inteiro = true` com datas civis em `data_inicio_civil` e `data_fim_civil` (`DATE`). O fim é sempre **exclusivo** (um evento de 18 a 20/11 inclusive usa início 18 e fim 21).
+
+* **Triggers** `eventos_normaliza_datas` e `eventos_pessoais_normaliza_datas`: em eventos de dia inteiro, preenchem `data_evento`/`data_hora` e `data_fim` como a meia-noite de `America/Sao_Paulo` das datas civis correspondentes para uniformizar ordenação, filtros e lembretes.
+* **Validações:** dia inteiro exige ambas as datas civis e fim posterior ao início; eventos com horário não aceitam datas civis; `data_fim`, quando presente, é posterior ao início.
+* **Índices:** `idx_eventos_aprovados_data` (parcial, `status = 'aprovado'`) e `idx_eventos_pessoais_usuario_data (user_id, data_hora)`.
+* Registros antigos com horário `00:00` não são convertidos automaticamente para dia inteiro.
+
+### 3.5. Coleta de eventos e tabela `coletas_eventos` {#35-coleta-de-eventos}
+Eventos coletados da Agenda UnB Notícias são armazenados na tabela `eventos`, identificados pela procedência.
+
+* **Chave da origem:** índice único parcial `uq_eventos_fonte (fonte, fonte_id)`. Coletas sucessivas ou concorrentes atualizam o mesmo registro sem duplicação.
+* **Função** `registrar_evento_coletado(jsonb)` (restrita a `service_role`): execução atômica por item que publica itens completos e inequívocos, encaminha à revisão (`motivo_revisao` em `incompleto`, `ambiguo`, `possivel_duplicata`, `informe`), concilia URL idêntica à de evento cadastrado manualmente e preserva edições locais (`campos_editados`) e decisões de moderação (`moderado_em`).
+* **Triggers de proteção:** `eventos_registra_edicao_local` anota campos alterados fora da coleta; `eventos_protege_procedencia` impede gravação de procedência ou moderação pelo navegador.
+* **Tabela `coletas_eventos`:** registra uma linha por execução do coletor (`id`, `fonte`, `status`, `iniciada_em`, `concluida_em`, `itens_lidos`, `criados`, `atualizados`, `inalterados`, `conciliados`, `para_revisao`, `erro_codigo` curto). RLS ativo com acesso revogado para `anon` e `authenticated`.
+* **Revisão:** `listar_revisoes_coleta(p_status, p_offset)` lista itens para professor e admin; a decisão usa `moderar_sugestao`, que registra `moderado_por` e `moderado_em` e recusa publicar item sem data.
+
+### 3.6. Tabela `lembretes` (ADR-013)
+Avisos persistentes na plataforma agendados 24 horas antes do início de cada evento da agenda da conta.
+
+* **Colunas:** `id` (UUID, PK), `user_id` (UUID, FK `profiles` `ON DELETE CASCADE`), `tipo_evento` (`pessoal` ou `publico_salvo`), `evento_pessoal_id` ou `evento_id` (FK com `ON DELETE CASCADE`), `inicio_referencia`, `agendado_para`, `status` (`pendente` ou `disparado`), `disparado_em`, `lido_em`, `criado_em`.
+* **Idempotência:** índices únicos parciais `(user_id, evento_pessoal_id, inicio_referencia)` e `(user_id, evento_id, inicio_referencia)`.
+* **Triggers:** em `eventos_pessoais`, `eventos_salvos` e `eventos`, agendam ao entrar na agenda faltando mais de 24 h, recalculam quando o início muda e cancelam na exclusão, remoção do vínculo ou retirada do catálogo.
+* **Função** `disparar_lembretes(limite)`: executada via Supabase Cron (`pg_cron`), torna visíveis os avisos vencidos uma única vez (`FOR UPDATE SKIP LOCKED`) após revalidar elegibilidade.
+* **Políticas RLS:** a conta lê apenas os próprios avisos já disparados e atualiza somente `lido_em` preservando a primeira leitura.
+
+Consulte o uso operacional dessas estruturas em [Dados de eventos](/arquitetura/dados-de-eventos).
+
+---
+
+## 4. Organizador Acadêmico: Planos, Turmas e Versões
 
 ### 4.1. Tabela `planos_ensino`
-Esquema atual de uploads de plano de ensino. O campo `tipo` admite os valores legados `particular` e `oficial`. As colunas de arquivo e rastreamento vêm da #40 (`20261026120000`). Tipo, estados, erro sanitizado, período e dados da IA vêm da S6-D01 (`20261027120000`). A Release 2 separa autoria, procedência e visibilidade e prevê descarte do PDF. [Plano de migração](/atualizacoes#contratos-da-release-2)
-*   **Dono e tipo:**
-    *   `id` (UUID, Primary Key).
-    *   `user_id` (UUID, Not Null): dono, quem enviou. FK para `profiles(id)` (`ON DELETE CASCADE`).
-    *   `tipo` (TEXT, Not Null, padrão `particular`): `particular` ou `oficial`.
-    *   `professor_id` (UUID): somente em plano oficial, professor responsável pela turma. Em plano particular é sempre nulo.
-    *   `disciplina` (TEXT) e `turma` (TEXT): turma obrigatória somente em plano oficial.
-    *   `ano` (SMALLINT, 2000–2100) e `semestre` (SMALLINT, 1 ou 2): opcionais no upload atual.
-    *   `plano_oficial_id` (UUID): referência opcional ao plano oficial correspondente (`ON DELETE SET NULL`). Só em plano particular e nunca para si mesmo.
-*   **Arquivo** (bucket `syllabus_files`, #43):
-    *   `caminho_arquivo` e `arquivo_url` referenciam apenas originais legados. Envios novos usam preparação em memória e descartam o PDF. `arquivo_descartado_em` registra o descarte que limpa as referências legadas.
-    *   `nome_arquivo`, `tamanho_bytes`, `tipo_arquivo` (`pdf` ou `text`) e `paginas` descrevem o envio. O backend valida até 10 MiB e 10 páginas para PDF.
-*   **Processamento:**
-    *   `status` (TEXT, Not Null, padrão `pendente`): `pendente`, `processando`, `concluido` ou `falha`. Os valores em inglês aceitos pela #40 (`processing`, `failed`, `completed`) foram convertidos e não são mais aceitos.
-    *   `quantidade_eventos` (INT ≥ 0): quantidade de candidatos extraídos.
-    *   `execucao_atual` (SMALLINT, Not Null, padrão 0): número da execução mais recente. Cada novo processamento incrementa; os candidatos válidos são os desta execução.
-    *   `provedor_ia`, `modelo_ia`, `versao_processamento` (TEXT): da execução mais recente.
-    *   `ocorrencias_mascaradas` (INTEGER ≥ 0, aceita `NULL` em planos legados) registra quantas ocorrências foram mascaradas na preparação.
-    *   `erro_codigo` (TEXT) é obrigatório em `status = 'falha'` e nulo nos outros estados. Valores permitidos são `pdf_invalido`, `pdf_protegido`, `pdf_sem_texto`, `limite_paginas`, `falha_ia`, `tempo_esgotado`, `erro_interno` e `texto_com_dados_pessoais`. O último código identifica snapshots legados cujo processamento foi bloqueado por conter dados pessoais.
-    *   `erro` (TEXT, até 500): mensagem curta e segura para o usuário, só em `falha`. Nunca guarda stack trace, texto do PDF ou resposta bruta da IA.
-    *   `processamento_iniciado_em` (obrigatório em `processando`), `processado_em` (obrigatório se, e somente se, `concluido` ou `falha`), `criado_em`, `atualizado_em` (mantido por trigger).
-    *   **Resultado vazio** é `concluido` sem candidatos, e não `falha`.
-*   **Dados anteriores:** linhas sem `caminho_arquivo` (anteriores à #40) viraram `oficial`, com o professor como dono e `status = 'concluido'`. Linhas criadas pela #40 continuam `particular`; `professor_id` foi limpo e `processing` virou `pendente`. Nada foi apagado.
-*   **Índices:** histórico do usuário `(user_id, criado_em desc, id)`; fila do worker `(status, processamento_iniciado_em)` parcial em `pendente`/`processando`, usada para retomar tarefas interrompidas; `plano_oficial_id` parcial; e os índices da #40 em `user_id` e `status`.
-*   **Turma:** `oferta_id` (UUID, opcional) liga o plano a uma oferta de `ofertas_turma` (`ON DELETE SET NULL`). Planos antigos e envios sem turma continuam válidos.
-*   **Políticas RLS:** A migração `20261107000000` restringe a leitura ao dono e reserva alterações de estado à API, ao worker e à RPC autorizada. O registro do plano e o caminho do arquivo continuam visíveis só ao dono, mesmo quando uma versão é compartilhada.
+Armazena envios de planos de ensino, fila persistida de processamento e snapshot de texto sanitizado.
 
-### 4.2. Tabela `avaliacoes` (candidatos)
-Tabela física única dos candidatos extraídos dos planos, decidida na S7-D01 com a equipe: é a que a API já usa na consulta e na confirmação. A tabela `candidatos_avaliacao` (#53), que nenhum código usava, foi removida em `20261109120000`, junto com a função `confirmar_candidatos_transacional` (S6-D02), que só operava sobre ela. A confirmação é feita pela API.
-*   **Colunas:**
-    *   `id` (UUID, Primary Key) e `plano_id` (UUID, Not Null, FK para `planos_ensino`, `ON DELETE CASCADE`).
-    *   `versao_id` (UUID, Not Null): versão do plano a que o candidato pertence. A FK composta `(plano_id, versao_id)` → `versoes_plano(plano_id, id)` impede apontar para a versão de outro plano. Quando omitido no INSERT, um trigger usa a versão mais recente do plano.
-    *   `ordem` (SMALLINT ≥ 0, opcional): posição do candidato na versão. `(versao_id, ordem)` é único, para reprocessar sem duplicar.
-    *   `titulo` (TEXT, Not Null), `data_avaliacao` (TIMESTAMPTZ, opcional), `tipo`, `ambiguo`, `pagina_origem`, `trecho_origem`, `status`, `versao_processamento` e `provedor` (acrescentados em `20261029160000`).
-*   **Políticas RLS:** leitura por quem pode ler a versão (*"leitura de candidatos de versoes compartilhadas"*): o autor dela e, quando compartilhada, quem segue a oferta do plano. Sem política de escrita.
-*   **Conteúdo compartilhado:** candidatos de versão compartilhada não são alterados, excluídos nem acrescentados (triggers `avaliacoes_compartilhada_imutavel` e `avaliacoes_zz_nao_entra_em_compartilhada`). A correção é feita em uma revisão. `status` continua editável.
+* **Dono, turma e tipo:** `id` (UUID, PK), `user_id` (UUID, FK `profiles(id)` `ON DELETE CASCADE`), `tipo` (`particular` ou `oficial`), `professor_id` (UUID, nulo em planos particulares), `oferta_id` (UUID, FK `ofertas_turma(id)` `ON DELETE SET NULL`), `disciplina`, `turma`, `ano` (2000–2100), `semestre` (1 ou 2), `plano_oficial_id` (UUID, `ON DELETE SET NULL`), `versao_aprovada_id` (UUID, FK `versoes_plano(id)` `ON DELETE SET NULL`).
+* **Arquivo e descarte:** `nome_arquivo`, `tamanho_bytes`, `tipo_arquivo` (`pdf` ou `text`), `paginas`, `caminho_arquivo` e `arquivo_url` (mantidos apenas para registros legados até descarte), `arquivo_descartado_em` (TIMESTAMPTZ). Novos envios processam o PDF em memória e descartam o arquivo imediatamente sem gravá-lo no Storage (`filePath: null`). O bucket privado `syllabus_files` tem escrita direta pelo navegador revogada.
+* **Minimização e autorização:** `texto_preparado` (JSONB), `texto_aprovado` (JSONB), `hash_texto_aprovado` (CHAR/TEXT 64), `versao_texto` (INT), `ocorrencias_mascaradas` (INT ≥ 0), `duracao_preparacao_ms` (INT), `autorizado_em` (TIMESTAMPTZ), `enfileirado_em` (TIMESTAMPTZ). O trigger `tg_preserva_texto_autorizado` impede alteração do snapshot enquanto `status = 'processando'`.
+* **Fila, lease e orçamento:** `status` (`pendente`, `processando`, `concluido`, `falha`), `execucao_atual` (SMALLINT), `token_processamento` (UUID para fencing), `proxima_tentativa_em` (TIMESTAMPTZ), `custo_reservado_usd` (NUMERIC(12,6)), `duracao_processamento_ms` (INT), `quantidade_eventos` (INT ≥ 0), `provedor_ia`, `modelo_ia`, `versao_processamento`, `erro_codigo` (`pdf_invalido`, `pdf_protegido`, `pdf_sem_texto`, `limite_paginas`, `falha_ia`, `tempo_esgotado`, `erro_interno`, `texto_com_dados_pessoais`), `erro` (até 500 caracteres, sanitizado), `processamento_iniciado_em`, `processado_em`, `criado_em`, `atualizado_em`.
+* **Políticas RLS:** leitura restrita ao dono (`user_id = auth.uid()`), com política restritiva `confirmed_account`. Alterações de estado são reservadas à API, ao worker e às funções autorizadas.
+
+### 4.2. Tabela `avaliacoes`
+Tabela física única das avaliações candidatas extraídas dos planos de ensino.
+
+* **Colunas:** `id` (UUID, PK), `plano_id` (UUID, Not Null, FK `planos_ensino` `ON DELETE CASCADE`), `versao_id` (UUID, Not Null), `ordem` (SMALLINT ≥ 0, único com `versao_id`), `titulo` (TEXT, Not Null), `data_avaliacao` (TIMESTAMPTZ, opcional), `data_sugerida` (DATE), `hora_sugerida` (TIME), `campos_ambiguos` (TEXT[]), `tipo` (TEXT), `ambiguo` (BOOLEAN), `pagina_origem` (INTEGER), `trecho_origem` (TEXT), `status` (`pendente`, `confirmado`, `descartado`), `execucao` (INTEGER), `versao_processamento`, `provedor`, `modelo_ia`, `revisado_em`, `criado_em`.
+* **Integridade:** a FK composta `(plano_id, versao_id) → versoes_plano(plano_id, id)` impede vínculo cruzado entre planos distintos.
+* **Políticas RLS e imutabilidade:** leitura por quem pode ler a versão (`pode_ler_versao`). Triggers `avaliacoes_compartilhada_imutavel` e `avaliacoes_zz_nao_entra_em_compartilhada` impedem alterar título/datas ou inserir novos candidatos em versão compartilhada (permitindo apenas alteração lógica de `status`).
 
 ### 4.3. Tabela `versoes_plano`
-Versões de um plano (ADR-010). A `v1` de plano concluído com turma vinculada e candidatos elegíveis é compartilhada automaticamente na jornada do autor, salvo quando retirada. Revisões criam versões próprias com sua visibilidade e preservam as cópias já importadas.
-*   **Colunas:**
-    *   `id` (UUID, Primary Key) e `plano_id` (UUID, Not Null, FK, `ON DELETE CASCADE`). `numero` (SMALLINT ≥ 1) é único por plano.
-    *   `autor_id` (UUID, Not Null, FK para `profiles`) e `autor_papel` (`student`, `professor` ou `admin`): papel do autor no momento da criação. Não é evidência institucional.
-    *   `versao_origem_id` (UUID, opcional): versão revisada que originou esta (`ON DELETE SET NULL`); nunca a própria versão.
-    *   `procedencia_institucional` (BOOLEAN, padrão falso): herdada da versão de origem. O papel professor/admin não a cria sozinho.
-    *   `visibilidade` (padrão `privada`): `privada` ou `compartilhada`. `compartilhada_em` é preenchido se, e somente se, a versão estiver compartilhada.
-    *   `fonte_institucional_url`, `procedencia_validada_por`, `procedencia_validada_em`: evidência pública oficial da origem institucional, validada por admin. `procedencia_institucional` exige a evidência.
-    *   `retirada_em`, `retirada_por`: última retirada do compartilhamento.
-*   **Criação:** todo plano recebe a versão 1 automaticamente (trigger após INSERT em `planos_ensino`), com o papel atual do dono. Os planos existentes ganharam a versão 1 na migração.
-*   **Políticas RLS:** leitura pelo autor da versão ou, se compartilhada, por usuários que seguem a oferta do plano (função `pode_ler_versao`). O rascunho privado de uma revisão pertence a quem a escreveu. Sem política de escrita.
-*   **Funções (S8-B01):** `compartilhar_versao` (só o autor), `retirar_compartilhamento` (autor ou admin), `criar_revisao` (autor; professor e admin sobre versão compartilhada) e `validar_procedencia_institucional` (admin). Todas recebem o ator e conferem a permissão no banco.
-*   **Arquivo:** compartilhar uma versão não expõe o registro do plano nem o arquivo. A retenção do PDF segue a ADR-003.
+Versionamento de planos de ensino ([ADR-010](/arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos)).
 
-### 4.4. Tabelas `disciplinas`, `ofertas_turma` e `vinculos_turma`
-Catálogo de turmas (ADR-009) e turmas que o usuário segue. A disciplina abstrata (`disciplinas`) é separada da sua oferta em um semestre (`ofertas_turma`), e cada uma tem UUID local imutável.
-*   **`disciplinas`:** `origem` (`followw` | `manual`), `origem_id` (opcional), `codigo`, `nome`, `unidade` e `nivel` (opcionais), `atualizado_na_origem_em`.
-    *   **Identidade:** com `origem_id`, `(origem, origem_id)` é único. Sem ele, `(origem, código sem diferenciar maiúsculas, unidade, nível)` é único.
-*   **`ofertas_turma`:** `disciplina_id` (FK, `ON DELETE RESTRICT`), `origem`, `origem_id` (opcional), `turma` (texto, preservando zeros), `ano` (2000–2100), `semestre` (1 ou 2), `professor` e `horarios` (atributos atualizáveis, fora da identidade), `atualizado_na_origem_em` e `sincronizado_em` (última sincronização bem-sucedida, para responder com `stale`).
-    *   **Identidade:** `(disciplina_id, turma, ano, semestre)` é único; ofertas de semestres diferentes são registros distintos. Com `origem_id`, `(origem, origem_id)` também é único.
-*   **`vinculos_turma`:** chave primária `(user_id, oferta_id)`, `origem` (`autodeclarado`), `criado_em`. Seguir a mesma oferta de novo não duplica. O vínculo é autodeclarado e não prova matrícula.
-*   **Políticas RLS:** catálogo com leitura pública; vínculos com leitura só do próprio usuário. Sem políticas de escrita: a sincronização (S7-B03) e seguir/deixar de seguir (S7-F02) passam pelo back-end.
+* **Colunas:** `id` (UUID, PK), `plano_id` (UUID, Not Null, FK `planos_ensino` `ON DELETE CASCADE`), `numero` (SMALLINT ≥ 1, único por plano), `autor_id` (UUID, Not Null, FK `profiles`), `autor_papel` (`student`, `professor`, `admin`), `versao_origem_id` (UUID, opcional, `ON DELETE SET NULL`), `procedencia_institucional` (BOOLEAN, padrão `false`), `fonte_institucional_url` (TEXT), `procedencia_validada_por` (UUID), `procedencia_validada_em` (TIMESTAMPTZ), `visibilidade` (`privada` ou `compartilhada`, padrão `privada`), `compartilhada_em`, `retirada_em`, `retirada_por`, `criado_em`.
+* **Regras e funções:** todo plano recebe `v1` automaticamente via trigger. `v1` vinculada a oferta e concluída com candidatos é compartilhada automaticamente ao ser consultada ou confirmada pelo autor, salvo quando retirada (`retirada_em`). Funções `compartilhar_versao`, `retirar_compartilhamento`, `criar_revisao` e `validar_procedencia_institucional` recebem `p_ator` e aplicam as permissões no banco.
+* **Políticas RLS:** leitura restrita ao autor da versão ou a seguidores da oferta quando `visibilidade = 'compartilhada'`. Compartilhar versão não expõe o registro de `planos_ensino` nem o texto preparado privado.
 
-### 4.5. Importação para a agenda
-`eventos_pessoais` registra a procedência em `origem_plano_id`, `origem_avaliacao_id` e `origem_versao_id` (FK para `versoes_plano`, `ON DELETE SET NULL`).
-*   **Unicidade por usuário:** `(user_id, origem_avaliacao_id)` é único (índice parcial). Como cada candidato pertence a uma única versão, isso equivale à unicidade `(user_id, version_id, candidate_id)` da ADR-010. Até a S7-D01, a unicidade era global, e um usuário podia bloquear a confirmação de outro.
-*   **Índice:** `(user_id, origem_versao_id)`.
-*   **Confirmação idempotente (S7-B04):** `confirmar_importacao(ator, chave, versao, itens)` grava a operação (`operacoes_importacao`, única por `(user_id, chave)`), os itens (`itens_importacao`) e os eventos na mesma transação. Repetir a chave devolve o resultado anterior e não recria evento apagado; a mesma chave com outro conteúdo é recusada. O item mantém o registro quando o evento é excluído (`evento_pessoal_id` fica nulo).
+### 4.4. Tabelas `disciplinas`, `ofertas_turma`, `vinculos_turma` e `sincronizacoes_catalogo`
+Catálogo público de turmas ([ADR-009](/arquitetura/adrs/adr-009-catalogo-publico-de-turmas)) e vínculos autodeclarados dos usuários.
 
-### 4.6. Tabela `votos_avaliacao` (S8-B01)
-Um voto por conta e candidato: chave primária `(user_id, avaliacao_id)`, `valor` em `confirma` ou `contesta`. Gravado por `votar_avaliacao`, que exige versão compartilhada e vínculo com a turma; `resumo_votos_versao` devolve as contagens. Cada conta lê apenas os próprios votos. Votos não alteram datas.
+* **`disciplinas`:** `id` (UUID, PK), `origem` (`followw` | `manual`), `origem_id` (opcional), `codigo`, `nome`, `unidade`, `nivel`, `atualizado_na_origem_em`, `criado_em`, `atualizado_em`.
+* **`ofertas_turma`:** `id` (UUID, PK), `disciplina_id` (FK `disciplinas`, `ON DELETE RESTRICT`), `publicacao_id` (FK `sincronizacoes_catalogo`), `origem`, `origem_id` (opcional), `turma` (texto, preservando zeros à esquerda), `ano` (2000–2100), `semestre` (1 ou 2), `professor`, `horarios`, `atualizado_na_origem_em`, `sincronizado_em`, `criado_em`, `atualizado_em`. Identidade única `(disciplina_id, turma, ano, semestre)`.
+* **`sincronizacoes_catalogo`:** `id` (UUID, PK), `origem` (`followw`), `status` (`executando`, `concluida`, `falha`), `iniciada_em`, `concluida_em`, `ofertas_lidas`, `criadas`, `atualizadas`, `erro_codigo` (até 60 caracteres, sem respostas brutas), `unidades`, `periodos`, `cobertura`, `rejeitadas` (JSONB). RLS ativo com acesso restrito a `service_role`. A função `estado_catalogo` calcula `source_updated_at` e `stale` (após falha ou 24 horas).
+* **`vinculos_turma`:** chave primária `(user_id, oferta_id)`, `origem` (`autodeclarado`), `criado_em`. Escrita direta bloqueada para navegador; gerenciada pelo backend.
+* **Políticas RLS:** `disciplinas` e `ofertas_turma` têm leitura pública; `vinculos_turma` restringe leitura ao próprio usuário autenticado.
 
-O uso dessas funções pela API está em [Dados de planos](/arquitetura/dados-de-planos).
+### 4.5. Importação idempotente: `operacoes_importacao` e `itens_importacao`
+* **Unicidade em `eventos_pessoais`:** índice parcial único `(user_id, origem_avaliacao_id)`.
+* **`operacoes_importacao`:** `id` (UUID, PK), `user_id` (FK `profiles` `ON DELETE CASCADE`), `chave` (única com `user_id`), `versao_id` (FK `versoes_plano` `ON DELETE SET NULL`), `conteudo_hash`, `criado_em`.
+* **`itens_importacao`:** chave primária `(operacao_id, avaliacao_id)`, `evento_pessoal_id` (FK `eventos_pessoais` `ON DELETE SET NULL`), `resultado` (`criado` | `ja_importado`), `tipo_revisado`.
+* **Função `confirmar_importacao(ator, chave, versao, itens)`:** grava operação, itens e eventos na mesma transação. Repetir a chave retorna o resultado anterior sem recriar eventos apagados; reutilizar a chave com conteúdo divergente retorna SQLSTATE `AG409`.
 
-## 5. Eventos salvos e notificações
+### 4.6. Tabela `votos_avaliacao`
+* **Colunas:** chave primária `(user_id, avaliacao_id)`, `valor` (`confirma` | `contesta`), `criado_em`, `atualizado_em`.
+* **Funções e RLS:** `votar_avaliacao` exige versão compartilhada e vínculo com a oferta; `resumo_votos_versao` retorna contagens agregadas omitindo avaliações descartadas. Cada conta lê apenas os próprios votos via RLS; votos nunca alteram datas automaticamente.
 
-Eventos públicos são gravados somente pela API e pelas RPCs de moderação: o `INSERT` direto pelo navegador foi removido em `20261117130000`. O banco valida, em qualquer caminho, que `link_externo` usa `http(s)` e que título, descrição e local respeitam os limites da API.
+Consulte o uso dessas funções pela API em [Dados de planos](/arquitetura/dados-de-planos).
 
-`eventos_salvos` vincula um perfil a um evento público com chave composta `(user_id, event_id)`. `notificacoes` referencia o perfil destinatário e pode referenciar o evento que originou o aviso. Consulte as políticas, a implantação e os cenários de verificação em [eventos salvos](/eventos-salvos) e nas [ADR-001](/arquitetura/adrs/adr-001-integracao-fastapi-supabase) e [ADR-006](/arquitetura/adrs/adr-006-autorizacao-em-camadas).
+---
 
-## Evolução de candidatos na R2
+## 5. Eventos Salvos e Notificações
 
-Toda data extraída começa como candidata. Somente a confirmação explícita do usuário a transforma em avaliação efetiva na sua agenda; em versões compartilhadas, essa decisão pertence a cada conta. A revisão deve ser breve: mostrar candidatos em uma lista, permitir selecionar vários e confirmar o lote em uma única ação, destacar apenas campos ambíguos que exigem correção e preservar as escolhas durante ajustes. Não exigir uma sequência de confirmações por item nem importar automaticamente. Avaliar a fluidez na homologação com o tempo e as dificuldades observadas, sem inventar um limite numérico ainda não acordado.
+* **`eventos_salvos`:** chave primária composta `(user_id, event_id)`, FKs para `profiles(id)` e `eventos(id)` com `ON DELETE CASCADE`, `criado_em`. RLS restringe leitura, inserção e exclusão ao próprio usuário autenticado (sem política de UPDATE).
+* **`notificacoes`:** `id` (UUID, PK), `usuario_id` (FK `profiles`), `evento_id` (FK `eventos`), `tipo` (`submissao`, `aprovacao`, `recusa`), `titulo_evento`, `justificativa`, `criado_em`, `lida_em`. Gerada por triggers na transação do evento; RLS e permissões de coluna permitem ao destinatário apenas ler e atualizar `lida_em`.
 
-O estado de domínio “candidata” não determina o nome de uma tabela. Desde a S7-D01 (`20261109120000`), a estrutura física unificada é `avaliacoes`, ligada à versão do plano; `candidatos_avaliacao` foi removida. O worker deve gravar candidatos em `avaliacoes`, informando `versao_id` e `ordem`.
+---
 
-Na R2, exigir `Idempotency-Key` por ação de confirmação, vinculada à conta, à operação e ao conteúdo do lote. Repetições da mesma ação usam a mesma chave; payload diferente com a mesma chave retorna 409. Persistir a operação e seus itens na mesma transação da confirmação e serializar requisições concorrentes. A exclusão do evento preserva o registro da importação e da operação: repetir a chave antiga não recria o evento nem reativa o vínculo. Reimportar exige o comando explícito “Adicionar novamente”, uma nova chave e nova verificação de acesso, versão e datas. Manter no máximo um evento ativo por `(user_id, version_id, candidate_id)`, mesmo com chaves diferentes; novas ações após exclusão não apagam o histórico das anteriores. O resultado de retry informa quando o evento anteriormente criado já foi removido. A transição dos clientes legados deve ser documentada antes de tornar a chave obrigatória; não inventar uma chave nova a cada retry.
+## 6. Integração com Google Agenda
 
+As credenciais e mapeamentos de exportação são isolados exclusivamente no backend (RLS ativo sem políticas para `anon` ou `authenticated`; acesso revogado para clientes de navegador).
 
-## Worker e autorização do texto
+* **`google_calendar_oauth_states`:** desafios OAuth temporários de uso único (expiração de 10 minutos): `state_hash` (PK, SHA-256 hex), `user_id` (FK `profiles` `ON DELETE CASCADE`), `agenda_email`, `encrypted_code_verifier` (PKCE S256 cifrado), `expires_at`, `criado_em`.
+* **`google_calendar_connections`:** vínculo OAuth da conta: `user_id` (PK, FK `profiles` `ON DELETE CASCADE`), `google_sub` (Unique), `google_email`, `calendar_id` (ID da agenda secundária **"Agenda UnB"**), `encrypted_access_token`, `encrypted_refresh_token` (cifrados com Fernet), `access_token_expires_at`, `granted_scope`, `criado_em`, `atualizado_em`.
+* **`google_calendar_event_exports`:** mapeamento idempotente por evento exportado: chave primária `(user_id, event_kind, local_event_id)` (`event_kind` em `personal` | `saved`), `calendar_id`, `google_event_id` (formato `base32hex`), `exported_version` (SHA-256 canônico), `status` (`pending`, `exported`, `updated`, `already_exported`, `failed`), `last_idempotency_key`, `criado_em`, `atualizado_em`.
 
-Preparação local, autorização específica, fila recuperável e candidatos privados estão descritos nas [ADR-003](/arquitetura/adrs/adr-003-minimizar-dados-de-planos), [ADR-010](/arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos) e [ADR-014](/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia). O worker opera sobre a tabela oficial `avaliacoes` e as versões de S7-D01.
+---
+
+## 7. Privacidade, Aceites Legais e Ciclo de Vida da Conta
+
+* **`aceites_termos`:** registro de ciência por versão dos documentos legais: chave primária `(user_id, documento, versao)` (`documento` em `terms` | `privacy`), `aceito_em`. RLS permite leitura apenas ao próprio usuário autenticado; escrita via backend.
+* **`consentimentos`:** consentimentos opcionais e revogáveis separados do aceite dos termos: `id` (UUID, PK), `user_id` (FK `profiles` `ON DELETE CASCADE`), `finalidade` (`google_agenda`), `referencia_id`, `conteudo_hash`, `concedido_em`, `revogado_em`. Índice único parcial garante no máximo um consentimento ativo (`revogado_em IS NULL`) por `(user_id, finalidade)`. RLS permite leitura apenas ao próprio usuário.
+* **`exclusoes_conta`:** registro anônimo agregado de exclusões de conta, sem `user_id` ou PII: `id` (UUID, PK), `status` (`iniciada`, `concluida`), `iniciada_em`, `concluida_em`, `planos_removidos`, `eventos_pessoais_removidos`, `eventos_publicos_removidos`, `arquivos_storage_removidos`. Acesso exclusivo de `service_role`; alimentada por `preparar_exclusao_conta` (que impede exclusão do último administrador) e `concluir_exclusao_conta`.

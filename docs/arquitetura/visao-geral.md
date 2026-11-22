@@ -5,150 +5,131 @@ description: "Documento que registra a arquitetura de software do Agenda UnB, de
 
 ## 1. Objetivo e escopo
 
-O Agenda UnB reúne eventos públicos dos campi e compromissos privados em uma aplicação web responsiva. A Release 2 inclui seleção manual de ofertas no catálogo público do Followw e vínculo autodeclarado. A plataforma organiza compromissos e eventos da comunidade. Matrícula oficial, notas e frequência seguem no sistema acadêmico.
-
-Referência da consolidação: **24/10/2026**, commit `e0ecf46`; histórico de operações comparado à tag `R1` (`4a3a07d`). Implementação observada e testes existentes não equivalem a aprovação formal do time. Propostas futuras são identificadas separadamente.
+O Agenda UnB reúne eventos públicos dos campi da UnB e compromissos privados em uma aplicação web responsiva. A plataforma integra catálogo público de eventos, agenda pessoal unificada, coleta institucional da Agenda UnB Notícias, catálogo público de turmas (Followw) com vínculo autodeclarado, extração assistida de planos de ensino com versionamento e biblioteca compartilhada, lembretes persistentes, exportação para Google Agenda e `.ics`, além de gestão de conta, consentimentos e privacidade. Matrícula oficial, notas e frequência seguem no sistema acadêmico institucional.
 
 ## 2. Visão geral
 
 ```mermaid
 flowchart LR
     U[Visitante, estudante, professor ou administrador] --> WEB[SPA React + Vite]
-    WEB -->|Eventos, sugestões e vínculos salvos| API[FastAPI /api/v1]
+    WEB -->|Eventos, planos, turmas, lembretes, conta e Google Agenda| API[FastAPI /api/v1]
     WEB -->|Sessão| AUTH[Supabase Auth]
-    WEB -->|RPCs e notificações| DATA[Supabase Data API]
+    WEB -->|RPCs de moderação/admin e notificações| DATA[Supabase Data API]
     API -->|Validação da sessão| AUTH
     API -->|SQLAlchemy| DB[(PostgreSQL)]
     DATA -->|RPCs, RLS e triggers| DB
-    API -->|Upload de planos| STORAGE[Supabase Storage privado]
+    WORKER[Worker de planos / Coletor / Sync catálogo] -->|SQL e RPCs| DB
+    WORKER -->|Texto sanitizado| GEMINI[Google Gemini API]
+    API -->|OAuth e agenda secundária| GCAL[Google Calendar API]
 ```
 
-A comunicação tem dois caminhos: eventos, sugestões e agenda usam a API FastAPI; autenticação, RPCs de moderação/administração e notificações usam o SDK Supabase no navegador. As RPCs conferem o papel real no banco. A proteção das páginas React não substitui essa autorização.
+A comunicação segue dois caminhos complementares: recursos de negócio (eventos, agenda pessoal, vínculos salvos, catálogo de turmas, planos de ensino, lembretes, conta/privacidade e Google Agenda) usam a API FastAPI; autenticação, leitura de perfis, notificações de moderação e RPCs administrativas usam o SDK Supabase no navegador. As RPCs e políticas RLS conferem o papel e a confirmação de e-mail diretamente no banco; os guards das rotas React atuam apenas como controle de navegação.
 
 ## 3. Stack e organização {#3-stack-e-organizacao}
 
 | Camada | Tecnologia e localização |
 | --- | --- |
 | Frontend | React 19, Vite 6, React Router 7; `frontend/src/` |
-| API | Python, FastAPI, SQLAlchemy 2, Pydantic 2 e httpx; `backend/src/` |
-| Dados e sessão | PostgreSQL via Supabase, Supabase Auth e SDK JavaScript |
-| Migrações | SQL versionado em `supabase/migrations/` e aplicado em ordem de timestamp |
-| Ambiente local | Supabase CLI e Docker; serviços coordenados pelo Makefile |
-| Documentação | Markdown compartilhado entre o MkDocs, publicado no GitHub Pages, e o Mintlify |
-| Testes | pytest em `backend/tests/`; testes de calendário via `node --test` |
+| API | Python 3.11, FastAPI, SQLAlchemy 2, Pydantic 2 e httpx; `backend/src/` |
+| Dados e sessão | PostgreSQL via Supabase, Supabase Auth, Supabase Cron (`pg_cron`) e SDK JavaScript |
+| Migrações | SQL versionado em `supabase/migrations/` e aplicado em ordem cronológica |
+| Jobs assíncronos | Worker de planos (`syllabus/worker.py`), coletor institucional (`events/collector.py`) e sincronizador do catálogo (`classes/sync.py`) |
+| Documentação | Markdown compartilhado publicado via Mintlify (`docs/docs.json`) |
+| Testes e CI | `pytest` em `backend/tests/`, `node --test` e Playwright em `frontend/`, workflows `.github/workflows/` |
 
-A API é uma aplicação única, sem microsserviços. O módulo de eventos concentra rotas, schemas e regras dos eventos públicos, privados, salvos e sugestões. `database/models.py` mapeia as tabelas usadas pela API; as migrações SQL são a referência para o esquema completo, triggers, funções e políticas.
+A API é uma aplicação FastAPI única, organizada em seis módulos sob `backend/src/modules/` (`account`, `classes`, `events`, `google_calendar`, `reminders` e `syllabus`), registrados em `backend/src/main.py`. `backend/src/database/models.py` mapeia as tabelas usadas pela API; as migrações em `supabase/migrations/` constituem a referência completa de tabelas, restrições, índices, triggers, funções e políticas RLS.
 
 ## 4. Frontend e navegação {#4-frontend-e-navegacao}
 
 | Rota | Comportamento |
 | --- | --- |
-| `/` | Apresentação, cadastro e login |
-| `/eventos` | Catálogo público e Meus Eventos; lista de cards ou calendário mensal/semanal |
-| `/evento/:id` | Detalhes de evento público aprovado ou compromisso privado do proprietário |
-| `/plano-de-ensino` | Turmas seguidas, preparação de planos, extração de candidatos, revisão e biblioteca compartilhada |
-| `/configuracoes` | Aceites, consentimentos, exportação de dados e exclusão da conta |
-| `/sugestoes` | Fila e histórico de sugestões; professores e administradores |
-| `/admin` | Busca e filtros de usuários, confirmação de e-mail, último acesso e cargos; somente admins |
-| `/segunda-pagina` | Redirecionamento legado para `/eventos`, preservando query e fragmento; `#plano-de-ensino` leva à página de planos |
+| `/` | Apresentação institucional, cadastro e login |
+| `/auth/retorno` | Retorno PKCE de confirmação de e-mail, recuperação de senha e login OAuth |
+| `/eventos` | Catálogo público e Meus Eventos; lista de cards ou calendário mensal/semanal, lembretes e exportação Google Agenda / `.ics` |
+| `/evento/:id` | Detalhes de evento público aprovado ou compromisso privado do proprietário, com procedência e redirecionamento **Conferir evento** |
+| `/plano-de-ensino` | Fluxo em duas etapas: seleção de turmas no catálogo e organização de datas (envio de PDF/texto sanitizado, acompanhamento da extração, revisão em lote e biblioteca compartilhada da turma) |
+| `/configuracoes` | Aceite de documentos legais vigentes, gestão/revogação de consentimentos opcionais, exportação de dados em JSON e exclusão da conta |
+| `/sugestoes` | Fila e histórico de sugestões da comunidade e revisões de coleta institucional; professores e administradores |
+| `/admin` | Busca e filtros de usuários, confirmação de e-mail, último acesso, atribuição de cargos e gestão de categorias; somente administradores |
+| `/segunda-pagina` | Redirecionamento legado para `/eventos`, preservando query e fragmento (`#plano-de-ensino` leva a `/plano-de-ensino`) |
+| `/privacidade.html`, `/termos.html` | Páginas públicas estáticas geradas a partir de `docs/produto/` |
 
-O calendário usa os mesmos eventos filtrados da lista, com navegação por mês/semana, botão Hoje e horários ordenados por dia. As datas civis seguem o fuso local do navegador. Em telas pequenas, a grade permite rolagem horizontal.
+O calendário utiliza os mesmos eventos filtrados da lista, com navegação por mês/semana, botão **Hoje** e horários ordenados por dia, com rolagem horizontal em telas pequenas. As datas seguem a semântica de instantes e datas civis com fim exclusivo em `America/Sao_Paulo` ([ADR-011](/arquitetura/adrs/adr-011-datas-civis-e-instantes)).
 
-Meus Eventos combina compromissos privados com vínculos a eventos públicos salvos. Os dados do público são lidos do original; remover o vínculo não altera o evento. Somente os compromissos privados podem ser editados nessa agenda.
+**Meus Eventos** combina compromissos privados (`eventos_pessoais`) com vínculos a eventos públicos salvos (`eventos_salvos`). Os dados de eventos públicos são lidos do registro original aprovado; remover o vínculo cancela lembretes pendentes associados sem alterar o evento público. Somente compromissos privados podem ser editados nessa agenda.
 
-## 5. API REST implementada
+## 5. API REST implementada {#5-api-rest-implementada}
 
-As rotas de negócio usam `/api/v1`; a sessão é enviada em `Authorization: Bearer <token>`. O backend valida o token com Supabase Auth e consulta o perfil no banco.
+As rotas de negócio usam o prefixo `/api/v1`; rotas autenticadas exigem `Authorization: Bearer <token>` emitido pelo Supabase Auth e e-mail confirmado. O middleware (`backend/src/middlewares/auth.py`) valida o token junto ao Supabase Auth e consulta o papel persistido em `profiles`.
 
-O [inventário da API](/api-specs) detalha as rotas disponíveis de catálogo público, compromissos privados, sugestões, vínculos salvos, planos de ensino e saúde. As ações administrativas usam RPCs do Supabase.
-
-PUT e DELETE dos vínculos salvos são idempotentes. O frontend percorre as páginas do catálogo em lotes de 100. Filtros de turno são aplicados na interface.
+O [inventário da API](/api-specs) detalha todas as operações HTTP de eventos públicos, agenda pessoal, sugestões, vínculos salvos, catálogo de turmas, planos de ensino e versões compartilhadas, lembretes, conta/privacidade, Google Agenda e saúde (`/health` e `/api/health`).
 
 ### Fluxo interno do backend
 
 ```mermaid
 flowchart TB
-    HTTP[Requisição HTTP] --> APP[FastAPI: CORS e roteamento]
-    APP --> VALID[Validação Pydantic de entrada]
-    APP --> DEP[Dependências de sessão nas rotas protegidas]
+    HTTP[Requisição HTTP] --> MW[Middlewares: segurança, CORS, rate limit e limites de corpo]
+    MW --> VALID[Validação Pydantic de entrada]
+    MW --> DEP[Dependências de sessão e e-mail confirmado]
     DEP --> AUTH[Supabase Auth: validação do Bearer]
     DEP --> PROFILE[Consulta do papel em profiles]
-    VALID --> ROUTE[Rotas do módulo events]
+    VALID --> ROUTE[Routers dos módulos em /api/v1]
     DEP --> ROUTE
-    ROUTE --> RULE[Regras de papel, propriedade e visibilidade]
-    RULE --> ORM[SQLAlchemy e sessão por requisição]
+    ROUTE --> RULE[Regras de papel, propriedade, visibilidade e idempotência]
+    RULE --> ORM[SQLAlchemy e funções PostgreSQL]
     PROFILE --> ORM
     ORM --> DB[(PostgreSQL)]
     DB --> OUT[Schemas de resposta]
     OUT --> JSON[Resposta JSON ou 204 sem corpo]
-    APP -. exceções .-> ERR[Handlers: validação, conflito e indisponibilidade]
+    MW -. exceções .-> ERR[Handlers: validação 422, conflito 409, indisponibilidade 503]
 ```
 
-O diagrama representa responsabilidades, não uma ordem estrita de execução das dependências FastAPI. Rotas públicas dispensam a validação de sessão. `get_db` abre e fecha a sessão; as rotas controlam commits. Não existe camada separada de serviços/repositórios: regras e consultas estão concentradas no router. A consulta de papel e as regras de propriedade continuam necessárias mesmo quando a conexão PostgreSQL ignora RLS.
+Rotas públicas dispensam a validação de sessão. `get_db` gerencia a abertura e o fechamento da sessão de banco por requisição; as rotas e serviços controlam as transações. A verificação de papel e propriedade na API permanece obrigatória mesmo quando a conexão PostgreSQL ignora RLS.
 
-## 6. Sugestões, moderação e administração
+## 6. Sugestões, moderação, notificações e administração
 
-O estudante escolhe **Sugerir evento** no formulário Criar Evento. `POST /api/v1/suggestions` persiste a proposta pendente. O banco força o status para autoria estudantil e registra `sugestao_estudante`, preservando essa origem mesmo após mudança de cargo.
+Estudantes submetem propostas pela rota `POST /api/v1/suggestions`. O banco força a autoria da sessão e o status `pendente`, registrando a origem estudantil (`sugestao_estudante`) de forma preservada mesmo após eventual alteração de cargo.
 
-O frontend chama as seguintes RPCs pelo SDK Supabase, sem endpoints FastAPI `/admin`:
+O frontend utiliza as seguintes RPCs pelo SDK Supabase (`frontend/src/lib/moderation.js`):
 
 | RPC | Responsabilidade e acesso |
 | --- | --- |
 | `listar_sugestoes` | Pendentes e histórico aprovado/rejeitado, busca e paginação de 20; professor/admin |
-| `moderar_sugestao` | Decide somente sugestões pendentes; professor/admin; recusa exige justificativa de até 2.000 caracteres |
+| `listar_revisoes_coleta` | Itens coletados da Agenda UnB Notícias em revisão, com paginação de 20; professor/admin |
+| `moderar_sugestao` | Decide sugestões ou itens coletados pendentes; professor/admin; recusa exige justificativa de até 2.000 caracteres |
 | `admin_buscar_usuarios` | Busca por nome/e-mail, filtros de papel e confirmação, último acesso e paginação de 20; admin |
-| `admin_definir_papel` | Verifica cargo anterior e chama `admin_alterar_papel`; somente admin |
+| `admin_definir_papel` | Verifica cargo anterior, registra auditoria e altera papel via `admin_alterar_papel`; somente admin |
+| `admin_listar_categorias` | Lista categorias com contagem de eventos vinculados; somente admin |
+| `admin_criar_categoria` | Cria categoria com nome e cor hexadecimal; somente admin |
+| `admin_excluir_categoria` | Remove categoria sem eventos vinculados; somente admin |
 
-Decisões concorrentes de moderação não sobrescrevem uma decisão anterior. Mudanças de cargo detectam divergência do papel esperado, e um administrador não pode remover o próprio cargo de admin.
+Decisões concorrentes de moderação não sobrescrevem decisões anteriores. Alterações de papel detectam divergência do cargo esperado, impedem que administradores removam o próprio cargo e gravam histórico em `auditoria_papeis`.
 
-Triggers registram notificações de submissão, aprovação e recusa na mesma transação do evento. A tabela `notificacoes` guarda título e justificativa; o sino dos estudantes consulta ao enviar sugestão, ao voltar à janela e a cada 30 segundos. A leitura e a marcação como lida são limitadas ao destinatário por RLS e permissões de coluna. Esses avisos não são lembretes de proximidade.
+Triggers registram notificações de submissão, aprovação e recusa na tabela `notificacoes` na mesma transação do evento. O componente `NotificationBell` é exibido a todas as contas autenticadas para consulta de lembretes (`GET /api/v1/me/reminders`) e apresenta a aba **Sugestões** para estudantes.
 
-## 7. Persistência, privacidade e migrações {#7-persistencia-privacidade-e-migracoes}
+## 7. Persistência, privacidade, coleta e implantação {#7-persistencia-privacidade-e-migracoes}
 
-As tabelas da base R1 são `profiles`, `campus`, `categories`, `eventos`, `eventos_pessoais`, `planos_ensino` e `avaliacoes`. As novas migrações adicionam `eventos_salvos`, `notificacoes`, campos de sugestões/recusa e contador de interessados, funções administrativas e políticas de Storage. A migração `20261029160000` acrescenta procedência aos candidatos e eventos pessoais, restringe a leitura de avaliações e impede confirmar o mesmo candidato mais de uma vez. A criação das estruturas não comprova a existência do parser.
+O esquema completo, suas colunas, índices, triggers e políticas RLS estão descritos no [modelo de dados](/arquitetura/modelo-de-dados) e na [especificação do banco](/arquitetura/banco-de-dados). Entre as garantias transversais:
 
-- Eventos privados e vínculos salvos são limitados ao dono. A API também verifica propriedade, pois conexões administrativas podem ignorar RLS.
-- Apenas eventos aprovados aparecem no catálogo e nas consultas de públicos salvos. A exclusão de um público remove seus vínculos em cascata.
-- Cadastro e autopromoção para professor exigem `@unb.br`. A migração `20261018000100` removeu a constraint global de domínio: administradores podem atribuir professor a outro endereço pela RPC protegida. E-mail do perfil continua imutável.
-- A alteração de papéis pelo navegador é protegida por trigger; não há cadastro livre como admin.
-- O bucket privado `syllabus_files` aceita PDF até 10 MB. A migração `20261107000000` remove permissões de escrita direta que contornavam a API. O navegador lê apenas os próprios arquivos e planos. O backend valida o PDF, aplica a cota de 10 uploads por usuário em 5 dias e grava o arquivo com `SUPABASE_SERVICE_ROLE_KEY`, exclusiva do servidor.
-- HTTPS é requisito de produção; `.env` guarda configurações locais fora do versionamento.
+- **Isolamento de dados privados:** compromissos pessoais (incluindo `localizacao`), vínculos salvos, lembretes, planos privados, aceites legais, consentimentos e credenciais OAuth do Google Agenda são isolados por usuário autenticado com e-mail confirmado.
+- **Domínio institucional:** cadastro e autopromoção para `professor` exigem e-mail `@unb.br` confirmado; administradores podem atribuir papel docente a contas confirmadas pela RPC administrativa.
+- **Minimização em planos de ensino:** o backend extrai e sanitiza o texto localmente em memória, descarta o PDF original imediatamente (sem gravação em Storage e com `filePath: null`), autoriza apenas o snapshot sanitizado via hash SHA-256 e executa o worker assíncrono sobre `planos_ensino` com lease, fencing e orçamento controlado.
+- **Coleta e catálogo desacoplados:** o coletor de eventos (`https://noticias.unb.br`, respeitando `robots.txt`) e o sincronizador do catálogo de turmas (`https://followw.app/api`) operam fora das requisições HTTP da agenda, preservando dados existentes e decisões locais em caso de falha da fonte externa.
+- **Hospedagem e CI/CD:** a SPA é publicada na Vercel (`frontend/vercel.json`), a API FastAPI em container Docker (`backend/Dockerfile`, Python 3.11) no Render (`render.yaml`), o banco/Auth/Cron no Supabase gerenciado e os jobs agendados e validações de CI no GitHub Actions (`.github/workflows/`). Consulte o [plano de implantação](/implantacao).
 
-As migrações devem ser aplicadas antes de disponibilizar API/frontend dependentes delas. No Supabase local iniciado, use `npx supabase migration up`. Se a migração `20261029160000` entrou no repositório após o banco já ter versões posteriores, use `npx supabase migration up --include-all` para incluir a versão pendente. `make db-reset` recria o banco com migrações e seed. Veja o [diagrama de dados](/arquitetura/modelo-de-dados), a [especificação física](/arquitetura/banco-de-dados), [eventos salvos](/eventos-salvos) e as [ADR-001](/arquitetura/adrs/adr-001-integracao-fastapi-supabase), [ADR-006](/arquitetura/adrs/adr-006-autorizacao-em-camadas) e [ADR-007](/arquitetura/adrs/adr-007-migracoes-sql).
+## 8. Verificação {#8-verificacao}
 
-## 8. Funcionalidades futuras e implantação
+- **Backend (SQLite e PostgreSQL local):** `cd backend && python -m pytest tests -q -ra` executa a suíte de API e unidade; testes de RLS, triggers e RPCs (`tests/*_database.py` e `tests/test_syllabus_http_integration.py`) exigem Supabase local descartável com `TEST_SUPABASE_DB_URL` apontando para `localhost`/`127.0.0.1`, além de `supabase db lint --level error --fail-on error`.
+- **Frontend:** `cd frontend && npm test` executa os testes Node (`src/lib/*.test.js`), `npm run build` valida o bundle Vite e geração de busca, e `npx playwright test` executa os cenários ponta a ponta.
+- **Documentação:** `npx -y mint validate`, `npx -y mint broken-links --check-redirects` e `npx -y mint a11y` em `docs/` validam sintaxe, links e acessibilidade.
 
-O backend registra PDF digital e texto vinculados a turmas seguidas, acompanha extrações e confirma candidatos na agenda da própria conta. O catálogo público Followw alimenta as ofertas e a biblioteca apresenta versões compartilhadas aos seguidores.
+Consulte [Contribuição](/processo/contribuindo) para o fluxo completo de execução e validação.
 
-O backend extrai e sanitiza o texto automaticamente. O envio autoriza o processamento externo do snapshot sanitizado. O PDF é descartado após a extração local. O estudante confirma as avaliações antes de importá-las para sua agenda. A primeira versão elegível fica disponível aos seguidores quando o autor consulta ou confirma o resultado.
+## 9. Registro de decisões arquiteturais {#9-registro-de-decisoes-arquiteturais}
 
-A entrega também inclui coleta da Agenda UnB Notícias, métricas de redirecionamento independentes da agenda, lembretes e exportação Google/ICS. A coleta deve operar separadamente das consultas à agenda para que falhas da fonte preservem os dados já armazenados. [Contratos da Release 2](/atualizacoes#contratos-da-release-2) · [Matriz de aceite](/matriz-release-2)
+O [índice de ADRs](/arquitetura/adrs/index) reúne todas as decisões arquiteturais (`ADR-001` a `ADR-014`), com rastreabilidade aos identificadores `DA-01` a `DA-07` e aos requisitos funcionais e não funcionais.
 
-O GitHub Pages hospeda a documentação. Isso não define hospedagem da SPA ou da API. O arquivo `backend/Dockerfile` está vazio; não constitui uma imagem executável. O desenvolvimento usa Supabase CLI/Docker, FastAPI e Vite. O [plano de implantação](/implantacao) propõe Vercel, Render com runtime Python e Supabase separado por ambiente; não há pipeline da aplicação implementado.
-
-## 9. Verificação {#9-verificacao}
-
-Execute pytest no backend, `npm run build` no frontend e `node --test src/lib/calendar.test.js` na pasta frontend. Os testes de API de eventos salvos usam SQLite e não validam políticas RLS reais. Os testes de moderação no PostgreSQL exigem `TEST_SUPABASE_DB_URL` apontando ao Supabase local; sem essa variável são ignorados. Consulte [Contribuição](/processo/contribuindo) para os comandos.
-
-### Registro de validação — 24/10/2026
-
-| Verificação executada | Resultado e limite |
-| --- | --- |
-| `python -m pytest tests -q` no backend | 15 passaram, 7 ignorados por ausência de Supabase local configurado; aviso de depreciação Starlette/httpx |
-| `node --test src/lib/calendar.test.js` no frontend | 3 passaram |
-| `npm run build` no frontend | Passou; aviso de chunk acima de 500 kB |
-| OpenAPI × inventário documental | 15 operações encontradas; nenhuma ausente na especificação |
-| Requisição pessoal com `starts_at` sem fuso, via TestClient | Reproduzido 500 no handler de validação; dívida registrada, código não alterado |
-| `python -m mkdocs build --strict` | Passou; saída temporária fora do repositório |
-| Inspeção visual do site local | Diagramas geral e interno renderizados; páginas de contratos e implantação revisadas |
-
-Não foram executados testes RLS/RPCs em banco remoto, deploy nem homologação hospedada. Os sete testes ignorados permanecem pendentes de Supabase local descartável. O teste isolado do erro de validação usa entrada fictícia e não grava dados.
-
-## 10. Registro de decisões arquiteturais {#10-registro-de-decisoes-arquiteturais}
-
-O [índice de ADRs](/arquitetura/adrs/index) reúne as decisões implementadas, as aceitas para a Release 2 e as propostas, com fontes, consequências e orientações de verificação. Consulte-o antes de alterar a arquitetura. Os IDs DA preservam o histórico da consolidação anterior.
-
-| Registro anterior | ADR correspondente |
+| Registro inicial | ADR correspondente |
 | --- | --- |
 | DA-01 — aplicação única | [ADR-004](/arquitetura/adrs/adr-004-api-monolitica) |
 | DA-02 — integração FastAPI/Supabase | [ADR-001](/arquitetura/adrs/adr-001-integracao-fastapi-supabase) |
@@ -158,31 +139,19 @@ O [índice de ADRs](/arquitetura/adrs/index) reúne as decisões implementadas, 
 | DA-06 — eventos salvos | [ADR-008](/arquitetura/adrs/adr-008-vinculos-de-eventos-publicos) |
 | DA-07 — hospedagem | [ADR-002](/arquitetura/adrs/adr-002-separar-hospedagem-e-ambientes) |
 
-As decisões da R2 estão nas ADRs 003 e 009–013. Seu estado não comprova implementação nem homologação.
+## 10. Matriz de regras e evidências {#10-matriz-de-regras-e-evidencias}
 
-## 11. Matriz de regras e evidências {#11-matriz-de-regras-e-evidencias}
+Os arquivos de teste indicados abaixo são relativos a `backend/tests/`.
 
-“Cobertura existente” significa cenário presente na suíte, não certificação de execução, homologação hospedada ou aprovação de negócio. A execução desta consolidação é registrada na seção 9. Arquivos de testes abaixo são relativos a `backend/tests/`.
-
-| Regra implementada | Onde é aplicada | Cobertura existente / limite |
+| Regra de negócio e segurança | Onde é aplicada | Cobertura de referência |
 | --- | --- | --- |
-| Catálogo e salvos exibem somente aprovados | Consultas do router | `test_events_api.py::test_list_public_events_filters_and_hides_pending`; `test_saved_events_api.py::test_unapproved_missing_and_deleted_events` |
-| Privados são acessíveis somente pelo dono | Filtro `user_id` na API e RLS SQL | `test_events_api.py::test_personal_event_crud_is_limited_to_its_owner`; SQLite não comprova RLS |
-| Só professor/admin publicam e excluem públicos | `require_event_manager` | `test_events_api.py::test_public_create_and_delete_require_event_manager`; sessão substituída no teste |
-| Sugestão estudantil nasce pendente sem autoria/status forjados | Router e triggers SQL | `test_suggestions_api.py`; `test_moderation_database.py::test_student_rls_submission_and_notifications` |
-| Moderação somente pendente; recusa justificada; avisos atômicos | `moderar_sugestao` e triggers | `test_moderation_database.py::test_moderation_and_atomic_notification`; execução PostgreSQL necessária |
-| Notificações limitadas ao destinatário, atualização só de leitura | RLS e permissões de coluna | `test_moderation_database.py::test_student_rls_submission_and_notifications` |
-| Admin altera terceiros, sem autorrebaixamento; detecta cargo divergente | `admin_definir_papel`, `admin_alterar_papel` | `test_moderation_database.py::test_admin_role_guards_and_professor_isolation`; concorrência simultânea não inferida desse teste |
-| Cadastro/autopromoção professor exige domínio institucional; admin pode atribuir fora dele | Triggers e migração `20261018000100` | `test_moderation_database.py::test_admin_can_promote_personal_email_but_user_cannot` cobre promoção por admin; apesar do nome, não testa explicitamente todas as negativas de cadastro/autopromoção |
-| Salvar/remover vínculo é idempotente e isolado por usuário | Router, chave composta e cascata | `test_saved_events_api.py`, incluindo duplicata e remoção própria; SQLite não comprova RLS |
-
-Limites conhecidos: `location` pessoal não é persistido; o handler de validação pode falhar ao serializar certos contextos Pydantic; `/health` não verifica dependências. Os detalhes estão nos [contratos](/api-specs). Corrigir essas limitações requer tarefas de código separadas desta consolidação.
-
-## 12. Manutenção documental
-
-Atualize no mesmo PR os documentos afetados por mudanças em rotas, schemas, autorização, regras de negócio, migrações ou implantação. Consulte a [referência da API](/api-specs), o [índice de decisões](#10-registro-de-decisoes-arquiteturais), os [padrões](/produto/padroes) e o [plano de implantação](/implantacao). Registre evidências de testes e identifique o que ainda está planejado.
-
-
-## Implementação local da extração S7
-
-Preparação local, autorização específica, fila recuperável e candidatos privados estão descritos nas [ADR-003](/arquitetura/adrs/adr-003-minimizar-dados-de-planos), [ADR-010](/arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos) e [ADR-014](/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia). O worker opera sobre a tabela oficial `avaliacoes` e as versões de S7-D01.
+| Catálogo e salvos exibem somente aprovados | Consultas do router e RLS | `test_events_api.py`, `test_saved_events_api.py` |
+| Privados e vínculos são acessíveis somente pelo dono | Filtro `user_id` na API e RLS SQL | `test_events_api.py`, `test_saved_events_api.py` |
+| Só professor/admin publicam e excluem públicos | `require_event_manager` e RLS | `test_events_api.py`, `test_moderation_database.py` |
+| Sugestão estudantil nasce pendente sem autoria forjada | Router e triggers SQL | `test_suggestions_api.py`, `test_moderation_database.py` |
+| Moderação e revisão de coleta somente em pendentes | `moderar_sugestao` e `listar_revisoes_coleta` | `test_moderation_database.py`, `test_event_collection_database.py` |
+| Admin altera terceiros, sem autorrebaixamento, com auditoria | `admin_definir_papel`, `auditoria_papeis` | `test_moderation_database.py`, `test_security_database.py` |
+| Cadastro/autopromoção professor exige `@unb.br` confirmado | Triggers de perfil e papel | `test_moderation_database.py`, `test_security_database.py` |
+| Minimização, fila com lease e confirmação idempotente de planos | `syllabus/worker.py`, `confirmar_importacao`, RLS | `test_syllabus_processing.py`, `test_syllabus_database.py`, `test_plan_import_database.py`, `test_plan_sharing_database.py` |
+| Lembretes automáticos 24 h antes e leitura isolada | Triggers em `lembretes` e `disparar_lembretes` | `test_reminders_api.py`, `test_reminders_database.py` |
+| Exportação Google Agenda idempotente e aceites/exclusão de conta | `google_calendar/`, `account/`, `aceites_termos` | `test_google_calendar_api.py`, `test_account_privacy_api.py`, `test_account_privacy_database.py` |

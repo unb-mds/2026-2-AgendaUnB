@@ -1,39 +1,42 @@
 ---
 title: "ADR-011 · Distinguir datas civis de instantes e usar fim exclusivo"
-description: "Decisão, consequências e critérios de verificação: distinguir datas civis de instantes e usar fim exclusivo."
+description: "Decisão de modelar instantes com fuso explícito e eventos de dia inteiro com datas civis e fim exclusivo."
 ---
+
+# ADR-011 · Distinguir datas civis de instantes e usar fim exclusivo
 
 | Campo | Valor |
 | --- | --- |
-| Estado | Aceita para a Release 2 |
+| Estado | Implementada |
 | Data do registro | 2026-11-08 |
-| Rastreabilidade | RF06, RF08, RF17, RF21 |
+| Rastreabilidade | RF06, RF08, RF17, RF18 |
 | Substitui | Nenhuma ADR |
-
-Registro de decisão já descrita nos contratos da R2; não comprova implementação ou homologação.
 
 ## Contexto
 
-Calendário, extração, lembretes e exportação precisam interpretar datas da mesma forma. Meia-noite em um registro antigo não prova que o evento ocupa o dia inteiro.
+Calendário, extração de planos, coleta de eventos, lembretes e exportadores precisam interpretar datas e intervalos de forma uniforme. Horários `00:00` em registros antigos ou em textos extraídos não comprovam que o evento ocupa o dia inteiro.
 
 ## Decisão
 
-Usar America/Sao_Paulo como referência do calendário na R2. Representar instantes com deslocamento explícito e persistência timestamptz; representar dias inteiros por datas civis. Usar fim exclusivo e consultar intervalos por interseção. Datas ambíguas exigem revisão; dia conhecido sem hora só vira dia inteiro após confirmação explícita.
+Adotar `America/Sao_Paulo` como fuso de referência da agenda acadêmica e distinguir explicitamente instantes de eventos de dia inteiro:
+
+- **Eventos com horário (`all_day = false`):** representados por instantes ISO 8601 com deslocamento explícito em `starts_at` e `ends_at` opcional (`data_evento`/`data_hora` e `data_fim` em `TIMESTAMPTZ`). Quando informado, o término deve ser posterior ao início.
+- **Eventos de dia inteiro (`all_day = true`):** representados por datas civis em `start_date` e `end_date` (`data_inicio_civil` e `data_fim_civil` em `DATE`). O fim é sempre **exclusivo**: um evento de 18 a 20/11 inclusive usa `start_date: 2026-11-18` e `end_date: 2026-11-21` (e um único dia omite ou envia `start_date + 1 dia`).
+- **Normalização no banco:** triggers (`eventos_normaliza_datas` e `eventos_pessoais_normaliza_datas`) preenchem `data_evento`/`data_hora` e `data_fim` em eventos de dia inteiro com a meia-noite de `America/Sao_Paulo` das datas civis correspondentes, permitindo ordenação, filtros por interseção de janela e agendamento uniforme de lembretes.
+- **Ambiguidade:** datas sem ano ou sem hora definida não são convertidas automaticamente em dia inteiro nem recebem `00:00` implícito; exigem confirmação humana ou revisão antes da publicação ou importação.
 
 ## Alternativas para comparação
 
-As opções abaixo explicitam os trade-offs; não afirmam uma avaliação histórica da equipe.
-
-Tratar tudo como timestamp confundiria dias civis e fusos. Deduzir dia inteiro de 00:00 alteraria o significado de registros legados. Fim inclusivo exigiria convenções diferentes nos consumidores.
+Tratar tudo como timestamp único confundiria dias civis com fusos horários de navegadores. Deduzir dia inteiro a partir de `00:00` alteraria indevidamente o significado de eventos marcados para a meia-noite. Fim inclusivo exigiria cálculos distintos entre API, banco, calendário e exportação RFC 5545 / Google Calendar.
 
 ## Consequências
 
-Frontend, API, banco, jobs e exportadores precisam adotar a mesma semântica. Legados apenas com início preservam o instante e o fim ausente. O calendário atual descrito na visão arquitetural usa o fuso do navegador; esta ADR registra o alvo da R2, não uma migração concluída.
+API, banco, interface, coletor de notícias, lembretes e exportadores (Google Calendar e `.ics`) compartilham a mesma semântica de intervalo por interseção e fim exclusivo. Eventos de dia inteiro na resposta da API expõem `all_day: true`, `start_date` e `end_date`, evitando deslocamento de dia em navegadores fora de `-03:00`.
 
 ## Orientações para contribuição e verificação
 
-Verificar intervalo de vários dias, interseção da janela, navegador em outro fuso, fim anterior ao início e ambiguidade. Exemplo: 18 a 20/11 inclusive usa start_date 2026-11-18 e end_date 2026-11-21.
+Verificar intervalos de múltiplos dias, interseção em filtros `startDate`/`endDate`, renderização em fusos diferentes de `America/Sao_Paulo`, rejeição de fim anterior ou igual ao início e preservação da ambiguidade de `00:00` na coleta e na extração de planos.
 
 ## Fontes e relações
 
-[Datas e eventos](/atualizacoes#datas-e-eventos) · [Calendário atual](/arquitetura/visao-geral#4-frontend-e-navegacao) · [Requisitos](/produto/requisitos) · [Índice de ADRs](/arquitetura/adrs/index)
+[Dados de eventos](/arquitetura/dados-de-eventos) · [Contratos da API](/api-specs) · [Requisitos](/produto/requisitos) · [Índice de ADRs](/arquitetura/adrs/index)

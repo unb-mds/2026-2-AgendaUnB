@@ -4,12 +4,23 @@ description: Hub digital acadêmico e extracurricular da Universidade de Brasíl
 colors:
   primary: "#008bff"
   primary-deep: "rgba(0, 95, 210, 1)"
-  bg-dark: "#050508"
-  surface-glass: "rgba(8, 12, 22, 0.78)"
-  surface-input: "rgba(0, 15, 35, 0.6)"
-  text-high: "#ffffff"
-  text-medium: "rgba(255, 255, 255, 0.55)"
-  text-muted: "rgba(255, 255, 255, 0.35)"
+  bg-dark: "#080c16"
+  bg-dark-canvas: "#050508"
+  surface-card-dark: "#1a2235"
+  surface-input-dark: "#101a2c"
+  surface-glass-dark: "rgba(8, 12, 22, 0.78)"
+  surface-glass-plans-dark: "rgba(12, 18, 32, 0.78)"
+  border-dark: "rgba(255, 255, 255, 0.15)"
+  text-high-dark: "#ffffff"
+  text-muted-dark: "#94a3b8"
+  bg-light: "#f0f4f8"
+  bg-light-canvas: "#f5f6fa"
+  surface-card-light: "#ffffff"
+  surface-input-light: "#f8fafc"
+  surface-glass-light: "rgba(255, 255, 255, 0.85)"
+  border-light: "rgba(0, 0, 0, 0.15)"
+  text-high-light: "#1a1a2e"
+  text-muted-light: "#526278"
 typography:
   display:
     fontFamily: "'Orbitron', sans-serif"
@@ -41,8 +52,8 @@ components:
     rounded: "{rounded.sm}"
     padding: "14px"
   input-field:
-    backgroundColor: "{colors.surface-input}"
-    textColor: "{colors.text-high}"
+    backgroundColor: "{colors.surface-input-dark}"
+    textColor: "{colors.text-high-dark}"
     rounded: "{rounded.sm}"
     padding: "13px 16px"
 ---
@@ -53,27 +64,36 @@ components:
 
 **Creative North Star: "The Neon Campus"**
 
-A identidade visual da Agenda UnB mescla o rigor acadêmico com um futurismo digital sutil. A interface abandona as clássicas telas brancas institucionais e adota uma estética predominantemente *dark*, focada no alto contraste e na modernidade. O uso intenso de *glassmorphism* (fundo translúcido e desfoque) cria camadas de profundidade, enquanto os toques brilhantes do azul iluminam pontos de interação.
+A identidade visual da Agenda UnB mescla rigor acadêmico com futurismo digital sutil e bivalência nativa entre **Modo Escuro (Dark)** e **Modo Claro (Light)**. O uso de *glassmorphism* neutro, bordas sutis e superfícies planas (*flat*) cria camadas de profundidade, enquanto o azul `#008bff` ilumina pontos de interação e chamadas para ação.
 
 **Key Characteristics:**
-- **Atmosfera noturna:** Fundo super escuro, quase preto absoluto.
-- **Translucidez:** Modais, navbars e cards deixam o fundo vazar levemente através do `backdrop-filter`.
-- **Brilhos em vez de sombras:** Os efeitos de profundidade são alcançados com sombras azuis que emulam luzes neon ou "glow".
-- **Tipografia Sci-Fi:** Títulos utilizam a fonte Orbitron para dar um toque tecnológico.
+- **Bivalência Dark / Light:** Páginas internas operam com base `#080c16` (Dark) e `#f0f4f8` (Light), enquanto a página inicial e a página de detalhes de evento utilizam variantes de canvas (`#050508` no Dark e `#f5f6fa` no Light).
+- **Translucidez:** Modais, navbars e superfícies hero/planos utilizam *glassmorphism* via `backdrop-filter`.
+- **Brilhos em vez de sombras pesadas:** A separação visual prioriza bordas sutis e sombras azuis (*glow*) em vez de sombras pretas densas em cards.
+- **Tipografia Sci-Fi + Legibilidade:** Títulos de destaque usam a fonte Orbitron; corpo de texto e formulários usam Inter.
 
 ## Colors
 
-A paleta é contida e focada, usando o azul como grande protagonista contra o abismo escuro do fundo.
+A paleta é contida e focada, usando o azul como grande protagonista em ambos os temas.
 
 ### Primary
-- **Azul UnB Glow** (#008bff): A cor vital do projeto. Usada em avatares, bordas de interação, rótulos e efeitos de brilho/sombra.
-- **Azul Deep** (rgba(0, 95, 210, 1)): Versão ligeiramente mais fechada, usada como fundo sólido de botões primários.
+- **Azul UnB Glow** (`#008bff`): A cor vital do projeto. Usada em avatares, bordas de interação, rótulos e efeitos de brilho.
+- **Azul Deep** (`rgba(0, 95, 210, 1)` / `#005fd2`): Versão ligeiramente mais fechada, usada em botões primários e destaques de contraste.
 
-### Neutral
-- **Void Background** (#050508): Fundo raiz da aplicação.
-- **Glass Surface** (rgba(8, 12, 22, 0.78)): Fundo semi-transparente usado para modais e cards flutuantes.
-- **White High** (#ffffff): Texto principal e ícones ativos.
-- **White Medium** (rgba(255, 255, 255, 0.55)): Texto de apoio, subtítulos e placeholders.
+### Dark Mode
+- **App Background** (`#080c16`): Fundo das páginas internas (agenda, planos, moderação, administração e configurações).
+- **Canvas / Hero Background** (`#050508`): Fundo da landing page e da página de detalhes de evento.
+- **Card Surface** (`#1a2235`): Fundo sólido dos cards nas páginas internas.
+- **Input Surface** (`#101a2c`): Fundo padrão de campos de formulário nas páginas internas (`rgba(6, 12, 24, 0.68)` na área de planos).
+- **Glass Surface** (`rgba(8, 12, 22, 0.78)` / `rgba(8, 12, 22, 0.65)` na landing / `rgba(12, 18, 32, 0.78)` em planos): Fundos semi-transparentes para modais, cartões de destaque e superfícies translúcidas.
+- **Text High** (`#ffffff`) e **Text Muted** (`#94a3b8`), com bordas `rgba(255, 255, 255, 0.15)`.
+
+### Light Mode
+- **App Background** (`#f0f4f8`): Fundo das páginas internas (agenda, gestão e planos).
+- **Canvas / Hero Background** (`#f5f6fa`): Fundo da landing page e da página de detalhes de evento.
+- **Card Surface** (`#ffffff`) e **Glass Surface** (`rgba(255, 255, 255, 0.85)`): Fundos de cards e painéis de ação.
+- **Input Surface** (`#f8fafc` / `#f4f7fb` em planos): Fundos de campos de formulário.
+- **Text High** (`#1a1a2e`) e **Text Muted** (`#526278`), com bordas `rgba(0, 0, 0, 0.15)`.
 
 ### Named Rules
 **The Glow-Over-Shadow Rule.** Em vez de usar sombras pretas para separar componentes do fundo, usamos o azul (`rgba(0, 139, 255, 0.12)`) para criar um aspecto de luz emitindo da borda do componente, especialmente em estados de *hover*.
@@ -96,8 +116,9 @@ A paleta é contida e focada, usando o azul como grande protagonista contra o ab
 O sistema depende majoritariamente de **Glassmorphism** e **Neon Glow** em vez de elevação clássica material.
 
 ### Shadow Vocabulary
-- **Glow Hover** (`0 8px 32px rgba(0,139,255,0.12)`): Aplicado aos cards e botões interativos ao passar o mouse.
-- **Modal Shadow** (`0 20px 50px rgba(0,0,0,0.8), 0 0 35px rgba(0,139,255,0.2)`): Sombreamento forte e misto para isolar completamente o modal do resto do site.
+- **Glow Hover** (`0 8px 32px rgba(0,139,255,0.12)` / `0 4px 20px rgba(0,139,255,0.09)`): Aplicado aos cards e botões interativos.
+- **Modal Shadow** (`0 20px 50px rgba(0,0,0,0.2), 0 0 35px rgba(0,139,255,0.2)` / `0 20px 50px rgba(0,0,0,0.18)` em modais de gestão): Sombreamento controlado de até 20% na sombra preta combinado a *glow* azul.
+- **Exceções intencionais (Backdrops e Neon Glow):** Overlays de fundo de modal (`rgba(2, 6, 16, 0.88)`, `rgba(0, 0, 0, 0.75)` a `0.8`, e `rgb(223 232 244 / 75%)` no modo claro) e brilhos neon azuis (`rgba(0, 139, 255, 0.25)` a `0.45`) em hover/foco/CTAs constituem exceções documentadas à regra geral de 20% para sombras pretas de cards.
 
 ## Shapes
 
@@ -115,14 +136,14 @@ A linguagem de formas mistura raios suaves e formas orgânicas de pílula.
 - **Hover / Focus:** Transições suaves com acréscimo de glow azul (`box-shadow: 0 4px 20px rgba(0, 139, 255, 0.35)`).
 
 ### Inputs / Fields
-- **Style:** Fundo translúcido escuro (`rgba(0, 15, 35, 0.6)`) com borda fina azulada.
-- **Focus:** A borda fica opaca (`rgba(0, 139, 255, 0.8)`) e emite um glow sutil (`box-shadow: 0 0 12px rgba(0, 139, 255, 0.3)`).
+- **Style:** Fundo `#101a2c` (Dark) / `#f8fafc` (Light) nas páginas internas e superfície translúcida escura (`rgba(6, 12, 24, 0.68)`) na área de planos, com borda fina sutil.
+- **Focus:** A borda fica destacada (`rgba(0, 139, 255, 0.8)`) e emite um glow sutil (`box-shadow: 0 0 12px rgba(0, 139, 255, 0.3)`).
 
 ### Feature Cards
 - **Corner Style:** Suave (14px).
-- **Background:** Vidro escuro (`rgba(8,12,22,0.65)`) com `backdrop-filter: blur(8px)`.
-- **Border:** `1px solid rgba(0,139,255,0.12)`.
-- **Interação:** Ao fazer *hover*, o card translada 4px para cima, a borda acende (`0.5`) e a sombra azul aparece.
+- **Background:** Sólido `#1a2235` (Dark) / `#ffffff` (Light) nas páginas internas; vidro `rgba(8,12,22,0.65)` (Dark) / `rgba(255,255,255,0.85)` (Light) com `backdrop-filter: blur(8px)` na landing.
+- **Border:** `1px solid rgba(255,255,255,0.15)` (Dark) / `1px solid rgba(0,0,0,0.15)` (Light), com destaque azul (`rgba(0,139,255,0.12)` a `0.5`) em interação.
+- **Interação:** Ao fazer *hover*, o card translada suavemente, a borda acende e o *glow* azul aparece.
 
 ## Do's and Don'ts
 
@@ -136,4 +157,4 @@ A linguagem de formas mistura raios suaves e formas orgânicas de pílula.
 - **Don't** utilizar emojis como ícones ou elementos de interface (UI). Toda a iconografia deve ser feita através da biblioteca Material Symbols.
 - **Don't** utilizar estilos com bordas coloridas acompanhadas de background mais claro (ex: fundo azul claro com borda e texto azuis), pois não passam a personalidade do produto.
 - **Don't** aplicar *linear gradients* em nenhum contexto de UI (fundos, botões, ícones ou textos). Use sempre cores sólidas que suportem a linguagem visual clara e limpa.
-- **Don't** ultrapassar 20% de opacidade em sombras pretas (`rgba(0,0,0,0.2)`). Evite sombras pesadas para simular elevação e, em vez disso, conte com o *backdrop-filter* (vidro) e o *glow* (sombra azul clara ou colorida) para gerar separação e hierarquia.
+- **Don't** ultrapassar 20% de opacidade em sombras pretas de cards (`rgba(0,0,0,0.2)`), reservando opacidades maiores apenas às exceções documentadas de backdrops de modais/overlays e *glows* azuis. Evite sombras pesadas para simular elevação e, em vez disso, conte com o *backdrop-filter* (vidro) e o *glow* (sombra azul) para gerar separação e hierarquia.

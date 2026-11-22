@@ -5,16 +5,16 @@ description: "Índice, estados e guia de leitura dos registros de decisão arqui
 
 # Decisões arquiteturais (ADRs)
 
-Uma ADR registra uma decisão que afeta a estrutura, os dados ou as integrações do sistema, seu contexto e suas consequências. Comece pela tabela e leia a decisão relevante antes de alterar a área correspondente.
+Uma ADR registra uma decisão que afeta a estrutura, os dados ou as integrações do sistema, seu contexto e suas consequências. Consulte o mapa abaixo e leia a decisão relevante antes de alterar a área correspondente.
 
 ## Como interpretar os registros
 
-- **Implementada:** solução registrada na documentação arquitetural existente; não implica aprovação formal nem testes executados nesta revisão.
-- **Aceita para a Release 2:** decisão presente no escopo e nos contratos aprovados da R2; implementação e homologação precisam de evidências próprias.
-- **Proposta:** opção ainda dependente de validação ou escolha da equipe.
+- **Implementada:** decisão adotada na arquitetura do sistema e refletida no código, nas migrações e nos contratos vigentes.
+- **Aceita:** decisão aprovada no escopo arquitetural, pendente de implementação completa.
+- **Proposta:** opção ainda dependente de validação ou escolha técnica.
 - **Substituída:** decisão preservada para histórico, com link obrigatório para sua sucessora.
 
-A data do registro não é a data da decisão. Referências DA preservam os identificadores da consolidação anterior. Alternativas comparativas não são apresentadas como opções historicamente avaliadas.
+A data do registro não representa necessariamente a data original de formulação da decisão. Os identificadores `DA-01` a `DA-07` preservam a rastreabilidade com os registros arquiteturais iniciais.
 
 ## Mapa de decisões
 
@@ -30,56 +30,50 @@ A data do registro não é a data da decisão. Referências DA preservam os iden
 | [ADR-008](/arquitetura/adrs/adr-008-vinculos-de-eventos-publicos) | Salvar vínculos aos eventos públicos na agenda pessoal | Implementada | DA-06; RF08, RF12, RF13 |
 | [ADR-009](/arquitetura/adrs/adr-009-catalogo-publico-de-turmas) | Integrar o catálogo público de turmas com identidade local e cache | Implementada | RF05; RNF11 |
 | [ADR-010](/arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos) | Versionar planos e exigir confirmação individual para importar candidatos | Implementada | RF06, RF07; RNF02, RNF04 |
-| [ADR-011](/arquitetura/adrs/adr-011-datas-civis-e-instantes) | Distinguir datas civis de instantes e usar fim exclusivo | Aceita para a Release 2 | RF06, RF08, RF17, RF21 |
-| [ADR-012](/arquitetura/adrs/adr-012-exportacao-google-idempotente) | Exportar por ação explícita para uma agenda Google secundária | Implementada | RF21; RNF02 |
-| [ADR-013](/arquitetura/adrs/adr-013-lembretes-persistentes) | Persistir lembretes com agendamento idempotente e revalidação | Aceita para a Release 2 | RF13, RF17 |
+| [ADR-011](/arquitetura/adrs/adr-011-datas-civis-e-instantes) | Distinguir datas civis de instantes e usar fim exclusivo | Implementada | RF06, RF08, RF17, RF18 |
+| [ADR-012](/arquitetura/adrs/adr-012-exportacao-google-idempotente) | Exportar por ação explícita para uma agenda Google secundária | Implementada | RF18; RNF02 |
+| [ADR-013](/arquitetura/adrs/adr-013-lembretes-persistentes) | Persistir lembretes com agendamento idempotente e revalidação | Implementada | RF13, RF17 |
 | [ADR-014](/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia) | Processamento assíncrono resiliente de planos com fila persistida, lease e orçamento | Implementada | RF06; RNF02, RNF06, RNF10, RNF13 |
 
-## Roteiro para pessoas e agentes de IA
+## Roteiro para manutenção
 
-1. Identifique o estado da ADR e leia suas fontes. Consulte a [API atual](/api-specs) para comportamento disponível e os [contratos da R2](/atualizacoes#contratos-da-release-2) para o alvo planejado.
-2. Preserve as regras de autorização, identidade, privacidade e idempotência descritas. Não use uma decisão planejada como prova de funcionalidade existente.
-3. Ao encontrar divergência entre código e documentação, registre o fato e a evidência antes de mudar comportamento. Os testes citados são pontos de verificação, não resultados desta revisão.
-4. Ao mudar uma decisão, crie a próxima ADR, relacione a anterior e atualize seu estado quando a substituição for aprovada. Não renumere o histórico nem invente datas, responsáveis ou alternativas avaliadas.
-5. Atualize este índice, a visão de arquitetura e as navegações de MkDocs e Mintlify no mesmo PR.
+1. Identifique a ADR relacionada e consulte a [referência da API](/api-specs) e a [visão arquitetural](/arquitetura/visao-geral).
+2. Preserve as regras de autorização, identidade, privacidade e idempotência descritas nas decisões vigentes.
+3. Ao encontrar divergência entre código e documentação, registre e alinhe o contrato antes de alterar o comportamento público.
+4. Ao substituir uma decisão, crie a próxima ADR, relacione a anterior e atualize seu estado para `Substituída`, sem renumerar o histórico.
+5. Atualize este índice, a visão de arquitetura e a navegação em `docs/docs.json` no mesmo ciclo de alteração.
 
 ## Modelo para uma nova ADR
 
-Use um arquivo `adr-NNN-resumo-da-decisao.md`, com título e descrição no frontmatter. Mantenha uma decisão central por registro e texto curto em português; preserve nomes técnicos exatos.
+Use um arquivo `adr-NNN-resumo-da-decisao.md`, com título e descrição no frontmatter. Mantenha uma decisão central por registro e texto conciso em português, preservando nomes técnicos exatos.
 
 ```markdown
 # ADR-NNN · Decisão em uma frase
 
 | Campo | Valor |
 | --- | --- |
-| Estado | Proposta / Aceita para a Release 2 / Implementada / Substituída |
+| Estado | Proposta / Aceita / Implementada / Substituída |
 | Data do registro | AAAA-MM-DD |
-| Rastreabilidade | IDs existentes de requisitos ou decisões; não inventar |
+| Rastreabilidade | IDs existentes de requisitos ou decisões |
 | Substitui | Nenhuma ADR ou link para a anterior |
 
 ## Contexto
-Problema, restrições e evidências documentais.
+Problema, restrições e evidências técnicas.
 
 ## Decisão
-Escolha, limites e regras que contribuições devem preservar.
+Escolha, limites e regras que o sistema deve preservar.
 
 ## Alternativas para comparação
-Opções e trade-offs. Informar se houve avaliação documentada ou apenas comparação.
+Opções avaliadas e trade-offs relevantes.
 
 ## Consequências
-Benefícios, custos, riscos, migração e pendências.
+Benefícios, custos, riscos, migração e impactos operacionais.
 
 ## Orientações para contribuição e verificação
-Cenários a verificar, referências de código/testes e limites da evidência.
+Cenários a verificar e referências de código e testes.
 
 ## Fontes e relações
 Links para documentação, requisitos e ADRs relacionadas.
 ```
 
-## Limites e decisões ainda abertas
-
-A [ADR-002](/arquitetura/adrs/adr-002-separar-hospedagem-e-ambientes) registra a hospedagem e a execução de jobs da R2. A [ADR-013](/arquitetura/adrs/adr-013-lembretes-persistentes) descreve o agendamento de lembretes no Supabase Cron. O [guia de implantação](/implantacao) indica o que ainda depende de validação hospedada.
-
-O [contrato de planos](/api-specs#preparacao-e-autorizacao-de-planos) fixa o limite de texto em 40.000 bytes UTF-8 e descreve o envio e a autorização. A [ADR-011](/arquitetura/adrs/adr-011-datas-civis-e-instantes) define as datas civis e o fuso usados na agenda.
-
-[Visão arquitetural](/arquitetura/visao-geral) · [Padrões](/produto/padroes) · [Matriz de aceite](/matriz-release-2)
+[Visão arquitetural](/arquitetura/visao-geral) · [Padrões](/produto/padroes) · [Matriz de rastreabilidade](/matriz-rastreabilidade)
