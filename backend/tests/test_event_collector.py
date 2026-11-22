@@ -35,7 +35,15 @@ def _robots(disallow="/components/"):
 
 
 def test_listing_reads_only_official_event_links_and_pagination():
-    page = _listing() + '<a href="https://evil.test/component/agenda/agendas?start=90">9</a>'
+    external_item = (
+        '<div class="item"><span class="cattitle-agenda">Editais</span>'
+        '<div class="conteudo"><h4 class="itemtitle-agenda">'
+        '<a href="https://editora.unb.br/edital-externo" target="_blank">EDU 05/2026 | Edital externo</a>'
+        '</h4></div></div>'
+    )
+    page = _listing().replace('</div></div><ul', f'{external_item}</div></div><ul') + (
+        '<a href="https://evil.test/component/agenda/agendas?start=90">9</a>'
+    )
 
     events, offsets = parse_listing_page(page)
 

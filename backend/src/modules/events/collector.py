@@ -143,7 +143,10 @@ def parse_listing_page(source: str) -> tuple[list[ListingEvent], set[int]]:
                 break
         if title_link is None:
             continue
-        path = urlsplit(title_link.attrs.get("href") or "").path
+        parsed_href = urlsplit((title_link.attrs.get("href") or "").strip())
+        if parsed_href.hostname and parsed_href.hostname.lower() != "noticias.unb.br":
+            continue
+        path = parsed_href.path
         match = re.fullmatch(r"/component/agenda/agenda/(\d+)/?", path)
         title = title_link.text()
         if not match or len(title) < 3:
