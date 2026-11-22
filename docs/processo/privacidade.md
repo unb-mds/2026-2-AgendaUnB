@@ -1,21 +1,19 @@
 ---
 title: "Privacidade e ciclo de vida dos dados"
-description: "Inventário de dados, direitos do titular, exclusão, descarte de PDFs e procedimento de incidente (S8-D01)."
+description: "Inventário de dados pessoais, direitos do titular, descarte de PDFs e procedimento de resposta a incidentes."
 ---
 
-Registro técnico da [S8-D01 (#83)](https://github.com/unb-mds/2026-2-AgendaUnB/issues/83). Estado em **20/11/2026** na branch `fix/s8-d02-endurecimento`. Os textos para o usuário são a [Política de Privacidade](/produto/politica-de-privacidade) e os [Termos de Uso](/produto/termos-de-uso).
+Este documento especifica o ciclo de vida dos dados pessoais, as bases legais de referência, os mecanismos de exclusão e portabilidade e os procedimentos operacionais de privacidade do Agenda UnB. Os textos voltados ao usuário final estão na [Política de Privacidade](/produto/politica-de-privacidade) e nos [Termos de Uso](/produto/termos-de-uso).
 
-Este documento descreve os fluxos integrados, as evidências locais de banco, API e interface e as validações que ainda dependem do ambiente hospedado.
-
-## Decisões registradas (PO e equipe)
+## Diretrizes de privacidade adotadas
 
 | # | Tema | Decisão adotada | Fundamentação técnica |
 | --- | --- | --- | --- |
-| D1 | Contato e canal de atendimento ao titular | E-mail `unbagenda@gmail.com`; pessoas de contato Felipe Couto Duque e Thomas Augusto Amorim de Araujo | Definido em 11/11/2026 e mantido nos documentos públicos |
+| D1 | Contato e canal de atendimento ao titular | Canal oficial pelo e-mail `unbagenda@gmail.com` | Mantido na Política de Privacidade e nos Termos de Uso |
 | D2 | Eventos públicos de uma conta excluída | Excluídos com a conta (`eventos.autor_id ON DELETE CASCADE`); referências cruzadas (`moderado_por`, `possivel_duplicata_de`) usam `ON DELETE SET NULL`; eventos coletados (`fonte` preenchida, `autor_id` nulo) permanecem independentes | Preserva a constraint `eventos_autor_ou_fonte` sem órfãos nem perda da coleta pública |
-| D3 | Revisões de terceiros sobre planos e exclusão | Ao excluir a conta dona do plano, `planos_ensino` cascateia sobre `versoes_plano` e `avaliacoes`. Quando uma conta excluída é autora de revisão em plano alheio, `versoes_plano.autor_id` cascateia e a migration `20261118120000` (`planos_ensino.versao_aprovada_id ON DELETE SET NULL` + ajuste em `tg_preserva_texto_autorizado()`) permite concluir sem erro `42501`, inclusive em planos `processando`. Cópias já importadas pelos colegas em `eventos_pessoais` permanecem independentes (`origem_versao_id ON DELETE SET NULL`) | Validado em PostgreSQL local (`test_privacy_database.py`) |
-| D4 | Retenção de registros técnicos e cópias de segurança | Janelas de consulta operacional nos planos gratuitos: Supabase Free até 1 dia, Render Hobby 7 dias, Vercel Hobby 1 hora; sem backups manuais ou externos | Confirmado em 11/11/2026; informado como janela de consulta operacional, não garantia de apagamento interno do fornecedor |
-| D5 | Fontes carregadas do Google Fonts | Manter carregamento via Google Fonts (`fonts.googleapis.com` e `fonts.gstatic.com`) com divulgação explícita na Política de Privacidade e no inventário técnico | Self-hosting fica registrado como endurecimento opcional futuro |
+| D3 | Revisões de terceiros sobre planos e exclusão | Ao excluir a conta dona do plano, `planos_ensino` cascateia sobre `versoes_plano` e `avaliacoes`. Quando uma conta excluída é autora de revisão em plano alheio, `versoes_plano.autor_id` cascateia e a migration `20261118120000` (`planos_ensino.versao_aprovada_id ON DELETE SET NULL` + ajuste em `tg_preserva_texto_autorizado()`) permite concluir sem erro `42501`, inclusive em planos `processando`. Cópias já importadas pelos colegas em `eventos_pessoais` permanecem independentes (`origem_versao_id ON DELETE SET NULL`) | Coberto pelos testes em PostgreSQL (`test_privacy_database.py`) |
+| D4 | Retenção de registros técnicos e cópias de segurança | Janelas de consulta operacional nos planos gratuitos: Supabase Free até 1 dia, Render Hobby 7 dias, Vercel Hobby 1 hora; sem backups manuais ou externos | Informado como janela de consulta operacional, não garantia de apagamento interno do fornecedor |
+| D5 | Fontes carregadas do Google Fonts | Manter carregamento via Google Fonts (`fonts.googleapis.com` e `fonts.gstatic.com`) com divulgação explícita na Política de Privacidade e no inventário técnico | Self-hosting fica registrado como endurecimento opcional |
 
 ## Inventário de dados pessoais
 
@@ -50,12 +48,12 @@ Base legal: referência aos incisos do art. 7º da LGPD. O projeto tem finalidad
 
 | Operador | Papel | Dados e limites aplicados | Local |
 | --- | --- | --- | --- |
-| Supabase | Banco, Auth, Storage | Todos os dados da conta (`syllabus_files` apenas para legados pendentes de descarte) | `us-east-1` (EUA) no projeto de homologação |
+| Supabase | Banco, Auth, Storage | Todos os dados da conta (`syllabus_files` apenas para legados pendentes de descarte) | `us-east-1` (EUA) |
 | Render | API FastAPI | Dados em trânsito e logs técnicos (sem corpos, conteúdo acadêmico ou tokens) | EUA |
 | Vercel | SPA e `@vercel/analytics/react` | Logs de acesso e métricas agregadas do Vercel Web Analytics (sem cookies publicitários) | Rede global |
 | Google Identity | Login OAuth | Nome, e-mail e foto | EUA e outros |
 | Google Gemini | Extração de datas | Texto sanitizado autorizado em **Plano de Ensino**, até 40.000 bytes UTF-8, com `store: false` em `gemini.py`. A [minimização automática](/arquitetura/minimizacao-planos) cobre padrões detectáveis, incluindo e-mails, telefones, documentos e campos rotulados. | EUA e outros |
-| Google Calendar | Exportação | Escopos `openid`, `email` e `https://www.googleapis.com/auth/calendar.app.created` (restrito à agenda secundária `"Agenda UnB"`). `export.py` envia até 20 eventos selecionados com `id` (SHA-256), `summary`, `start` e `end` (`America/Sao_Paulo`, +1h padrão). Expansões futuras de período/campos constam na `#82` | EUA e outros |
+| Google Calendar | Exportação | Escopos `openid`, `email` e `https://www.googleapis.com/auth/calendar.app.created` (restrito à agenda secundária `"Agenda UnB"`). `export.py` envia até 20 eventos selecionados (com filtragem opcional por período e inclusão opcional de descrição) com `id` (SHA-256), `summary`, `start` e `end` (`America/Sao_Paulo`, +1h padrão). | EUA e outros |
 | Google Fonts | Fontes e ícones | Endereço IP ao baixar fontes (`index.html`) | Rede global (ver D5) |
 
 **Fontes públicas apenas consultadas pelo servidor:**
@@ -72,7 +70,7 @@ Base legal: referência aos incisos do art. 7º da LGPD. O projeto tem finalidad
 | Pode ser revogado | Não se aplica | Sim, a qualquer momento (`revogar_consentimento` e `DELETE /api/v1/me/consents/google_agenda`) |
 | Vínculo com o conteúdo | Versão do documento (data de vigência) | `referencia_id` e `conteudo_hash` (SHA-256 do escopo autorizado) |
 
-**Envio ao provedor de IA.** A autorização é registrada no próprio plano pela S7-B01: `texto_aprovado` (as páginas sanitizadas autorizadas no envio), `hash_texto_aprovado` e `autorizado_em`. O worker confere o hash antes de chamar o provedor, e o trigger `tg_preserva_texto_autorizado` impede alterar o snapshot durante o processamento (`status = 'processando'`). Por isso `consentimentos` não aceita `envio_texto_ia`.
+**Envio ao provedor de IA.** A autorização é registrada no próprio plano: `texto_aprovado` (páginas sanitizadas autorizadas no envio), `hash_texto_aprovado` e `autorizado_em`. O worker confere o hash antes de chamar o provedor, e o trigger `tg_preserva_texto_autorizado` impede alterar o snapshot durante o processamento (`status = 'processando'`). Por isso `consentimentos` não aceita `envio_texto_ia`.
 
 ## Direitos do titular na API e na interface
 
@@ -85,11 +83,11 @@ Base legal: referência aos incisos do art. 7º da LGPD. O projeto tem finalidad
 | Acesso e portabilidade | `GET /api/v1/me/data-export` → `200` JSON (`agenda-unb-dados.json`) | `Cache-Control: no-store`, `Pragma: no-cache`. Inclui lembretes em `reminders` e mapeamentos em `googleCalendarExports`. Exclui tokens cifrados, `google_sub`, caminhos do Storage, chaves de idempotência e dados de terceiros. |
 | Exclusão | `DELETE /api/v1/me` com `{"confirmation": "EXCLUIR MINHA CONTA"}` → `204` | `409` para o último administrador |
 | Correção | Solicitação via `unbagenda@gmail.com` | `/configuracoes` exibe nome e e-mail apenas para leitura; não há edição self-service na interface |
-| Retirar compartilhamento | `DELETE /api/v1/syllabus/{id}/versions/{version_id}/sharing` (`retirar_compartilhamento`, `#77`) | Disponível ao autor da versão ou a um admin em **Plano de Ensino**. **Configurações** orienta sobre o fluxo. |
+| Retirar compartilhamento | `DELETE /api/v1/syllabus/{id}/versions/{version_id}/sharing` (`retirar_compartilhamento`) | Disponível ao autor da versão ou a um admin em **Plano de Ensino**. **Configurações** orienta sobre o fluxo. |
 
 A versão vigente de cada documento fica em `CURRENT_LEGAL_VERSIONS` (`backend/src/modules/account/repository.py`). Ao publicar um texto novo, atualize a versão nos documentos e em `CURRENT_LEGAL_VERSIONS`: as contas passam a receber `pending: true`.
 
-**Interface entregue na S8-D01 (SM2):**
+**Fluxos na interface:**
 - Cadastro e login (`AuthDialog.jsx` e `AuthReturnPage.jsx`): links diretos para `/termos.html` e `/privacidade.html`, caixa obrigatória de aceite no cadastro por e-mail (separada dos consentimentos opcionais) e registro limpo no cadastro imediato, confirmação de e-mail ou entrada.
 - Gate pós-login (`LegalAcceptanceGate.jsx`): exibe diálogo nativo quando `GET /api/v1/me/legal-documents` indica `pending: true` (entrada com Google, confirmação externa ou mudança de versão), tratando conflito `409` sem travar a navegação por teclado.
 - Configurações e privacidade (`/configuracoes`, `SettingsPage.jsx` + link em `NavBar.jsx`): exibe versões vigentes e aceites registrados, permite revogar consentimento `google_agenda`, orienta sobre IA por plano e retirada de compartilhamento, executa **Baixar meus dados** (`agenda-unb-dados.json`) e **Excluir conta** (com resumo do que sai e do que fica, frase `"EXCLUIR MINHA CONTA"`, tratamento de `409` e retorno a `/?conta=excluida`).
@@ -97,7 +95,7 @@ A versão vigente de cada documento fica em `CURRENT_LEGAL_VERSIONS` (`backend/s
 
 ## O que acontece na exclusão da conta
 
-Sequência executada por `DELETE /api/v1/me` (`account/service.py:132-161`):
+Sequência executada por `DELETE /api/v1/me` (`backend/src/modules/account/service.py`):
 
 1. Valida a frase exata `"EXCLUIR MINHA CONTA"` (`422` se divergir).
 2. `preparar_exclusao_conta` serializa a verificação do último administrador (`FOR UPDATE`, `409` se for o único `admin`), registra contagens anônimas em `exclusoes_conta` (`status = 'iniciada'`) e lista os arquivos legados da conta.
@@ -118,7 +116,7 @@ Sequência executada por `DELETE /api/v1/me` (`account/service.py:132-161`):
 
 ## Descarte do PDF original (ADR-003)
 
-- **Novos envios** já não guardam o PDF: a S7-B01 extrai o texto em memória no upload (`MAX_PDF_PAGES=10`, `MAX_FILE_SIZE_BYTES=10MB`), fecha o arquivo e grava apenas `texto_preparado`.
+- **Novos envios** não armazenam o PDF: o texto é extraído em memória no upload (`MAX_PDF_PAGES=10`, `MAX_FILE_SIZE_BYTES=10MB`), o arquivo temporário é fechado e apenas `texto_preparado` é gravado.
 - **Planos antigos** podem ter o PDF no Storage. `arquivos_a_descartar()` lista apenas os encerrados (`concluido` ou `falha`), sem tocar em `pendente` ou `processando`; `registrar_descarte_arquivo(plano)` limpa `caminho_arquivo` / `arquivo_url` e grava `arquivo_descartado_em`.
 - As constraints `planos_particular_exige_fonte` e `planos_descarte_remove_caminho` garantem que planos antigos descartados continuem íntegros sem caminho de arquivo.
 - **Originais legados:**
@@ -151,18 +149,18 @@ TEST_SUPABASE_DB_URL="postgresql+psycopg://postgres:postgres@127.0.0.1:14322/pos
   venv/bin/python -m pytest tests/test_privacy_database.py tests/test_account_api.py tests/test_storage.py -q
 ```
 
-| Critério de aceite | Evidência verificada | Estado |
-| --- | --- | --- |
-| Acesso ponta a ponta | `test_account_api.py` (`test_export_contains_the_account_data_and_nobody_elses`, `test_export_is_a_private_download`), `SettingsPage.jsx` e `privacy-account.spec.js` | Validado em API/banco local e E2E com dublês. **Pendente:** ambiente hospedado |
-| Exclusão ponta a ponta | `test_account_api.py`, `test_privacy_database.py`, `SettingsPage.jsx` e `privacy-account.spec.js` | Validado em API/PostgreSQL `:14322` e E2E com dublês. **Pendente:** Auth e Storage reais em nuvem |
-| Descarte do PDF após extração e eliminação de legados | Extração em memória (`syllabus/router.py`), `scripts/descartar_pdfs.py`, `test_privacy_database.py` e `test_account_api.py` | Validado localmente. **Pendente:** executar `--executar` contra Storage hospedado se houver legados |
-| Tarefas pendentes e cópias independentes | `test_privacy_database.py` (inclusive cascata cruzada com `status = 'processando'`) e `test_account_api.py` | Validado no PostgreSQL `:14322` e SQLite |
-| Conteúdo acadêmico e tokens fora dos logs | `test_unhandled_exception_returns_500_without_leaking_secrets`, `test_database_errors_are_logged_without_row_content`, `test_supabase_admin_calls_never_log_identifiers` (`test_account_api.py`) | Validado na API/scripts. **Pendente:** inspeção nos painéis hospedados |
-| Google Calendar: desconexão, revogação, tokens e aviso de cópias | `google_calendar/service.py` (escopos, Fernet, revogação), `GoogleCalendarConnection.jsx` e `privacy-account.spec.js` | Validado em testes unitários, API/banco e E2E. **Pendente:** OAuth real com Google |
-| Política e termos no cadastro, entrada e Configurações | `politica-de-privacidade.md`, `termos-de-uso.md` (`2026-11-20`), `render_legal.py --publish`, `AuthDialog.jsx`, `LegalAcceptanceGate.jsx`, `SettingsPage.jsx` | Validado localmente em unitários, build e Playwright |
+| Critério | Cobertura automatizada e verificações |
+| --- | --- |
+| Acesso e portabilidade ponta a ponta | `test_account_api.py` (`test_export_contains_the_account_data_and_nobody_elses`, `test_export_is_a_private_download`), `SettingsPage.jsx` e `privacy-account.spec.js` |
+| Exclusão completa da conta | `test_account_api.py`, `test_privacy_database.py`, `SettingsPage.jsx` e `privacy-account.spec.js` (incluindo verificação de Auth e Storage) |
+| Descarte do PDF após extração e eliminação de legados | Extração em memória (`syllabus/router.py`), `scripts/descartar_pdfs.py`, `test_privacy_database.py` e `test_account_api.py` |
+| Tarefas pendentes e cópias independentes | `test_privacy_database.py` (inclusive cascata cruzada com `status = 'processando'`) e `test_account_api.py` |
+| Conteúdo acadêmico e tokens fora dos logs | `test_unhandled_exception_returns_500_without_leaking_secrets`, `test_database_errors_are_logged_without_row_content`, `test_supabase_admin_calls_never_log_identifiers` (`test_account_api.py`) |
+| Google Calendar: desconexão, revogação, tokens e aviso de cópias | `google_calendar/service.py` (escopos, Fernet, revogação), `GoogleCalendarConnection.jsx` e `privacy-account.spec.js` |
+| Política e termos no cadastro, entrada e Configurações | `politica-de-privacidade.md`, `termos-de-uso.md` (`2026-11-20`), `render_legal.py --publish`, `AuthDialog.jsx`, `LegalAcceptanceGate.jsx`, `SettingsPage.jsx` |
 
-## Histórico de publicação legal
+## Histórico de versões legais
 
-- **11/11/2026:** versão inicial `2026-11-11` publicada com marcações de Release 2 e definição de D1/D4.
-- **18/11/2026:** versão `2026-11-18` alinhada a `CURRENT_LEGAL_VERSIONS`, inventário real de provedores (`@vercel/analytics/react`, limites de minimização do Gemini + `store: false`, payload real e escopos do Google Calendar, Followw/coleta pública, Google Fonts), autoatendimento em `/configuracoes` e avisos de cópias permanentes no Google Agenda. Gerador: `backend/venv/bin/python scripts/render_legal.py --publish` (`Markdown==3.11.3`).
-- **20/11/2026** — A versão `2026-11-20` registra sanitização automática e compartilhamento inicial de planos na R2, conforme `CURRENT_LEGAL_VERSIONS`.
+- **`2026-11-11`:** publicação inicial dos Termos de Uso e Política de Privacidade com definição do canal de atendimento e retenção operacional.
+- **`2026-11-18`:** alinhamento a `CURRENT_LEGAL_VERSIONS`, inventário completo de provedores (`@vercel/analytics/react`, limites de minimização do Gemini com `store: false`, payload e escopos do Google Calendar, Followw/coleta pública e Google Fonts), autoatendimento em `/configuracoes` e avisos sobre cópias permanentes no Google Agenda (`scripts/render_legal.py --publish`).
+- **`2026-11-20`:** inclusão do registro de sanitização automática e compartilhamento inicial de planos, conforme `CURRENT_LEGAL_VERSIONS`.

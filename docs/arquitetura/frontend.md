@@ -1,131 +1,83 @@
 ---
 title: "Especificação do frontend"
-description: "Documentação detalhada da interface do usuário e da experiência do usuário do AgendaUnB, incluindo design, identidade visual e responsividade."
+description: "Documentação da interface, identidade visual, rotas, fluxos de planos de ensino, notificações e responsividade do Agenda UnB."
 ---
 
-## 1.Design
+## 1. Design e identidade visual
 
-### 1.1 Referências visuais e inspiração
+### 1.1 Referências visuais e recursos gráficos
 
-Durante o processo de desenvolvimento da identidade visual do AgendaUnB, a equipe utilizou o site Awwwards como referência para pesquisar tendências, estilos e conceitos de design aplicados ao desenvolvimento de interfaces web. A plataforma serviu como fonte de inspiração para a construção de uma interface moderna, visualmente organizada e alinhada às tendências atuais de desenvolvimento web. A partir dessas referências, a equipe buscou desenvolver uma identidade própria para o AgendaUnB, adaptando elementos visuais que contribuíssem para transmitir organização, modernidade e simplicidade.
+A identidade visual do Agenda UnB foi construída a partir de referências de interfaces web modernas (como Awwwards) e iniciativas acadêmicas da disciplina de Métodos de Desenvolvimento de Software na UnB (como SuaGradeUnB e NoFluxoUnB), priorizando clareza, organização e baixo ruído visual.
 
-Especificamente, a equipe inspirou-se no site "Son Daven" ([https://www.awwwards.com/sites/son-daven](https://www.awwwards.com/sites/son-daven)) e em técnicas e estilos demonstradas neste vídeo ([https://youtu.be/BBKGPxw-6iY?si=7rVYIGBMF3PrFjo6](https://youtu.be/BBKGPxw-6iY?si=7rVYIGBMF3PrFjo6)) para a construção de um site com personalidade e interações avançadas. No âmbito acadêmico, o projeto também se inspirou em outras iniciativas que também foram desenvolvidas na disciplina de Métodos de Desenvolvimento de Software, como o **SuaGradeUnB** e o **NoFluxoUnB**, que, além de servirem como referências de como resolver problemas de organização universitária de forma eficiente, também representaram bons exemplos de UI e UX que almejamos alcançar em nosso projeto, o que fez com que mantivéssemos algumas estruturas que já estavam consolidadas e validadas naqueles projetos, tais como a NavBar, experiência de autenticação, entre outros.
+Os vídeos principais da página inicial em estilo *halftone* (variantes para tema escuro e tema claro) foram renderizados a partir de um shader GLSL customizado em **Three.js** e **React Three Fiber** (`VideoTexture` + `ShaderPass` aplicando *dithering*, pixelização e retículas) e exportados para `.webm`, preservando a estética com baixo consumo de GPU no navegador.
 
-Como parte dessa identidade única que buscávamos, a produção dos vídeos principais da aplicação em estilo halftone (versões _dark_ e _light_) não foi feita por edição/geração convencional, mas originou-se de uma implementação focada em computação gráfica web. Utilizando as bibliotecas **Three.js** e **React Three Fiber**, um vídeo limpo original (gerado e tratado utilizando o Google AI STudio) foi capturado via `VideoTexture` e sofreu pós-processamento via **WebGL**. O núcleo dessa estética foi a construção de um _fragment shader_ (GLSL) customizado, injetado através de um `ShaderPass`. Esse _shader_ processou o conteúdo aplicando algoritmos de _dithering_ (pontilhamento), pixelização e _halftone_ (retículas), além de manipular contraste para gerar a aparência digital texturizada característica da plataforma. Assim, a equipe do frontend estabeleceu parâmetros matemáticos (_uniforms_ como densidade da grade, força do efeito e contraste de cor) e, com essa parte do frontend concluída, houve a renderização dos dois shaders resultantes em vídeos .webm (um feito para o modo claro e outro para o escuro) para que a demanda de desempenho computacional (principalmente uso da GPU) fosse reduzida consideravelmente, tornando o site mais otimizado e responsivo e mantendo o diferencial estético.
+### 1.2 Estilo Halftone e conceito "The Neon Campus"
 
-### 1.2. Estilo visual Halftone e o "Neon Campus"
+O sistema adota o conceito visual **"The Neon Campus"**, combinando retículas *halftone*, superfícies translúcidas (*glassmorphism* com `backdrop-filter`) e a regra *"Glow-Over-Shadow"* com destaque em Azul UnB Glow (`#008bff`), evitando gradientes lineares.
 
-Como citado acima, um dos elementos utilizados na construção da identidade visual do AgendaUnB foi o estilo Halftone, também conhecido como retícula de pontos. Essa técnica visual utiliza pequenos pontos organizados em padrões para criar texturas, contrastes e efeitos gráficos. No projeto, essa abordagem foi incorporada como elemento estético, contribuindo para tornar a interface visualmente diferenciada sem comprometer sua proposta minimalista. A utilização do Halftone busca estabelecer uma identidade visual mais característica para o sistema, combinando elementos gráficos modernos com uma interface limpa e organizada.
+- **Paleta principal da aplicação (`/eventos`, `/plano-de-ensino`, `/sugestoes`, `/admin`, `/configuracoes`):**
+  - **Tema escuro:** fundo `#080c16`, cards `#1a2235`, campos `#101a2c`, texto `#ffffff`, texto secundário `#94a3b8`, borda `rgba(255, 255, 255, 0.15)`.
+  - **Tema claro:** fundo `#f0f4f8`, cards `#ffffff`, campos `#f8fafc`, texto `#1a1a2e`, texto secundário `#526278`, borda `rgba(0, 0, 0, 0.15)`.
+- **Variantes de canvas e painéis de planos:** a página inicial (`/`) e o detalhe do evento (`/evento/:id`) usam fundo `#050508` no tema escuro e `#f5f6fa` no tema claro; o painel de planos usa superfícies translúcidas dedicadas em `semester-plans.css`.
+- **Sombras e brilhos:** cards mantêm restrição de opacidade de sombra até 20%, com exceções intencionais para backdrops de modais (`rgba(2, 6, 16, 0.88)` / `rgba(0, 0, 0, 0.8)`) e brilhos neon azuis (`rgba(0, 139, 255, 0.25–0.45)`).
+- **Tipografia, ícones e logotipo:** **Orbitron** para títulos, **Inter** para texto corrido, **Material Symbols** para iconografia e ampulheta minimalista como logotipo.
 
-Aliado ao Halftone, a bússola criativa do projeto segue o conceito e identidade visual **"The Neon Campus"**. A interface adota uma atmosfera predominantemente _clean_ (fundos quase pretos ou brancos absolutos, como `#080c16`), utilizando amplamente o **Glassmorphism** (fundos translúcidos com `backdrop-filter`). Para transmitir profundidade sem pesar a interface, aplicamos a regra do _"Glow-Over-Shadow"_: em vez de sombras pretas duras (sendo proibidas no projeto opacidades maiores que 20%), a elevação dos componentes é destacada por meio de brilhos (glows) na cor Azul UnB Glow (`#008bff`), simulando luzes neon. Estilos com bordas coloridas em fundos claros e o uso de _linear gradients_ também são estritamente evitados para manter a pureza e identidade visual. O design inclui o uso exclusivo da tipografia **Orbitron** para cabeçalhos (trazendo um ar tecnológico) e **Inter** para textos gerais, além do uso padronizado da iconografia via **Material Symbols**.
+## 2. Interface e rotas da aplicação
 
-### 1.3. Identidade visual consolidada
+A interface utiliza React 19, Vite 6 e React Router 7. As operações de eventos, agenda, catálogo de turmas, planos de ensino, lembretes, conta/privacidade e Google Agenda consomem a API FastAPI (`/api/v1`), enquanto autenticação, leitura de perfil, notificações de moderação e RPCs administrativas utilizam o SDK do Supabase. Consulte a [visão arquitetural](/arquitetura/visao-geral).
 
-A identidade visual do AgendaUnB combina diferentes elementos para estabelecer uma apresentação consistente:
+| Rota | Finalidade e acesso |
+| --- | --- |
+| `/` | Apresentação institucional, seleção de tema e autenticação (e-mail/senha, Google OAuth e acesso como visitante) |
+| `/auth/retorno` | Retorno PKCE para confirmação de e-mail, redefinição de senha e login Google |
+| `/eventos` | Catálogo público de eventos e **Meus Eventos**, com lista de cards, calendário mensal/semanal, filtros, sugestões, lembretes e exportação Google Agenda / `.ics` (`/segunda-pagina` redireciona preservando query e `#plano-de-ensino`) |
+| `/evento/:id` | Detalhes do evento público aprovado ou compromisso privado, procedência institucional e ação **Conferir evento** |
+| `/plano-de-ensino` | Fluxo autenticado de seleção de turmas, envio de planos (PDF/texto), extração sanitizada, revisão em lote e biblioteca compartilhada da turma |
+| `/configuracoes` | Aceite de Termos de Uso e Política de Privacidade, gestão de consentimentos opcionais, exportação de dados em JSON e exclusão de conta |
+| `/sugestoes` | Fila e histórico de sugestões estudantis e revisões de coleta institucional (`professor` e `admin`) |
+| `/admin` | Busca e filtros de usuários, alteração de papéis e gestão de categorias (`admin`) |
+| `/privacidade.html`, `/termos.html` | Páginas públicas estáticas com os documentos legais vigentes |
 
-- Referência estética: inspiração em projetos e tendências de design encontrados na plataforma Awwwards (com destaque para o "Son Daven") e nos projetos locais SuaGradeUnB e NoFluxoUnB.
-- Paleta de cores: predominância de tons de azul (com destaque para o Azul UnB Glow `#008bff`).
-- Estilo gráfico: utilização de elementos Halftone, baseados em padrões de pequenos pontos, combinados ao Glassmorphism e à regra do Glow-Over-Shadow.
-- Logotipo: ampulheta minimalista, representando a gestão e organização do tempo.
-- Estilo geral: visual clean, minimalista e moderno, isento de degradês ou sombras poluentes.
-- Tipografia e Ícones: casamento das fontes Orbitron e Inter, com iconografia padronizada em Material Symbols.
-- Personalização: disponibilização dos temas claro e escuro.
+### 2.1. Apresentação e autenticação (`/`)
 
-## 2. UI — User Interface (Interface do Usuário)
+A página inicial apresenta os recursos do Agenda UnB e disponibiliza autenticação por e-mail e senha, Google OAuth e acesso como visitante ao catálogo público. Cadastro e autopromoção ao papel `professor` exigem e-mail `@unb.br` confirmado; a atribuição administrativa de papéis segue a [ADR-006](/arquitetura/adrs/adr-006-autorizacao-em-camadas). O alternador global entre temas claro e escuro persiste a preferência do usuário em toda a aplicação.
 
-A interface usa React e Vite. A FastAPI atende os fluxos de eventos e planos de ensino. O SDK do Supabase atende autenticação, leitura de perfis, notificações e operações de moderação. [Arquitetura](/arquitetura/visao-geral)
+### 2.2. Catálogo público e agenda pessoal (`/eventos` e `/evento/:id`)
 
-A página inicial reúne a apresentação e a autenticação. O catálogo e a agenda ficam em `/eventos`, com páginas próprias para detalhes, planos e administração.
+Em `/eventos`, o usuário alterna entre o catálogo público da comunidade acadêmica e **Meus Eventos** (combinando compromissos privados com eventos públicos salvos), em visualização por lista de cards ou calendário mensal/semanal com botão **Hoje** e rolagem horizontal em telas pequenas.
 
-### 2.1. Primeira página — Apresentação e autenticação
+Cards exibem rótulos em pílula por campus (`Darcy Ribeiro (Plano Piloto)`, `FCTE (Gama)`, `FCTS (Ceilândia)`, `FUP (Planaltina)`, `FAL`) e categoria, além de selo de procedência para eventos coletados da Agenda UnB Notícias. Estudantes autenticados podem sugerir eventos públicos pelo botão **Sugerir evento** no formulário de criação; professores e administradores publicam e editam eventos públicos diretamente.
 
-A primeira página tem como finalidade apresentar o AgendaUnB aos visitantes, disponibilizando informações sobre a proposta do projeto, seus objetivos e os desenvolvedores responsáveis. Além da apresentação institucional, essa página disponibiliza os mecanismos de autenticação necessários para que o usuário possa acessar as funcionalidades internas da aplicação. Os métodos de autenticação disponibilizados são:
+Em **Meus Eventos**, o usuário pode conectar sua conta Google (escopo `calendar.app.created`) para exportar lotes de até 20 eventos para a agenda secundária **"Agenda UnB"** com prévia de alterações, ou baixar um arquivo `.ics` compatível com Apple Calendar e Outlook.
 
-- E-mail e senha: permite que o usuário realize seu acesso utilizando suas credenciais cadastradas.
-- Google: possibilita a autenticação por meio de uma conta Google (ideal para o fluxo de estudantes).
-- Convidado: pode consultar o catálogo público. A agenda privada exige uma conta.
+### 2.3. Central de notificações (`NotificationBell`)
 
-O cadastro e a autopromoção para professor exigem e-mail institucional. A atribuição de papéis pela administração segue as permissões do servidor ([ADR-006](/arquitetura/adrs/adr-006-autorizacao-em-camadas)).
+O componente `NotificationBell` é exibido na barra de navegação para todas as contas autenticadas:
 
-A página também disponibiliza o controle de alternância entre os temas claro e escuro, permitindo modificar a aparência visual de toda a aplicação.
+- **Lembretes:** disponível para qualquer papel autenticado (`student`, `professor`, `admin`), listando os avisos de proximidade (24 horas antes do evento) disparados pelo banco via `GET /api/v1/me/reminders` e permitindo marcar leitura (`PUT /api/v1/me/reminders/{id}/read`).
+- **Sugestões:** aba adicional exibida para contas `student`, consultando `notificacoes` (envio, aprovação e recusa com justificativa) ao submeter proposta, ao retornar o foco à janela e periodicamente a cada 30 segundos.
 
-### 2.2. Segunda página — Gerenciamento de eventos
+### 2.4. Organizador acadêmico e planos de ensino (`/plano-de-ensino`) {#painel-do-semestre}
 
-A segunda página concentra as principais funcionalidades do AgendaUnB, relacionadas à visualização e ao gerenciamento de eventos acadêmicos. Nessa página, os usuários podem visualizar eventos públicos divulgados por professores e administradores, além de criar seus próprios eventos privados. Os eventos são apresentados por meio de cards (cartões), permitindo organizar visualmente as informações de cada atividade e facilitar sua identificação. Os principais recursos disponíveis nessa página são:
+A página `/plano-de-ensino` exige conta autenticada (visitantes recebem orientação de acesso) e organiza a jornada em **duas etapas principais** no topo do painel (`#semester-step-classes` e `#semester-step-dates`):
 
-- Eventos públicos: eventos divulgados por professores e administradores, disponíveis para visualização pelos usuários.
-- Eventos privados: eventos criados individualmente pelo usuário, cujo acesso é restrito ao próprio criador.
-- Apresentação em cards: organização visual dos eventos em cartões translúcidos (com bordas suaves de 14 a 20px e brilhos interativos de hover), facilitando a leitura e identificação das informações. Categorizações rígidas informam rapidamente a qual campus ou tipo de atividade o evento pertence através de rótulos (badges em formato de pílula).
-- Gerenciamento de eventos: disponibilização das funcionalidades relacionadas à criação e organização dos compromissos pessoais.
+1. **Etapa 1 — Selecionar turmas:** exibe **Suas turmas** e a busca no **Catálogo de turmas** (agrupada por unidade e disciplina/período, com seleções persistidas em memória entre buscas e paginações). Contas sem turmas seguidas iniciam diretamente nesta etapa. O vínculo com a turma é autodeclarado.
+2. **Etapa 2 — Organizar datas:** contas com turmas ou planos já registrados abrem nesta etapa. No painel de envio (**Seus planos**), o usuário escolhe uma turma seguida e alterna entre **Arquivo PDF** (até 10 MiB e 10 páginas) e **Colar texto** (até 40.000 bytes UTF-8). Os envios autorizam a extração do texto sanitizado após preparação determinística local (até dois envios preparados em paralelo) e o worker processa a fila em segundo plano mesmo que o usuário mude de página.
 
-### 2.3. Extração de Planos de Ensino (Core Feature pós-R1) {#painel-do-semestre}
+Na área principal da Etapa 2, abas separam:
+- **Minhas avaliações:** exibe o andamento da extração, o total de identificadores pessoais removidos (`redactedCount`), a lista pré-selecionada de candidatos completos, o filtro **Precisam de atenção** (com trecho de origem e sugestão automática de horário baseada na grade SIGAA da oferta para provas sem horário) e a confirmação em lote com `Idempotency-Key` via **Adicionar à agenda**.
+- **Planos compartilhados da turma:** biblioteca colaborativa das versões compartilhadas da oferta selecionada. A versão inicial (`v1`) de um plano vinculado a uma oferta e concluído com candidatos é compartilhada automaticamente ao ser consultada ou confirmada pelo autor (e não volta a ser compartilhada automaticamente se for retirada). Reprocessamentos e revisões iniciam privados até publicação explícita (`PUT .../sharing` ou `share: true`). Seguidores da turma visualizam autoria, papel do autor, procedência institucional validada, votos (ordenados por confirmações e data mais recente), sinalização de divergência (sem alteração automática de datas) e podem importar candidatos para suas próprias agendas ou criar revisões mantendo as cópias já importadas por terceiros intactas.
 
-O painel de `/plano-de-ensino` exige conta autenticada e organiza a jornada em duas etapas no topo do painel (`1. Selecionar turmas` e `2. Organizar datas`). Visitantes não autenticados recebem apenas orientação e acesso ao login, sem envio nem vínculo de turmas. Contas sem turmas seguidas iniciam na **Etapa 1**, onde gerenciam **Suas turmas** e buscam novas disciplinas no **Catálogo de turmas** para seguir várias turmas de uma vez antes de avançar. Contas que já possuem turmas ou planos abrem na **Etapa 2**, mantendo acesso direto à Etapa 1 pelo indicador de etapas.
+Consulte os contratos em [Dados de planos](/arquitetura/dados-de-planos) e as decisões [ADR-003](/arquitetura/adrs/adr-003-minimizar-dados-de-planos), [ADR-010](/arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos) e [ADR-014](/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia).
 
-Na **Etapa 2 (Organizar datas)**, escolha uma turma disponível no topo de **Seus planos** e alterne entre as abas **Arquivo PDF** e **Colar texto** antes de enviar o plano. Os arquivos selecionados em lote usam a mesma turma e mantêm esse destino na fila. A preparação de até dois planos corre em paralelo e o worker acompanha a extração mesmo que o usuário navegue para outra página. Na área principal, abas dedicadas separam **Minhas avaliações** (extrações próprias para revisão e adição em lote) de **Planos compartilhados da turma** (biblioteca colaborativa de versões compartilhadas), reduzindo a sobrecarga visual.
+#### Roteiro de homologação da jornada de oito planos
 
-**Enviar PDF e extrair** e **Enviar texto e extrair** autorizam a extração no envio. A interface explica o uso do Gemini antes das ações. Depois da preparação, o frontend autoriza as páginas sanitizadas e o painel mostra o andamento. Planos pendentes podem ser retomados em **Extrair avaliações**. O painel informa a disponibilidade do provedor e permite iniciar a análise do texto sanitizado.
+Para avaliar fluidez e latência fim a fim em ambiente de homologação com catálogo publicado, oito ofertas no mesmo semestre, worker habilitado e provedor Gemini ativo:
 
-A lista pré-seleciona avaliações completas. Use **Precisam de atenção** para consultar o trecho de origem e corrigir pendências. É possível selecionar as avaliações válidas do filtro e editar o tipo ou horário dos itens selecionados de uma mesma turma. **Adicionar à agenda** confirma os itens incluídos em operações separadas por plano. O painel informa falhas e sucessos parciais e permite consultar o resultado de uma operação antes de repeti-la.
+1. Convide participantes com contas autenticadas sem as oito ofertas seguidas e forneça oito PDFs digitais sintéticos totalizando 60 datas conhecidas (incluindo provas com horário e entregas de dia inteiro).
+2. Cronometre a partir da abertura autenticada de `/plano-de-ensino` até as 60 avaliações constarem em **Meus Eventos**, registrando separadamente tempo total, tempo ativo de interação, tempo de espera de rede/extração e latência por plano.
+3. Confira títulos, datas, horários, marcação de dia inteiro e ausência de duplicatas em **Meus Eventos** (meta: pelo menos quatro em cinco conclusões corretas abaixo de 300 segundos sem auxílio).
 
-Na seção **Planos compartilhados da turma**, a versão inicial (`v1`) de planos extraídos vinculados a uma turma é compartilhada automaticamente ao concluir (com opção de retirada pelo autor ou admin, sem re-compartilhamento automático após retirada); reprocessamentos e rascunhos posteriores começam privados até publicação explícita. Seguidores autenticados da turma (com vínculo autodeclarado explícito) consultam o histórico de versões (com nome do autor, diferenciação entre contribuição de estudante, perfil professor e administrador, procedência institucional verificada e data da última atualização), votam na versão ou em cada avaliação — exibindo prioritariamente a versão com mais votos positivos e, em empate, a mais recente, sinalizando divergências sem alterar datas automaticamente — e importam avaliações selecionadas diretamente para a agenda sem reenviar arquivo. Estudantes seguidores da turma, professores e administradores podem revisar versões compartilhadas gerando uma nova versão com histórico (`share: true`), preservando os eventos pessoais já importados e sinalizando quando houver alterações em versões posteriores. Autores e administradores podem retirar uma versão compartilhada ou eventos individuais mantendo cópias já importadas.
+### 2.5. Responsividade e acessibilidade
 
-Arquivos locais, texto colado ainda não enviado e rascunhos de avaliações ficam em memória durante a navegação. Após recarregar, **Seus planos** recupera os envios persistidos e a biblioteca da turma permanece disponível enquanto a conta seguir a oferta.
-
-Veja os contratos de [privacidade](/arquitetura/adrs/adr-003-minimizar-dados-de-planos), [confirmação](/arquitetura/adrs/adr-010-versoes-e-confirmacao-de-planos) e [processamento assíncrono](/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia).
-
-#### Homologação da jornada de oito planos
-
-Use um ambiente de homologação com catálogo publicado, oito ofertas disponíveis no mesmo semestre, worker habilitado e provedor elegível. Convide cinco estudantes, cada um com conta de teste autenticada e sem as oito ofertas seguidas. Use oito PDFs digitais sintéticos com 60 datas conhecidas (oito avaliações em cada um dos quatro primeiros, sete em cada um dos demais). Inclua provas com horário e entregas de dia inteiro. Identifique as ofertas nos nomes dos PDFs e entregue ao observador a lista de datas esperadas.
-
-1. Comece o cronômetro quando o participante abrir o painel já autenticado, com os arquivos em mãos. Inclua a seleção de turmas, as autorizações, a revisão, a extração e a confirmação.
-2. Registre individualmente o tempo total até as 60 avaliações constarem em **Meus Eventos**, o tempo de interação e o tempo ocioso aguardando a rede ou a extração. Conte esperas sobrepostas uma vez e registre separadamente a latência por plano.
-3. Confira título, data, horário, dia inteiro e duplicatas na agenda. A meta exige quatro de cinco conclusões corretas abaixo de 300 segundos, sem auxílio. Registre erros de extração e gargalos de preparação, fila, provedor ou confirmação.
-
-O cenário Playwright de oito planos e 60 avaliações durou 13,3 segundos na execução automatizada, com respostas controladas e interações automatizadas. A medição com participantes e Gemini real permanece pendente. O ambiente local utilizado na implementação não tinha credencial e habilitação do provedor. Os resultados simulados não estabelecem o tempo real da jornada.
-
-### 2.4. Navegação entre páginas
-
-Para implementar a navegação entre as diferentes páginas da aplicação, a equipe de frontend utilizou a biblioteca React Router DOM. Essa biblioteca permite gerenciar as rotas da aplicação React, possibilitando a navegação entre diferentes páginas sem a necessidade de recarregar completamente o site a cada mudança de rota. A utilização dessa tecnologia contribui para uma estrutura de navegação mais organizada, permitindo separar as funcionalidades da aplicação e facilitar futuras expansões do sistema, enquanto assegura comunicação fluida com a API (FastAPI) em segundo plano.
-
-### 2.5. Alternância entre temas claro e escuro
-
-O sistema disponibiliza um mecanismo de alternância entre os temas claro e escuro, permitindo que o usuário escolha a aparência visual de sua preferência. Essa funcionalidade possui abrangência global, ou seja, a alteração realizada pelo usuário é aplicada à interface de toda a aplicação, mantendo a consistência visual durante a navegação entre as páginas. A implementação busca proporcionar maior conforto visual e flexibilidade de utilização. As variáveis de luz e os vidros translúcidos se adaptam, assegurando a _bivalência_ para que ambos os temas apresentem uma experiência de excelência, clareza e imersão.
-
-### 2.6. Responsividade
-
-O AgendaUnB foi desenvolvido com uma interface responsiva, permitindo que os elementos visuais se adaptem a diferentes resoluções e tamanhos de tela. A estrutura da interface modifica o posicionamento e as dimensões de seus componentes conforme o dispositivo utilizado, buscando preservar a organização e a funcionalidade do sistema (redimensionando, por exemplo, exibições amplas de calendário em formatos de lista mobile e ajustando áreas de toque para as pontas dos dedos). Dessa forma, a aplicação pode ser utilizada em computadores, tablets e smartphones, proporcionando uma experiência consistente em diferentes dispositivos sem depender de um aplicativo nativo.
-
-## 3. UX — User Experience (Experiência do Usuário)
-
-A experiência do usuário no AgendaUnB tem como principal objetivo facilitar a organização e o acompanhamento de eventos acadêmicos, proporcionando um ambiente acessível, intuitivo e eficiente para estudantes universitários e atuando como o hub definitivo para conter a dispersão de informações. A estrutura da aplicação foi planejada para separar a apresentação institucional das funcionalidades de gerenciamento de eventos, permitindo que o usuário compreenda inicialmente a proposta do sistema e, posteriormente, acesse os recursos disponíveis. As decisões relacionadas à experiência do usuário consideram os seguintes aspectos:
-
-### 3.1. Facilidade de navegação e redução da carga cognitiva
-
-A divisão da aplicação em duas páginas principais permite organizar as funcionalidades de acordo com suas finalidades, facilitando a localização dos recursos disponíveis num só ambiente e limitando distrações. A utilização do React Router DOM contribui para uma navegação fluida entre as diferentes áreas do sistema.
-
-### 3.2. Personalização da interface
-
-A disponibilização dos temas claro e escuro permite que o usuário personalize a aparência visual da aplicação de acordo com suas preferências. Como a alteração é aplicada globalmente, o usuário mantém sua experiência visual consistente durante a utilização do sistema, adaptando-se confortavelmente aos longos períodos noturnos ou diurnos de estudo.
-
-### 3.3. Organização e hierarquia visual dos eventos
-
-A separação entre eventos públicos e privados permite distinguir os compromissos divulgados pela administração daqueles criados individualmente pelos usuários. Além disso, a apresentação dos eventos em cards facilita a identificação e a leitura das informações relacionadas a cada atividade, estabelecendo uma _hierarquia acadêmica_ em que o discente pode bater o olho na tela e distinguir uma simples atração cultural de uma prova perigosa de fim de semestre.
-
-### 3.4. Facilidade de autenticação
-
-A disponibilização de diferentes métodos de autenticação, por meio de e-mail e senha ou conta Google ou como convidado, oferece alternativas para o acesso ao sistema. Essa abordagem busca tornar o processo de entrada mais flexível e conveniente para os usuários, acompanhando o ritmo ágil dos alunos e as demandas burocráticas de docentes.
-
-### 3.5. Acessibilidade em diferentes dispositivos
-
-A responsividade da aplicação permite que os usuários acessem o AgendaUnB por meio de diferentes dispositivos, adaptando a interface às características de cada tela. Essa característica amplia as possibilidades de utilização do sistema, permitindo que os estudantes consultem seus eventos e compromissos independentemente de estarem utilizando um computador ou dispositivo móvel na cantina do campus.
-
-### 3.6. Simplicidade, transparência e intuitividade
-
-A interface informa o andamento da extração do plano de ensino. Após o processamento, o usuário revisa as provas e os trabalhos sugeridos, corrige os campos necessários e seleciona o que será importado para a agenda. Consulte os estados e as rotas no [contrato de preparação e autorização](/api-specs#preparacao-e-autorizacao-de-planos).
-
-### Refinamento do catálogo de turmas
-
-A busca precede a seleção: resultados são agrupados por unidade e disciplina/período, com turmas recolhíveis, professor e horário por oferta. O agrupamento respeita a página de 20 resultados da API; a paginação informa o alcance exibido. A seleção permanece ao alternar buscas, páginas ou recolher o catálogo, com resumo e remoção individual antes de seguir. Ofertas indisponíveis e já seguidas não podem ser adicionadas novamente. Os dados continuam em memória e são descartados na troca de usuário.
-
-Validação do refinamento: Playwright cobre agrupamento, teclado, seleção entre buscas, fechamento/reabertura e bloqueio de ofertas indisponíveis em 360, 768 e 1365 px, nos temas claro/escuro. Inspeção visual das capturas e build de produção complementam os testes; usam catálogo e autenticação simulados.
+A interface adapta layouts de calendário, modais, catálogo de turmas e tabelas de moderação/administração para desktop, tablet e celular (validados nas larguras de 360 px, 768 px e 1365 px nos temas claro e escuro), preservando áreas de toque adequadas, navegação por teclado e atributos ARIA em diálogos, notificações e abas.

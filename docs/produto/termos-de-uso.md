@@ -3,53 +3,55 @@ title: "Termos de Uso"
 description: "Regras de uso do Agenda UnB."
 ---
 
-**Versão 2026-11-20.**
+**Versão 2026-11-20.** Estes Termos de Uso regulam o acesso e a utilização da plataforma **Agenda UnB**. Ao criar uma conta ou utilizar os recursos do sistema, você declara estar ciente e de acordo com as condições estabelecidas abaixo.
 
-## 1. O que é o Agenda UnB
+## 1. Natureza do serviço
 
-Uma plataforma acadêmica, desenvolvida por estudantes na disciplina Métodos de Desenvolvimento de Software (UnB, 2026/2), que reúne eventos da universidade e ajuda a organizar a agenda de estudos. **Não é um serviço oficial da Universidade de Brasília** e pode ser alterada ou encerrada ao fim do projeto.
+O Agenda UnB é uma plataforma web acadêmica, gratuita e sem fins comerciais, desenvolvida por estudantes na disciplina Métodos de Desenvolvimento de Software da Universidade de Brasília (UnB, 2026/2) para centralizar eventos universitários e auxiliar na organização pessoal de estudos. **O Agenda UnB não é um serviço oficial da Universidade de Brasília** e pode ser modificado, suspenso ou encerrado ao término do ciclo acadêmico ou por necessidade operacional.
 
-## 2. Conta
+## 2. Cadastro, conta e perfis de acesso
 
-- Informe dados verdadeiros e mantenha a senha em sigilo. Você responde pelo uso da sua conta.
-- O papel de professor exige e-mail institucional `@unb.br` confirmado.
-- Você pode excluir sua conta a qualquer momento em **Configurações** (mediante confirmação explícita) ou solicitar apoio pelo canal de contato.
+Para utilizar os recursos autenticados da plataforma, o usuário compromete-se a fornecer informações verdadeiras, manter suas credenciais em sigilo e responder integralmente pelas ações realizadas em sua conta.
 
-## 3. As informações não são oficiais
+A atribuição do perfil de professor por autocadastro ou atualização própria exige e-mail institucional `@unb.br` devidamente confirmado. O usuário pode solicitar a exclusão definitiva de sua conta a qualquer momento em **Configurações**, mediante confirmação explícita, ou solicitar apoio pelo canal oficial de contato indicado na seção 9.
 
-- Datas de provas e trabalhos extraídas de planos de ensino são **sugestões geradas automaticamente** e podem estar erradas. Confira sempre com o plano original e com o professor.
-- Planos compartilhados e votos vêm de outros estudantes. Voto não é prova de que uma data está certa.
-- Seguir uma turma é uma declaração sua e não comprova matrícula.
-- Eventos coletados de fontes públicas indicam a origem. Horário, local e inscrição devem ser confirmados na página do organizador.
-- A plataforma não substitui o SIGAA nem os canais oficiais da UnB.
+## 3. Caráter não oficial das informações
 
-## 4. O que você pode publicar
+As informações exibidas na plataforma possuem caráter estritamente auxiliar e informativo:
 
-Ao sugerir um evento ou enviar um plano, você declara que tem o direito de usar e compartilhar o conteúdo que será disponibilizado. Não é permitido:
+- Datas de provas, trabalhos e entregas extraídas de planos de ensino são **sugestões geradas automaticamente** e podem conter imprecisões ou omissões. Cabe ao usuário conferir todas as informações diretamente com o plano original e com o docente responsável.
+- Versões de planos compartilhadas e eventuais votos refletem contribuições de outros usuários da comunidade e não constituem validação oficial da disciplina.
+- O vínculo declarado com uma turma no catálogo tem finalidade exclusiva de organização pessoal e não comprova matrícula nem gera efeitos acadêmicos.
+- Eventos públicos coletados de fontes institucionais indicam sua procedência; horários, locais e eventuais inscrições devem ser confirmados diretamente na página do organizador.
+- O Agenda UnB não substitui o SIGAA nem os canais de comunicação oficiais da Universidade de Brasília.
 
-- publicar conteúdo ilegal, ofensivo, discriminatório ou enganoso;
-- divulgar dados pessoais de outras pessoas sem autorização;
-- compartilhar material que o autor não autorizou divulgar;
-- tentar acessar dados de outras contas, burlar permissões ou sobrecarregar o serviço.
+## 4. Conduta e conteúdo publicado
 
-Sugestões de eventos passam por moderação. A equipe pode recusar ou remover conteúdo e suspender contas que descumpram estes termos.
+Ao sugerir um evento público ou enviar um plano de ensino, o usuário declara possuir legitimidade e autorização para utilizar e disponibilizar o respectivo conteúdo na forma prevista pela plataforma. É expressamente vedado:
 
-## 5. Conteúdo que você compartilha
+- publicar ou sugerir conteúdo ilegal, ofensivo, discriminatório, difamatório ou deliberadamente enganoso;
+- divulgar dados pessoais de terceiros sem base legal ou autorização;
+- compartilhar materiais protegidos cujo uso ou divulgação não tenha sido autorizado pelo titular dos direitos;
+- tentar acessar dados de outras contas, contornar controles de autorização, explorar vulnerabilidades ou sobrecarregar intencionalmente a infraestrutura do serviço.
 
-O conteúdo continua seu. Ao enviar um plano para uma turma, você autoriza o compartilhamento da primeira versão com avaliações extraídas quando consultar ou confirmar o resultado. As pessoas que seguem a turma podem consultar a versão e importar as datas para as próprias agendas. Você pode retirar o compartilhamento em **Plano de Ensino** ou apagar todos os seus planos ao excluir a conta em **Configurações**; as cópias já importadas por outras pessoas permanecem com elas.
+Sugestões de eventos públicos submetem-se à moderação. A equipe mantenedora reserva-se o direito de recusar, editar ou remover conteúdos incompatíveis com estes Termos, bem como suspender ou encerrar contas em caso de violação.
 
-## 6. Disponibilidade
+## 5. Titularidade e compartilhamento de conteúdo
 
-O serviço é oferecido como está, em infraestrutura gratuita, sem garantia de funcionamento contínuo. Avisos e notificações podem atrasar ou falhar. **Não dependa apenas da plataforma para prazos importantes.**
+O conteúdo enviado permanece de titularidade do usuário que o submeteu. Ao enviar um plano de ensino vinculado a uma turma, você autoriza que a primeira versão com avaliações extraídas seja disponibilizada para visualização e importação por seguidores autenticados da mesma oferta quando você consultar ou confirmar o resultado. O compartilhamento pode ser retirado a qualquer momento na página **Plano de Ensino**, e todos os planos vinculados à conta podem ser eliminados mediante exclusão da conta em **Configurações**. Cópias individuais já importadas anteriormente por outros usuários permanecem em suas respectivas agendas pessoais.
 
-## 7. Privacidade
+## 6. Disponibilidade e limitação de responsabilidade
 
-O tratamento de dados está descrito na [Política de Privacidade](/produto/politica-de-privacidade). Aceitar estes termos não é o mesmo que consentir com tratamentos específicos: o envio de texto sanitizado ao Gemini e a conexão com o Google Agenda pedem autorização própria. O consentimento do Google Agenda pode ser revogado a qualquer momento em **Configurações** ou **Meus Eventos**.
+O serviço é disponibilizado no estado em que se encontra, hospedado em infraestrutura gratuita, sem garantia de disponibilidade ininterrupta, ausência de falhas ou entrega garantida de avisos e notificações. **Não dependa exclusivamente da plataforma para o cumprimento de prazos acadêmicos ou compromissos críticos.** Na extensão máxima permitida pela legislação aplicável, a equipe mantenedora não se responsabiliza por perdas decorrentes de indisponibilidade temporária, atrasos de processamento ou falhas em serviços de terceiros.
 
-## 8. Mudanças
+## 7. Privacidade e consentimentos específicos
 
-Cada versão é identificada pela data de vigência. Mudanças relevantes serão comunicadas na plataforma, com novo registro de leitura ao entrar ou em **Configurações**.
+O tratamento de dados pessoais realizado pelo Agenda UnB está detalhado na [Política de Privacidade](/produto/politica-de-privacidade). A aceitação destes Termos de Uso não substitui consentimentos específicos exigidos para funcionalidades opcionais: o envio de texto sanitizado de um plano de ensino para extração no modelo Gemini e a conexão com o Google Agenda exigem autorização própria e explícita do usuário. O consentimento concedido ao Google Agenda pode ser revogado a qualquer momento em **Configurações** ou desconectado diretamente em **Meus Eventos**.
+
+## 8. Alterações destes termos
+
+Cada versão destes Termos de Uso é identificada pela sua data de vigência no cabeçalho do documento. Alterações relevantes serão comunicadas na plataforma, com solicitação de novo registro de leitura no acesso seguinte ou na seção **Configurações**.
 
 ## 9. Contato
 
-[unbagenda@gmail.com](mailto:unbagenda@gmail.com). Pessoas de contato: Felipe Couto Duque e Thomas Augusto Amorim de Araujo.
+Para dúvidas, comunicações ou solicitações relacionadas a estes Termos de Uso, entre em contato pelo canal oficial da equipe mantenedora: [unbagenda@gmail.com](mailto:unbagenda@gmail.com).

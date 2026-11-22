@@ -17,9 +17,9 @@ Utilizamos **Inglês** para os nomes de domínio da API e rotas. O banco existen
 | **Papel / Tipo de Usuário** | `Role` | Nível de acesso do usuário (`student`, `professor`, `admin`). |
 | **Evento / Compromisso** | `Event` | Registro de uma atividade na agenda (acadêmica pessoal ou geral do campus). |
 | **Plano de Ensino** | `Syllabus` | Arquivo (PDF ou texto) enviado para extração automática de datas acadêmicas. |
-| **Candidato a Avaliação** | `AssessmentCandidate` | Sugestão privada com evidência de página/trecho; só vira compromisso após revisão futura. |
+| **Candidato a Avaliação** | `AssessmentCandidate` | Sugestão privada ou compartilhada de avaliação com evidência de página/trecho; só entra na agenda pessoal após revisão e confirmação explícita do usuário. |
 | **Calendário / Agenda** | `Calendar` | Coleção/agrupamento de eventos de um usuário ou do campus. |
-| **Categoria / Etiqueta** | `Category` | Classificação do evento (ex: *Prova*, *Trabalho*, *Seminário*, *Cultural*, *Palestra*). |
+| **Categoria / Etiqueta** | `Category` | Classificação de evento público ou pessoal (ex: *Acadêmico*, *Cultura*, *Esporte*, *Extensão*, *Lazer*, *Comunicado*), distinta dos tipos de avaliação (*Prova*, *Trabalho*, *Seminário*). |
 | **Notificação** | `Notification` | Aviso persistido de submissão, aprovação ou recusa de sugestão. |
 | **Lembrete** | `Reminder` | Alerta futuro programado antes do início de um evento. |
 | **Evento público salvo** | `SavedPublicEvent` | Vínculo do usuário com um evento público na agenda pessoal. |
@@ -29,11 +29,8 @@ Utilizamos **Inglês** para os nomes de domínio da API e rotas. O banco existen
 
 ## 2. Convenções de Escrita (*Naming Conventions*)
 
-No worker S6-B01, preservar os nomes portugueses do contrato S6-D01 em candidatos
-e metadados de IA; respostas de rastreamento HTTP usam aliases `camelCase`.
-Estados do plano são `pendente`, `processando`, `concluido` e `falha`; estados do
-candidato são `pendente`, `descartado` e `confirmado`. O extrator só grava
-`pendente`, sem confirmar ou converter em evento. [ADR-003](/arquitetura/adrs/adr-003-minimizar-dados-de-planos) · [ADR-014](/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia).
+No worker de extração, os nomes em português do contrato de persistência em candidatos e metadados de IA são preservados; respostas de rastreamento HTTP usam aliases `camelCase`.
+Os estados do plano são `pendente`, `processando`, `concluido` e `falha`; os estados do candidato são `pendente`, `descartado` e `confirmado`. O extrator grava apenas `pendente`, sem confirmar ou converter em evento. Consulte [ADR-003](/arquitetura/adrs/adr-003-minimizar-dados-de-planos) e [ADR-014](/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia).
 
 | Elemento | Padrão | Exemplo |
 | :--- | :--- | :--- |
@@ -64,15 +61,16 @@ candidato são `pendente`, `descartado` e `confirmado`. O extrator só grava
 
 ### 📅 `Event` / `eventos` (Evento Público / Campus)
 * `id`: Identificador único do evento (`UUID`)
-* `autor_id` / `author_id`: ID do criador do evento (Chave Estrangeira em `profiles.id`)
+* `autor_id` / `author_id`: ID do criador do evento (nulo em eventos coletados de fontes institucionais)
 * `titulo` / `title`: Título do evento
 * `descricao` / `description`: Detalhes, ementa ou notas sobre a atividade
 * `localizacao` / `location`: Local físico ou link
-* `data_evento` / `starts_at`: Data e hora de início (`ISO 8601`)
+* `data_evento` / `starts_at` e `data_fim` / `ends_at`: Início e fim exclusivo (`ISO 8601`), acompanhados de `dia_inteiro` / `all_day`, `data_inicio_civil` / `start_date` e `data_fim_civil` / `end_date`
 * `link_externo` / `external_url`: URL externa oficial
 * `campus_id`: ID do campus associado
 * `category_id`: ID da categoria associada
 * `status`: Status de moderação (`"pendente"`, `"aprovado"`, `"rejeitado"`)
+* `justificativa_recusa`, `interessados_count` e `sugestao_estudante`: Metadados de moderação e contagem agregada de redirecionamentos em "Conferir evento"
 * `criado_em`: Data de registro no sistema
 
 ### 📅 `PersonalEvent` / `eventos_pessoais` (Evento Pessoal / Agenda Privada)
@@ -80,16 +78,22 @@ candidato são `pendente`, `descartado` e `confirmado`. O extrator só grava
 * `user_id`: ID do proprietário (`UUID`, restrito via RLS)
 * `titulo` / `title`: Título do compromisso ou prazo
 * `descricao` / `description`: Detalhes sobre o prazo
-* `data_hora` / `starts_at`: Data e hora do compromisso (`ISO 8601`)
-* `campus_id`: ID do campus (opcional)
-* `category_id`: ID da categoria associada (opcional)
+* `localizacao` / `location`: Local opcional do compromisso
+* `data_hora` / `starts_at` e `data_fim` / `ends_at`: Início e fim exclusivo (`ISO 8601`), com suporte a `dia_inteiro`, `data_inicio_civil` e `data_fim_civil`
+* `campus_id` e `category_id`: Associações opcionais
+* `origem_versao_id` e `origem_avaliacao_id`: Rastreio opcional da avaliação importada de um plano (com unicidade para importação idempotente)
 * `criado_em`: Data de criação
 
-### 📄 `Syllabus` / `planos_ensino`
+### 📄 `Syllabus`, `SyllabusVersion`, `Subject`, `ClassOffering` e `ClassFollow`
+* `Syllabus` / `planos_ensino`: Guarda metadados do envio, vínculo à oferta, texto sanitizado e estados `pendente`, `processando`, `concluido` e `falha`. O PDF é descartado após a extração local, e a autorização sobre o texto exato é registrada antes do envio à IA. Consulte [Dados de planos](/arquitetura/dados-de-planos), [ADR-003](/arquitetura/adrs/adr-003-minimizar-dados-de-planos) e [ADR-014](/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia).
+* `SyllabusVersion` / `versoes_plano`: Versões de um plano, `privada` por padrão ou `compartilhada` na oferta; leitura pelo dono ou por seguidores da turma quando compartilhada. `avaliacoes` referencia `versao_id` e `ordem`.
+* `Subject` / `disciplinas` e `ClassOffering` / `ofertas_turma`: Disciplina e sua oferta em um período (`turma`, `ano`, `semestre` 1 ou 2), com leitura pública e escrita restrita ao back-end.
+* `ClassFollow` / `vinculos_turma`: Chave `(user_id, oferta_id)`, representando vínculo autodeclarado com leitura restrita ao próprio usuário.
 
-O esquema atual guarda metadados do envio e os estados `pendente`, `processando`, `concluido` e `falha`. O [contrato de plano e versão](/atualizacoes#contratos-da-release-2) detalha seleção de oferta, descarte do PDF e migração.
-
-A API prepara e sanitiza PDF/texto localmente, descarta o PDF e registra a autorização sobre o texto exato antes do envio à IA. Consulte a [ADR-003](/arquitetura/adrs/adr-003-minimizar-dados-de-planos) e a [ADR-014](/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia).
+### 🔔 `SavedPublicEvent`, `Notification` e `Reminder`
+* `SavedPublicEvent` / `eventos_salvos`: Chave composta `(user_id, event_id)`, `criado_em`, referências com exclusão em cascata e RLS por proprietário.
+* `Notification` / `notificacoes`: `id`, `usuario_id`, `evento_id`, `tipo` (`submissao`, `aprovacao`, `recusa`), `titulo_evento`, `justificativa`, `criado_em`, `lida_em`. Leitura e atualização restritas ao destinatário.
+* `Reminder` / `lembretes`: Alertas agendados 24 horas antes do início dos eventos da agenda do próprio usuário.
 
 ### 🏷️ `Category` / `categories` (Categoria)
 * `id`: Identificador da categoria (`UUID`)
@@ -98,25 +102,12 @@ A API prepara e sanitiza PDF/texto localmente, descarta o PDF e registra a autor
 
 ---
 
-## 4. Contratos e rotas disponíveis
+## 4. Contratos, exceções preservadas e manutenção
 
-O [inventário do backend](/api-specs) descreve rotas disponíveis. Os [contratos da Release 2](/atualizacoes#contratos-da-release-2) descrevem a evolução. As rotas de negócio usam `/api/v1`, com `/health` como exceção. Autenticação usa Supabase Auth e moderação/administração usam RPCs.
+O [inventário do backend](/api-specs) e o [modelo de dados](/arquitetura/modelo-de-dados) documentam todas as rotas, payloads e tabelas da plataforma. As rotas de negócio usam o prefixo `/api/v1`, com `/health` como exceção; autenticação usa Supabase Auth e fluxos de moderação/administração usam RPCs do PostgreSQL e rotas dedicadas da API.
 
-A API usa campos em inglês, geralmente `snake_case` (`starts_at`, `external_url`); os filtros de data usam os aliases existentes `startDate` e `endDate`. Papéis são `student`, `professor`, `admin`; status de eventos são `pendente`, `aprovado`, `rejeitado`. Preservar esses valores na integração.
-
-## 5. Respostas e manutenção
+A API utiliza campos JSON em inglês (`snake_case` na maior parte das rotas, como `starts_at` e `external_url`, e `camelCase` nos fluxos de rastreamento/confirmação de planos e filtros `startDate`/`endDate`). No banco de dados, preservam-se nomes legados como `profiles`, `categories`, `user_id`, `professor_id`, `category_id`, `event_id`, os mapeamentos distintos de início em `eventos.data_evento` e `eventos_pessoais.data_hora`, bem como os valores de papel (`student`, `professor`, `admin`) e de status em português (`pendente`, `aprovado`, `rejeitado`, `processando`, `concluido`, `falha`, `descartado`, `confirmado`).
 
 Usar os códigos e envelopes documentados por operação em [API](/api-specs#erros-fastapi). RPCs retornam erros pelo caminho do Supabase/PostgreSQL.
 
-Mudanças de contratos e convenções devem atualizar esta documentação no mesmo PR. Registrar limitações observadas em vez de alterar o comportamento descrito para o comportamento desejado. Decisões e evidências ficam em [Arquitetura](/arquitetura/visao-geral); hospedagem proposta fica em [Implantação](/implantacao).
-
-## 6. Entidades adicionadas após a R1
-
-- `SavedPublicEvent` / `eventos_salvos`: chave composta `(user_id, event_id)`, `criado_em`, referências com exclusão em cascata e RLS por proprietário; sem política de UPDATE.
-- `notificacoes`: `id`, `usuario_id`, `evento_id`, `tipo` (`submissao`, `aprovacao`, `recusa`), `titulo_evento`, `justificativa`, `criado_em`, `lida_em`. Somente o destinatário lê e marca como lida.
-- `eventos`: acrescenta `justificativa_recusa`, `interessados_count` e `sugestao_estudante`. Status persistidos continuam em português: `pendente`, `aprovado`, `rejeitado`.
-- `Subject` / `disciplinas` e `ClassOffering` / `ofertas_turma` (S7-D01): disciplina abstrata e sua oferta em um período (`turma`, `ano`, `semestre` 1 ou 2). Catálogo com leitura pública; escrita pelo back-end.
-- `ClassFollow` / `vinculos_turma` (S7-D01): chave `(user_id, oferta_id)`, vínculo autodeclarado; leitura só do próprio usuário.
-- `SyllabusVersion` / `versoes_plano` (S7-D01): versões do plano, `privada` por padrão ou `compartilhada`; leitura pelo dono ou por quem segue a oferta quando compartilhada. `avaliacoes` passa a ter `versao_id` e `ordem`, e `eventos_pessoais` ganha `origem_versao_id` com unicidade por `(user_id, origem_avaliacao_id)`.
-
-O estado atual está em [Atualizações pós-R1](/atualizacoes). As exceções de nomes existentes e o plano de migração estão nos [contratos da Release 2](/atualizacoes#contratos-da-release-2).
+Mudanças de contratos e convenções devem atualizar esta documentação juntamente com o código, mantendo alinhamento com [Arquitetura](/arquitetura/visao-geral) e [Implantação](/implantacao).

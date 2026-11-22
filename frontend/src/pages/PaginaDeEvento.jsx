@@ -329,7 +329,7 @@ export default function PaginaDeEvento() {
                     href={eventoCarregado.fonteUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    style={{ color: '#008bff', fontWeight: 600, textDecoration: 'underline' }}
+                    style={{ color: isDark ? '#008bff' : '#005fd2', fontWeight: 600, textDecoration: 'underline' }}
                   >
                     Agenda UnB Notícias
                   </a>

@@ -878,7 +878,7 @@ export default function SegundaPagina() {
   const bgColor = isDark ? '#080c16' : '#f0f4f8';
   const cardBg = isDark ? '#1a2235' : '#ffffff';
   const textColor = isDark ? '#ffffff' : '#1a1a2e';
-  const textMuted = isDark ? '#94a3b8' : '#64748b';
+  const textMuted = isDark ? '#94a3b8' : '#526278';
   const accentColor = '#008bff';
   const borderColor = isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)';
 

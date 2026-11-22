@@ -809,19 +809,7 @@ body.light .events-view-toggle .btn-toggle-item.active {
   .events-view-toggle .btn-toggle-item { transition: none; }
 }
 
-/* Modal */
-.modal-overlay {
-  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-  background-color: rgba(0,0,0,0.75); backdrop-filter: blur(6px);
-  display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 1rem;
-}
-.modal-container {
-  background-color: var(--card-bg); border-radius: 24px; padding: 2rem;
-  width: 100%; max-width: 580px; border: 1px solid var(--border-color);
-  box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); position: relative; max-height: 90vh; overflow-y: auto;
-}
-.modal-close { position: absolute; top: 16px; right: 16px; background: none; border: none; color: var(--text-muted); cursor: pointer; }
-.modal-title { margin-bottom: 1.5rem; color: var(--accent-color); font-family: 'Orbitron', sans-serif; font-size: 1.3rem; display: flex; align-items: center; gap: 8px; }
+/* Modal (formulário em SecondPage) */
 .modal-form { display: flex; flex-direction: column; gap: 1.2rem; }
 .modal-label { display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--text-muted); font-weight: 600; }
 
@@ -1125,7 +1113,7 @@ body.light .time-picker-item:hover {
 }
 
 .ds-btn-primary:hover {
-  background-color: #008bff;
+  background-color: #006dc7;
   box-shadow: 0 8px 32px rgba(0, 139, 255, 0.4);
   transform: translateY(-2px);
 }

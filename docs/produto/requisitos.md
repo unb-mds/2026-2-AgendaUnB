@@ -12,9 +12,9 @@ Este documento reúne os **Requisitos Funcionais (RF)** e **Requisitos Não Func
 | ID | Nome | Descrição |
 | :-- | :-- | :-- |
 | **RF01** | **Autenticação Local** | O sistema deve permitir que os usuários façam login e se autentiquem com e-mail (institucional ou pessoal) e senha criptografada. |
-| **RF02** | **Cadastro de Usuários** | O sistema deve permitir o cadastro de novos usuários informando nome completo, e-mail e senha, com confirmação de senha. |
+| **RF02** | **Cadastro de Usuários** | O sistema deve permitir o cadastro de novos usuários informando nome completo, e-mail e senha, com confirmação de senha. O autocadastro como professor exige e-mail institucional `@unb.br` confirmado. |
 | **RF03** | **Autenticação Google (OAuth)** | O sistema deve permitir cadastro e login ágil com um clique utilizando contas Google. |
-| **RF04** | **Categorização por Papel (Role)** | O sistema deve categorizar e conceder permissões ao usuário conforme seu perfil: Estudante (`student`), Professor (`professor`) ou Administrador (`admin`). Administradores possuem permissão exclusiva para alterar os papéis de outros usuários. |
+| **RF04** | **Categorização por Papel (Role)** | O sistema deve categorizar e conceder permissões ao usuário conforme seu perfil: Estudante (`student`), Professor (`professor`) ou Administrador (`admin`). A obtenção própria do papel `professor` exige e-mail institucional `@unb.br` confirmado; administradores possuem permissão exclusiva para alterar os papéis de outros usuários via painel administrativo. |
 | **RF05** | **Seleção de turma e envio de plano** | O usuário autenticado deve selecionar manualmente uma oferta do catálogo público do Followw e registrar vínculo autodeclarado. Na indisponibilidade da fonte, o sistema usa o último catálogo válido. Sem a oferta no catálogo disponível, bloqueia o envio do plano. Aceita PDF digital com texto selecionável ou texto bruto para processamento. |
 | **RF06** | **Extração assistida de avaliações** | Extrair candidatos a provas e trabalhos com evidência de origem e indicação de datas incertas. O envio autoriza a análise do texto sanitizado automaticamente no servidor, que descarta o PDF após a leitura local. Avaliações entram na agenda após confirmação explícita, com seleção múltipla, confirmação em lote e correção de campos ambíguos. |
 | **RF07** | **Revisão e colaboração por turma** | Planos começam privados. A primeira versão com candidatos de uma oferta é compartilhada quando o autor consulta ou confirma o resultado. Seguidores autenticados podem votar, importar para a própria agenda e publicar revisões de conteúdo compartilhado. Novas extrações ficam privadas até publicação. Autor ou admin podem retirar o compartilhamento ou avaliações individuais. Revisões e cópias já importadas preservam a própria visibilidade e titularidade. A interface distingue autoria de estudante, professor ou admin e procedência institucional comprovada. |
@@ -25,13 +25,12 @@ Este documento reúne os **Requisitos Funcionais (RF)** e **Requisitos Não Func
 | **RF12** | **Evento público na agenda e acesso à fonte** | O sistema deve oferecer duas ações independentes. Adicionar aos meus eventos salva um vínculo na agenda pessoal do usuário. Conferir evento abre o link original, quando disponível, e conta o redirecionamento em uma métrica agregada. A inscrição, quando exigida, ocorre no canal do organizador. |
 | **RF13** | **Remoção de evento público da agenda** | O usuário deve poder remover seu próprio vínculo com um evento público. A remoção é idempotente e cancela lembretes futuros associados ao vínculo. |
 | **RF14** | **Resumo e Detalhes do Evento** | O sistema deve fornecer uma página/modal com a descrição completa do evento, data, horário, local e link externo oficial da organização. |
-| **RF15** | **Divulgação Multi-campus** | O sistema deve organizar e divulgar eventos que ocorram em todos os campi da UnB (Darcy Ribeiro, FGA/FCTE, FCE/FCTS, FUP e FAL). |
+| **RF15** | **Divulgação Multi-campus** | O sistema deve organizar e divulgar eventos que ocorram em todos os campi da UnB (Darcy Ribeiro (Plano Piloto), FCTE (Gama), FCTS (Ceilândia), FUP (Planaltina) e FAL). |
 | **RF16** | **Coleta de eventos institucionais** | A primeira fonte é a Agenda UnB Notícias. O sistema deve coletar periodicamente, deduplicar e publicar automaticamente eventos completos da fonte. Itens ambíguos, incompletos ou possivelmente duplicados seguem para revisão. |
 | **RF17** | **Lembretes na plataforma** | O sistema deve persistir um lembrete 24 horas antes do início para cada evento da agenda do próprio usuário, incluindo compromissos privados e eventos públicos adicionados. O usuário pode consultar o aviso ao voltar à plataforma. |
-| **RF18** | **Histórico da agenda pessoal** | Retirado do escopo da R2. Meus Eventos usa a lista e o calendário da agenda, com filtro por período. |
-| **RF19** | **Filtros e Busca de Eventos** | O sistema deve permitir filtrar e classificar eventos por categoria (prova, trabalho, palestra, cultural), campus/instituto e intervalo de datas. |
+| **RF18** | **Exportação de calendário** | O usuário deve poder selecionar período e eventos da própria agenda e exportá-los diretamente para uma agenda secundária Agenda UnB pela Google Calendar API. A exportação direta exige consentimento adicional do Calendar e conta Google com e-mail verificado correspondente ao e-mail confirmado da Agenda UnB. A conexão também está disponível para quem entrou com e-mail e senha. |
+| **RF19** | **Filtros e Busca de Eventos** | O sistema deve permitir filtrar e classificar eventos por categoria (`Acadêmico`, `Cultura`, `Esporte`, `Extensão`, `Lazer`, `Comunicado`), campus e intervalo de datas, diferenciando visualmente eventos e avaliações (como `Prova` e `Trabalho`) na agenda pessoal. |
 | **RF20** | **Alternância de Tema (Dark / Light)** | O sistema deve disponibilizar alternância de tema visual entre modo escuro (_Dark Mode_) e modo claro (_Light Mode_). |
-| **RF21** | **Exportação de calendário** | O usuário deve poder selecionar período e eventos da própria agenda e exportá-los diretamente para uma agenda secundária Agenda UnB pela Google Calendar API. A exportação direta exige consentimento adicional do Calendar e conta Google com e-mail verificado correspondente ao e-mail confirmado da Agenda UnB. A conexão também está disponível para quem entrou com e-mail e senha. |
 
 ---
 
@@ -48,7 +47,7 @@ Os requisitos não funcionais estão divididos de acordo com a norma **ISO/IEC 2
 
 ### 2.2 Desempenho e Eficiência (Performance)
 
-- **RNF05 — Tempo de Resposta da API:** Pelo menos 95% das requisições de consulta de eventos (`GET /events`) devem ser respondidas pelo servidor em até **300 milissegundos** sob condições normais de uso.
+- **RNF05 — Tempo de Resposta da API:** Pelo menos 95% das requisições de consulta de eventos (`GET /api/v1/events`) devem ser respondidas pelo servidor em até **300 milissegundos** sob condições normais de uso.
 - **RNF06 — Desempenho da extração.** A meta é inferior a **20 segundos** do início do envio à disponibilização de candidatos de um plano de até 10 páginas. Medir transferência, validação, preparação local, fila e processamento externo. Exibir o andamento sem impedir outras ações.
 
 ### 2.3 Usabilidade e Acessibilidade (Usability)

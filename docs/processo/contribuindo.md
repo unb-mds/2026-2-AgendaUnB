@@ -13,9 +13,9 @@ O [guia de execução local](/processo/execucao-local) reúne os pré-requisitos
 
 ## Adicionar uma página de documentação
 
-Crie a página em `docs/` como `.md` para Markdown comum ou `.mdx` se usar componentes do Mintlify. Para incluí-la no menu do Mintlify, adicione a rota sem extensão ao `docs.json`. Nos arquivos compartilhados, use links internos a partir da raiz da documentação, sem `/docs` e sem a extensão `.md`. Por exemplo, `[Requisitos](/produto/requisitos)`. Para arquivos de código, configuração e resultados JSON, use o link do arquivo no GitHub.
+Crie a página em `docs/` como `.md` para Markdown comum ou `.mdx` se usar componentes do Mintlify. Para incluí-la no menu do Mintlify, adicione a rota sem extensão em `docs/docs.json` (a partir de `docs/`, como `/produto/requisitos`; o Mintlify aplica o prefixo público `/docs`). Nos documentos, use links internos a partir da raiz da documentação, sem `/docs` e sem a extensão `.md` (por exemplo, `[Requisitos](/produto/requisitos)`). Para arquivos de código, configuração e resultados JSON, use o link do arquivo no GitHub.
 
-Para incluir uma página compartilhada no menu do MkDocs, adicione o caminho com extensão à navegação de `.github/mkdocs.yml`. As páginas são organizadas por assunto em `docs/arquitetura/`, `docs/produto/` e `docs/processo/`. Ao mover uma página publicada, atualize os links e configure o redirecionamento nos dois sites. Em `docs.json`, use a rota do arquivo a partir de `docs/`, como `/produto/requisitos`. O Mintlify aplica o prefixo público `/docs`.
+As páginas são organizadas por assunto em `docs/arquitetura/`, `docs/produto/` e `docs/processo/`. Ao mover uma página publicada, atualize os links internos e configure o redirecionamento em `docs/docs.json`.
 
 ---
 
@@ -32,14 +32,14 @@ Use `status: <incompleto>` e mantenha o PR como Draft enquanto houver qualquer c
 Preencha o [template de PR](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/.github/PULL_REQUEST_TEMPLATE.md) com contexto, mudanças, testes, resultados, impactos e pendências. O template orienta o fluxo; não sincroniza checklists nem bloqueia merges automaticamente.
 
 
-Para manter a organização das entregas nas Sprints de MDS, utilizamos branches nomeadas por tipo de tarefa:
+Utilizamos branches nomeadas por tipo de tarefa:
 
-- `main`: Código em produção/estável e versão final de cada Sprint.
+- `main`: Código em produção/estável.
 - `develop` (ou branches de feature direto para a main com Pull Request):
   - `feat/<nome-da-funcionalidade>`: Para novas funcionalidades (ex: `feat/upload-plano-ensino`).
   - `fix/<correcao>`: Para resolução de bugs (ex: `fix/video-background`).
   - `docs/<documentacao>`: Para atualizações na documentação (ex: `docs/arquitetura`).
-  - `chore/<tarefa>`: Para tarefas de manutenção ou infraestrutura (ex: `chore/config-mkdocs`).
+  - `chore/<tarefa>`: Para tarefas de manutenção ou infraestrutura (ex: `chore/config-ci`).
 
 ---
 
@@ -60,7 +60,7 @@ Exemplos:
 
 ## Atualizações de banco e verificações {#setup-verificacoes}
 
-O estado atual inclui eventos salvos, sugestões, moderação, notificações e administração. Aplique todas as migrações em ordem antes de disponibilizar a API/frontend correspondente. Para atualizar o Supabase local já iniciado sem recriar o banco:
+As migrações do banco cobrem eventos públicos e pessoais, eventos salvos, sugestões, moderação, notificações, administração, catálogo de turmas, planos de ensino, lembretes, exportação para o Google Agenda e privacidade. Aplique todas as migrações em ordem antes de disponibilizar a API e o frontend correspondentes. Para atualizar o Supabase local já iniciado sem recriar o banco:
 
 ```bash
 npx supabase migration up --local
@@ -87,11 +87,11 @@ npm run build
 node --test src/lib/calendar.test.js
 ```
 
-Tabelas e funções novas nascem fechadas para a API do Supabase: siga as [regras para novas migrações](seguranca.md#regras-para-novas-migracoes), ou os testes estruturais de segurança falham.
+Tabelas e funções novas nascem fechadas para a API do Supabase: siga as [regras para novas migrações](/processo/seguranca#regras-para-novas-migracoes), ou os testes estruturais de segurança falham.
 
 Os testes de API usam SQLite. Para exercitar RLS, RPCs e triggers reais, configure `TEST_SUPABASE_DB_URL` com a conexão PostgreSQL do Supabase local e execute pytest. Os testes de banco só aceitam `localhost`/`127.0.0.1`, desfazem os dados ao terminar e são ignorados quando a variável não está configurada. Não use uma conexão de produção.
 
-Ao alterar uma funcionalidade, atualize os guias correspondentes e o estado em [Atualizações pós-R1](/atualizacoes). Notas de versões anteriores são registros históricos. Registre uso relevante de IA em [Uso de IA](/processo/uso-de-ia), incluindo o que foi efetivamente verificado.
+Ao alterar uma funcionalidade, atualize os guias correspondentes. Notas de versões anteriores são registros históricos. Registre uso relevante de IA em [Uso de IA](/processo/uso-de-ia), incluindo o que foi efetivamente verificado.
 
 ## Manutenção da documentação
 
@@ -109,12 +109,3 @@ npx mint dev
 ```
 
 Abra [http://localhost:3000](http://localhost:3000). Na pasta `docs/`, execute `npx mint broken-links --check-redirects` para conferir links e redirecionamentos.
-
-Para visualizar o site do MkDocs, instale as dependências em um ambiente virtual Python e execute na raiz:
-
-```bash
-python -m pip install mkdocs-material mkdocs-redirects
-make docs
-```
-
-Abra [http://127.0.0.1:8008](http://127.0.0.1:8008). Para validar a compilação do MkDocs, use `mkdocs build -f .github/mkdocs.yml --strict`.

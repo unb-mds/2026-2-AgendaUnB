@@ -1,7 +1,9 @@
 ---
 title: "ADR-009 · Integrar o catálogo público de turmas com identidade local e cache"
-description: "Decisão, consequências e critérios de verificação: integrar o catálogo público de turmas com identidade local e cache."
+description: "Decisão de sincronizar o catálogo público Followw localmente com identidade imutável e fallback em cache."
 ---
+
+# ADR-009 · Integrar o catálogo público de turmas com identidade local e cache
 
 | Campo | Valor |
 | --- | --- |
@@ -10,32 +12,30 @@ description: "Decisão, consequências e critérios de verificação: integrar o
 | Rastreabilidade | RF05; RNF11 |
 | Substitui | Nenhuma ADR |
 
-Decisão implementada em `backend/src/modules/classes/` e nas migrações `20261109120000`, `20261110142000` e `20261111120000`.
-
 ## Contexto
 
-A seleção de turma precisa identificar ofertas de semestres distintos e continuar utilizável quando a fonte externa falhar. A integração não comprova matrícula oficial.
+A seleção de turmas no fluxo de planos de ensino precisa identificar ofertas de semestres distintos de forma estável e permanecer utilizável mesmo quando a fonte externa estiver indisponível. Além disso, o vínculo da conta com uma oferta é autodeclarado e não constitui comprovação de matrícula oficial.
 
 ## Decisão
 
-Consultar o catálogo público Followw pelo backend (`GET /public/classrooms/units`, `GET /public/subjects`, `GET /public/classrooms`), atribuir UUID local imutável à oferta e registrar vínculo autodeclarado único por `(user_id, oferta_id)`. Preservar zeros no número da turma; professor e horário são atributos atualizáveis. Respeitar o limite observado da origem (600 requisições/minuto por IP, tratamento de HTTP 429 com `Retry-After`), espaçamento mínimo entre chamadas e paginação no cliente, persistindo o snapshot localmente em `sincronizacoes_catalogo` e `ofertas_turma`. Em falha da origem, servir o último catálogo válido; sem publicação válida disponível, retornar `503`.
+Sincronizar o catálogo público do Followw pelo backend (`GET /public/classrooms/units`, `GET /public/subjects`, `GET /public/classrooms` em `https://followw.app/api`), atribuir UUID local imutável à disciplina e à oferta e registrar vínculo autodeclarado único por `(user_id, oferta_id)` em `vinculos_turma`. A sincronização preserva zeros à esquerda no número da turma e trata professor e horário como atributos atualizáveis fora da identidade.
 
-Novos envios de planos de ensino exigem oferta disponível e seguida pela conta (`GET /class-offerings/{id}` e `GET /me/class-offerings`): ausência de vínculo retorna `403`, oferta retirada retorna `409` e ausência de catálogo publicado retorna `503`. Deixar de seguir uma oferta preserva o histórico particular e os compromissos já importados.
+O adaptador respeita espaçamento mínimo de 1 segundo entre chamadas, tratamento de HTTP 429 com `Retry-After` até 60 segundos e publicação atômica em `sincronizacoes_catalogo`, `disciplinas` e `ofertas_turma`. Em falha da origem, a API serve o último catálogo válido com `stale: true`; sem publicação válida disponível, retorna `503`.
+
+Novos envios de planos de ensino exigem oferta disponível e seguida pela conta (`GET /api/v1/class-offerings/{id}` e `GET /api/v1/me/class-offerings`): ausência de vínculo retorna `403`, oferta retirada retorna `409` e ausência de catálogo publicado retorna `503`. Deixar de seguir uma oferta preserva o histórico particular e os compromissos já importados.
 
 ## Alternativas para comparação
 
-As opções abaixo explicitam os trade-offs; não afirmam uma avaliação histórica da equipe.
-
-Consultar a fonte a cada leitura acoplaria disponibilidade e latência. Usar apenas o código da disciplina confundiria ofertas. Integrar credenciais acadêmicas ampliaria o escopo e o acesso a dados privados.
+Consultar a fonte externa a cada requisição do usuário acoplaria latência e disponibilidade da aplicação ao serviço externo. Usar apenas o código da disciplina confundiria ofertas e semestres distintos. Integrar credenciais acadêmicas ampliaria o escopo e o acesso a dados pessoais sem necessidade.
 
 ## Consequências
 
-Chaves incompletas ou colisões exigem revisão. Ofertas fora do catálogo disponível bloqueiam vínculo e novo envio de plano, mas a agenda e o histórico existentes continuam disponíveis. A sincronização completa do catálogo roda de forma desacoplada via job em `.github/workflows/production-jobs.yml`.
+Identidades conflitantes ou incompletas exigem revisão nos metadados da sincronização antes da publicação. Ofertas ausentes em publicações futuras saem da busca (`available: false`), preservando planos e eventos já vinculados. A sincronização completa do catálogo executa de forma desacoplada da API via CLI ou workflow em `.github/workflows/production-jobs.yml`.
 
 ## Orientações para contribuição e verificação
 
-Validar colisões, mudança de professor/horário, ofertas de semestres diferentes, cache desatualizado, ausência de cache (`503`) e bloqueio sem vínculo (`403`). Não tratar vínculo autodeclarado como prova institucional.
+Validar colisões de identidade, atualização de professor e horário, ofertas de semestres diferentes, comportamento com cache desatualizado (`stale: true`), ausência de cache (`503`) e bloqueio de envio sem vínculo (`403`).
 
 ## Fontes e relações
 
-[Catálogo de turmas](/arquitetura/catalogo-de-turmas) · [Catálogo e vínculo](/atualizacoes#catalogo-e-vinculo-com-a-turma) · [Matriz de aceite](/matriz-release-2) · [Requisitos](/produto/requisitos) · [Índice de ADRs](/arquitetura/adrs/index)
+[Catálogo de turmas](/arquitetura/catalogo-de-turmas) · [Contratos da API](/api-specs) · [Matriz de rastreabilidade](/matriz-rastreabilidade) · [Requisitos](/produto/requisitos) · [Índice de ADRs](/arquitetura/adrs/index)

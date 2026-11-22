@@ -177,15 +177,6 @@ export const eventsApi = {
     return result;
   },
   listCategories: () => request('/categories'),
-  createCategory: (payload) => request('/categories', {
-    method: 'POST',
-    auth: true,
-    body: JSON.stringify(payload),
-  }),
-  deleteCategory: (id) => request(`/categories/${encodeURIComponent(id)}`, {
-    method: 'DELETE',
-    auth: true,
-  }),
   listPersonal: () => request('/me/events', { auth: true }),
   listOwnPublishedIds: () => request('/me/published-event-ids', { auth: true }),
   listSaved: () => request('/me/saved-events', { auth: true }),

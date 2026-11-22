@@ -1,5 +1,4 @@
 <p align="center">
-  <!-- Banner principal no topo (equivalente ao logo do Flutter) -->
   <img src="frontend/public/banner.png" alt="Banner AgendaUnb" width="760">
 </p>
 
@@ -35,7 +34,7 @@ O **AgendaUnb** é uma plataforma web colaborativa de eventos e organização ac
 - [Requisitos do sistema](docs/produto/requisitos.md)
 - [Contribuindo com o Agenda UnB](docs/processo/contribuindo.md)
 
-Acesse a aplicação em funcionamento em **[agendaunb.com.br](https://agendaunb.com.br)**, ou explore nossos protótipos e quadros de planejamento no **[Figma](https://www.figma.com/board/RlZe9FgO3Bz3gPkxevs8UJ/AGENDA-UNB?node-id=1-217)** e no **[Miro](https://miro.com/app/board/uXjVHtiWi4U=/)**. Nossa documentação também acompanha as [notas de release e sprints](docs/).
+Acesse a aplicação em funcionamento em **[agendaunb.com.br](https://agendaunb.com.br)**, ou explore nossos protótipos e quadros de planejamento no **[Figma](https://www.figma.com/board/RlZe9FgO3Bz3gPkxevs8UJ/AGENDA-UNB?node-id=1-217)** e no **[Miro](https://miro.com/app/board/uXjVHtiWi4U=/)**. Consulte também os [arquivos de documentação no repositório](docs/).
 
 ## Termos de uso e privacidade
 
@@ -43,17 +42,16 @@ Estudantes podem usar e-mail e senha ou entrar com o Google. O perfil docente ex
 
 ## Sobre o AgendaUnb
 
-A rotina de um estudante da UnB costuma estar fragmentada: a grade fica no SIGAA, as datas de provas estão espalhadas em PDFs de planos de ensino e os eventos acadêmicos e culturais circulam por Instagram, cartazes e grupos de WhatsApp. O AgendaUnb foi criado para reunir essas informações em uma única aplicação web produtiva, aberta e extensível.
+A rotina de um estudante da UnB costuma estar fragmentada: a grade fica no SIGAA, as datas de provas estão espalhadas em PDFs de planos de ensino e os eventos acadêmicos e culturais circulam por redes sociais, cartazes e grupos de WhatsApp. O AgendaUnb foi criado para reunir essas informações em uma única aplicação web produtiva, aberta e extensível.
 
 ### Experiências acadêmicas unificadas
 
 Queremos permitir que cada estudante acompanhe a vida universitária e seus compromissos de estudo sem precisar alternar entre dezenas de portais. O AgendaUnb reúne dois eixos principais em uma interface responsiva (com temas claro e escuro):
 
-- **Agenda do Campus:** Catálogo público de eventos acadêmicos, culturais e esportivos de todos os campi da UnB (**Darcy Ribeiro, FCTE, FCTS, FUP e FAL**), com visualização em lista ou calendário (mensal e semanal), filtros por área, campus e turno, além de salvamento na agenda pessoal e envio de sugestões com moderação.
+- **Agenda do Campus:** Catálogo público de eventos acadêmicos, culturais e esportivos de todos os campi da UnB (**Darcy Ribeiro (Plano Piloto), FCTE (Gama), FCTS (Ceilândia), FUP (Planaltina) e FAL**), com visualização em lista ou calendário (mensal e semanal), filtros por área, campus e turno, além de salvamento na agenda pessoal e envio de sugestões com moderação.
 - **Organizador Acadêmico.** Agenda pessoal com compromissos privados, eventos públicos salvos, lembretes e exportação para Google Agenda ou ICS. O envio de PDF ou texto autoriza a extração de candidatos a provas e trabalhos após sanitização automática. Cada pessoa revisa e confirma as datas que importa.
 
 <p align="center">
-  <!-- Salve a imagem dos 3 celulares em formato PNG em assets/agendaunb-mobile.png -->
   <img src="frontend/public/agendaunb-mobile.png" alt="Telas do AgendaUnb - Planos de Ensino, Boas-vindas e Eventos Públicos" width="720">
 </p>
 

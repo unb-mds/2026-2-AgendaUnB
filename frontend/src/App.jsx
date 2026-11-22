@@ -276,7 +276,7 @@ export default function App() {
               <div className="feat">
                 <div className="feat-icon"><span className="material-symbols-outlined">sync</span></div>
                 <h3>Importação Automática</h3>
-                <p>Busca e importa eventos de fontes externas como perfis do Instagram, feeds e sites da universidade.</p>
+                <p>Coleta e atualiza eventos institucionais diretamente do portal oficial Agenda UnB Notícias.</p>
               </div>
               <div className="feat">
                 <div className="feat-icon"><span className="material-symbols-outlined">how_to_reg</span></div>

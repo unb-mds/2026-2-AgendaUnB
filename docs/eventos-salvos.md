@@ -1,38 +1,21 @@
 # Eventos públicos na agenda pessoal
 
-O botão **Adicionar aos meus eventos** salva um vínculo com o evento público aprovado.
-Os dados não são copiados: título, data, local e organizador são lidos do original.
-Em **Meus Eventos**, o frontend combina os eventos privados com os públicos salvos,
-mantendo busca, filtros, lista e calendário. Um público salvo pode ser removido da
-agenda, mas não editado ou excluído como se fosse um evento privado.
+A ação **Adicionar aos meus eventos** cria um vínculo em `eventos_salvos` com um evento público aprovado, sem duplicar seus dados. Título, descrição, data, local e organizador são sempre lidos do registro original em `eventos`.
 
-A Release 2 mantém **Conferir evento** como ação separada, com métrica de redirecionamento, e usa o vínculo de eventos salvos para exibir a agenda e agendar lembretes. [Contratos da Release 2](/atualizacoes#contratos-da-release-2)
+Em **Meus Eventos**, o frontend unifica compromissos privados (`eventos_pessoais`) e eventos públicos salvos, mantendo busca, filtros por período, lista e calendário. Um evento público salvo pode ser removido da agenda pessoal a qualquer momento, mas alterações de conteúdo permanecem restritas ao autor ou à administração na origem. A ação **Conferir evento** opera de forma independente, abrindo o link externo oficial e contabilizando acionamentos agregados; inscrições ocorrem exclusivamente no canal do organizador.
 
-## Banco e implantação
+## Banco de dados e isolamento
 
-Aplicar `supabase/migrations/20261016000000_adiciona_eventos_salvos.sql` no ambiente
-de destino **antes** de disponibilizar a nova API/frontend. A migração cria
-`public.eventos_salvos`, com chave primária `(user_id, event_id)`, FKs com exclusão
-em cascata e políticas RLS que restringem cada vínculo ao seu usuário. Não há
-política de UPDATE; para mudar um vínculo, removê-lo e criar outro.
+A tabela `public.eventos_salvos` possui chave primária composta `(user_id, event_id)`, chaves estrangeiras com exclusão em cascata (`ON DELETE CASCADE`) para `profiles` e `eventos` e políticas RLS que restringem leitura, inserção e exclusão ao proprietário com e-mail confirmado (não há política de `UPDATE`).
 
-O backend também limita todas as operações ao usuário da sessão validada, pois
-conexões administrativas ao banco podem ignorar RLS. A migração não altera eventos
-existentes. A exclusão de um evento público remove seus vínculos; eventos que
-deixarem de estar aprovados não aparecem nas consultas da agenda.
+O backend também filtra todas as operações pelo usuário autenticado da sessão, pois conexões administrativas ao PostgreSQL podem ignorar RLS. A exclusão de um evento público remove seus vínculos em cascata; eventos retirados do catálogo (`status <> 'aprovado'`) deixam de aparecer nas consultas da agenda e têm seus lembretes pendentes cancelados.
 
 ## API autenticada
 
-Consulte os [contratos de eventos salvos](/api-specs#eventos-salvos-pos-r1) para métodos, payloads e respostas.
+Consulte os [contratos de eventos salvos](/api-specs#eventos-salvos) para métodos, parâmetros e códigos de resposta.
 
-PUT e DELETE são idempotentes. PUT retorna 404 para evento inexistente ou não
-aprovado. Todas as rotas exigem autenticação; o cliente nunca escolhe `user_id`.
-O CRUD privado em `/me/events` continua independente.
+`PUT /api/v1/me/saved-events/{event_id}` e `DELETE /api/v1/me/saved-events/{event_id}` são idempotentes: `PUT` retorna `404` para evento inexistente ou não aprovado e recupera colisões concorrentes quando o vínculo já existe; `DELETE` retorna `204` e cancela lembretes futuros pendentes do vínculo. O CRUD privado em `/api/v1/me/events` permanece independente.
 
 ## Verificação
 
-Executar `python -m pytest` em `backend` e `npm run build` em `frontend`.
-Os testes de eventos salvos verificam autenticação, isolamento entre usuários,
-idempotência, leitura dos dados atualizados, eventos não aprovados e cascata.
-Os testes usam SQLite com FKs ativas; as políticas RLS da migração precisam ser
-verificadas em PostgreSQL/Supabase após aplicar a migração no ambiente de teste.
+Os testes automatizados em `backend/tests/test_saved_events_api.py` verificam autenticação, isolamento entre contas, idempotência, leitura de dados atualizados na origem, ocultação de eventos não aprovados e remoção em cascata. A validação de políticas RLS e triggers de lembretes no PostgreSQL é coberta em `backend/tests/test_reminders_database.py` e `backend/tests/test_moderation_database.py` com Supabase local.

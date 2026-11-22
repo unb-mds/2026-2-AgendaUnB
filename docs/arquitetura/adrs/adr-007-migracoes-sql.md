@@ -1,7 +1,9 @@
 ---
 title: "ADR-007 · Usar migrações SQL como referência do esquema completo"
-description: "Decisão, consequências e critérios de verificação: usar migrações sql como referência do esquema completo."
+description: "Decisão de versionar o esquema completo, políticas RLS, funções e triggers em migrações SQL."
 ---
+
+# ADR-007 · Usar migrações SQL como referência do esquema completo
 
 | Campo | Valor |
 | --- | --- |
@@ -10,36 +12,32 @@ description: "Decisão, consequências e critérios de verificação: usar migra
 | Rastreabilidade | DA-05; RNF13 |
 | Substitui | Nenhuma ADR |
 
-Registro retrospectivo; a motivação histórica e as alternativas avaliadas na época não estão documentadas.
-
 ## Contexto
 
-O banco contém tabelas, políticas RLS, funções e triggers que não são representados integralmente pelos modelos SQLAlchemy.
+O banco PostgreSQL contém tabelas, restrições, índices parciais, políticas RLS, funções e triggers que não são representados integralmente pelos modelos SQLAlchemy da API.
 
 ## Decisão
 
-Versionar o esquema completo em `supabase/migrations/` e aplicar migrações em ordem antes do código que depende delas. O ORM mapeia as estruturas usadas pela API e não substitui as migrações.
+Versionar o esquema completo em `supabase/migrations/` e aplicar as migrações em ordem cronológica antes de publicar código da API ou do frontend que dependa delas. O ORM em `backend/src/database/models.py` mapeia apenas as estruturas usadas pela aplicação e não substitui as migrações SQL.
 
-Em ambientes persistentes (homologação ou produção), a aplicação de migrações deve seguir protocolo seguro:
+Em ambientes persistentes, a aplicação de migrações segue protocolo seguro:
 
-1. **Backup lógico prévio:** extrair snapshot consistente com `pg_dump` (formato custom) cobrindo `public`, `auth`, `storage` e `supabase_migrations` (estrutura, dados, proprietários e privilégios) antes de alterar o banco, inspecionando com `pg_restore --list`.
-2. **Ensaio isolado:** restaurar o snapshot em um banco local isolado (nunca sobre o banco compartilhado com `pg_restore --clean` ou `supabase db reset`), aplicar as migrações pendentes e executar os testes de RLS, RPCs, triggers e pré-requisitos do worker.
-3. **Verificação de pré-condições e transação:** validar remoção de tabelas legadas somente após confirmar ausência de registros sob bloqueio contra escritas concorrentes; ensaiar o lote em transação com `ROLLBACK` antes da aplicação definitiva; executar em transação única (removendo eventuais `BEGIN/COMMIT` internos apenas no executor em lote, sem alterar os arquivos SQL versionados) seguida de `NOTIFY pgrst, 'reload schema'` e conferência do histórico de versões e integridade dos dados preservados.
+1. **Backup lógico prévio:** extrair snapshot consistente com `pg_dump` (formato custom) antes de alterar o banco, conferindo o conteúdo com `pg_restore --list`.
+2. **Ensaio isolado:** validar a aplicação das migrações pendentes em instância isolada (nunca usando `pg_restore --clean` ou `supabase db reset` sobre o banco compartilhado), executando os testes de RLS, RPCs, triggers e pré-requisitos do worker.
+3. **Verificação de pré-condições e transação:** validar remoção de estruturas obsoletas somente após confirmar migração dos dados sob bloqueio contra escritas concorrentes; executar a migração de forma controlada e confirmar a integridade do esquema e das políticas aplicadas.
 
 ## Alternativas para comparação
 
-As opções abaixo explicitam os trade-offs; não afirmam uma avaliação histórica da equipe.
-
-Gerar o esquema apenas pelo ORM omitiria estruturas específicas do PostgreSQL. Alterações manuais sem migração dificultariam reproduzir ambientes.
+Gerar o esquema apenas pelo ORM omitiria políticas RLS, triggers e funções SQL específicas do PostgreSQL. Alterações manuais sem arquivo de migração impediriam reprodutibilidade entre ambientes.
 
 ## Consequências
 
-Frontend, API e banco precisam coordenar sua implantação. Alterações exigem verificar políticas, funções e leitores antigos. Na R2, priorizar mudanças aditivas e preservar os nomes legados definidos no contrato.
+Frontend, API e banco precisam coordenar a ordem de implantação. Alterações de esquema devem priorizar mudanças aditivas compatíveis com leitores em transição e preservar contratos existentes.
 
 ## Orientações para contribuição e verificação
 
-Validar migrações do zero e lint de esquema (`supabase db lint --level error`) em instância descartável via CI (`.github/workflows/supabase-ci.yml`), além dos testes de RLS/RPC em PostgreSQL local. A presença de um modelo ORM não comprova que uma migração foi aplicada, e renomeações fora de ordem exigem reconciliação explícita do histórico sem reset automático.
+Validar migrações do zero e lint de esquema (`supabase db lint --level error --fail-on error`) em instância descartável via CI (`.github/workflows/supabase-ci.yml`), além dos testes de RLS e RPC em PostgreSQL local. A existência de um modelo ORM não garante que a migração correspondente tenha sido aplicada no banco de destino.
 
 ## Fontes e relações
 
-[Persistência e migrações](/arquitetura/visao-geral#7-persistencia-privacidade-e-migracoes) · [Compatibilidade](/atualizacoes#compatibilidade-e-migracao) · [Requisitos](/produto/requisitos) · [Índice de ADRs](/arquitetura/adrs/index)
+[Persistência e migrações](/arquitetura/visao-geral#7-persistencia-privacidade-e-migracoes) · [Especificação do banco](/arquitetura/banco-de-dados) · [Requisitos](/produto/requisitos) · [Índice de ADRs](/arquitetura/adrs/index)

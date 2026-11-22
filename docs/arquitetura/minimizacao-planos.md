@@ -1,11 +1,9 @@
 ---
 title: "Minimização de dados pessoais em planos de ensino"
-description: "Padrões, preservação de conteúdo acadêmico e evidências da S8-B04."
+description: "Padrões determinísticos de detecção e mascaramento de dados pessoais, preservação de conteúdo acadêmico e contrato de preparação de planos de ensino."
 ---
 
-A preparação determinística trata PDFs com texto selecionável e textos colados
-no mesmo fluxo. O descarte do PDF e a autorização sobre o texto sanitizado
-seguem o [ADR-003](/arquitetura/adrs/adr-003-minimizar-dados-de-planos).
+A preparação determinística trata PDFs com texto selecionável e textos colados no mesmo pipeline antes da persistência do snapshot privado e do envio ao provedor externo de IA. O descarte imediato do PDF e a autorização explícita sobre o texto sanitizado seguem o [ADR-003](/arquitetura/adrs/adr-003-minimizar-dados-de-planos).
 
 | Categoria | Formatos de referência e casos sintéticos |
 | --- | --- |
@@ -16,44 +14,24 @@ seguem o [ADR-003](/arquitetura/adrs/adr-003-minimizar-dados-de-planos).
 | Perfil pessoal | Currículo Lattes, LinkedIn de pessoa e URL rotulada como site pessoal |
 | Endereço | `Endereço residencial: Rua Exemplo, 123` |
 
-O formulário de monitoria da graduação apresenta cargo com gênero separado
-por espaço, nome do monitor, matrícula, RG, CPF, endereço e telefone, inclusive
-em campos tabulares. O termo de monitoria da pós-graduação também inclui
-matrícula e nascimento com rótulos abreviados. O validador público do SIGAA
-confirma o uso de matrícula, SIAPE e CPF em cabeçalhos de documentos. [Formulário
-de monitoria](https://design.unb.br/wp-content/uploads/Form_inscri_monitoria_grad.pdf) ·
-[Termo de monitoria](https://ppgdsci.unb.br/images/FORMULARIOS/Termo_de_Compromisso_monitoria.pdf) ·
-[Validador de documentos do SIGAA](https://sigaa.unb.br/sigaa/public/autenticidade/form.jsf).
+A detecção cobre cabeçalhos, campos separados por barra vertical, tabelas e rótulos com valor na linha seguinte, alinhada aos modelos reais de formulários e termos da UnB ([Formulário de monitoria](https://design.unb.br/wp-content/uploads/Form_inscri_monitoria_grad.pdf) · [Termo de monitoria](https://ppgdsci.unb.br/images/FORMULARIOS/Termo_de_Compromisso_monitoria.pdf) · [Validador de documentos do SIGAA](https://sigaa.unb.br/sigaa/public/autenticidade/form.jsf)). Números ambíguos como RG, SIAPE e matrícula de nove dígitos exigem contexto rotulado; CPF compacto sem rótulo exige dígitos verificadores válidos para evitar falsos positivos em códigos acadêmicos.
 
-Os valores da tabela e das fixtures são sintéticos. Os testes exercitam
-cabeçalhos, campos separados por barra vertical, tabelas e rótulos com valor
-na linha seguinte. Números ambíguos como RG, SIAPE e matrícula de nove dígitos
-exigem contexto. O CPF compacto sem rótulo exige dígitos verificadores válidos
-e preserva números rotulados como identificadores acadêmicos.
+## Campos acadêmicos preservados
 
-## Campos acadêmicos a preservar
+- Nomes de disciplinas com números ou algarismos romanos, como `Estrutura de Dados 1`, `Matemática Discreta 2` e `Cálculo Diferencial e Integral II`.
+- Códigos de disciplina e turma, como `CIC0004` e `Turma 01`.
+- Semestres, como `2026.2` e `2026/2`.
+- Títulos e siglas de avaliações, como `Prova 1`, `P1` e `Trabalho Final`.
+- Datas acadêmicas numéricas, por extenso ou ISO, além de horários e intervalos (`14:30`, `das 08h00 às 10h00`).
+- Locais acadêmicos, como `Sala 204`, `Auditório Central` e `Bloco B`.
 
-- Nomes de disciplinas com números ou romanos, como Estrutura de Dados 1,
-  Matemática Discreta 2 e Cálculo Diferencial e Integral II.
-- Códigos de disciplina e turma, como CIC0004 e Turma 01.
-- Semestres, como 2026.2 e 2026/2.
-- Títulos e siglas de avaliações, como Prova 1, P1 e Trabalho Final.
-- Datas acadêmicas numéricas, por extenso ou em ISO, além de horários
-  e intervalos, como 14:30 e das 08h00 às 10h00.
-- Locais acadêmicos, como Sala 204, Auditório Central e Bloco B.
+A preservação de datas e títulos acompanha as orientações institucionais para calendários de avaliação da UnB ([Orientações do DEG para planos de ensino](https://deg.unb.br/wp-content/uploads/orientacoes_ementas_programas_pe.pdf)).
 
-A preservação de datas e títulos acompanha as orientações para os calendários
-de avaliação da UnB. [Orientações do DEG para planos de ensino](https://deg.unb.br/wp-content/uploads/orientacoes_ementas_programas_pe.pdf).
+## Exemplos sintéticos de sanitização
 
-## Exemplos sintéticos de antes e depois
+Os fluxos de PDF digital e texto colado passam pela mesma higienização (`backend/src/modules/syllabus/minimization.py`). PDFs mantêm o número da página (`pagina: 1`, `2`, ...), enquanto textos colados utilizam `pagina: null`. Em ambos os casos, `redactedCount` registra o total de trechos mascarados na preparação inicial e `textHash` corresponde ao SHA-256 compacto das páginas sanitizadas.
 
-O teste autenticado segue uma turma de teste, envia o mesmo conteúdo em
-um PDF digital sintético e como texto colado, e lê a prévia com a sessão do
-dono. O PDF mantém `pagina: 1`, enquanto o texto colado usa `pagina: null`.
-Nos dois casos, `redactedCount` vale `2` e o hash corresponde às páginas
-sanitizadas. O acesso com a conta de outro estudante retorna `404`.
-
-**PDF sintético, texto extraído da página 1**
+**PDF digital (texto extraído da página 1)**
 
 ```text
 Disciplina: Estrutura de Dados 1 | Prof. Pessoa Exemplo | RG: 12.345.678-X
@@ -77,33 +55,9 @@ Disciplina: Estrutura de Dados 1 | Prof. [identificador removido] | CPF: [identi
 Prova 1 - 10/11/2026 - 14:00.
 ```
 
-## Impactos verificados
+## Garantias de privacidade e contrato
 
-- **Privacidade e LGPD:** nos cenários sintéticos, a preparação local reduz
-  os dados retidos no snapshot privado e o texto enviado ao provedor simulado.
-  Os logs e candidatos persistidos foram verificados com valores sintéticos.
-  A detecção cobre os formatos documentados. A revisão humana ocorre nas
-  avaliações extraídas, antes da importação para a agenda.
-- **Contrato:** a alteração na prévia é aditiva. Os `POST` mantêm `202` e
-  as páginas, permissões e regras de hash seguem o contrato existente.
-  A coluna de contagem e o novo código de falha exigem as duas migrações
-  S8-B04 antes de disponibilizar o backend.
-- **Extração:** `validate_candidates` produziu os mesmos candidatos de prova
-  e trabalho para as entradas de teste antes e depois da preparação, com
-  horários, datas, locais nos trechos de origem e referências de página.
-  A comparação usa uma resposta controlada do provedor.
-
-## Resultados locais em 19/11/2026
-
-| Verificação | Resultado |
-| --- | --- |
-| `python -m pytest tests -q -ra --tb=short` no backend, com Supabase isolado | 491 aprovados, 2 ignorados, 0 falhas |
-| `npm test` no frontend | 62 aprovados |
-| `npm run build` no frontend | Build aprovado |
-| Playwright em `syllabus-consent.spec.js` e `syllabus.spec.js` | 25 aprovados, incluindo o aviso em 360 e 1365 px |
-| `mint validate` e `mint broken-links --check-redirects` | Validação aprovada e nenhum link interno quebrado |
-
-Os dois casos ignorados foram a execução com o Gemini real e a publicação
-do catálogo, que exige um banco dedicado. Os testes da issue usaram um
-provedor simulado e documentos sintéticos. A conferência humana do fluxo
-e o registro do nome do revisor ficam pendentes na [issue #132](https://github.com/unb-mds/2026-2-AgendaUnB/issues/132).
+- **Minimização e LGPD:** a preparação local reduz os dados retidos no snapshot privado (`texto_preparado` / `texto_aprovado`) e o texto enviado ao provedor externo. Snapshots legados que contenham dados pessoais detectáveis são bloqueados antes da chamada externa com `erro_codigo = 'texto_com_dados_pessoais'`, orientando novo envio.
+- **Revisão humana:** as avaliações extraídas são apresentadas para conferência e confirmação explícita do usuário antes de qualquer gravação em `eventos_pessoais`.
+- **Contrato da prévia:** as respostas de preparação, autorização e detalhe retornam `redactedCount` (fora do cálculo de `textHash`), permitindo que a interface informe o total de remoções ao usuário durante e após a análise.
+- **Verificação automatizada:** os fluxos de preparação, mascaramento e validação de prévia são cobertos em `backend/tests/test_syllabus_processing.py`, `backend/tests/test_syllabus_privacy_minimization.py` e nos testes E2E `frontend/tests/syllabus-consent.spec.js` e `frontend/tests/syllabus.spec.js`.

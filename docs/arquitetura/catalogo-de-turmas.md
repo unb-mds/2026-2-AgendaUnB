@@ -1,100 +1,54 @@
 ---
-title: "Catálogo de turmas — integração #70 e #71"
-description: "Operação do adaptador público Followw, publicação atômica, vínculos e seleção de ofertas nos planos."
+title: "Catálogo de turmas"
+description: "Operação do adaptador público Followw, publicação atômica, vínculos autodeclarados e seleção de ofertas nos planos de ensino."
 ---
 
 ## Contratos e origem
 
-Implementação baseada na #67, no esquema S7-D01 da #69 e na migração do [PR #104](https://github.com/unb-mds/2026-2-AgendaUnB/pull/104), commit `8a8cf42ef07e7b15278b3b78277b42eea4cf8483`. A migração original foi preservada; a evolução está em `20261111120000_publicacao_catalogo.sql`. RF05, RNF07–09 e RNF11 orientam esta integração.
+A integração consulta exclusivamente a API pública do Followw (`https://followw.app/api`) via requisições `GET` HTTPS nas rotas `/public/classrooms/units`, `/public/classrooms` e `/public/subjects`, sem credenciais, cookies, proxy de ambiente ou redirecionamentos ([ADR-009](/arquitetura/adrs/adr-009-catalogo-publico-de-turmas)). A busca remota exige unidade ou código e período e retorna listas sem paginação remota exposta; a paginação servida pelo Agenda UnB é aplicada localmente sobre o banco.
 
-O servidor permite apenas GET HTTPS na base `https://followw.app/api`, nas rotas `/public/classrooms/units`, `/public/classrooms` e `/public/subjects`. Não usa credenciais, cookies, proxy do ambiente ou redirecionamentos. A busca de disciplinas exige unidade ou código e período. Os contratos observados retornam listas sem paginação remota exposta; não se inventam parâmetros de paginação. A paginação da API do Agenda UnB é local. A base usa [o mesmo encaminhamento da aplicação Followw](https://github.com/unb-mds/2026-2-Followw/blob/5e0b0f6ca27848fe6633d9ba13ac43cc986dce70/vercel.json). Em 16/11/2026, o subdomínio anterior `api.followw.app` retornou HTTP 404 com `DEPLOYMENT_NOT_FOUND`.
+A listagem ao vivo determina a disponibilidade atual das ofertas (`available`). `subject.sigaa_id` identifica a disciplina e a correspondência exata por código, unidade, período e número textual da turma permite adotar `classrooms[].sigaa_id` como identificador de oferta na origem. Zeros à esquerda no número da turma (como `"01"`) são preservados, nível desconhecido permanece nulo e professor e horário são tratados como atributos atualizáveis fora da identidade. Respostas inválidas, identidades incompletas e colisões não são convertidas silenciosamente e ficam registradas nos metadados da execução em `sincronizacoes_catalogo`.
 
-A lista ao vivo determina presença. O ID de `subject.sigaa_id` identifica a disciplina. Somente uma correspondência exata por código, unidade, período e número textual permite adotar `classrooms[].sigaa_id` como ID de oferta. `01` permanece `01`, nível desconhecido fica nulo e professor/horário não participam da identidade. Respostas inválidas, identidades incompletas e colisões nunca são convertidas silenciosamente. Identidades rejeitadas ficam nos metadados da execução para revisão.
+## Operação e sincronização
 
-## Operação
-
-Aplicar as migrações pendentes e implantar backend e frontend juntos: PDF multipart e texto JSON agora exigem `offering_id`. As leituras e a revisão de planos legados continuam disponíveis.
-
-Em `backend`, configurar `DATABASE_URL` de servidor com acesso às tabelas e funções. Usar conexão direta ou pool em modo sessão: a exclusão mútua usa advisory lock de sessão; pool em modo transação não serve para este comando.
+O sincronizador opera fora das rotas HTTP da API usando conexão direta ao PostgreSQL ou pool em modo sessão (`DATABASE_URL`), pois a exclusão mútua entre execuções utiliza advisory lock de sessão.
 
 ```sh
 python -m src.database.check_schema
 python -m src.modules.classes.sync --period 2026.2
 ```
 
-O comando consulta todas as unidades descobertas uma vez, em sequência. Períodos adicionais exigem flags repetidas, por exemplo `--period 2026.2 --period 2027.1`, após validar cobertura. Sem flags, somente `2026.2`. Semestres fora de 1/2 são rejeitados com `periodo_nao_suportado`, sem convertê-los; verão não é habilitado.
+O comando consulta todas as unidades descobertas em sequência para os períodos informados via `--period` (ex.: `--period 2026.2 --period 2027.1`; quando omitido, utiliza `2026.2` como padrão). Semestres fora de `1` e `2` são rejeitados com `periodo_nao_suportado`.
 
-Limites do adaptador: intervalo mínimo de um segundo entre inícios de chamadas, timeout de 30 segundos de leitura e 20 segundos nas demais fases HTTP, com até duas repetições para falhas transitórias. `Retry-After` aceita segundos ou data HTTP até 60 segundos; espera maior interrompe a tentativa. Esses valores não representam cotas confirmadas do Followw.
+Limites do adaptador: intervalo mínimo de 1 segundo entre inícios de chamadas, timeout de 30 segundos de leitura e 20 segundos nas demais fases HTTP, com até duas repetições para falhas transitórias e suporte a `Retry-After` limitado a 60 segundos.
 
-Uma execução por vez, sem rota HTTP de sincronização. Consultas HTTP leem somente o banco. Após a coleta, uma transação chama `registrar_oferta_catalogo`, associa `publicacao_id` e publica a execução concluída. Leituras do catálogo são protegidas contra publicação concorrente. Uma unidade vazia válida conta como consultada; falha da busca ao vivo em qualquer unidade cancela a publicação inteira. Falha apenas no enriquecimento não retira as ofertas ao vivo: registra a cobertura do enriquecimento e utiliza a identidade natural.
+A publicação ocorre de forma atômica após a coleta completa: a transação invoca `registrar_oferta_catalogo`, associa `publicacao_id` em `ofertas_turma` e conclui o registro em `sincronizacoes_catalogo` (que não armazena respostas brutas). Falha da busca ao vivo em qualquer unidade cancela a publicação daquela execução sem apagar ofertas anteriores. Ofertas ausentes na nova publicação deixam de aparecer na busca (`available: false`), preservando planos, vínculos e eventos já importados. Em falha da origem ou após 24 horas sem atualização concluída, `estado_catalogo` sinaliza `stale: true` mantendo o último catálogo válido; antes da primeira publicação válida, buscas e filtros retornam `503`.
 
-`sincronizacoes_catalogo` contém unidades, períodos, cobertura por unidade/período, quantidades, rejeições e código sanitizado de erro. Não armazena respostas brutas. Ofertas ausentes na nova publicação saem da busca sem exclusão física; vínculos, planos e eventos permanecem. Falha conserva a publicação e a data anteriores. `estado_catalogo` indica `stale` após falha ou 24 horas. Antes da primeira publicação válida, busca e filtros retornam 503; uma publicação vazia válida é cache, retornando 200 com lista vazia.
+No desenvolvimento local (`make dev`, via `scripts/dev.py`), quando ainda não existe publicação concluída no banco, o inicializador dispara a sincronização em processo separado em segundo plano. Durante essa carga inicial, a API retorna `503` e a interface orienta a espera repetindo apenas a leitura local a cada 15 segundos, sem acionar o Followw pelo navegador. Ao adquirir o lock de execução, execuções antigas presas em `executando` são marcadas como interrompidas.
 
-Não habilitar recorrência antes de medir duração e cobertura de uma varredura integral em homologação. A saída JSON do comando inclui a cobertura; guardar essa saída como evidência operacional.
+Em produção, o job `catalog` em `.github/workflows/production-jobs.yml` permite executar a sincronização sob demanda via `workflow_dispatch`.
 
 ## API e interface
 
-Todas as rotas abaixo exigem a autenticação Supabase existente:
+Todas as rotas do catálogo exigem autenticação via Supabase Auth com e-mail confirmado:
 
 | Operação | Contrato |
 | --- | --- |
-| `GET /api/v1/class-offerings` | `year`, `semester`, `unit` (ID/sigla), `subject_code` exato, `q` (nome/código/professor/turma), `limit` 20–100 (mínimo 1), `offset` ≥0 |
-| `GET /api/v1/class-offerings/filters` | Unidades e períodos da última publicação, `source_updated_at`, `stale` |
-| `GET /api/v1/class-offerings/{id}` | Oferta por UUID, inclusive retirada, com `available` |
-| `GET /api/v1/me/class-offerings` | Vínculos da sessão, inclusive ofertas retiradas |
-| `PUT /api/v1/me/class-offerings/{id}` | Seguir oferta disponível, idempotente, 204 |
-| `DELETE /api/v1/me/class-offerings/{id}` | Remover somente o vínculo da sessão, idempotente, 204 |
-| `GET /api/v1/class-offerings/{id}/shared-plans` | Versões compartilhadas para seguidores com autoria, origem, votos, indicador de versão padrão e alterações pós-importação; ordenadas por votos positivos e data mais recente no empate; paginação 20/100, 403 para não seguidores; não expõe texto privado |
-| `GET /api/v1/syllabus?offering_id={id}` | Lista de planos privados, com filtro opcional de oferta |
-| `POST /api/v1/syllabus/upload` e `/text` | `offering_id` obrigatório; 409 se oferta retirada, 503 sem publicação; disciplina/turma/período derivados do catálogo |
+| `GET /api/v1/class-offerings` | Filtros `year`, `semester`, `unit` (ID/sigla), `subject_code` exato, `q` (nome/código/professor/turma), `limit` 1–100 (padrão 20), `offset` ≥ 0 |
+| `GET /api/v1/class-offerings/filters` | Unidades e períodos da última publicação, `source_updated_at` e `stale` |
+| `GET /api/v1/class-offerings/{id}` | Oferta por UUID, inclusive retirada da busca atual, com campo `available` |
+| `GET /api/v1/me/class-offerings` | Ofertas seguidas pela sessão, inclusive ofertas retiradas |
+| `PUT /api/v1/me/class-offerings/{id}` | Segue oferta disponível; idempotente (`204`) |
+| `DELETE /api/v1/me/class-offerings/{id}` | Remove vínculo da sessão; idempotente (`204`) |
+| `GET /api/v1/class-offerings/{id}/shared-plans` | Lista versões compartilhadas da oferta para seguidores (`403` sem vínculo), com autoria, procedência, votos, indicador de versão padrão e sinalização de alterações pós-importação, ordenadas por votos positivos e data mais recente |
+| `GET /api/v1/syllabus?offering_id={id}` | Lista planos privados do usuário, com filtro opcional de oferta |
+| `POST /api/v1/syllabus/upload` e `/text` | Exigem `offering_id` seguido pela conta (`403` sem vínculo, `409` se oferta retirada, `503` sem catálogo); disciplina, turma e período são derivados do catálogo |
 
-A busca devolve `items`, `total`, `limit`, `offset`, `source_updated_at` e `stale`, com ordenação estável por código, unidade, período, turma e UUID. Cada item contém UUID, nome/código da disciplina, turma, ano/semestre, unidade, nível, professor, horário e disponibilidade. Erros seguem `detail` da API existente; filtros inválidos retornam 422.
+A busca devolve `items`, `total`, `limit`, `offset`, `source_updated_at` e `stale`, com ordenação determinística por relevância, código, unidade, período, turma e UUID. Erros seguem o padrão `detail` da API.
 
-A rota `/plano-de-ensino` exige login; visitantes sem sessão recebem orientação para autenticação sem acesso a upload ou vínculo de turmas. “Minhas turmas” persiste no servidor e alimenta o painel e a biblioteca compartilhada da turma (`PUT/DELETE .../sharing`, `POST .../versions`, `PUT .../vote` e `DELETE .../versions/{vid}/candidates/{cid}`). A revisão e confirmação de candidatos utilizam `POST /api/v1/syllabus/{id}/confirm` com `Idempotency-Key` e `versionId` opcional.
+Na interface `/plano-de-ensino`, usuários autenticados percorrem o fluxo em duas etapas (**1. Selecionar turmas** e **2. Organizar datas**), gerenciando **Suas turmas** e consultando tanto seus próprios envios quanto os **Planos compartilhados da turma**. O botão **Tentar novamente** repete apenas a leitura local na API sem disparar sincronização no Followw. Quando o catálogo estiver indisponível (`503`), a interface preserva o acesso ao cadastro manual de compromissos em **Meus Eventos**. Deixar de seguir uma oferta não apaga eventos particulares já importados.
 
-“Tentar novamente” repete a leitura local; nunca dispara sincronização do Followw. Em 503 há acesso ao cadastro manual. Deixar de seguir preserva os eventos particulares já importados.
+## Verificação automatizada
 
-## Evidências locais — 10/11/2026
-
-- Sondagem real: 211 unidades; `code=FGA0108`, `semester=2026.2`: duas ofertas ao vivo, uma disciplina com duas ofertas enriquecidas; duas normalizadas, zero rejeitadas, dois IDs de oferta. Executada com `PYTHONPATH=.` e `python scripts/probe_followw_catalog.py`, sem gravação de catálogo.
-- Migrações: aplicadas na cópia isolada `agenda_catalog_7071_verified` do esquema local existente; todas as 28 migrações aplicadas em `agenda_catalog_7071_fresh`, com estruturas internas Auth/Storage e sem tabelas da aplicação. Não equivale a homologar serviços hospedados de Auth/Storage.
-- Backend: testes HTTP de autenticação, filtros, paginação, vínculo idempotente/isolado, retirada, cache, privacidade e exigência de oferta; adaptador com timeout, retry, 429, redirecionamento, respostas inválidas, credenciais ausentes e identidade; PostgreSQL com publicação completa, adoção de ID, retirada e falha intermediária. Comandos e resultados finais devem acompanhar o PR.
-- Frontend: testes Playwright de vínculo após recarga, oferta correta, paginação, vazio, 503, login, teclado e largura 360/1365; regressão de envio/revisão em 360/768/1365 e temas claro/escuro. Capturas do catálogo inspecionadas em desktop e celular; detector de interface sem achados.
-
-## Pendências de homologação e fechamento
-
-Não foram executados deploy, varredura integral das 211 unidades nem teste de indisponibilidade contra o ambiente hospedado. A amostra de FGA0108 não comprova cobertura global. Registrar versão implantada, saída da varredura, cenário de falha com vínculo existente, links do PR e nome do revisor humano nas issues #70/#71 antes de fechá-las. Nenhuma issue foi fechada ou marcada como homologada por esta implementação.
-
-Reversão: desabilitar o comando operacional e reverter consumidores junto com o backend; preservar tabelas e vínculos. Não apagar ofertas ou reverter migrações destrutivamente para ocultar uma publicação.
-
-## Resultado final da validação local
-
-- Backend: `python -m pytest -q` — 209 passaram, três ignorados (integrações opcionais), com PostgreSQL isolado.
-- Navegador: `E2E_PORT=5187 E2E_BROWSER_CHANNEL=chrome npx playwright test --workers=2` — 44 passaram.
-- Lógica frontend: `npm test` — 19 passaram.
-- `npm run build` passou; aviso de chunk principal acima de 500 kB permanece.
-- Build da documentação não executado: MkDocs não está instalado no venv local.
-- As 28 migrações passaram em base sem tabelas da aplicação; as duas novas passaram na atualização da cópia isolada.
-
-## Jornada única
-
-A página `/plano-de-ensino` apresenta apenas a Demonstração interativa, agora conectada à API autenticada para catálogo, vínculos, envios e planos. O seletor de variantes foi removido. `make dev` inicia Supabase, aplica migrações locais, verifica o esquema e inicia API e Vite; `BACKEND_PORT` também configura o proxy do frontend. A API inicia sem o recarregador do Uvicorn para compatibilidade com Windows.
-
-### Correção da jornada e inicialização local
-
-A jornada original de quatro etapas foi restaurada. Visitantes usam exemplos locais; usuários autenticados usam catálogo, vínculos, preparação, revisão e confirmação pela API dentro dessas etapas. Não há seletor de variantes. O inicializador `scripts/dev.py`, chamado por `make dev`, escolhe portas livres quando as solicitadas estão ocupadas, informa as URLs efetivas e configura o proxy e CORS correspondentes. Ele espera o health da API e encerra seus próprios processos quando um serviço falha ou a sessão recebe Ctrl+C. Serviços anteriores são preservados.
-
-### Primeira carga no desenvolvimento local
-
-`make dev` verifica a existência de uma publicação concluída. Quando ainda não há
-catálogo válido, inicia o comando de sincronização como processo separado da API.
-A consulta retorna 503 durante essa carga, e a interface explica a espera e repete
-a leitura local a cada 15 segundos. Não chama o Followw pelo navegador.
-O comando registra o progresso por unidade no terminal. Ao adquirir o lock de
-execução, marca execuções antigas ainda `executando` como interrompidas, pois o
-lock comprova que não existe outro sincronizador ativo. Uma nova execução nunca
-publica parcialmente para contornar a ausência de cache.
-
-### Carga local concluída
-
-Execução `5a4fa5df-bde0-4c98-902a-bc5dd7c55d06`: 211 unidades consultadas em 2026.2, 9.154 ofertas publicadas. Filtros HTTP 200 com 211 unidades; busca FGA0108/FCTE/2026.2 HTTP 200 com duas ofertas e `stale: false`. Validação HTTP local via TestClient com autenticação substituída para a leitura, banco real local. Não representa deploy.
+- **Adaptador, API e publicação atômica:** `backend/tests/test_class_catalog_api.py`, `backend/tests/test_followw_catalog_adapter.py` e `backend/tests/test_catalog_publication_database.py` (PostgreSQL isolado).
+- **Interface:** `frontend/tests/` (Playwright em desktop e mobile, temas claro e escuro, seleção entre buscas e estados `503`).
