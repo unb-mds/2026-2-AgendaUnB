@@ -19,23 +19,26 @@ jobs:
   worker:
     if: >-
       github.ref == 'refs/heads/main' &&
-      vars.PRODUCTION_SYLLABUS_WORKER_ENABLED == 'true' &&
       (github.event.schedule == '13,43 * * * *' || inputs.job == 'worker')
     runs-on: ubuntu-latest
     environment: production-jobs
     timeout-minutes: 10
     concurrency: production-syllabus-worker
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - if: vars.PRODUCTION_SYLLABUS_WORKER_ENABLED == 'true'
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v5
+      - if: vars.PRODUCTION_SYLLABUS_WORKER_ENABLED == 'true'
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: pip
           cache-dependency-path: backend/requirements.txt
-      - run: python -m pip install -r backend/requirements.txt
-      - working-directory: backend
+      - if: vars.PRODUCTION_SYLLABUS_WORKER_ENABLED == 'true'
+        run: python -m pip install -r backend/requirements.txt
+      - if: vars.PRODUCTION_SYLLABUS_WORKER_ENABLED == 'true'
+        working-directory: backend
         env:
           APP_ENV: production
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
@@ -48,23 +51,26 @@ jobs:
   collector:
     if: >-
       github.ref == 'refs/heads/main' &&
-      vars.PRODUCTION_EVENT_COLLECTION_ENABLED == 'true' &&
       (github.event.schedule == '27 10 * * *' || inputs.job == 'collector')
     runs-on: ubuntu-latest
     environment: production-jobs
     timeout-minutes: 10
     concurrency: production-event-collector
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - if: vars.PRODUCTION_EVENT_COLLECTION_ENABLED == 'true'
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v5
+      - if: vars.PRODUCTION_EVENT_COLLECTION_ENABLED == 'true'
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: pip
           cache-dependency-path: backend/requirements.txt
-      - run: python -m pip install -r backend/requirements.txt
-      - working-directory: backend
+      - if: vars.PRODUCTION_EVENT_COLLECTION_ENABLED == 'true'
+        run: python -m pip install -r backend/requirements.txt
+      - if: vars.PRODUCTION_EVENT_COLLECTION_ENABLED == 'true'
+        working-directory: backend
         env:
           APP_ENV: production
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
