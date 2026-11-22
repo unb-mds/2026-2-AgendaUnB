@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Relato privado de vulnerabilidade de segurança
+    url: https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/SECURITY.md
+    about: Consulte a Política de Segurança para relatar vulnerabilidades de forma privada pelo e-mail oficial do projeto.
