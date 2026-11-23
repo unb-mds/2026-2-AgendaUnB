@@ -4,6 +4,8 @@ description: Hub digital acadêmico e extracurricular da Universidade de Brasíl
 colors:
   primary: "#008bff"
   primary-deep: "rgba(0, 95, 210, 1)"
+  accent-fill: "#0273ec"
+  on-accent-fill: "#ffffff"
   bg-dark: "#080c16"
   bg-dark-canvas: "#050508"
   surface-card-dark: "#1a2235"
@@ -79,6 +81,9 @@ A paleta é contida e focada, usando o azul como grande protagonista em ambos os
 ### Primary
 - **Azul UnB Glow** (`#008bff`): A cor vital do projeto. Usada em avatares, bordas de interação, rótulos e efeitos de brilho.
 - **Azul Deep** (`rgba(0, 95, 210, 1)` / `#005fd2`): Versão ligeiramente mais fechada, usada em botões primários e destaques de contraste.
+- **Preenchimento azul** (`--accent-fill`, `#0273ec`): Use em seleções ativas, marcas de seleção, destaques do calendário e ações como **Criar Evento**, com texto e ícones brancos (`--on-accent-fill`, `#ffffff`) nos dois temas. O tom é a cor sRGB de 8 bits mais próxima de `#008bff` pela distância euclidiana em OKLab entre as que atingem WCAG AA para texto comum em branco. O par sólido atinge **4,500546:1**. [WCAG 2.1 AA — contraste mínimo](https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum.html)
+- **Ações de gestão e Planos de ensino:** Os botões primários, incluindo **Seguir turmas**, usam `--accent-fill` por meio de `--manage-action`.
+- **Ícones de cards no tema escuro:** Na página inicial, os ícones são pretos sobre fundo azul. Em **Selecionar turmas** e **Organizar datas**, os ícones são brancos. O fundo do ícone da etapa ativa é `#0273ec` e o da etapa inativa é `#30659e1e`, um azul com cerca de 12% de opacidade sobre o card.
 
 ### Dark Mode
 - **App Background** (`#080c16`): Fundo das páginas internas (agenda, planos, moderação, administração e configurações).
@@ -104,6 +109,8 @@ A paleta é contida e focada, usando o azul como grande protagonista em ambos os
 **Body Font:** Inter
 
 **Character:** A Orbitron traz uma personalidade digital marcante para cabeçalhos e logo, enquanto a Inter segura a carga cognitiva pesada das descrições de eventos e formulários com extrema legibilidade.
+
+**Marca na navegação:** A ampulheta original acompanha o nome “Agenda UnB” em Orbitron sem itálico.
 
 ### Hierarchy
 - **Display** (700, clamp(1.6rem, 3.5vw, 2.2rem)): Títulos de seções (`.section-h2`).
@@ -149,7 +156,7 @@ A linguagem de formas mistura raios suaves e formas orgânicas de pílula.
 
 ### Do:
 - **Do** manter a legibilidade dos textos mesmo sobre áreas com *blur*.
-- **Do** usar o azul `#008bff` com parcimônia para que ele retenha seu valor de CTA e destaque.
+- **Do** usar `#008bff` com parcimônia em acentos e focos. Use `#0273ec` como fundo sólido com texto branco nos controles que adotam o tom de preenchimento.
 
 ### Don't:
 - **Don't** utilizar sombras pretas duras para destacar elementos dentro dos cards; confie na opacidade dos textos.

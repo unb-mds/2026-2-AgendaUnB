@@ -114,9 +114,7 @@ export default function CustomSelect({
                 className={`custom-picker-option${multiple && !option.isClear ? ' custom-picker-option-multi' : ''}${option.isClear && multiple ? ' custom-picker-option-clear' : ''}${isSelected ? ' active' : ''}`}
                 onClick={() => select(option)}>
                 {multiple && !option.isClear && (
-                  <span className={`custom-select-checkbox${isSelected ? ' checked' : ''}`} aria-hidden="true">
-                    {isSelected && <span className="material-symbols-outlined">check</span>}
-                  </span>
+                  <span className={`custom-select-checkbox${isSelected ? ' checked' : ''}`} aria-hidden="true" />
                 )}
                 <span className="custom-select-option-label">{option.label}</span>
               </button>

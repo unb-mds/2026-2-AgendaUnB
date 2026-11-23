@@ -5,7 +5,7 @@ import time
 
 import httpx
 
-from src.modules.syllabus.extraction import ExtractionData, TextPage
+from src.modules.syllabus.extraction import ProviderExtractionData, TextPage
 from src.modules.syllabus.processing_config import ProcessingConfig, ProcessingError
 
 SYSTEM_INSTRUCTION = """Você é um extrator preciso de avaliações acadêmicas (provas e trabalhos) a partir de planos de ensino, tabelas, listas ou comunicados de calendário em qualquer estilo textual.
@@ -19,21 +19,19 @@ O QUE EXTRAIR E O QUE IGNORAR:
 - Extraia TODAS as provas (ex.: prova, exame, avaliação regular/teórica/prática, P1, P2, prova substitutiva, prova final) e trabalhos avaliativos (ex.: trabalho, T1, entrega avaliativa, projeto final ou seminário explicitamente avaliativo) que façam parte do cronograma ou calendário.
 - Use exclusivamente os tipos "prova" ou "trabalho".
 - IGNORE e NÃO extraia: aulas comuns, revisões sem nota, feriados, recessos, referências bibliográficas, ementa, critérios/fórmulas de média, atividades formativas sem nota (ex.: listas opcionais, worksheets, exercícios formativos) e regras administrativas (ex.: prazo para pedir segunda chamada ou revisão de nota).
-- Se não houver cronograma/calendário de avaliações no documento, retorne {"candidatos": []}.
+- Se não houver cronograma/calendário de avaliações no documento, retorne {"disciplina": null, "candidatos": []}.
 - Não gere eventos vazios ou duplicados.
 
-FORMATO DOS TÍTULOS (OBRIGATÓRIO):
+DISCIPLINA E TÍTULOS (OBRIGATÓRIO):
+- Em `disciplina`, copie o nome completo da disciplina tal como aparece em qualquer página, sem código, número da turma ou sigla. Use `null` se o nome estiver ausente ou se o texto reunir avaliações de disciplinas diferentes.
 - NUNCA copie frases inteiras, datas, horários, salas/locais ou verbos narrativos ("será realizada", "marcada para", "acontecerá", "foi definida") dentro de `titulo`.
-- O campo `titulo` deve ser curto, limpo e objetivo:
-  1. Quando o texto descrever avaliações em texto corrido, comunicado ou citar o nome da disciplina/matéria do curso (ex.: "Estrutura de Dados 1", "Matemática Discreta 2", "Cálculo Diferencial e Integral II"), gere o título no formato padronizado:
-     - "Prova X - <Matéria>" (para tipo "prova")
-     - "Trabalho X - <Matéria>" (para tipo "trabalho")
-     onde X começa em 1 e cresce (1, 2, 3...) na ORDEM CRONOLÓGICA das avaliações daquele tipo (quem acontece antes recebe índice menor), e `<Matéria>` é o nome exato da disciplina/matéria do curso conforme aparece no documento (não use tópicos soltos da ementa nem frases).
-  2. Quando o documento não informar o nome da disciplina/matéria ou já trouxer apenas um rótulo curto padrão (ex.: "Prova 1", "P1", "Prova Substitutiva", "Prova final", "Trabalho 1", "Trabalho final"), preserve esse rótulo limpo.
+- Use apenas o rótulo da avaliação em `titulo`. Preserve rótulos explícitos como "Prova 1", "P1", "Prova Substitutiva", "Prova final", "Trabalho 1" e "Trabalho final", sem renumerar ou acrescentar o nome da disciplina. O sistema monta a sigla a partir de `disciplina`.
+- Para avaliações sem rótulo próprio, use "Prova X" ou "Trabalho X", com X em ordem cronológica por tipo. Se o documento reunir disciplinas diferentes, o título genérico pode levar o nome completo da disciplina citada naquela avaliação (ex.: "Prova 1 - Redes de Computadores").
 - Ordene `candidatos` em ordem cronológica (da data mais antiga para a mais recente; itens sem data ao final).
 
 TRECHO DE ORIGEM E PÁGINA:
 - Para cada candidato, preencha `trecho_origem` copiando literalmente um trecho contínuo e exato do texto recebido (a frase completa daquela avaliação ou a linha inteira da tabela), de até 1000 caracteres, preservando exatamente pontuação, acentos e números (não use "..." nem parafraseie).
+- Preserve caracteres em português como em "terça-feira" e "às 14h". Use os caracteres do texto, sem entidades HTML (como "&ccedil;" ou "&agrave;").
 - Indique `pagina_origem` com o número físico da página recebida, ou `null` quando a página de entrada for `null`.
 
 DATAS E HORÁRIOS:
@@ -42,6 +40,7 @@ DATAS E HORÁRIOS:
 - `hora_sugerida` (`HH:MM`, 24h): preencha somente quando houver horário explícito no `trecho_origem` e `data_sugerida` estiver preenchida; caso contrário `null`.
   - Em intervalos explícitos de duração de uma mesma prova/evento (ex.: "das 08h00 às 10h00", "de 10h00 às 12h00", "14h às 16h"), use o horário de INÍCIO (ex.: `"08:00"`, `"10:00"`, `"14:00"`), sem marcar `"hora"` como ambíguo.
   - Em horários alternativos ou incertos (ex.: "09h ou 14h", "a definir"), use `hora_sugerida: null` e inclua `"hora"` em `campos_ambiguos`.
+  - A ausência de horário na avaliação, inclusive quando só houver um código semanal da turma (ex.: "35M34"), não é uma ambiguidade. O sistema interpreta a grade semanal.
 - Marque apenas os campos realmente incertos em `campos_ambiguos` (`"titulo"`, `"tipo"`, `"data"`, `"hora"`).
 - Responda SOMENTE com o objeto JSON do esquema solicitado.
 """
@@ -57,7 +56,7 @@ def generation_schema():
         if isinstance(value, list):
             return [simplify(item) for item in value]
         return value
-    return simplify(ExtractionData.model_json_schema())
+    return simplify(ProviderExtractionData.model_json_schema())
 
 
 def _error_reason(response: httpx.Response) -> str:

@@ -245,6 +245,68 @@ function calendarSession(method) {
   };
 }
 
+test('filtros acompanham a largura da busca e recolhem no celular', async ({ page }) => {
+  const session = calendarSession('email');
+  await authClient(page, `async getSession() { return { data: { session: ${JSON.stringify(session)} } }; },`, session);
+  await page.route('**/api/v1/events?*', route => route.fulfill({ json: [] }));
+  await page.route('**/api/v1/me/events', route => route.fulfill({ json: [] }));
+  await page.route('**/api/v1/me/saved-events', route => route.fulfill({ json: [] }));
+  await page.route('**/api/v1/me/google-calendar/connection', route => route.fulfill({ json: { connected: false } }));
+  await page.goto('/eventos');
+  const search = page.getByRole('searchbox', { name: 'Buscar eventos e comunicados' });
+  const filters = page.getByRole('group', { name: 'Filtros de eventos' });
+  const [input, bar] = await Promise.all([search.boundingBox(), filters.boundingBox()]);
+  expect({ left: bar.x, width: bar.width }).toEqual({ left: input.x, width: input.width });
+
+  for (const [tab, emptyMessage] of [
+    ['Eventos Públicos', 'Nenhum evento público cadastrado no momento.'],
+    ['Meus Eventos', 'Você ainda não possui compromissos pessoais ou eventos salvos na sua agenda.'],
+  ]) {
+    await page.getByRole('button', { name: tab, exact: true }).click();
+    await expect(page.getByText(emptyMessage)).toBeVisible();
+    await expect(page.getByRole('button', { name: /^criar evento$/i })).toHaveCount(1);
+  }
+
+  await page.setViewportSize({ width: 360, height: 820 });
+  const toggle = page.getByRole('button', { name: /^Filtros/ });
+  const exportButton = page.getByRole('button', { name: 'Exportar agenda', exact: true });
+  const createButton = page.getByRole('button', { name: 'Criar Evento', exact: true });
+  const [filterBox, exportBox, createBox] = await Promise.all([toggle, exportButton, createButton].map(button => button.boundingBox()));
+  expect(exportBox.y).toBe(filterBox.y);
+  expect(createBox.y).toBe(filterBox.y);
+  expect(exportBox.x).toBeGreaterThanOrEqual(filterBox.x + filterBox.width);
+  expect(createBox.x).toBeGreaterThanOrEqual(exportBox.x + exportBox.width);
+  expect(createBox.x + createBox.width).toBeLessThanOrEqual(360);
+  expect(filterBox.width).toBeGreaterThan(85);
+  expect(exportBox.width).toBeLessThanOrEqual(createBox.width * 1.1);
+
+  await exportButton.click();
+  await expect(page.getByRole('dialog', { name: 'Exportar agenda' })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(exportButton).toBeFocused();
+  await expect(filters).toBeHidden();
+  await toggle.click();
+  await filters.getByRole('button', { name: 'Filtrar por campus' }).click();
+  await filters.getByRole('checkbox', { name: 'Darcy Ribeiro' }).click();
+  await expect(filters.getByRole('checkbox', { name: 'Darcy Ribeiro' })).toBeChecked();
+  await toggle.click();
+  await expect(filters).toBeHidden();
+  await expect(toggle).toContainText('1');
+
+  await toggle.click();
+  const clear = filters.getByRole('button', { name: 'Limpar Filtros', exact: true });
+  const [startBox, endBox, clearBox] = await Promise.all([
+    filters.getByRole('button', { name: 'Filtrar a partir da data' }).boundingBox(),
+    filters.getByRole('button', { name: 'Filtrar até a data' }).boundingBox(),
+    clear.boundingBox(),
+  ]);
+  expect(clearBox.y).toBe(endBox.y);
+  expect(clearBox.x).toBeGreaterThanOrEqual(startBox.x);
+  expect(clearBox.x + clearBox.width).toBeLessThanOrEqual(startBox.x + startBox.width);
+  await clear.click();
+  await expect(toggle.locator('.events-filter-count')).toHaveCount(0);
+});
+
 test('Google com permissão exporta apenas os eventos selecionados', async ({ page }) => {
   const session = calendarSession('oauth');
   await authClient(page, `async getSession() { return { data: { session: ${JSON.stringify(session)} } }; },`, session);
@@ -264,7 +326,7 @@ test('Google com permissão exporta apenas os eventos selecionados', async ({ pa
   });
 
   await page.goto('/eventos?aba=meus');
-  const exportButton = page.getByRole('button', { name: 'Exportar para o Google Agenda' });
+  const exportButton = page.getByRole('button', { name: 'Exportar agenda' });
   const viewSelector = page.getByRole('group', { name: 'Visualização dos eventos' });
   await expect(exportButton).toBeVisible();
   const [action, selector] = await Promise.all([exportButton.boundingBox(), viewSelector.boundingBox()]);
@@ -275,14 +337,14 @@ test('Google com permissão exporta apenas os eventos selecionados', async ({ pa
   const { height: referenceHeight } = await eventsSelector.boundingBox();
   expect(action.height).toBe(referenceHeight);
   expect(selector.height).toBe(referenceHeight);
-  await expect(exportButton.locator('img')).toHaveAttribute('src', '/google-calendar-2026.svg');
-  await expect.poll(() => exportButton.locator('img').evaluate(icon => icon.naturalWidth)).toBeGreaterThan(0);
+  await expect(exportButton.locator('.material-symbols-outlined')).toHaveText('calendar_today');
+  await expect(page.getByRole('button', { name: 'Desconectar Google Agenda' })).toHaveCount(0);
   await exportButton.focus();
   await page.keyboard.press('Tab');
   await expect(viewSelector.getByRole('button', { name: 'Lista' })).toBeFocused();
   await page.keyboard.press('Shift+Tab');
   await page.keyboard.press('Enter');
-  const dialog = page.getByRole('dialog', { name: 'Exportar para o Google Agenda' });
+  const dialog = page.getByRole('dialog', { name: 'Exportar agenda' });
   await dialog.getByRole('checkbox', { name: /Prova de MDS/ }).check();
   await dialog.getByRole('button', { name: 'Exportar eventos selecionados' }).click();
   await expect(dialog.getByRole('status')).toContainText('1 evento disponível no Google Agenda.');
@@ -311,25 +373,22 @@ for (const outcome of ['denied', 'email_mismatch', 'connected']) {
       expect(route.request().method()).toBe('POST');
       return route.fulfill({ json: { authorization_url: 'https://accounts.google.com/o/oauth2/v2/auth?state=simulado' } });
     });
-    await page.route('**/api/v1/me/google-calendar/connection', route => {
-      if (route.request().method() === 'DELETE') {
-        connected = false;
-        return route.fulfill({ json: { disconnected: true, revocation: 'confirmed' } });
-      }
-      return route.fulfill({ json: { connected } });
-    });
+    await page.route('**/api/v1/me/google-calendar/connection', route => route.fulfill({ json: { connected } }));
     await page.goto('/eventos?aba=meus');
-    const connect = page.getByRole('button', { name: 'Conectar ao Google Agenda', exact: true });
+    const exportButton = page.getByRole('button', { name: 'Exportar agenda' });
+    await exportButton.click();
+    const dialog = page.getByRole('dialog', { name: 'Exportar agenda' });
+    const connect = dialog.getByRole('button', { name: 'Conectar ao Google Agenda', exact: true });
     await connect.click();
     await expect(page).toHaveURL(new RegExp(`google_calendar=${outcome}`));
     if (connected) {
-      await expect(page.getByText('Google Agenda conectado.')).toBeVisible();
-      await page.getByRole('button', { name: 'Desconectar Google Agenda', exact: true }).click();
-      await expect(page.getByText('Google Agenda desconectado.')).toBeVisible();
-      await expect(connect).toBeVisible();
+      await expect(dialog.getByRole('button', { name: 'Exportar eventos selecionados' })).toBeDisabled();
+      await expect(connect).toHaveCount(0);
     } else {
-      await expect(page.getByText(outcome === 'denied' ? /não foi concedido/ : /mesmo e-mail verificado/)).toBeVisible();
+      await expect(dialog.getByRole('alert')).toContainText(outcome === 'denied' ? /não foi concedido/ : /mesmo e-mail verificado/);
     }
+    await page.keyboard.press('Escape');
+    await expect(page).toHaveURL(/\?aba=meus$/);
     const profileButton = page.getByRole('button', { name: /Menu do perfil/i });
     await expect(profileButton).toBeVisible();
     await profileButton.click();
@@ -415,11 +474,11 @@ test('Google Agenda exibe prévia, pede confirmação de sobrescrita, trata falh
   });
 
   await page.goto('/eventos?aba=meus');
-  await page.getByRole('button', { name: 'Exportar para o Google Agenda' }).click();
-  const dialog = page.getByRole('dialog', { name: 'Exportar para o Google Agenda' });
+  await page.getByRole('button', { name: 'Exportar agenda' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Exportar agenda' });
 
   await dialog.getByRole('button', { name: 'Selecionar período' }).click();
-  await dialog.getByLabel('Incluir descrição selecionada nos eventos enviados ao Google Agenda').check();
+  await dialog.getByLabel('Incluir a descrição dos eventos no Google Agenda').check();
   await expect(dialog.locator('.google-calendar-preview-summary')).toContainText('2 serão criados');
   await expect(dialog.locator('.google-calendar-preview-summary')).toContainText('1 será atualizado');
 
@@ -486,12 +545,12 @@ test('destino Agenda UnB removido no Google permite confirmar recriação', asyn
   });
 
   await page.goto('/eventos?aba=meus');
-  await page.getByRole('button', { name: 'Exportar para o Google Agenda' }).click();
-  const dialog = page.getByRole('dialog', { name: 'Exportar para o Google Agenda' });
+  await page.getByRole('button', { name: 'Exportar agenda' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Exportar agenda' });
   await dialog.getByRole('checkbox', { name: /Prova de Cálculo/ }).check();
   await dialog.getByRole('button', { name: 'Exportar eventos selecionados' }).click();
   await expect(dialog.getByRole('alert')).toContainText('Confirme o ID da agenda Agenda UnB');
-  await dialog.getByRole('button', { name: 'Recuperar ou recriar agenda Agenda UnB' }).click();
+  await dialog.getByRole('button', { name: 'Recuperar agenda do Google' }).click();
 
   const recoveryDialog = page.getByRole('dialog', { name: 'Recuperar agenda do Google' });
   await expect(recoveryDialog).toBeVisible();

@@ -15,7 +15,7 @@ import { syllabusError } from '../lib/syllabus';
 import { syllabusApi } from '../lib/syllabusApi';
 import { buildReviewConfirmation, updateCandidateReviewItem } from '../lib/syllabusReview';
 import { useSyllabusResource } from '../hooks/useSyllabusResource';
-import { Feedback, Icon } from './ManagementUI';
+import { Feedback, Icon, NativeSelect } from './ManagementUI';
 
 const formatDate = value => (value ? value.split('-').reverse().join('/') : 'Sem data');
 const formatTimeLabel = item => (
@@ -56,15 +56,11 @@ function SharedCandidateRow({ item, disabled, canWithdraw, onPatch, onSelect, on
         <small>{formatTimeLabel(item)}</small>
       </div>
       {divergent && <span className="shared-badge is-divergent">Divergência</span>}
-      <span className={`semester-status${item.attention ? ' attention' : item.modifiedSinceImport ? ' updated' : ''}`}>
-        {item.imported
-          ? 'Na agenda'
-          : item.modifiedSinceImport
-            ? 'Atualizado'
-            : item.attention
-              ? 'Revisar'
-              : 'Disponível'}
-      </span>
+      {item.imported ? <Link className="semester-agenda-status" to="/eventos?aba=meus">Data na agenda</Link> : (
+        <span className={`semester-status${item.attention ? ' attention' : item.modifiedSinceImport ? ' updated' : ''}`}>
+          {item.modifiedSinceImport ? 'Atualizado' : item.attention ? 'Revisar' : 'Disponível'}
+        </span>
+      )}
       <button
         className="manage-icon-button"
         type="button"
@@ -105,12 +101,12 @@ function SharedCandidateRow({ item, disabled, canWithdraw, onPatch, onSelect, on
               return <label className="semester-field" key={field}>
                 {name}
                 {type === 'select' ? (
-                  <select {...props}>
+                  <NativeSelect {...props}>
                     <option value="">Selecione</option>
                     {!['', 'prova', 'trabalho'].includes(item.type) && <option value={item.type}>{item.type}</option>}
                     <option value="prova">Prova</option>
                     <option value="trabalho">Trabalho</option>
-                  </select>
+                  </NativeSelect>
                 ) : (
                   <input {...props} type={type} step={type === 'time' ? 'any' : undefined} />
                 )}
@@ -263,7 +259,7 @@ function RevisionEditor({ version, classSchedule, busy, onCancel, onPublish }) {
             </label>
             <label className="semester-field">
               Tipo
-              <select
+              <NativeSelect
                 value={item.type}
                 disabled={busy}
                 aria-invalid={errors.type ? true : undefined}
@@ -272,7 +268,7 @@ function RevisionEditor({ version, classSchedule, busy, onCancel, onPublish }) {
                 <option value="">Selecione</option>
                 <option value="prova">Prova</option>
                 <option value="trabalho">Trabalho</option>
-              </select>
+              </NativeSelect>
               {errors.type && <small className="semester-error">{errors.type}</small>}
             </label>
             <label className="semester-field">
@@ -536,7 +532,7 @@ export default function SharedClassPlans({
       {offers.length > 1 && onSelectOffer && (
         <label className="semester-field shared-offer-picker">
           <span className="sr-only">Selecionar turma da biblioteca</span>
-          <select
+          <NativeSelect
             aria-label="Selecionar turma da biblioteca"
             value={offeringId}
             onChange={event => onSelectOffer(event.target.value)}
@@ -546,7 +542,7 @@ export default function SharedClassPlans({
                 {item.subject_name} · Turma {item.class_number}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
       )}
     </header>

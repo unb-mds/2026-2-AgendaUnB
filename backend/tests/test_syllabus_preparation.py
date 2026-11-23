@@ -175,9 +175,57 @@ def test_minimization_preserves_assessment_extraction(page):
     assert sanitized.unsupported_dates == 0
     assert [(item.titulo, str(item.data_sugerida), str(item.hora_sugerida),
              item.pagina_origem, item.trecho_origem) for item in sanitized.candidates] == [
-        ("Prova 1", "2026-11-10", "14:30:00", page, exam),
-        ("Trabalho Final", "2026-11-24", "10:00:00", page, assignment),
+        ("Prova 1 - CDIII", "2026-11-10", "14:30:00", page, exam),
+        ("Trabalho Final - CDIII", "2026-11-24", "10:00:00", page, assignment),
     ]
+
+
+@pytest.mark.parametrize(("discipline", "label", "provider_title", "day", "title", "page"), [
+    ("FUNDAMENTOS DE ARQUITETURA DE COMPUTADORES", "Prova 1", "Prova 1", "10", "Prova 1 - FAC", 2),
+    ("Estrutura de Dados 1", "Prova Substitutiva", "Prova 1 - Estrutura de Dados 1", "12", "Prova Substitutiva - ED1", None),
+])
+def test_plan_schedule_and_abbreviated_title_reach_agenda(
+    api, published_offering, monkeypatch, discipline, label, provider_title, day, title, page,
+):
+    monkeypatch.setenv("SYLLABUS_PROVIDER_TERMS_READY", "true")
+    client, sessions, _, _ = api
+    evidence = f"{label} — {day}/11/2026."
+    header = f"Disciplina: {discipline}\nHorário da turma: 35M34"
+    if page is None:
+        sid, preview = prepare(api, f"{header}\n{evidence}")
+    else:
+        upload = client.post("/api/v1/syllabus/upload", data={"offering_id": published_offering},
+                             files={"file": ("sintetico.pdf", make_pdf([header, evidence]), "application/pdf")})
+        assert upload.status_code == 202
+        sid = upload.json()["id"]
+        preview = client.get(f"/api/v1/syllabus/{sid}/text").json()
+    assert client.post(f"/api/v1/syllabus/{sid}/extractions", json=approval(preview)).status_code == 202
+
+    class Provider:
+        def extract(self, pages):
+            return json.dumps({"disciplina": discipline, "candidatos": [{
+                "titulo": provider_title, "tipo": "prova", "data_sugerida": f"2026-11-{day}",
+                "hora_sugerida": None, "pagina_origem": page, "trecho_origem": evidence,
+            }]})
+
+    worker = SyllabusWorker(sessions, None, Provider(), ProcessingConfig(), runner=process_document)
+    assert worker.run_once()
+    detail = client.get(f"/api/v1/syllabus/{sid}")
+    assert detail.status_code == 200
+    [candidate] = detail.json()["candidates"]
+    assert candidate["title"] == title
+    assert candidate["suggestedDate"] == f"2026-11-{day}"
+    assert candidate["suggestedTime"] == "10:00:00"
+    assert candidate["sourcePage"] == page
+    assert candidate["sourceExcerpt"] == evidence
+
+    confirmed = client.post(f"/api/v1/syllabus/{sid}/confirm", headers={"Idempotency-Key": "class-time-confirm"},
+                            json={"candidates": [{"candidateId": candidate["id"]}]})
+    assert confirmed.status_code == 200, confirmed.text
+    [event] = confirmed.json()["events"]
+    assert event["title"] == title
+    # SQLite devolve o horário civil sem o deslocamento aplicado no servidor.
+    assert event["starts_at"] == f"2026-11-{day}T10:00:00"
 
 
 def test_personal_data_reintroduced_by_edit_is_rejected_even_with_correct_hash(api, monkeypatch):

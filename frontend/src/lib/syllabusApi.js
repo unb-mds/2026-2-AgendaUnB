@@ -47,8 +47,8 @@ export const syllabusApi = {
   async get(id, signal) {
     return normalizePlan(await syllabusRequest(`/${encodeURIComponent(id)}`, { signal }));
   },
-  async remove(id, signal) {
-    return syllabusRequest(`/${encodeURIComponent(id)}`, { method: 'DELETE', signal });
+  async removeSubmissions(signal) {
+    return syllabusRequest('', { method: 'DELETE', signal, timeout: 90000 });
   },
   async confirm(id, candidates, options) {
     const {

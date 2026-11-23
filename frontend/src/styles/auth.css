@@ -138,12 +138,7 @@ body.light .auth-dialog .modal-divider { color: var(--auth-muted); margin-block:
   padding-block: .25rem;
 }
 .auth-checkbox-row input[type="checkbox"] {
-  flex: none;
-  width: 20px;
-  height: 20px;
   margin-top: .15rem;
-  accent-color: #006bc4;
-  cursor: pointer;
 }
 .auth-checkbox-row label {
   font-size: .9rem;

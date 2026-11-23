@@ -309,6 +309,9 @@ class Syllabus(Base):
     discarded_at: Mapped[datetime | None] = mapped_column(
         "arquivo_descartado_em", DateTime(timezone=True), nullable=True
     )
+    submission_deleted_at: Mapped[datetime | None] = mapped_column(
+        "envio_excluido_em", DateTime(timezone=True), nullable=True
+    )
 
 
     @property

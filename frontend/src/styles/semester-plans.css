@@ -1,7 +1,7 @@
 .semester-panel {
   --semester-accent: #52b8ff;
   --semester-brand: #008bff;
-  --semester-primary: #006dc7;
+  --semester-primary: var(--manage-action);
   --semester-primary-hover: #0077db;
   --semester-text: #eaf1fb;
   --semester-muted: #93a7c2;
@@ -17,7 +17,9 @@
   --semester-error: #ef7e8c;
   --semester-ok: #5cc9ba;
   --semester-selection: rgba(255, 255, 255, 0.05);
-  --semester-tab-active: #101e36;
+  --semester-selector: #111d30;
+  --semester-selector-hover: #182944;
+  --semester-selector-active: #1b3252;
   color: var(--semester-text);
   display: grid;
   gap: 18px;
@@ -25,7 +27,6 @@
 body.light .semester-panel {
   --semester-accent: #0062b8;
   --semester-brand: #008bff;
-  --semester-primary: #006dc7;
   --semester-primary-hover: #0059a8;
   --semester-text: #1b283e;
   --semester-muted: #52637c;
@@ -41,13 +42,15 @@ body.light .semester-panel {
   --semester-error: #a9283b;
   --semester-ok: #167469;
   --semester-selection: #eef3f9;
-  --semester-tab-active: #ffffff;
+  --semester-selector: #e8f1fc;
+  --semester-selector-hover: #dfecfb;
+  --semester-selector-active: #d5e7fc;
 }
 .semester-panel [hidden] { display: none !important; }
 .semester-panel :is(p, small) { overflow-wrap: anywhere; }
 .semester-panel :is(p, small, label) { line-height: 1.5; }
 .semester-panel :is(summary, button, input, select, textarea, a):focus-visible {
-  outline: 2px solid var(--semester-brand);
+  outline: 2px solid var(--semester-accent);
   outline-offset: 3px;
 }
 .semester-panel ::selection { background: var(--semester-primary); color: #fff; }
@@ -65,14 +68,27 @@ body.light .semester-panel {
 }
 .semester-panel :is(select, input[type="date"], input[type="time"]) { color-scheme: dark; }
 body.light .semester-panel :is(select, input[type="date"], input[type="time"]) { color-scheme: light; }
-.semester-panel select {
-  border-color: var(--semester-control-line);
+.native-select { position: relative; display: block; min-width: 0; }
+.native-select > .material-symbols-outlined {
+  position: absolute; inset-inline-end: 10px; inset-block-start: 50%; translate: 0 -50%;
+  color: var(--semester-muted); pointer-events: none;
+}
+.semester-panel .native-select > select {
+  appearance: none;
+  width: 100%;
+  border: 0;
+  background: var(--semester-selector);
   border-radius: 10px;
-  padding-inline: 12px 8px;
+  padding-inline: 12px 34px;
   cursor: pointer;
   text-overflow: ellipsis;
 }
-.semester-panel select:enabled:hover { border-color: var(--semester-brand); }
+.native-select:has(select:disabled) > .material-symbols-outlined { opacity: .65; }
+@media (forced-colors: active) {
+  .semester-panel .native-select > select { appearance: auto; }
+  .native-select > .material-symbols-outlined { display: none; }
+}
+.semester-panel .native-select > select:enabled:hover { background: var(--semester-selector-hover); }
 .semester-panel select:disabled { cursor: not-allowed; }
 .semester-panel .material-symbols-outlined {
   display: inline-block;
@@ -82,7 +98,6 @@ body.light .semester-panel :is(select, input[type="date"], input[type="time"]) {
   line-height: 1;
   overflow: hidden;
 }
-.semester-panel input[type="checkbox"] { accent-color: var(--semester-primary); inline-size: 19px; block-size: 19px; flex: 0 0 auto; margin: 0; }
 .semester-panel button, .semester-panel summary, .semester-panel .management-text-button { min-height: 42px; }
 .semester-panel .management-text-button { color: var(--semester-accent); }
 .semester-panel .management-text-button:hover { text-decoration: underline; text-underline-offset: .2em; }
@@ -104,7 +119,7 @@ body.light .semester-panel .manage-button.primary:disabled {
   border-color: var(--semester-line);
   opacity: 1;
 }
-body.light .semester-panel :is(.semester-step-btn, .semester-metrics, .semester-section, .semester-workspace-tabs) {
+body.light .semester-panel :is(.semester-metrics, .semester-section) {
   backdrop-filter: none;
 }
 .semester-panel h2 {
@@ -139,43 +154,39 @@ body.light .semester-panel :is(.semester-step-btn, .semester-metrics, .semester-
   align-items: center;
   gap: 12px;
   min-width: 0;
-  min-height: 58px;
-  padding: 10px 14px;
+  min-height: 62px;
+  padding: 10px 12px;
   border: 1px solid var(--semester-line);
   border-radius: 14px;
-  background: var(--semester-surface);
-  backdrop-filter: blur(8px);
+  background: var(--semester-selector);
   color: var(--semester-text);
   text-align: left;
   cursor: pointer;
 }
 .semester-step-btn:hover {
+  background: var(--semester-selector-hover);
   border-color: var(--semester-line-accent);
 }
 .semester-step-btn.is-active {
+  background: var(--semester-selector-active);
   border-color: var(--semester-brand);
-  box-shadow: var(--semester-glow);
 }
-.semester-step-num {
+.semester-step-icon {
   display: grid;
   place-items: center;
-  flex: 0 0 32px;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 1px solid var(--semester-control-line);
-  background: var(--semester-field);
-  color: var(--semester-muted);
-  font-family: 'Orbitron', sans-serif;
-  font-size: .85rem;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
+  flex: 0 0 38px;
+  aspect-ratio: 1;
+  border-radius: 10px;
+  background: var(--semester-selector-active);
+  color: var(--semester-accent);
 }
-.semester-step-btn.is-active .semester-step-num {
-  border-color: transparent;
-  background: var(--semester-primary);
-  color: #fff;
+.semester-step-icon .material-symbols-outlined { font-size: 21px; }
+.semester-step-btn.is-active .semester-step-icon {
+  background: var(--accent-fill);
+  color: var(--on-accent-fill);
 }
+body:not(.light) .semester-step-btn .semester-step-icon { color: #ffffff; }
+body:not(.light) .semester-step-btn:not(.is-active) .semester-step-icon { background: #30659e1e; }
 .semester-step-copy {
   min-width: 0;
   display: grid;
@@ -202,14 +213,13 @@ body.light .semester-panel :is(.semester-step-btn, .semester-metrics, .semester-
 }
 .semester-panel .semester-toolbar-period.custom-select-trigger {
   min-inline-size: min(220px, 100%);
-  min-height: 58px;
+  min-height: 62px;
   height: 100%;
   padding: 10px 14px;
   border-radius: 14px;
-  border-color: var(--semester-line);
-  background: var(--semester-surface);
+  border: 1px solid var(--semester-line);
 }
-.semester-panel .semester-toolbar-period.custom-select-trigger:hover:not(:disabled) {
+.semester-panel .semester-toolbar-period.custom-select-trigger:is(:hover:not(:disabled), [aria-expanded="true"]) {
   border-color: var(--semester-line-accent);
 }
 
@@ -272,7 +282,7 @@ body.light .semester-panel :is(.semester-step-btn, .semester-metrics, .semester-
   align-items: center;
   gap: 6px;
 }
-.semester-reset-send-btn {
+.semester-delete-submissions {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -289,22 +299,15 @@ body.light .semester-panel :is(.semester-step-btn, .semester-metrics, .semester-
   cursor: pointer;
   transition: border-color .15s ease, color .15s ease, background-color .15s ease;
 }
-.semester-reset-send-btn .material-symbols-outlined {
+.semester-delete-submissions .material-symbols-outlined {
   font-size: 16px;
 }
-.semester-reset-send-btn:hover:not(:disabled) {
-  border-color: var(--semester-line-accent);
+.semester-delete-submissions:hover {
+  border-color: var(--semester-control-line);
   background: var(--semester-field);
-  color: var(--semester-text);
+  color: var(--semester-error);
 }
-.semester-reset-send-btn:focus-visible {
-  outline: 2px solid var(--semester-brand);
-  outline-offset: 2px;
-}
-.semester-reset-send-btn:disabled {
-  opacity: .48;
-  cursor: not-allowed;
-}
+.semester-delete-note { margin-top: 8px; color: var(--manage-muted); }
 .semester-queue-toggle { display: none; }
 .semester-plan-offer { display: grid; gap: 6px; margin-block-end: 14px; }
 .semester-plan-offer > .management-text-button { justify-self: start; }
@@ -318,9 +321,9 @@ body.light .semester-panel :is(.semester-step-btn, .semester-metrics, .semester-
   gap: 4px;
   padding: 4px;
   margin-bottom: 12px;
-  border: 1px solid var(--semester-line);
+  border: 0;
   border-radius: 12px;
-  background: var(--semester-field);
+  background: var(--semester-selector);
 }
 .semester-input-tabs button,
 .semester-workspace-tabs button {
@@ -330,7 +333,7 @@ body.light .semester-panel :is(.semester-step-btn, .semester-metrics, .semester-
   gap: 6px;
   min-height: 40px;
   padding: 6px 8px;
-  border: 1px solid transparent;
+  border: 0;
   border-radius: 9px;
   background: transparent;
   color: var(--semester-muted);
@@ -352,23 +355,17 @@ body.light .semester-panel :is(.semester-step-btn, .semester-metrics, .semester-
 }
 .semester-input-tabs button.is-active,
 .semester-workspace-tabs button.is-active {
-  background: var(--semester-tab-active);
-  border-color: var(--semester-line-accent);
-  color: var(--semester-text);
-}
-.semester-input-tabs button.is-active .material-symbols-outlined,
-.semester-workspace-tabs button.is-active .material-symbols-outlined {
-  color: var(--semester-accent);
+  background: var(--accent-fill);
+  color: var(--on-accent-fill);
 }
 .semester-workspace-tabs {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   padding: 5px;
-  border: 1px solid var(--semester-line);
+  border: 0;
   border-radius: 14px;
-  background: var(--semester-surface);
-  backdrop-filter: blur(8px);
+  background: var(--semester-selector);
 }
 .semester-workspace-tabs button {
   flex: 1 1 200px;
@@ -394,7 +391,9 @@ body.light .semester-panel :is(.semester-step-btn, .semester-metrics, .semester-
 .semester-panel .semester-field { display: grid; gap: 5px; font-size: .875rem; min-width: 0; }
 .semester-raw, .semester-queue-list, .semester-preview form { display: grid; gap: 10px; }
 .semester-raw { padding-top: 2px; }
-.semester-panel .custom-select-trigger { padding: 10px 12px; font: inherit; background: var(--semester-field); }
+.semester-panel .custom-select-trigger { padding: 10px 12px; border: 0; font: inherit; background: var(--semester-selector); }
+.semester-panel .custom-select-trigger:hover:not(:disabled),
+.semester-panel .custom-select-trigger[aria-expanded="true"] { background: var(--semester-selector-hover); }
 .semester-panel .custom-select-popup {
   background: var(--semester-popup);
   border-color: var(--semester-line-accent);
@@ -455,10 +454,20 @@ body.light .semester-panel :is(.semester-step-btn, .semester-metrics, .semester-
   .semester-capacity progress { appearance: auto; }
 }
 .semester-filters select { margin-inline-start: auto; }
+.semester-filter-buttons .manage-button {
+  border-color: transparent;
+  background: var(--semester-selector);
+}
+.semester-filter-buttons .manage-button:hover:not(:disabled) {
+  border-color: transparent;
+  background: var(--semester-selector-hover);
+}
 .semester-filter-buttons button[aria-pressed="true"] {
-  background: var(--semester-tab-active);
-  color: var(--semester-text);
-  border-color: var(--semester-line-accent);
+  background: var(--accent-fill);
+  color: var(--on-accent-fill);
+}
+.semester-filter-buttons .manage-button[aria-pressed="true"]:hover:not(:disabled) {
+  background: var(--accent-fill);
 }
 .semester-selection { margin-top: 12px; justify-content: space-between; font-size: .875rem; }
 .semester-selection label { display: flex; align-items: center; min-height: 42px; gap: 8px; }
@@ -478,7 +487,8 @@ body.light .semester-panel :is(.semester-step-btn, .semester-metrics, .semester-
 .semester-candidate-title strong { font-weight: 500; font-size: .935rem; line-height: 1.48; color: var(--semester-text); }
 .semester-candidate-title small { margin-top: 3px; font-size: .8rem; color: var(--semester-muted); }
 .semester-candidate-date { grid-column: 3; font-variant-numeric: tabular-nums; font-size: .86rem; }
-.semester-candidate-date strong { font-weight: 600; color: #ffffff; }
+.semester-candidate-date strong { font-weight: 600; color: var(--semester-text); }
+.semester-agenda-status { color: var(--semester-accent); font-size: .85rem; font-weight: 650; text-underline-offset: .2em; }
 .semester-candidate-date small { font-size: .78rem; margin-top: 2px; }
 .semester-candidate-summary .semester-status { grid-column: 4; padding-top: 2px; }
 .semester-status { color: var(--semester-muted); font-size: .8rem; }
@@ -575,6 +585,11 @@ body.light .semester-panel :is(.semester-step-btn, .semester-metrics, .semester-
   flex-wrap: wrap;
   gap: 10px;
   margin-top: 2px;
+}
+.semester-empty-actions:has(> button + button) {
+  display: inline-grid;
+  grid-auto-rows: 1fr;
+  width: min(100%, 17rem);
 }
 
 /* Pixel Art Black Cat Mascot ("Nyx · Mascote do Campus") */
@@ -736,7 +751,7 @@ body.light .pixel-cat-eye-glow { fill: #6ee6ff; }
 @media (max-width: 520px) {
   .semester-candidate-summary { grid-template-columns: 20px minmax(0, 1fr) 42px; }
   .semester-candidate-summary > button { grid-column: 3; grid-row: 1; }
-  .semester-candidate-date, .semester-candidate-summary .semester-status { grid-column: 2; }
+  .semester-candidate-date, .semester-candidate-summary :is(.semester-status, .semester-agenda-status) { grid-column: 2; }
   .semester-candidate-detail { padding-inline: 0; }
   .semester-edit-fields { grid-template-columns: minmax(0, 1fr); }
   .semester-filters select { margin-inline-start: 0; }
@@ -906,7 +921,7 @@ body.light .pixel-cat-eye-glow { fill: #6ee6ff; }
 .shared-plans-section .semester-confirm {
   position: static;
 }
-.shared-offer-picker select {
+.shared-offer-picker .native-select {
   max-width: min(320px, 100%);
 }
 .shared-update-alert {

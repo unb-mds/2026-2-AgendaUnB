@@ -75,6 +75,8 @@ Compartilhar e retirar compartilhamento são operações idempotentes. A versão
 
 **Retirada.** Bloqueia novos acessos, votos e importações da versão retirada. Não retira revisões derivadas (cada uma mantém sua própria visibilidade), não apaga votos nem remove eventos pessoais já importados, registrando `retirada_em` e `retirada_por`.
 
+**Exclusão de envios.** `DELETE /api/v1/syllabus` remove texto, candidatos e versões do autor de seus próprios envios, incluindo versões compartilhadas. Revisões de terceiros mantêm sua visibilidade, e eventos já importados permanecem na agenda. O registro sem o conteúdo do envio preserva o limite de envios por conta e o vínculo das revisões restantes com a oferta. O histórico oculta esses registros na API e nas políticas de leitura do banco.
+
 **Procedência institucional.** `autor_papel` e origem institucional são atributos independentes. A procedência institucional só é atribuída por administrador mediante `fonte_institucional_url` pública oficial. Uma revisão feita por professor ou administrador herda a procedência e a evidência da origem; revisões feitas por estudantes não a herdam automaticamente. O banco recusa `procedencia_institucional = true` sem evidência.
 
 ## 4. Votos

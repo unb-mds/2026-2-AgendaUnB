@@ -6,7 +6,7 @@ from datetime import datetime, time as dt_time, timedelta, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, Response, UploadFile, status
-from sqlalchemy import delete, func, select, text, update
+from sqlalchemy import ColumnElement, delete, func, or_, select, text, update
 from sqlalchemy.exc import DBAPIError, IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session, joinedload
 from starlette.concurrency import run_in_threadpool
@@ -56,6 +56,7 @@ from src.modules.syllabus.preparation import (
 from src.modules.syllabus.services import UPLOAD_VALIDATION_TIMEOUT_SECONDS
 from src.modules.syllabus.versions import SHARED_CONTENT_NOTICE, summarize_version_votes
 from src.modules.syllabus.worker import spawn_worker_drain, utcnow
+from src.services.storage import SupabaseStorageService, get_storage_service
 
 router = APIRouter(prefix="/syllabus", tags=["syllabus"])
 
@@ -441,7 +442,7 @@ def list_syllabi(
     current_user: CurrentUser = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> SyllabusListResponse:
-    owned = (Syllabus.user_id == current_user.id)
+    owned = (Syllabus.user_id == current_user.id) & Syllabus.submission_deleted_at.is_(None)
     if offering_id is not None:
         owned = owned & (Syllabus.offering_id == offering_id)
     total = db.scalar(select(func.count()).select_from(Syllabus).where(owned)) or 0
@@ -551,7 +552,7 @@ def get_syllabus_status(
     """Consulta o plano privado do autor ou uma versão compartilhada autorizada."""
     syllabus = db.get(Syllabus, syllabus_id)
 
-    if not syllabus:
+    if not syllabus or syllabus.submission_deleted_at is not None:
         raise HTTPException(status_code=404, detail="Plano de ensino não encontrado.")
 
     is_owner = syllabus.user_id == current_user.id
@@ -736,6 +737,68 @@ def confirm_syllabus_candidates(
     )
 
 
+def _delete_syllabus_content(db: Session, version_ids: list[UUID], candidate_filter: ColumnElement[bool]) -> None:
+    if version_ids:
+        db.execute(update(SyllabusVersion).where(SyllabusVersion.source_version_id.in_(version_ids))
+                   .values(source_version_id=None))
+        db.execute(update(ImportOperation).where(ImportOperation.version_id.in_(version_ids))
+                   .values(version_id=None))
+        db.execute(update(PersonalEvent).where(PersonalEvent.origin_version_id.in_(version_ids))
+                   .values(origin_version_id=None))
+    candidate_ids = select(SyllabusCandidate.id).where(candidate_filter)
+    db.execute(delete(CandidateVote).where(CandidateVote.candidate_id.in_(candidate_ids)))
+    db.execute(delete(SyllabusCandidate).where(candidate_filter))
+    if version_ids:
+        db.execute(delete(SyllabusVersion).where(SyllabusVersion.id.in_(version_ids)))
+
+
+@router.delete("", status_code=status.HTTP_204_NO_CONTENT, summary="Exclui todos os envios do usuário")
+def delete_syllabus_submissions(
+    current_user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    storage: SupabaseStorageService = Depends(get_storage_service),
+) -> Response:
+    if db.bind.dialect.name == "postgresql":
+        # Use the same lock as preparation, so a new submission is ordered relative to deletion.
+        db.execute(text("SELECT pg_advisory_xact_lock(hashtextextended(:user_id, 0))"),
+                   {"user_id": str(current_user.id)})
+    plans = db.scalars(select(Syllabus).where(
+        Syllabus.user_id == current_user.id, Syllabus.submission_deleted_at.is_(None),
+    ).order_by(Syllabus.id).with_for_update()).all()
+    if any(plan.status == "processando" for plan in plans):
+        raise HTTPException(status_code=409, detail="Aguarde o término da extração para excluir os envios.")
+    if not plans:
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    paths = [plan.file_path or plan.arquivo_url for plan in plans if plan.file_path or plan.arquivo_url]
+    if paths:
+        storage.delete_objects_strict(paths)
+
+    plan_ids = [plan.id for plan in plans]
+    version_ids = list(db.scalars(select(SyllabusVersion.id).where(
+        SyllabusVersion.syllabus_id.in_(plan_ids), SyllabusVersion.author_id == current_user.id,
+    ).order_by(SyllabusVersion.id).with_for_update()))
+    if version_ids:
+        # The existing immutability trigger requires withdrawal before deleting shared candidates.
+        db.execute(update(SyllabusVersion).where(SyllabusVersion.id.in_(version_ids))
+                   .values(visibility="privada", shared_at=None))
+
+    removed_at = utcnow()
+    db.execute(update(Syllabus).where(Syllabus.id.in_(plan_ids)).values(
+        submission_deleted_at=removed_at, discarded_at=removed_at,
+        file_name=None, file_path=None, arquivo_url=None, file_size=None,
+        prepared_pages=None, approved_pages=None, approved_version_id=None,
+        authorized_at=None, approved_hash=None, queued_at=None, text_revision=0,
+        extracted_events_count=0, error_message=None, erro_codigo=None, redacted_count=None,
+        next_attempt_at=None, processing_token=None, cost_reserved_usd=0,
+    ))
+    _delete_syllabus_content(db, version_ids, SyllabusCandidate.syllabus_id.in_(plan_ids) & or_(
+        SyllabusCandidate.version_id.is_(None), SyllabusCandidate.version_id.in_(version_ids),
+    ))
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 @router.delete(
     "/{syllabus_id}",
     status_code=status.HTTP_204_NO_CONTENT,
@@ -747,7 +810,9 @@ def delete_syllabus(
     db: Session = Depends(get_db),
 ) -> Response:
     syllabus = db.scalar(
-        select(Syllabus).where(Syllabus.id == syllabus_id, Syllabus.user_id == current_user.id).with_for_update()
+        select(Syllabus).where(
+            Syllabus.id == syllabus_id, Syllabus.user_id == current_user.id, Syllabus.submission_deleted_at.is_(None)
+        ).with_for_update()
     )
     if syllabus is None:
         raise HTTPException(status_code=404, detail="Plano de ensino não encontrado.")
@@ -786,37 +851,7 @@ def delete_syllabus(
     if syllabus.approved_version_id is not None:
         syllabus.approved_version_id = None
         db.flush()
-    if version_ids:
-        db.execute(
-            update(SyllabusVersion)
-            .where(SyllabusVersion.source_version_id.in_(version_ids))
-            .values(source_version_id=None)
-        )
-        db.execute(
-            update(ImportOperation)
-            .where(ImportOperation.version_id.in_(version_ids))
-            .values(version_id=None)
-        )
-        db.execute(
-            update(PersonalEvent)
-            .where(PersonalEvent.origin_version_id.in_(version_ids))
-            .values(origin_version_id=None)
-        )
-    candidate_ids = list(
-        db.scalars(
-            select(SyllabusCandidate.id).where(SyllabusCandidate.syllabus_id == syllabus_id)
-        ).all()
-    )
-    if candidate_ids:
-        db.execute(
-            delete(CandidateVote).where(CandidateVote.candidate_id.in_(candidate_ids))
-        )
-    db.execute(
-        delete(SyllabusCandidate).where(SyllabusCandidate.syllabus_id == syllabus_id)
-    )
-    db.execute(
-        delete(SyllabusVersion).where(SyllabusVersion.syllabus_id == syllabus_id)
-    )
+    _delete_syllabus_content(db, version_ids, SyllabusCandidate.syllabus_id == syllabus_id)
     db.delete(syllabus)
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -834,7 +869,9 @@ def discard_syllabus_candidate(
     db: Session = Depends(get_db),
 ) -> Response:
     syllabus = db.scalar(
-        select(Syllabus).where(Syllabus.id == syllabus_id, Syllabus.user_id == current_user.id).with_for_update()
+        select(Syllabus).where(
+            Syllabus.id == syllabus_id, Syllabus.user_id == current_user.id, Syllabus.submission_deleted_at.is_(None)
+        ).with_for_update()
     )
     if syllabus is None:
         raise HTTPException(status_code=404, detail="Plano de ensino não encontrado.")

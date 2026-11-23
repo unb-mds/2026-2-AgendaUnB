@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Feedback, Icon, ManagementShell } from '../components/ManagementUI';
+import { Feedback, Icon, ManagementShell, Modal } from '../components/ManagementUI';
 import CustomSelect from '../components/CustomSelect';
 import SemesterCatalog from '../components/SemesterCatalog';
 import SemesterReview from '../components/SemesterReview';
@@ -53,19 +53,17 @@ function TextEntry({ offer }) {
   </form>;
 }
 
-function PlanQueue({ options, followed, initialOffer, onOffer, plans, selectedId, onSelect, onResetSend, onUploaded, history, page, changePage, onCatalog }) {
+function PlanQueue({ options, followed, initialOffer, onOffer, plans, selectedId, onSelect, onDeleted, onUploaded, history, page, changePage, onCatalog }) {
   const workspace = useSemesterPlans();
   const fileRef = useRef(null);
   const [dragging, setDragging] = useState(false);
   const [open, setOpen] = useState(true);
-  const [resetting, setResetting] = useState(false);
-  const [resetError, setResetError] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
   const [inputMode, setInputMode] = useState(() => (workspace.rawText.text ? 'text' : 'pdf'));
   const [message, setMessage] = useState('');
   const selectedOffer = options.find(offer => offer.id === initialOffer);
-  const hasResettableUploads = workspace.uploads.some(item => item.status !== 'sending');
-  const resettablePlanIds = plans.map(plan => plan.id);
-  const canResetSend = !resetting && (hasResettableUploads || Boolean(workspace.rawText.text.trim()) || Boolean(selectedId) || resettablePlanIds.length > 0);
   const append = files => {
     if (!files?.length || !selectedOffer) return;
     workspace.addFiles(files, selectedOffer);
@@ -73,26 +71,23 @@ function PlanQueue({ options, followed, initialOffer, onOffer, plans, selectedId
     setMessage(`${files.length} arquivo(s) na fila para ${offerLabel(selectedOffer)}.`);
   };
   const chooseFiles = () => fileRef.current?.click();
-  const handleResetSend = async () => {
-    if (resetting) return;
-    setResetting(true);
-    setResetError('');
+  const handleDeleteSubmissions = async () => {
+    if (deleting) return;
+    setDeleting(true);
+    setDeleteError('');
     try {
-      const outcome = await workspace.resetSend?.(resettablePlanIds);
+      await workspace.deleteSubmissions();
       if (fileRef.current) fileRef.current.value = '';
       setDragging(false);
-      if (selectedId) onResetSend?.();
-      onUploaded?.();
-      if (outcome?.failed?.length) {
-        const sharedConflict = outcome.failed.some(item => item.error?.status === 409);
-        setResetError(sharedConflict
-          ? 'Planos compartilhados com a turma não foram removidos. Retire o compartilhamento antes de reiniciar.'
-          : 'Alguns planos não puderam ser removidos. Tente novamente.');
-      } else {
-        setMessage('Envio reiniciado.');
-      }
+      setInputMode('pdf');
+      setOpen(true);
+      setConfirmDelete(false);
+      setMessage('Envios excluídos. Você já pode enviar novos planos.');
+      onDeleted();
+    } catch (error) {
+      setDeleteError(syllabusError(error));
     } finally {
-      setResetting(false);
+      setDeleting(false);
     }
   };
 
@@ -102,19 +97,27 @@ function PlanQueue({ options, followed, initialOffer, onOffer, plans, selectedId
       <div className="semester-queue-heading-actions">
         <button
           type="button"
-          className="semester-reset-send-btn"
-          onClick={handleResetSend}
-          disabled={!canResetSend}
-          title="Remove planos enviados desta visualização, limpa o texto e volta ao estado inicial"
+          className="semester-delete-submissions"
+          aria-haspopup="dialog"
+          onClick={() => { setDeleteError(''); setConfirmDelete(true); }}
         >
-          <Icon>restart_alt</Icon>
-          <span>{resetting ? 'Reiniciando…' : 'Reiniciar envio'}</span>
+          <Icon>delete</Icon>Excluir envios
         </button>
         <button className="manage-icon-button semester-queue-toggle" type="button" aria-expanded={open} aria-controls="semester-queue-body"
           aria-label={open ? 'Recolher fila de planos' : 'Expandir fila de planos'} onClick={() => setOpen(!open)}><Icon>{open ? 'expand_less' : 'expand_more'}</Icon></button>
       </div>
     </div>
-    <Feedback error={resetError} />
+    {confirmDelete && <Modal title="Excluir envios de todas as turmas?" busy={deleting} onClose={() => setConfirmDelete(false)}>
+      <p>Seus envios, textos e datas extraídas serão excluídos, incluindo as versões que você compartilhou a partir desses envios.</p>
+      <p className="semester-delete-note">Datas já adicionadas às agendas e revisões feitas por outras pessoas serão preservadas.</p>
+      <Feedback error={deleteError} />
+      <div className="dialog-actions">
+        <button type="button" className="manage-button" disabled={deleting} onClick={() => setConfirmDelete(false)}>Cancelar</button>
+        <button type="button" className="manage-button settings-danger-button" disabled={deleting} onClick={handleDeleteSubmissions}>
+          {deleting ? 'Excluindo…' : 'Excluir envios'}
+        </button>
+      </div>
+    </Modal>}
     <div className="semester-plan-offer">
       <CustomSelect value={initialOffer || ''} onChange={onOffer} ariaLabel="Turma dos planos"
         disabled={!followed.length} placeholder={followed.length ? 'Selecione uma turma' : 'Nenhuma turma seguida'}
@@ -340,7 +343,8 @@ function SemesterPanel({ userId }) {
   const followedOffers = [...(followed.data?.items || empty).filter(offer => !Object.hasOwn(followChanges, offer.id)),
     ...changed.flatMap(([, offer]) => offer ? [offer] : [])];
   const loadHistory = useCallback(signal => syllabusApi.list(page, signal, initialOffer), [page, initialOffer]);
-  const history = useSyllabusResource(`${userId}:${initialOffer}:${page}`, loadHistory);
+  const [historyReset, setHistoryReset] = useState(0);
+  const history = useSyllabusResource(`${userId}:${initialOffer}:${page}:${historyReset}`, loadHistory);
   const historyItems = history.data?.items || empty;
   const { observe, loadPlan } = workspace;
   const selectedPlan = workspace.plans[selectedId];
@@ -495,6 +499,16 @@ function SemesterPanel({ userId }) {
       }
     : null;
   const refreshLibrary = () => setLibraryRefresh(count => count + 1);
+  const onSubmissionsDeleted = () => {
+    setExtractionId(null);
+    setWaitingFor(null);
+    updateParams(next => {
+      for (const key of ['plano', 'pagina', 'visao']) next.delete(key);
+      next.set('etapa', '2');
+    });
+    setHistoryReset(reset => reset + 1);
+    refreshLibrary();
+  };
   const uploadForOffer = offerId => {
     selectOffer(offerId, 'reviews');
     requestAnimationFrame(() => document.getElementById('semester-add-pdfs')?.focus());
@@ -530,7 +544,7 @@ function SemesterPanel({ userId }) {
           aria-current={activeStep === 1 ? 'step' : undefined}
           onClick={() => goToStep(1)}
         >
-          <span className="semester-step-num" aria-hidden="true">1</span>
+          <span className="semester-step-icon"><Icon>school</Icon></span>
           <span className="semester-step-copy">
             <strong>Selecionar turmas</strong>
             <small>{followedOffers.length} {followedOffers.length === 1 ? 'turma seguida' : 'turmas seguidas'}</small>
@@ -542,7 +556,7 @@ function SemesterPanel({ userId }) {
           aria-current={activeStep === 2 ? 'step' : undefined}
           onClick={() => goToStep(2)}
         >
-          <span className="semester-step-num" aria-hidden="true">2</span>
+          <span className="semester-step-icon"><Icon>event_available</Icon></span>
           <span className="semester-step-copy">
             <strong>Organizar datas</strong>
             <small>{step2Summary}</small>
@@ -592,7 +606,7 @@ function SemesterPanel({ userId }) {
         <Feedback error={openOffer.error?.message} onRetry={openOffer.retry} />
       </div>}
       <div className="semester-layout">
-        <PlanQueue options={available} followed={followedOffers} initialOffer={initialOffer} onOffer={selectOffer} plans={queuePlans} selectedId={!wrongOffer && selectedId} onSelect={selectPlan} onResetSend={closePlan}
+        <PlanQueue options={available} followed={followedOffers} initialOffer={initialOffer} onOffer={selectOffer} plans={queuePlans} selectedId={!wrongOffer && selectedId} onSelect={selectPlan} onDeleted={onSubmissionsDeleted}
           history={history} page={page} onCatalog={() => goToStep(1)}
           onUploaded={() => { updateParams(next => next.delete('pagina')); history.retry(); }}
           changePage={index => updateParams(next => next.set('pagina', String(index + 1)))} />

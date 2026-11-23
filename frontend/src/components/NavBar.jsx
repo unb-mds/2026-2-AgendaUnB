@@ -25,13 +25,14 @@ export default function NavBar({ pageType = 'home', isDark, toggleTheme, onLogin
   const handleBrandClick = () => {
     setMenuOpen(false);
     if (location.pathname === '/' && typeof window !== 'undefined') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      const prefersReduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      window.scrollTo({ top: 0, behavior: prefersReduced ? 'instant' : 'smooth' });
     }
   };
   return <nav ref={nav} className={`nav app-nav ${pageType === 'home' ? 'home-nav' : ''} ${menuOpen ? 'menu-open' : ''}`} aria-label="Navegação principal">
     <Link to="/" className="nav-brand-link" aria-label="Agenda UnB — Ir para a página inicial" title="Página inicial" onClick={handleBrandClick}>
       <img className="nav-brand-icon" src="/Logo-AgendaUnB1.png" alt="" width={22} height={22} />
-      <span className="nav-brand">AGENDA<em>UNB</em></span>
+      <span className="nav-brand">Agenda UnB</span>
     </Link>
     <button ref={menuButton} type="button" className="manage-icon-button nav-menu-toggle" aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'} aria-expanded={menuOpen} aria-controls="main-nav-links" onClick={() => setMenuOpen(v => !v)}>
       <span className="material-symbols-outlined" aria-hidden="true">{menuOpen ? 'close' : 'menu'}</span>

@@ -5,7 +5,7 @@ import { fieldErrors, needsAttention } from '../lib/semesterReview';
 import { isProcessing } from '../lib/syllabus';
 import { updateCandidateReviewItem } from '../lib/syllabusReview';
 import HalftonePet from './HalftonePet';
-import { Icon } from './ManagementUI';
+import { Icon, NativeSelect } from './ManagementUI';
 
 const formatDate = value => value ? value.split('-').reverse().join('/') : 'Sem data';
 const filters = [
@@ -26,14 +26,15 @@ function CandidateLine({ item, label, disabled, update, select }) {
       <input type="checkbox" checked={item.selected} disabled={readOnly || attention} aria-label={`Selecionar ${title} · ${label}`} onChange={event => select(event.target.checked)} />
       <div className="semester-candidate-title"><strong>{title}</strong><small>{label} · {type}</small></div>
       <div className="semester-candidate-date">{item.status === 'confirmado' ? (
-        item.candidate.confirmedDate ? <><strong>{formatDate(item.candidate.confirmedDate)}</strong><small>{item.candidate.confirmedTime || 'Dia inteiro'}</small></> :
-          item.candidate.removed ? null : <Link to="/eventos?aba=meus">Data na agenda</Link>
+        item.candidate.confirmedDate && <><strong>{formatDate(item.candidate.confirmedDate)}</strong><small>{item.candidate.confirmedTime || 'Dia inteiro'}</small></>
       ) : <><strong>{formatDate(item.date)}</strong><small>{
         item.time ? `${item.time.slice(0, 5)}${item.timeSource === 'catalog' ? ' · horário da turma' : ''}`
           : item.type === 'trabalho' ? 'Dia inteiro' : 'Sem horário'
       }</small></>}</div>
       {attention && <span className="semester-status attention">Revisar</span>}
-      {!item.editable && <span className="semester-status">{item.status === 'confirmado' ? (item.candidate.removed ? 'Removida da agenda' : 'Adicionada') : 'Descartada'}</span>}
+      {!item.editable && (item.status === 'confirmado' && !item.candidate.removed
+        ? <Link className="semester-agenda-status" to="/eventos?aba=meus">Data na agenda</Link>
+        : <span className="semester-status">{item.status === 'confirmado' ? 'Removida da agenda' : 'Descartada'}</span>)}
       <button className="manage-icon-button" type="button" aria-expanded={item.open || false} aria-controls={uid}
         aria-label={`${item.open ? 'Fechar' : 'Ver detalhes de'} ${title}`} onClick={() => update({ open: !item.open })}><Icon>{item.open ? 'expand_less' : 'expand_more'}</Icon></button>
     </div>
@@ -54,10 +55,10 @@ function CandidateLine({ item, label, disabled, update, select }) {
             onChange: event => update({ edits: { [field]: event.target.value }, checked: false }),
           };
           return <label className="semester-field" key={field}>{name}
-            {type === 'select' ? <select {...props}><option value="">Selecione</option>
+            {type === 'select' ? <NativeSelect {...props}><option value="">Selecione</option>
               {!['', 'prova', 'trabalho'].includes(item.type) && <option value={item.type}>{item.type}</option>}
               <option value="prova">Prova</option><option value="trabalho">Trabalho</option>
-            </select> : <input {...props} type={type} step={type === 'time' ? 'any' : undefined} />}
+            </NativeSelect> : <input {...props} type={type} step={type === 'time' ? 'any' : undefined} />}
             {errors[field] && <small className="semester-error" id={`${uid}-${field}-error`}>{errors[field]}</small>}
           </label>;
         })}
@@ -77,12 +78,12 @@ function BulkEdit({ selected, disabled, apply, undo, hasUndo }) {
     <summary>Editar em lote</summary>
     {sameClass && <form onSubmit={event => { event.preventDefault(); if (value && !disabled) apply(field, value); }}>
       <label className="semester-field">Campo
-        <select value={field} onChange={event => { setField(event.target.value); setValue(event.target.value === 'type' ? 'prova' : ''); }}>
+        <NativeSelect value={field} onChange={event => { setField(event.target.value); setValue(event.target.value === 'type' ? 'prova' : ''); }}>
           <option value="type">Tipo</option><option value="time">Horário</option>
-        </select>
+        </NativeSelect>
       </label>
       <label className="semester-field">Novo valor{field === 'type' ?
-        <select value={value} onChange={event => setValue(event.target.value)}><option value="prova">Prova</option><option value="trabalho">Trabalho</option></select> :
+        <NativeSelect value={value} onChange={event => setValue(event.target.value)}><option value="prova">Prova</option><option value="trabalho">Trabalho</option></NativeSelect> :
         <input type="time" required value={value} onChange={event => setValue(event.target.value)} />}
       </label>
       <button className="manage-button" disabled={disabled || !value}>Aplicar a {selected.length} avaliações</button>
@@ -154,9 +155,9 @@ export default function SemesterReview({ plans, allPlans = plans, rows, offers, 
             aria-pressed={filter === value} onClick={() => setFilter(value)}>{name}{value === 'attention' && pending > 0 ? ` (${pending})` : ''}</button>)}
         </div>
         <label className="semester-field sr-only" htmlFor="semester-review-course">Filtrar avaliações por turma</label>
-        <select id="semester-review-course" value={course} onChange={event => setCourse(event.target.value)}>
+        <NativeSelect id="semester-review-course" value={course} onChange={event => setCourse(event.target.value)}>
           <option value="">Todas as turmas</option>{courses.map(([key, name]) => <option value={key} key={key}>{name}</option>)}
-        </select>
+        </NativeSelect>
       </div>
       <div className="semester-selection">
         <label><input ref={bulkRef} type="checkbox" checked={eligible.length > 0 && selectedHere === eligible.length}
@@ -232,11 +233,11 @@ export default function SemesterReview({ plans, allPlans = plans, rows, offers, 
                       else document.querySelector('.semester-plan-offer button')?.focus();
                     }}
                   >
-                    <Icon>upload_file</Icon>Ir para envio de plano
+                    Ir para envio de plano
                   </button>
                   {onOpenShared && (
                     <button type="button" className="manage-button" onClick={onOpenShared}>
-                      <Icon>groups</Icon>Ver planos compartilhados da turma
+                      Ver planos compartilhados
                     </button>
                   )}
                 </>

@@ -15,7 +15,7 @@ import {
 import NavBar from '../components/NavBar';
 import EventCalendar from '../components/EventCalendar';
 import EventsLoading from '../components/EventsLoading';
-import { Feedback, Modal } from '../components/ManagementUI';
+import { Feedback, Icon, Modal } from '../components/ManagementUI';
 
 const DEFAULT_CATEGORIES = ['Acadêmico', 'Cultura', 'Esporte', 'Extensão', 'Lazer', 'Comunicado', 'Reunião'];
 
@@ -90,9 +90,9 @@ const CustomDatePicker = ({ value, onChange, placeholder, dropUp = false, classN
         e.preventDefault(); e.stopPropagation(); setIsOpen(false);
         containerRef.current?.querySelector('.custom-input, .filter-pill')?.focus();
       }
-    }} style={{ position: 'relative', width: wrapperWidth, zIndex: isOpen ? 1000 : 1 }}>
+    }} className="custom-date-picker" style={{ position: 'relative', width: wrapperWidth, zIndex: isOpen ? 1000 : 1 }}>
       <div
-        className={className || 'custom-input'}
+        className={`${className || 'custom-input'}${value ? ' has-selection' : ''}`}
         role="button" tabIndex={0} aria-expanded={isOpen} aria-label={ariaLabel || placeholder}
         onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsOpen(v => !v); } }}
         onClick={() => setIsOpen(!isOpen)}
@@ -460,7 +460,7 @@ function EventCardItem({
 
 export default function SegundaPagina() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user, profile, isProfessor, isAdmin } = useAuth();
   const professorId = isProfessor && !isAdmin ? user?.id : null;
   const [publishedEvents, setPublishedEvents] = useState(null);
@@ -517,6 +517,8 @@ export default function SegundaPagina() {
   // Estados dos Filtros
   const [searchQuery, setSearchQuery] = useState(savedFilters.searchQuery);
   const [filtroArea, setFiltroArea] = useState(savedFilters.filtroArea);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [mobileExportTarget, setMobileExportTarget] = useState(null);
   const [filtroCampus, setFiltroCampus] = useState(savedFilters.filtroCampus);
   const [filtroTurno, setFiltroTurno] = useState(savedFilters.filtroTurno);
   const [filtroDataInicio, setFiltroDataInicio] = useState(savedFilters.filtroDataInicio);
@@ -847,14 +849,8 @@ export default function SegundaPagina() {
     clearStoredEventFilters();
   };
 
-  const hasActiveFilters = Boolean(
-    searchQuery
-    || filtroArea.length
-    || filtroCampus.length
-    || filtroTurno.length
-    || filtroDataInicio
-    || filtroDataFim,
-  );
+  const filterCount = [filtroArea.length, filtroCampus.length, filtroTurno.length, filtroDataInicio, filtroDataFim].filter(Boolean).length;
+  const hasActiveFilters = Boolean(searchQuery || filterCount);
 
   // --- LÓGICA DE FILTRAGEM ---
   const eventosFiltrados = useMemo(() => {
@@ -876,7 +872,6 @@ export default function SegundaPagina() {
 
   // --- ESTILIZAÇÃO DINÂMICA ---
   const bgColor = isDark ? '#080c16' : '#f0f4f8';
-  const cardBg = isDark ? '#1a2235' : '#ffffff';
   const textColor = isDark ? '#ffffff' : '#1a1a2e';
   const textMuted = isDark ? '#94a3b8' : '#526278';
   const accentColor = '#008bff';
@@ -895,6 +890,7 @@ export default function SegundaPagina() {
               type="button"
               onClick={() => setVisaoEventos('Públicos')}
               className={`btn-toggle-item ${visaoEventos === 'Públicos' ? 'active' : ''}`}
+              aria-pressed={visaoEventos === 'Públicos'}
             >
               Eventos Públicos
             </button>
@@ -902,66 +898,62 @@ export default function SegundaPagina() {
               type="button"
               onClick={() => setVisaoEventos('MEUS')}
               className={`btn-toggle-item ${visaoEventos === 'MEUS' ? 'active' : ''}`}
+              aria-pressed={visaoEventos === 'MEUS'}
             >
               Meus Eventos
             </button>
           </div>
         </div>
 
-        <div style={{ marginBottom: '2rem' }}>
-          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
-            <div style={{ flex: '1 1 280px', minWidth: 0, position: 'relative' }}>
-              <span className="material-symbols-outlined" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: textMuted }}>search</span>
+        <div className={`events-find${user && visaoEventos === 'MEUS' ? ' events-find--with-export' : ''}`}>
+            <div className="events-search-field">
+              <Icon>search</Icon>
               <input
-                type="text" aria-label="Buscar eventos e comunicados" placeholder="Busque eventos, locais ou comunicados..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                style={{
-                  width: '100%', padding: '16px 20px 16px 48px', borderRadius: '24px',
-                  border: `1px solid ${borderColor}`, background: cardBg, color: textColor, fontSize: '1.05rem',
-                  boxShadow: isDark ? '0 4px 20px rgba(0,0,0,0.2)' : '0 4px 15px rgba(0,0,0,0.05)', outline: 'none'
-                }}
+                type="search" aria-label="Buscar eventos e comunicados" placeholder="Buscar eventos e comunicados" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
+            <button type="button" className="manage-button events-filters-toggle" aria-expanded={filtersOpen}
+              aria-controls="event-filters" onClick={() => setFiltersOpen(open => !open)}>
+              <Icon>tune</Icon>Filtros
+              {filterCount > 0 && (
+                <span className="events-filter-count" aria-label={`${filterCount} ${filterCount === 1 ? 'grupo de filtros ativo' : 'grupos de filtros ativos'}`}>
+                  {filterCount}
+                </span>
+              )}
+            </button>
+            {user && visaoEventos === 'MEUS' && <div className="events-export-mobile" ref={setMobileExportTarget} />}
             {user && (
               <button
                 type="button"
+                className="manage-button primary events-create-button"
                 onClick={() => {
                   resetModal();
-                  setVisibilidade(isProfessor || isAdmin ? 'Público' : 'Privado');
+                  setVisibilidade(visaoEventos === 'Públicos' && (isProfessor || isAdmin) ? 'Público' : 'Privado');
                   setIsModalOpen(true);
                 }}
-                style={{
-                  padding: '0 24px', borderRadius: '26px', background: accentColor,
-                  color: '#fff', border: 'none', fontWeight: 600, fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
-                  boxShadow: '0 4px 15px rgba(0, 140, 255, 0.19)', height: '56px'
-                }}
               >
-                <span className="material-symbols-outlined">add</span>
-                Criar Evento
+                <Icon>add</Icon><span>Criar Evento</span>
               </button>
             )}
-          </div>
-
-          <div className="events-filters-bar" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center', zIndex: 11, position: 'relative' }}>
-            <span className="events-filters-label" style={{ color: textMuted, fontSize: '0.9rem', fontWeight: 600, marginRight: '4px' }}>Filtros:</span>
+          <div id="event-filters" className="events-filters-bar" role="group" aria-label="Filtros de eventos" data-expanded={filtersOpen}>
 
             <CustomSelect
               options={areasOptions} value={filtroArea} onChange={setFiltroArea} placeholder="Todas as áreas"
-              className="filter-pill" wrapperWidth="fit-content" ariaLabel="Filtrar por área" multiple
+              className="filter-pill" ariaLabel="Filtrar por área" multiple
             />
             <CustomSelect
               options={campiOptions} value={filtroCampus} onChange={setFiltroCampus} placeholder="Qualquer campus"
-              className="filter-pill" wrapperWidth="fit-content" ariaLabel="Filtrar por campus" multiple
+              className="filter-pill" ariaLabel="Filtrar por campus" multiple
             />
             <CustomSelect
               options={turnoOptions} value={filtroTurno} onChange={setFiltroTurno} placeholder="Qualquer turno"
-              className="filter-pill" wrapperWidth="fit-content" ariaLabel="Filtrar por turno" multiple
+              className="filter-pill" ariaLabel="Filtrar por turno" multiple
             />
             <CustomDatePicker
               value={filtroDataInicio}
               onChange={setFiltroDataInicio}
               placeholder="De (início)"
               className="filter-pill"
-              wrapperWidth="165px"
               ariaLabel="Filtrar a partir da data"
             />
             <CustomDatePicker
@@ -969,7 +961,6 @@ export default function SegundaPagina() {
               onChange={setFiltroDataFim}
               placeholder="Até (término)"
               className="filter-pill"
-              wrapperWidth="165px"
               ariaLabel="Filtrar até a data"
             />
 
@@ -977,7 +968,7 @@ export default function SegundaPagina() {
               <button
                 type="button"
                 onClick={clearAllFilters}
-                style={{ background: 'transparent', border: 'none', color: accentColor, cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, padding: '8px', marginLeft: 'auto' }}
+                className="management-text-button events-clear-filters"
               >
                 Limpar Filtros
               </button>
@@ -993,7 +984,14 @@ export default function SegundaPagina() {
           </h2>
           <div className="events-section-actions">
             {user && visaoEventos === 'MEUS' && (
-              <GoogleCalendarConnection key={user.id} callbackResult={searchParams.get('google_calendar')} events={carregandoEventos || erroEventos ? [] : eventosFiltrados} />
+              <GoogleCalendarConnection key={user.id} callbackResult={searchParams.get('google_calendar')}
+                events={carregandoEventos || erroEventos ? [] : eventosFiltrados}
+                mobileTriggerTarget={mobileExportTarget}
+                onCloseCallback={() => setSearchParams(current => {
+                  const next = new URLSearchParams(current);
+                  next.delete('google_calendar');
+                  return next;
+                }, { replace: true })} />
             )}
             <div className="btn-toggle-group events-view-toggle" role="group" aria-label="Visualização dos eventos">
               <button
@@ -1037,46 +1035,19 @@ export default function SegundaPagina() {
         ) : carregandoEventos ? (
           <EventsLoading />
         ) : erroEventos ? null : eventosFiltrados.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '4rem 2rem', background: cardBg, borderRadius: '24px', border: `1px dashed ${borderColor}` }}>
-            <span className="material-symbols-outlined" style={{ fontSize: '3rem', color: textMuted, marginBottom: '1rem' }}>event_busy</span>
-            <h3 style={{ color: textColor, marginBottom: '0.5rem' }}>Nenhum evento encontrado</h3>
-            <p style={{ color: textMuted, marginBottom: '1rem', fontSize: '0.95rem' }}>
+          <div className="empty-state events-empty-state">
+            <Icon>event_busy</Icon>
+            <h3>Nenhum evento encontrado</h3>
+            <p>
               {hasActiveFilters
                 ? 'Nenhum evento corresponde à combinação atual de filtros.'
                 : visaoEventos === 'MEUS'
                   ? 'Você ainda não possui compromissos pessoais ou eventos salvos na sua agenda.'
                   : 'Nenhum evento público cadastrado no momento.'}
             </p>
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-              {hasActiveFilters && (
-                <button
-                  type="button"
-                  onClick={clearAllFilters}
-                  style={{
-                    padding: '10px 20px', borderRadius: '12px',
-                    background: accentColor, color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600,
-                  }}
-                >
-                  Limpar filtros
-                </button>
-              )}
-              {user && !hasActiveFilters && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    resetModal();
-                    setVisibilidade(visaoEventos === 'MEUS' ? 'Privado' : (isProfessor || isAdmin ? 'Público' : 'Privado'));
-                    setIsModalOpen(true);
-                  }}
-                  style={{
-                    padding: '10px 20px', borderRadius: '12px',
-                    background: accentColor, color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600,
-                  }}
-                >
-                  Criar evento
-                </button>
-              )}
-            </div>
+            {hasActiveFilters && (
+              <button type="button" className="manage-button primary" onClick={clearAllFilters}>Limpar filtros</button>
+            )}
           </div>
         ) : (
           <div className="events-grid">
@@ -1131,7 +1102,6 @@ export default function SegundaPagina() {
                       setHorarioFim('');
                     }
                   }}
-                  style={{ width: '18px', height: '18px', accentColor }}
                 />
                 Evento de dia inteiro
               </label>

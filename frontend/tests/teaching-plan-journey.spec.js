@@ -404,7 +404,10 @@ test('novo seguidor importa sem reenviar arquivo, vota com divergência e autor 
 for (const width of [360, 768, 1365]) for (const theme of ['dark', 'light']) {
   test(`biblioteca compartilhada responsiva ${width}px tema ${theme}`, async ({ page }, info) => {
     await page.setViewportSize({ width, height: 1000 });
-    await setupSemester(page, { offers: [makeOffer(1)], followed: [makeOffer(1)] });
+    await setupSemester(page, { offers: [
+      { ...makeOffer(1), subject_name: 'Fundamentos de Arquitetura de Computadores' },
+      makeOffer(2),
+    ] });
     const sample = [
       makeSharedVersion({
         id: 'ver-1',
@@ -424,8 +427,20 @@ for (const width of [360, 768, 1365]) for (const theme of ['dark', 'light']) {
     }));
     await page.goto('/plano-de-ensino');
     if (theme === 'light') await page.getByRole('button', { name: /tema/i }).click();
-    await page.getByRole('tab', { name: 'Planos compartilhados da turma' }).click();
+    const upload = page.getByRole('button', { name: 'Ir para envio de plano', exact: true });
+    const openShared = page.getByRole('button', { name: 'Ver planos compartilhados', exact: true });
+    await expect(openShared).toBeVisible();
+    const [uploadBox, sharedBox] = await Promise.all([upload.boundingBox(), openShared.boundingBox()]);
+    expect(sharedBox.width).toBe(uploadBox.width);
+    expect(sharedBox.height).toBe(uploadBox.height);
+    await openShared.click();
     await expect(page.getByRole('heading', { name: 'Planos compartilhados da turma' })).toBeVisible();
+    const picker = page.getByRole('combobox', { name: 'Selecionar turma da biblioteca' });
+    const [pickerBox, arrowBox] = await Promise.all([
+      picker.boundingBox(), page.locator('.shared-offer-picker .material-symbols-outlined').boundingBox(),
+    ]);
+    expect(arrowBox.x).toBeGreaterThan(pickerBox.x);
+    expect(arrowBox.x + arrowBox.width).toBeLessThan(pickerBox.x + pickerBox.width);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await page.screenshot({ path: info.outputPath(`shared-${width}-${theme}.png`), fullPage: true });
   });
