@@ -90,6 +90,56 @@ def test_keeps_weekday_without_date_available_for_review():
     assert exam.trecho_origem == original
 
 
+def test_recovers_split_pdf_accents_from_an_assignment_excerpt():
+    original = "Trabalho 2 — entrega na ter¸ca-feira, 24/11/2026, `as 23:59."
+    [assignment] = validate_candidates(raw_candidate(
+        titulo="Trabalho 2", tipo="trabalho", data_sugerida="2026-11-24", hora_sugerida="23:59",
+        trecho_origem="Trabalho 2 — entrega na terça-feira, 24/11/2026, às 23:59.",
+    ), [TextPage(1, original)]).candidates
+    assert assignment.hora_sugerida.isoformat() == "23:59:00"
+    assert assignment.trecho_origem == original
+
+
+@pytest.mark.parametrize("reference_year", [None, 2026, 2027])
+def test_pasted_exam_rows_recover_missing_candidates_using_the_offering_year(reference_year):
+    course = "Fundamentos de Arquitetura de Computadores"
+    rows = [
+        "1 Prova 1 (P1) - 8/9 (ter¸ca-feira)",
+        "2 Prova 2 (P2) - 24/11 (ter¸ca-feira)",
+        "3 Prova Substitutiva - 26/11 (quinta-feira)",
+    ]
+    pages = [TextPage(None, f"{course}\nUniversidade de Bras´ılia\nAvalia¸c˜oes\nDatas\n" + "\n".join(rows)
+                      + "\nA divulgação dos trabalhos e seus prazos ocorrerá ao longo do semestre.")]
+    raw = json.loads(raw_candidate(titulo="Prova Substitutiva", pagina_origem=None, data_sugerida=None,
+                                   hora_sugerida=None, campos_ambiguos=["data", "hora"], trecho_origem=rows[2]))
+    raw["candidatos"].append({"titulo": "P1", "tipo": "prova", "pagina_origem": None,
+                             "trecho_origem": "Prova 1 (P1) - 8/9 (terça-feira)"})
+    result = validate_candidates(json.dumps(raw), pages, default_year=reference_year, reference_subject=course)
+    assert [candidate.titulo for candidate in result.candidates] == [
+        "Prova 1 - FAC", "Prova 2 - FAC", "Prova Substitutiva - FAC",
+    ]
+    assert [str(candidate.data_sugerida) if candidate.data_sugerida else None for candidate in result.candidates] == (
+        ["2026-09-08", "2026-11-24", "2026-11-26"] if reference_year == 2026 else [None, None, None]
+    )
+    assert [candidate.campos_ambiguos for candidate in result.candidates] == (
+        [[], [], []] if reference_year == 2026 else [["data"], ["data"], ["data"]]
+    )
+    assert [candidate.trecho_origem for candidate in result.candidates] == rows
+    assert all(candidate.hora_sugerida is None for candidate in result.candidates)
+
+
+def test_pasted_exam_row_keeps_the_explicit_hour_from_the_next_line():
+    evidence = "Prova 1 (P1) - 24/11 (ter¸ca-feira)\nHorário da avaliação: das 16h `as 18h."
+    pages = [TextPage(1, f"Horário da turma: 35M34\n{evidence}")]
+    [exam] = validate_candidates(raw_candidate(
+        titulo="P1", data_sugerida=None, hora_sugerida="16:00", campos_ambiguos=["data"], trecho_origem=evidence,
+    ), pages, default_year=2026).candidates
+    assert exam.titulo == "Prova 1"
+    assert str(exam.data_sugerida) == "2026-11-24"
+    assert exam.hora_sugerida.isoformat() == "16:00:00"
+    assert exam.campos_ambiguos == []
+
+
 @pytest.mark.parametrize("altered", [
     "Trabalho 2 — entrega na ter&ccedil;a-feira, 18/11/2026, &agrave;s 23:59.",
     "Trabalho 2 — entrega na ter&ccedil;a-feira, 17/11/2026, &agrave;s 22:59.",

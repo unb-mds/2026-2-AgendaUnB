@@ -13,8 +13,9 @@ from pypdf import PdfReader
 from src.modules.syllabus.class_schedule import class_starts_in_plan
 from src.modules.syllabus.processing_config import ProcessingConfig, ProcessingError
 
-VERSION = "syllabus-v8-catalog-titles"
+VERSION = "syllabus-v9-dated-exam-rows"
 _MAX_TITLE_LENGTH = 300
+_MAX_CANDIDATES = 100
 Kind = Literal["prova", "trabalho"]
 AmbiguousField = Literal["titulo", "tipo", "data", "hora"]
 
@@ -53,7 +54,7 @@ class CandidateData(BaseModel):
 
 class ExtractionData(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    candidatos: list[CandidateData] = Field(max_length=100)
+    candidatos: list[CandidateData] = Field(max_length=_MAX_CANDIDATES)
 
 
 class ProviderExtractionData(ExtractionData):
@@ -83,7 +84,15 @@ _ACCENT_MOJIBAKE_RE = re.compile("|".join(map(re.escape, _ACCENT_MOJIBAKE)))
 _COMBINING_MARK = r"[\u0300-\u036f]"
 _ACCENTED_LETTER = rf"(?:[{_ACCENTED_LETTERS}]|[{''.join(_ACCENT_GROUPS)}]{_COMBINING_MARK}+)"
 _SOURCE_DASH = r"[-\u2010-\u2015\u2212]"
+_PDF_SPACING_MARKS = {"a": r"´`ˆ˜", "e": "´ˆ", "i": "´", "o": "´ˆ˜", "u": "´", "c": "¸"}
+_PDF_MARK_RE = re.compile(r"([´`ˆ˜¸])([aeiouc])", re.IGNORECASE)
 _WEEKDAY_JOIN_RE = re.compile(r'\b(?:segunda|ter[c"\ufffd]a|quarta|quinta|sexta)([ -])feira\b')
+_WEEKDAYS = ("segunda", "terca", "quarta", "quinta", "sexta", "sabado", "domingo")
+_DATED_EXAM_ROW_RE = re.compile(
+    r"(?:\d{1,2}[.)]?\s+)?(?P<label>prova\s+(?:[1-9]\d?|substitutiva|final))"
+    r"(?:\s*\(p[1-9]\d?\))?\s*[-:]\s*\d{1,2}/\d{1,2}(?:/(?:\d{2}|\d{4}))?"
+    rf"\s*\((?P<weekday>{'|'.join(_WEEKDAYS)})(?:[ -]feira)?\)\.?"
+)
 
 
 def normalize(value: str) -> str:
@@ -349,10 +358,47 @@ def _unaccented(text: str) -> str:
     return "".join(char for char in unicodedata.normalize("NFD", text) if not unicodedata.combining(char))
 
 
+def _without_split_accents(text: str) -> str:
+    return _PDF_MARK_RE.sub(
+        lambda match: match[2] if match[1] in _PDF_SPACING_MARKS.get(match[2].casefold(), "") else match[0],
+        text.replace("´ı", "´i"),
+    )
+
+
+def _dated_exam_rows(pages: list[TextPage], year: int | None) -> list[CandidateData]:
+    """Recupera provas de linhas que informam data numérica e dia da semana."""
+    rows = []
+    for page in pages:
+        for line in page.texto.splitlines():
+            original = line.strip()
+            if len(original) > 1000:
+                continue
+            evidence = _unaccented(normalize(_without_split_accents(original)))
+            match = _DATED_EXAM_ROW_RE.fullmatch(evidence)
+            if match is None:
+                continue
+            dates = dates_in_evidence(evidence, default_year=year)
+            exam_date = next(iter(dates)) if len(dates) == 1 else None
+            if exam_date is not None and _WEEKDAYS[exam_date.weekday()] != match["weekday"]:
+                exam_date = None
+            rows.append(CandidateData(
+                titulo=match["label"].title(), tipo="prova", pagina_origem=page.pagina,
+                data_sugerida=exam_date.isoformat() if exam_date else None, trecho_origem=original,
+            ))
+    return rows
+
+
+def _exam_row_key(item: CandidateData, dates: set[date]) -> tuple[int | None, str, frozenset[date]]:
+    label = normalize(item.titulo)
+    if re.fullmatch(r"p[1-9]\d?", label):
+        label = f"prova {label[1:]}"
+    return item.pagina_origem, label, frozenset(dates)
+
+
 def _restore_source_excerpt(excerpt: str, source: str) -> str | None:
     """Recupera uma citação contínua, preservando os caracteres da página."""
     decoded = _ACCENT_MOJIBAKE_RE.sub(lambda match: _ACCENT_MOJIBAKE[match[0]], unescape(excerpt))
-    text = _unaccented(normalize(decoded))
+    text = _unaccented(normalize(_without_split_accents(decoded)))
     if not text:
         return None
     weekday_joins = {match.start(1) for match in _WEEKDAY_JOIN_RE.finditer(text)}
@@ -361,7 +407,9 @@ def _restore_source_excerpt(excerpt: str, source: str) -> str | None:
         if index in weekday_joins:
             parts.append(rf"(?:\s+|\s*{_SOURCE_DASH}\s*)")
         elif char in _ACCENT_GROUPS:
-            parts.append(rf"[{char}{_ACCENT_GROUPS[char]}]{_COMBINING_MARK}*")
+            letters = rf"[{char}{_ACCENT_GROUPS[char]}]{_COMBINING_MARK}*"
+            marks = _PDF_SPACING_MARKS.get(char)
+            parts.append(rf"(?:{letters}|[{re.escape(marks)}]{char})" if marks else letters)
         elif char == " ":
             parts.append(r"\s+")
         elif char == "-":
@@ -526,14 +574,20 @@ def validate_candidates(
     except (ValidationError, ValueError):
         raise ProcessingError("falha_ia", reason="schema_invalid") from None
     sources = {page.pagina: page.texto for page in pages}
-    subject = _discipline_from_document(list(sources.values()), output.disciplina)
+    subject = _discipline_from_document(list(sources.values()), output.disciplina or reference_subject)
     abbreviation = _discipline_abbreviation(reference_subject or subject) if subject else ""
     class_starts = class_starts_in_plan(sources.values())
     reference_year = default_year or extract_reference_year(pages)
+    literal_rows = _dated_exam_rows(pages, reference_year)
+    rows_by_key = {
+        _exam_row_key(row, dates_in_evidence(normalize(row.trecho_origem), default_year=reference_year)): row
+        for row in literal_rows
+    }
+    rows_with_explicit_time = set()
     result = ExtractionResult([])
     seen = set()
     first_failure_reason: str | None = None
-    for item in output.candidatos:
+    for index, item in enumerate([*output.candidatos, *literal_rows]):
         if item.pagina_origem not in sources:
             first_failure_reason = first_failure_reason or "page_mismatch"
             continue
@@ -545,7 +599,7 @@ def validate_candidates(
             elif not _evidence_in_source(item.trecho_origem, source):
                 first_failure_reason = first_failure_reason or "evidence_mismatch"
                 continue
-        evidence = normalize(unescape(item.trecho_origem))
+        evidence = normalize(_without_split_accents(unescape(item.trecho_origem)))
         if subject:
             item.titulo = _title_without_discipline(item.titulo, item.trecho_origem, item.tipo, subject, abbreviation)
         if not _title_grounded_in_evidence(item.titulo, item.trecho_origem, item.tipo, source):
@@ -564,17 +618,34 @@ def validate_candidates(
         marker = _ASSESSMENT_MARKER[item.tipo]
         if not (marker.search(title) or marker.search(evidence)):
             continue
+        evidence_dates = dates_in_evidence(evidence, default_year=reference_year)
         ambiguous = set(item.campos_ambiguos)
+        hours, unambiguous_start = resolve_evidence_hours(evidence)
+        uncertain_time = _UNCERTAIN_TIME_RE.search(evidence)
+        if item.tipo == "prova":
+            row_key = _exam_row_key(item, evidence_dates)
+            literal = rows_by_key.get(row_key)
+            if index >= len(output.candidatos):
+                if row_key in rows_with_explicit_time:
+                    continue
+            elif literal is not None:
+                if not hours and not uncertain_time:
+                    continue
+                # Uma citação mais longa pode trazer a hora na linha seguinte.
+                item.titulo = literal.titulo
+                item.data_sugerida = literal.data_sugerida
+                if item.data_sugerida is not None:
+                    ambiguous.discard("data")
+                rows_with_explicit_time.add(row_key)
         # Aceitar ano completo, abreviado (DD/MM/AA) ou ano de referência explícito no plano/oferta.
         # Sem referência de ano no documento/oferta, não completar usando o relógio.
-        if item.data_sugerida is not None and dates_in_evidence(evidence, default_year=reference_year) != {item.data_sugerida}:
+        if item.data_sugerida is not None and evidence_dates != {item.data_sugerida}:
             item.data_sugerida = None
             result.unsupported_dates += 1
             ambiguous.add("data")
         if item.data_sugerida is None:
             ambiguous.add("data")
-        hours, unambiguous_start = resolve_evidence_hours(evidence)
-        if (len(hours) > 1 and unambiguous_start is None) or _UNCERTAIN_TIME_RE.search(evidence):
+        if (len(hours) > 1 and unambiguous_start is None) or uncertain_time:
             ambiguous.add("hora")
         if (not hours and class_starts is not None and item.tipo == "prova"
                 and item.data_sugerida is not None and not {"data", "hora"}.intersection(ambiguous)):
@@ -594,7 +665,7 @@ def validate_candidates(
             result.candidates.append(item)
     if output.candidatos and not result.candidates and first_failure_reason is not None:
         raise ProcessingError("falha_ia", reason=first_failure_reason)
-    result.candidates = _sort_and_index_candidates(result.candidates)
+    result.candidates = _sort_and_index_candidates(result.candidates)[:_MAX_CANDIDATES]
     if abbreviation:
         suffix = f" - {abbreviation}"
         label_limit = _MAX_TITLE_LENGTH - len(suffix)
