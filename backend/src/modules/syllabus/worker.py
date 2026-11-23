@@ -113,6 +113,7 @@ class SyllabusWorker:
                     Syllabus.id != lease.id,
                     Syllabus.status == "concluido",
                     Syllabus.approved_hash == lease.approved_hash,
+                    Syllabus.ano == lease.year,
                     Syllabus.versao_processamento == VERSION,
                     Syllabus.provedor_ia == "google",
                     Syllabus.approved_version_id.is_not(None),

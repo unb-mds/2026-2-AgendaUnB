@@ -4,14 +4,17 @@ import re
 import unicodedata
 from dataclasses import dataclass
 from datetime import date, time
+from html import unescape
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 from pypdf import PdfReader
 
+from src.modules.syllabus.class_schedule import class_starts_in_plan
 from src.modules.syllabus.processing_config import ProcessingConfig, ProcessingError
 
-VERSION = "syllabus-v5-grounded-titles"
+VERSION = "syllabus-v7-portuguese-evidence"
+_MAX_TITLE_LENGTH = 300
 Kind = Literal["prova", "trabalho"]
 AmbiguousField = Literal["titulo", "tipo", "data", "hora"]
 
@@ -25,7 +28,7 @@ class TextPage:
 class CandidateData(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
-    titulo: str = Field(min_length=1, max_length=300)
+    titulo: str = Field(min_length=1, max_length=_MAX_TITLE_LENGTH)
     tipo: Kind
     data_sugerida: date | None = None
     hora_sugerida: time | None = None
@@ -53,6 +56,10 @@ class ExtractionData(BaseModel):
     candidatos: list[CandidateData] = Field(max_length=100)
 
 
+class ProviderExtractionData(ExtractionData):
+    disciplina: str | None = Field(default=None, min_length=1, max_length=200)
+
+
 @dataclass
 class ExtractionResult:
     candidates: list[CandidateData]
@@ -62,6 +69,21 @@ class ExtractionResult:
 _INVISIBLE_RE = re.compile(r"[\u00ad\u200b-\u200d\ufeff]")
 _DASH_RE = re.compile(r"[\u2010-\u2015\u2212]")
 _TOKEN_RE = re.compile(r"[^\W_]+(?:[/:.][^\W_]+)*")
+_ACCENT_GROUPS = {
+    "a": "àáâãä", "e": "éêë", "i": "íï", "o": "óôõö", "u": "úü", "c": "ç", "n": "ñ",
+}
+_ACCENTED_LETTERS = "".join(_ACCENT_GROUPS.values())
+_ACCENT_MOJIBAKE = {
+    misdecoded: letter
+    for letter in _ACCENTED_LETTERS + _ACCENTED_LETTERS.upper()
+    for encoding in ("latin-1", "cp1252")
+    if "\ufffd" not in (misdecoded := letter.encode("utf-8").decode(encoding, errors="replace"))
+}
+_ACCENT_MOJIBAKE_RE = re.compile("|".join(map(re.escape, _ACCENT_MOJIBAKE)))
+_COMBINING_MARK = r"[\u0300-\u036f]"
+_ACCENTED_LETTER = rf"(?:[{_ACCENTED_LETTERS}]|[{''.join(_ACCENT_GROUPS)}]{_COMBINING_MARK}+)"
+_SOURCE_DASH = r"[-\u2010-\u2015\u2212]"
+_WEEKDAY_JOIN_RE = re.compile(r'\b(?:segunda|ter[c"\ufffd]a|quarta|quinta|sexta)([ -])feira\b')
 
 
 def normalize(value: str) -> str:
@@ -196,6 +218,21 @@ _TRAILING_CLAUSE_RE = re.compile(
     re.IGNORECASE,
 )
 _EXPLICIT_FIXED_LABEL_RE = re.compile(r"\b(?:prova\s+\d+|trabalho\s+\d+|p[1-9]\b|t[1-9]\b)", re.IGNORECASE)
+_NAMED_LABEL_RE = re.compile(
+    r"\b(?:prova\s+(?:\d+|substitutiva|final|de\s+segunda\s+chamada)|trabalho\s+(?:\d+|final))\b",
+    re.IGNORECASE,
+)
+_SUBJECT_HEADER_RE = re.compile(
+    r"^[ \t|#]*(?:disciplina|mat[ée]ria|componente curricular)(?:[ \t]*[:=|–—-][ \t]*|\t+)([^|\n\r]+)",
+    re.IGNORECASE | re.MULTILINE,
+)
+_SUBJECT_CODE_RE = re.compile(r"^[A-Z]{2,}\d{3,}(?:[ \t]*[-–—:][ \t]*|\s+|$)")
+_SUBJECT_CONNECTORS = frozenset("a as o os à às ao aos de da das do dos e em na nas no nos para por com ou".split())
+_TITLE_SUFFIX_RE = re.compile(r"^(.+?)\s+[-–—:]\s+(.+)$")
+_UNCERTAIN_TIME_RE = re.compile(
+    r"\bhor(?:a\b|[áa]rio\b)\s*:?\s*(?:a\s+(?:definir|confirmar)|indefinid[oa])\b",
+    re.IGNORECASE,
+)
 _ADMIN_POLICY_RE = re.compile(
     r"\b(?:pedidos?\s+de\s+segunda\s+chamada|protocolados?\s+na\s+secretaria|justificativa\s+documental|revis[ãa]o\s+de\s+men[çc][ãa]o)\b",
     re.IGNORECASE,
@@ -307,6 +344,89 @@ def resolve_evidence_hours(value: str) -> tuple[set[time], time | None]:
     return hours, None
 
 
+def _unaccented(text: str) -> str:
+    return "".join(char for char in unicodedata.normalize("NFD", text) if not unicodedata.combining(char))
+
+
+def _restore_source_excerpt(excerpt: str, source: str) -> str | None:
+    """Recupera uma citação contínua, preservando os caracteres da página."""
+    decoded = _ACCENT_MOJIBAKE_RE.sub(lambda match: _ACCENT_MOJIBAKE[match[0]], unescape(excerpt))
+    text = _unaccented(normalize(decoded))
+    if not text:
+        return None
+    weekday_joins = {match.start(1) for match in _WEEKDAY_JOIN_RE.finditer(text)}
+    parts = []
+    for index, char in enumerate(text):
+        if index in weekday_joins:
+            parts.append(rf"(?:\s+|\s*{_SOURCE_DASH}\s*)")
+        elif char in _ACCENT_GROUPS:
+            parts.append(rf"[{char}{_ACCENT_GROUPS[char]}]{_COMBINING_MARK}*")
+        elif char == " ":
+            parts.append(r"\s+")
+        elif char == "-":
+            parts.append(_SOURCE_DASH)
+        elif char == "/" and text[index - 1:index].isdigit() and text[index + 1:index + 2].isdigit():
+            parts.append(r"\s*/\s*")
+        elif char in ('"', "\ufffd") and (text[index - 1:index].isalpha() or text[index + 1:index + 2].isalpha()):
+            # O provedor às vezes substitui uma letra acentuada por aspas ou �.
+            parts.append(rf"(?:{re.escape(char)}|{_ACCENTED_LETTER})")
+        else:
+            parts.append(re.escape(char))
+    pattern = re.compile(r"(?<!\w)" + "".join(parts) + r"(?!\w)", re.IGNORECASE)
+    original = None
+    for match in pattern.finditer(source):
+        if original is not None and match[0] != original:
+            return None
+        original = match[0]
+    return original
+
+
+def _discipline_from_document(sources: list[str], suggested: str | None) -> str | None:
+    names = {}
+    for source in sources:
+        for match in _SUBJECT_HEADER_RE.finditer(source.replace("**", "")):
+            name = _SUBJECT_CODE_RE.sub("", match[1].strip()).strip()
+            if 1 < len(name) <= 200 and any(char.isalpha() for char in name):
+                names[normalize(_unaccented(name))] = name
+    if names:
+        return next(iter(names.values())) if len(names) == 1 else None
+    if suggested and any(char.isalpha() for char in suggested):
+        name = normalize(_unaccented(suggested))
+        pattern = re.compile(rf"(?<!\w){re.escape(name)}(?!\w)")
+        if any(pattern.search(normalize(_unaccented(source))) for source in sources):
+            return suggested.strip()
+    return None
+
+
+def _discipline_abbreviation(name: str) -> str:
+    name = re.sub(r"\s*\([A-Z0-9]{2,}\)\s*$", "", name)
+    words = re.findall(r"[^\W\d_]+|\d+", name)
+    initials = []
+    for index, word in enumerate(words):
+        if word.casefold() in _SUBJECT_CONNECTORS:
+            continue
+        if word.isdecimal() or (index > 0 and index == len(words) - 1 and re.fullmatch(r"[IVX]+", word)):
+            initials.append(word)
+        else:
+            initials.append(word[0].upper())
+    return "".join(initials)
+
+
+def _title_without_discipline(titulo: str, evidence: str, kind: Kind, subject: str, abbreviation: str) -> str:
+    match = _TITLE_SUFFIX_RE.fullmatch(titulo)
+    if match and normalize(_unaccented(match[2])) in {
+        normalize(_unaccented(subject)), normalize(_unaccented(abbreviation)),
+    }:
+        titulo = match[1]
+    ordinal = _ORDINAL_TITLE_RE.fullmatch(normalize(titulo))
+    if ordinal and ordinal[1] == kind:
+        labels = {" ".join(label.split()) for label in _NAMED_LABEL_RE.findall(evidence.replace("**", ""))
+                  if label.casefold().startswith(kind)}
+        if len(labels) == 1:
+            return next(iter(labels))
+    return titulo
+
+
 def _title_grounded_in_evidence(
     titulo: str,
     trecho_origem: str,
@@ -316,10 +436,7 @@ def _title_grounded_in_evidence(
     def title_matches(label: str, source: str) -> bool:
         # Títulos podem restaurar acentos perdidos pelo PDF. A validação do
         # próprio trecho de origem continua independente e mais estrita.
-        def unaccented(text: str) -> str:
-            return "".join(char for char in unicodedata.normalize("NFD", text) if not unicodedata.combining(char))
-
-        return _evidence_in_source(unaccented(label), unaccented(source), max_gap=4, allow_same_line=False)
+        return _evidence_in_source(_unaccented(label), _unaccented(source), max_gap=4, allow_same_line=False)
 
     if title_matches(titulo, trecho_origem):
         return True
@@ -386,25 +503,38 @@ def _sort_and_index_candidates(candidates: list[CandidateData]) -> list[Candidat
 
 def validate_candidates(raw: str, pages: list[TextPage], *, default_year: int | None = None) -> ExtractionResult:
     try:
-        output = ExtractionData.model_validate_json(raw)
+        output = ProviderExtractionData.model_validate_json(raw)
     except (ValidationError, ValueError):
         raise ProcessingError("falha_ia", reason="schema_invalid") from None
     sources = {page.pagina: page.texto for page in pages}
+    subject = _discipline_from_document(list(sources.values()), output.disciplina)
+    abbreviation = _discipline_abbreviation(subject) if subject else ""
+    class_starts = class_starts_in_plan(sources.values())
     reference_year = default_year or extract_reference_year(pages)
     result = ExtractionResult([])
     seen = set()
     first_failure_reason: str | None = None
     for item in output.candidatos:
-        evidence = normalize(item.trecho_origem)
         if item.pagina_origem not in sources:
             first_failure_reason = first_failure_reason or "page_mismatch"
             continue
-        if not _evidence_in_source(item.trecho_origem, sources[item.pagina_origem]):
-            first_failure_reason = first_failure_reason or "evidence_mismatch"
-            continue
-        if not _title_grounded_in_evidence(item.titulo, item.trecho_origem, item.tipo, sources[item.pagina_origem]):
-            first_failure_reason = first_failure_reason or "title_mismatch"
-            continue
+        source = sources[item.pagina_origem]
+        if item.trecho_origem not in source:
+            restored = _restore_source_excerpt(item.trecho_origem, source)
+            if restored is not None and len(restored) <= 1000:
+                item.trecho_origem = restored
+            elif not _evidence_in_source(item.trecho_origem, source):
+                first_failure_reason = first_failure_reason or "evidence_mismatch"
+                continue
+        evidence = normalize(unescape(item.trecho_origem))
+        if subject:
+            item.titulo = _title_without_discipline(item.titulo, item.trecho_origem, item.tipo, subject, abbreviation)
+        if not _title_grounded_in_evidence(item.titulo, item.trecho_origem, item.tipo, source):
+            restored_title = _restore_source_excerpt(item.titulo, item.trecho_origem)
+            if restored_title is None or len(restored_title) > _MAX_TITLE_LENGTH:
+                first_failure_reason = first_failure_reason or "title_mismatch"
+                continue
+            item.titulo = restored_title
         item.titulo = _clean_verbose_title(item.titulo, item.tipo)
         # Defesa conservadora: rótulos de aula/bibliografia/regras administrativas não viram provas.
         title = normalize(item.titulo)
@@ -425,12 +555,19 @@ def validate_candidates(raw: str, pages: list[TextPage], *, default_year: int | 
         if item.data_sugerida is None:
             ambiguous.add("data")
         hours, unambiguous_start = resolve_evidence_hours(evidence)
-        if len(hours) > 1 and unambiguous_start is None:
+        if (len(hours) > 1 and unambiguous_start is None) or _UNCERTAIN_TIME_RE.search(evidence):
             ambiguous.add("hora")
-        if item.hora_sugerida is not None:
+        if (not hours and class_starts is not None and item.tipo == "prova"
+                and item.data_sugerida is not None and not {"data", "hora"}.intersection(ambiguous)):
+            item.hora_sugerida = class_starts.get(item.data_sugerida.weekday())
+            if item.hora_sugerida is None:
+                ambiguous.add("hora")
+        elif item.hora_sugerida is not None:
             if item.data_sugerida is None or "hora" in ambiguous or item.hora_sugerida != unambiguous_start:
                 item.hora_sugerida = None
                 ambiguous.add("hora")
+        elif item.data_sugerida is not None and not {"data", "hora"}.intersection(ambiguous):
+            item.hora_sugerida = unambiguous_start
         item.campos_ambiguos = sorted(ambiguous)
         identity = (normalize(item.titulo), item.data_sugerida, item.hora_sugerida, item.pagina_origem)
         if identity not in seen:
@@ -439,4 +576,9 @@ def validate_candidates(raw: str, pages: list[TextPage], *, default_year: int | 
     if output.candidatos and not result.candidates and first_failure_reason is not None:
         raise ProcessingError("falha_ia", reason=first_failure_reason)
     result.candidates = _sort_and_index_candidates(result.candidates)
+    if abbreviation:
+        suffix = f" - {abbreviation}"
+        label_limit = _MAX_TITLE_LENGTH - len(suffix)
+        for item in result.candidates:
+            item.titulo = item.titulo[:label_limit].rstrip() + suffix
     return result

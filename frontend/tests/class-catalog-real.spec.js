@@ -19,7 +19,9 @@ test('vínculo persiste na recarga, abre a biblioteca e pode ser removido', asyn
   await search.press('Enter');
   await catalog(page).locator('summary').filter({ hasText: 'Disciplina 1' }).click();
   await catalog(page).getByRole('checkbox', { name: 'Selecionar turma 01 de Disciplina 1' }).check();
-  await catalog(page).getByRole('button', { name: 'Seguir 1 turma selecionada', exact: true }).click();
+  const followButton = catalog(page).getByRole('button', { name: 'Seguir 1 turma selecionada', exact: true });
+  await expect(followButton).toHaveCSS('background-color', 'rgb(2, 115, 236)');
+  await followButton.click();
   await expect(catalog(page).getByText('Turma seguida')).toBeVisible();
   await page.reload();
   await page.getByRole('button', { name: /Selecionar turmas/ }).click();

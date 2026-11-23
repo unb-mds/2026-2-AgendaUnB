@@ -8,6 +8,13 @@ export function Icon({ children }) {
   return <span className="material-symbols-outlined" aria-hidden="true">{children}</span>;
 }
 
+export function NativeSelect({ children, ...props }) {
+  return <span className="native-select">
+    <select {...props}>{children}</select>
+    <Icon>expand_more</Icon>
+  </span>;
+}
+
 export function ManagementSelect({ label, value, options, onChange, disabled = false }) {
   const [open, setOpen] = useState(false);
   const [dropUp, setDropUp] = useState(false);
@@ -116,7 +123,7 @@ export function Pagination({ page, total, onPage, busy }) {
   </nav>;
 }
 
-export function Modal({ title, children, onClose, busy = false, className = '' }) {
+export function Modal({ title, children, onClose, busy = false, className = '', focusFields = true }) {
   const ref = useRef(null);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
@@ -124,14 +131,14 @@ export function Modal({ title, children, onClose, busy = false, className = '' }
     const dialog = ref.current;
     const previousFocus = document.activeElement;
     dialog.showModal();
-    dialog.querySelector('input, textarea')?.focus();
+    if (focusFields) dialog.querySelector('input, textarea')?.focus();
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
       dialog.close(); document.body.style.overflow = previousOverflow;
       if (previousFocus?.isConnected) previousFocus.focus();
     };
-  }, []);
+  }, [focusFields]);
   return <dialog className={`manage-dialog ${className}`} ref={ref} aria-labelledby="manage-dialog-title"
     onCancel={e => { e.preventDefault(); if (!busy) closeRef.current(); }}>
     <header><h2 id="manage-dialog-title">{title}</h2>

@@ -52,6 +52,7 @@ export function createCandidateReviewDraft(candidates, classSchedule) {
       time,
       timeSource: time ? 'plan' : null,
       dateNeedsReview: candidate.ambiguousFields?.some(field => ['data', 'date'].includes(field)),
+      timeNeedsReview: candidate.ambiguousFields?.some(field => ['hora', 'time'].includes(field)),
       status: candidate.status, versionId: candidate.versionId,
       editable: candidate.status === 'pendente' }, classSchedule);
   });
@@ -59,7 +60,7 @@ export function createCandidateReviewDraft(candidates, classSchedule) {
 
 function withClassTime(item, classSchedule) {
   if (item.timeSource === 'plan' || item.timeSource === 'manual') return item;
-  if (item.editable !== true || item.type !== 'prova') {
+  if (item.editable !== true || item.type !== 'prova' || item.timeNeedsReview) {
     return { ...item, time: '', timeSource: null };
   }
   let time = '';

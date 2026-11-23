@@ -33,6 +33,7 @@ function SemesterPlansSession({ children, userId }) {
   const operations = useRef(new Map());
   const prepared = useRef(new Map());
   const confirmLock = useRef(false);
+  const deleteLock = useRef(false);
   const plansRef = useRef(plans);
   plansRef.current = plans;
   const polling = useRef([]);
@@ -52,6 +53,7 @@ function SemesterPlansSession({ children, userId }) {
 
   const savePlan = useCallback(plan => setPlans(current => ({ ...current, [plan.id]: plan })), []);
   const loadPlan = useCallback(async (id, force = false) => {
+    if (deleteLock.current) return;
     const key = `read:${id}`;
     const previous = requests.current.get(key);
     if ((previous && !force) || requests.current.has(`authorize:${id}`) || requests.current.has(`confirm:${id}`)) return;
@@ -116,44 +118,32 @@ function SemesterPlansSession({ children, userId }) {
     setUploads(current => [...current, { id: crypto.randomUUID(), name: 'Texto colado', text, offer, status: 'queued' }]);
   };
   const remove = id => setUploads(current => current.filter(item => item.id !== id || item.status === 'sending'));
-  const resetUploads = useCallback(() => {
-    setUploads(current => current.filter(item => item.status === 'sending'));
-    setUploadNotice({});
-    setRawText({ text: '' });
-  }, []);
-  const resetSend = useCallback(async (planIds = []) => {
-    resetUploads();
-    const uniqueIds = [...new Set(planIds.filter(Boolean))];
-    if (!uniqueIds.length) return { deleted: [], failed: [] };
-    const signal = session.current?.signal;
-    const settled = await Promise.allSettled(
-      uniqueIds.map(async id => {
-        requests.current.get(`read:${id}`)?.abort();
-        await syllabusApi.remove(id, signal);
-        return id;
-      }),
-    );
-    const deleted = [];
-    const failed = [];
-    settled.forEach((outcome, index) => {
-      if (outcome.status === 'fulfilled') deleted.push(outcome.value);
-      else failed.push({ id: uniqueIds[index], error: outcome.reason });
-    });
-    if (deleted.length) {
-      const removed = new Set(deleted);
-      const omitKeys = obj => Object.fromEntries(Object.entries(obj).filter(([key]) => !removed.has(key)));
-      setPlans(omitKeys);
-      setRecent(current => current.filter(plan => !removed.has(plan.id)));
-      setProcessing(current => current.filter(id => !removed.has(id)));
-      setAuthorizations(omitKeys);
-      setPlanErrors(omitKeys);
-      setResults(omitKeys);
-      setDrafts(current => Object.fromEntries(
-        Object.entries(current).filter(([key]) => !deleted.some(id => key.startsWith(`${id}:`))),
-      ));
+  const deleteSubmissions = async () => {
+    if (deleteLock.current) return;
+    if (prepared.current.size || uploads.some(item => item.status === 'queued') || confirmLock.current ||
+        [...requests.current.keys()].some(key => key.startsWith('authorize:'))) {
+      throw new Error('Aguarde o envio ou a revisão em andamento antes de excluir os planos.');
     }
-    return { deleted, failed };
-  }, [resetUploads]);
+    deleteLock.current = true;
+    try {
+      await syllabusApi.removeSubmissions(session.current?.signal);
+      requests.current.forEach(controller => controller.abort());
+      requests.current.clear();
+      operations.current.clear();
+      setUploads([]);
+      setUploadNotice({});
+      setRawText({ text: '' });
+      setPlans({});
+      setRecent([]);
+      setProcessing([]);
+      setAuthorizations({});
+      setPlanErrors({});
+      setResults({});
+      setDrafts({});
+    } finally {
+      deleteLock.current = false;
+    }
+  };
   const retryUpload = id => setUploads(current => current.map(item => item.id === id && item.status === 'failed'
     ? { ...item, error: '', status: 'queued' } : item));
   const onPrepared = useCallback(plan => {
@@ -356,7 +346,7 @@ function SemesterPlansSession({ children, userId }) {
   }
 
   return <Context.Provider value={{
-    uploads, rawText, setRawText, addFiles, addText, remove, resetUploads, resetSend, retryUpload, uploadNotice, acknowledgeUpload, retryUncertainUpload,
+    uploads, rawText, setRawText, addFiles, addText, remove, deleteSubmissions, retryUpload, uploadNotice, acknowledgeUpload, retryUncertainUpload,
     plans, recent, planErrors, loadPlan, observe, drafts, changeDrafts, authorizations, authorize,
     checkAuthorization, results, confirming, confirm, reconcile,
   }}>{children}</Context.Provider>;

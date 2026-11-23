@@ -10,9 +10,11 @@ test('o catálogo só preenche provas pendentes sem hora explícita e com data c
     { ...exam, id: 'c', type: 'trabalho' },
     { ...exam, id: 'd', ambiguousFields: ['data'] },
     { ...exam, id: 'e', status: 'confirmado' },
+    { ...exam, id: 'f', ambiguousFields: ['hora'] },
+    { ...exam, id: 'g', suggestedDate: null, ambiguousFields: ['data', 'hora'] },
   ], '3T23');
-  assert.deepEqual(drafts.map(({ time }) => time), ['14:00', '16:30', '', '', '']);
-  assert.deepEqual(drafts.map(({ timeSource }) => timeSource), ['catalog', 'plan', null, null, null]);
+  assert.deepEqual(drafts.map(({ time }) => time), ['14:00', '16:30', '', '', '', '', '']);
+  assert.deepEqual(drafts.map(({ timeSource }) => timeSource), ['catalog', 'plan', null, null, null, null, null]);
   assert.ok(drafts.every(({ decision }) => decision === 'pending'));
 });
 
@@ -116,8 +118,8 @@ test('buildReviewConfirmation inclui tipo revisado, título, data em Brasília (
 
 test('prova sem data herda horario padrao unico e trabalho sem horario confirma como dia inteiro', () => {
   const [uniformExam, variedExam, assignment] = createCandidateReviewDraft([
-    { id: 'e1', type: 'prova', status: 'pendente', suggestedDate: null, ambiguousFields: ['data', 'hora'] },
-    { id: 'e2', type: 'prova', status: 'pendente', suggestedDate: null, ambiguousFields: ['data', 'hora'] },
+    { id: 'e1', type: 'prova', status: 'pendente', suggestedDate: null, ambiguousFields: ['data'] },
+    { id: 'e2', type: 'prova', status: 'pendente', suggestedDate: null, ambiguousFields: ['data'] },
     { id: 't1', type: 'trabalho', status: 'pendente', suggestedDate: '2026-12-01', suggestedTime: null, sourceExcerpt: 'Trabalho final.' },
   ], '35M5 35T1');
   assert.equal(uniformExam.time, '12:00');

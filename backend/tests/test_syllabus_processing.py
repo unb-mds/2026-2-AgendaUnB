@@ -50,6 +50,59 @@ def test_evidence_and_invented_dates():
             validate_candidates(raw_candidate(**changes), pages)
 
 
+@pytest.mark.parametrize("returned_excerpt", [
+    "Prova 1 — terça-feira, 10/11/2026, das 14:00 &agrave;s 16:00.",
+    "Prova 1 — ter&ccedil;a-feira, 10/11/2026, das 14:00 &#224;s 16:00.",
+    "Prova 1 — terca-feira, 10/11/2026, das 14:00 as 16:00.",
+    "Prova 1 — terÃ§a-feira, 10/11/2026, das 14:00 Ã\u00a0s 16:00.",
+    'Prova 1 — ter"a-feira, 10/11/2026, das 14:00 "s 16:00.',
+    "Prova 1 — terc\u0327a-feira, 10/11/2026, das 14:00 a\u0300s 16:00.",
+])
+def test_recovers_portuguese_excerpt_from_original_page(returned_excerpt):
+    original = "Prova 1 — terça-feira, 10/11/2026, das 14:00 às 16:00."
+    pages = [TextPage(1, f"Disciplina: Estrutura de Dados 1\n{original}")]
+    [exam] = validate_candidates(raw_candidate(trecho_origem=returned_excerpt), pages).candidates
+    assert exam.titulo == "Prova 1 - ED1"
+    assert exam.data_sugerida.isoformat() == "2026-11-10"
+    assert exam.hora_sugerida.isoformat() == "14:00:00"
+    assert exam.trecho_origem == original
+
+
+def test_recovers_encoded_assignment_title_and_excerpt():
+    original = "Trabalho de revisão — terça feira, 17 / 11 / 2026, às 23:59."
+    pages = [TextPage(1, f"Disciplina: Estrutura de Dados 1\n{original}")]
+    [assignment] = validate_candidates(raw_candidate(
+        titulo="Trabalho de revis&atilde;o", tipo="trabalho", data_sugerida="2026-11-17", hora_sugerida="23:59",
+        trecho_origem="Trabalho de revis&atilde;o — ter&ccedil;a-feira, 17/11/2026, &agrave;s 23:59.",
+    ), pages).candidates
+    assert assignment.titulo == "Trabalho de revisão - ED1"
+    assert assignment.hora_sugerida.isoformat() == "23:59:00"
+    assert assignment.trecho_origem == original
+
+
+def test_keeps_weekday_without_date_available_for_review():
+    original = "Prova 1 na próxima terça-feira."
+    [exam] = validate_candidates(raw_candidate(
+        data_sugerida=None, hora_sugerida=None, trecho_origem="Prova 1 na proxima ter\ufffda-feira.",
+    ), [TextPage(1, original)]).candidates
+    assert exam.data_sugerida is None
+    assert exam.campos_ambiguos == ["data"]
+    assert exam.trecho_origem == original
+
+
+@pytest.mark.parametrize("altered", [
+    "Trabalho 2 — entrega na ter&ccedil;a-feira, 18/11/2026, &agrave;s 23:59.",
+    "Trabalho 2 — entrega na ter&ccedil;a-feira, 17/11/2026, &agrave;s 22:59.",
+    "Trabalho 2 — entrega na quar&ccedil;a-feira, 17/11/2026, &agrave;s 23:59.",
+])
+def test_accent_recovery_does_not_accept_altered_dates_hours_or_words(altered):
+    original = "Trabalho 2 — entrega na terça-feira, 17/11/2026, às 23:59."
+    with pytest.raises(ProcessingError) as caught:
+        validate_candidates(raw_candidate(titulo="Trabalho 2", tipo="trabalho", data_sugerida="2026-11-17",
+                                           hora_sugerida="23:59", trecho_origem=altered), [TextPage(1, original)])
+    assert caught.value.reason == "evidence_mismatch"
+
+
 @pytest.mark.parametrize(("title", "expected"), [
     ("Prova de integração", "Prova de integração"),
     ("Prova 4 - Integração", "Prova 1 - Integração"),
@@ -84,6 +137,41 @@ def test_missing_time_stays_null_and_empty_is_success():
     result = validate_candidates(raw_candidate(hora_sugerida=None, trecho_origem=evidence), [TextPage(1, evidence)])
     assert result.candidates[0].hora_sugerida is None
     assert validate_candidates('{"candidatos": []}', [TextPage(1, "Ementa")]).candidates == []
+
+
+def test_discipline_from_a_different_page_grounds_abbreviation_and_ignores_invented_name():
+    evidence = "Prova Substitutiva — 12/11/2026."
+    pages = [TextPage(1, "# Estrutura de Dados 1\n35M34"), TextPage(2, evidence)]
+    payload = json.loads(raw_candidate(titulo="Prova Substitutiva - ED1", data_sugerida="2026-11-12",
+                                       hora_sugerida=None, pagina_origem=2, trecho_origem=evidence))
+    payload["disciplina"] = "Estrutura de Dados 1"
+    [exam] = validate_candidates(json.dumps(payload), pages).candidates
+    assert (exam.titulo, exam.hora_sugerida.isoformat()) == ("Prova Substitutiva - ED1", "10:00:00")
+
+    payload["candidatos"][0]["titulo"] = "Prova Substitutiva"
+    payload["disciplina"] = "Sistemas Operacionais"
+    [exam] = validate_candidates(json.dumps(payload), pages).candidates
+    assert exam.titulo == "Prova Substitutiva"
+
+
+@pytest.mark.parametrize(("schedule", "kind", "evidence", "iso_date", "expected_hour", "ambiguous"), [
+    ("35M34", "prova", "Prova 1 — 10/11/2026, das 14h às 16h.", "2026-11-10", "14:00", []),
+    ("35M34", "prova", "Prova 1 — 10/11/2026, às 9h ou 14h.", "2026-11-10", None, ["hora"]),
+    ("35M34", "prova", "Prova 1 — 10/11/2026, horário a definir.", "2026-11-10", None, ["hora"]),
+    ("35M34", "prova", "Prova 1 — 11/11/2026.", "2026-11-11", None, ["hora"]),
+    ("35M34", "prova", "Prova 1 — data a definir.", None, None, ["data"]),
+    ("35M34", "trabalho", "Trabalho final — 10/11/2026.", "2026-11-10", None, []),
+    ("3M34; 5T23", "prova", "Prova 1 — 12/11/2026.", "2026-11-12", "14:00", []),
+    ("35M34 35T23", "prova", "Prova 1 — 10/11/2026.", "2026-11-10", None, ["hora"]),
+    ("35M34\nHorário: 35T23", "prova", "Prova 1 — 10/11/2026.", "2026-11-10", None, ["hora"]),
+])
+def test_class_schedule_only_fills_an_unambiguous_exam_start(schedule, kind, evidence, iso_date, expected_hour, ambiguous):
+    pages = [TextPage(1, f"Horário da turma: {schedule}\n{evidence}")]
+    raw = raw_candidate(titulo=evidence.split(" — ", 1)[0], tipo=kind, data_sugerida=iso_date,
+                        hora_sugerida=None, trecho_origem=evidence)
+    [candidate] = validate_candidates(raw, pages).candidates
+    assert (candidate.hora_sugerida.strftime("%H:%M") if candidate.hora_sugerida else None) == expected_hour
+    assert candidate.campos_ambiguos == ambiguous
 
 
 @pytest.mark.parametrize("hours", ["09h ou 14h", "09:00 - 14:00", "09 h 00 ou 14 h 00"])

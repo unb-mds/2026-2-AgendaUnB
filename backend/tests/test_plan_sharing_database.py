@@ -8,12 +8,18 @@ ignora RLS: quem confere a permissão é o banco.
 """
 import json
 import os
-from uuid import uuid4
+from unittest.mock import Mock
+from uuid import UUID, uuid4
 
 import pytest
+from fastapi import HTTPException
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.exc import DBAPIError
+from sqlalchemy.orm import Session
+
+from src.middlewares.auth import CurrentUser
+from src.modules.syllabus.router import delete_syllabus_submissions, discard_syllabus_candidate, list_syllabi
 
 
 @pytest.fixture
@@ -135,6 +141,56 @@ def confirm(conn, actor, key, version_id, items):
 
 CONFIRM = 'select public.confirmar_importacao(:a, :k, :v, cast(:i as jsonb))'
 EVENTS = 'select count(*) from public.eventos_pessoais where user_id=:u'
+
+
+def test_delete_submissions_removes_own_shared_content_across_classes(database):
+    conn, users = database
+    owner, follower = users['ana'], users['bruno']
+    user = CurrentUser(UUID(owner), 'student')
+    first_class, second_class = offering(conn), offering(conn)
+    follow(conn, follower, first_class)
+    first_plan, original, candidates = plan(conn, owner, first_class)
+    second_plan, _, _ = plan(conn, owner, second_class, status='processando')
+    foreign_plan, _, _ = plan(conn, follower, second_class)
+    assert share(conn, owner, original) == 'compartilhada'
+    revision = scalar(conn, 'select (public.criar_revisao(:a, :v)).id', {'a': follower, 'v': original})
+    assert share(conn, follower, revision) == 'compartilhada'
+    confirm(conn, follower, 'delete-submissions-test', original, [{'candidato_id': candidates[0]}])
+
+    storage = Mock()
+    with Session(bind=conn, join_transaction_mode='create_savepoint') as db:
+        with pytest.raises(HTTPException) as error:
+            delete_syllabus_submissions(user, db, storage)
+        assert error.value.status_code == 409
+        storage.delete_objects_strict.assert_not_called()
+        assert list_syllabi(None, 20, 0, user, db).total == 2
+
+    conn.execute(text("update public.planos_ensino set status='concluido', processado_em=now() where id=:p"),
+                 {'p': second_plan})
+    conn.execute(text("""update public.planos_ensino
+        set caminho_arquivo=null, texto_preparado=cast(:pages as jsonb), texto_aprovado=cast(:pages as jsonb),
+            hash_texto_aprovado=repeat('a', 64), autorizado_em=now(), enfileirado_em=now(), versao_texto=1
+        where id=:p"""), {'p': second_plan, 'pages': json.dumps([{'pagina': 1, 'texto': 'Prova.'}])})
+    with Session(bind=conn, join_transaction_mode='create_savepoint') as db:
+        assert delete_syllabus_submissions(user, db, storage).status_code == 204
+        assert delete_syllabus_submissions(user, db, storage).status_code == 204
+        assert list_syllabi(None, 20, 0, user, db).total == 0
+        storage.delete_objects_strict.assert_called_once()
+        revision_candidate = scalar(conn, 'select id from public.avaliacoes where versao_id=:v limit 1', {'v': revision})
+        with pytest.raises(HTTPException) as error:
+            discard_syllabus_candidate(UUID(first_plan), revision_candidate, user, db)
+        assert error.value.status_code == 404
+
+    assert scalar(conn, 'select count(*) from public.versoes_plano where id=:v', {'v': original}) == 0
+    assert scalar(conn, 'select count(*) from public.avaliacoes where versao_id=:v', {'v': original}) == 0
+    assert scalar(conn, 'select versao_origem_id from public.versoes_plano where id=:v', {'v': revision}) is None
+    assert scalar(conn, 'select count(*) from public.avaliacoes where versao_id=:v', {'v': revision}) == 2
+    assert scalar(conn, EVENTS, {'u': follower}) == 1
+    assert scalar(conn, 'select envio_excluido_em from public.planos_ensino where id=:p', {'p': foreign_plan}) is None
+    assert scalar(conn, '''select texto_preparado is null and texto_aprovado is null and envio_excluido_em is not null
+        from public.planos_ensino where id=:p''', {'p': second_plan})
+    assume(conn, owner)
+    assert scalar(conn, 'select count(*) from public.planos_ensino where id=:p', {'p': first_plan}) == 0
 
 
 # ---------------------------------------------------------------------------

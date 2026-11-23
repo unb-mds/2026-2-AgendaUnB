@@ -17,6 +17,41 @@ async function chooseUploadClass(page, index) {
   await expect(page).toHaveURL(new RegExp(`oferta=class-${index}(?:&|$)`));
 }
 
+test('excluir envios confirma o escopo de todas as turmas e atualiza a lista filtrada', async ({ page }) => {
+  const { data } = await setupSemester(page, {
+    offers: [makeOffer(1), makeOffer(2)],
+    plans: [ready(1, [makeCandidate('A')]), ready(2, [makeCandidate('B')])],
+  });
+  let requests = 0;
+  await page.route('**/api/v1/syllabus', route => {
+    expect(route.request().method()).toBe('DELETE');
+    requests += 1;
+    if (requests === 1) return route.fulfill({ status: 409, json: { detail: 'Aguarde o término da extração.' } });
+    data.clear();
+    return route.fulfill({ status: 204 });
+  });
+  await page.goto('/plano-de-ensino?oferta=class-1');
+  await expect(queue(page).getByRole('button', { name: /plano-1\.pdf/ })).toBeVisible();
+  const trigger = queue(page).getByRole('button', { name: 'Excluir envios' });
+  const dialog = page.getByRole('dialog', { name: 'Excluir envios de todas as turmas?' });
+
+  await trigger.click();
+  await dialog.getByRole('button', { name: 'Cancelar' }).click();
+  expect(requests).toBe(0);
+  await expect(trigger).toBeFocused();
+
+  await trigger.click();
+  const confirm = dialog.getByRole('button', { name: 'Excluir envios' });
+  await confirm.click();
+  await expect(dialog.getByRole('alert')).toContainText('Aguarde o término da extração.');
+  await confirm.click();
+  await expect(dialog).toBeHidden();
+  await expect(queue(page).getByText('Envios excluídos. Você já pode enviar novos planos.')).toBeVisible();
+  await expect(queue(page).getByRole('button', { name: /plano-1\.pdf/ })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Ver todos os planos' }).click();
+  await expect(queue(page).getByRole('button', { name: /plano-[12]\.pdf/ })).toHaveCount(0);
+});
+
 test('oito planos e 60 avaliações: vínculo, upload concorrente, autorização específica e confirmação por plano', async ({ page }) => {
   test.setTimeout(60000);
   const offers = Array.from({ length: 8 }, (_, i) => makeOffer(i + 1));

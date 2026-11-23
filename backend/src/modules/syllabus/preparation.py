@@ -143,7 +143,9 @@ def extract_pdf_isolated(content, timeout):
 
 
 def owned_plan(db, user_id, sid, *, lock=False):
-    query = select(Syllabus).where(Syllabus.id == sid, Syllabus.user_id == user_id)
+    query = select(Syllabus).where(
+        Syllabus.id == sid, Syllabus.user_id == user_id, Syllabus.submission_deleted_at.is_(None)
+    )
     plan = db.scalar(query.with_for_update() if lock else query)
     if plan is None:
         raise HTTPException(404, "Plano de ensino não encontrado.")

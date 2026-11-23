@@ -377,29 +377,19 @@ test('Google Agenda exibe aviso e instruções sobre eventos na agenda Agenda Un
   }));
   await page.route('**/api/v1/me/saved-events', route => route.fulfill({ json: [] }));
 
-  let connected = true;
-  await page.route('**/api/v1/me/google-calendar/connection', route => {
-    if (route.request().method() === 'DELETE') {
-      connected = false;
-      return route.fulfill({ json: { disconnected: true, revocation: 'confirmed' } });
-    }
-    return route.fulfill({ json: { connected } });
-  });
+  await page.route('**/api/v1/me/google-calendar/connection', route => route.fulfill({ json: { connected: true } }));
 
   await page.goto('/eventos?aba=meus');
-  await page.getByRole('button', { name: 'Exportar para o Google Agenda' }).click();
-  const exportDialog = page.getByRole('dialog', { name: 'Exportar para o Google Agenda' });
+  await page.getByRole('button', { name: 'Exportar agenda' }).click();
+  const exportDialog = page.getByRole('dialog', { name: 'Exportar agenda' });
   await expect(exportDialog).toContainText('Agenda UnB');
   await exportDialog.getByText('Como excluir eventos exportados no Google Agenda').click();
   await expect(exportDialog).toContainText('calendar.google.com');
   await expect(exportDialog).toContainText('Excluir agenda');
   await page.keyboard.press('Escape');
 
-  await page.getByRole('button', { name: 'Desconectar Google Agenda' }).click();
-  await expect(page.getByText('Google Agenda desconectado.')).toBeVisible();
-  await expect(page.getByText(/permanecem na agenda secundária “Agenda UnB”/i)).toBeVisible();
-  await page.getByText('Como excluir eventos exportados no Google Agenda').click();
-  await expect(page.getByText(/Configurações e compartilhamento/)).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Desconectar Google Agenda' })).toHaveCount(0);
+  await expect(page.getByText('Como excluir eventos exportados no Google Agenda')).toHaveCount(0);
 });
 
 test('matriz responsiva (360px, 768px, 1365px) e temas claro/escuro sem overflow', async ({ page }) => {
