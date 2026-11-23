@@ -9,7 +9,7 @@ import pytest
 pytestmark = pytest.mark.usefixtures("published_offering")
 from sqlalchemy import select
 
-from src.database.models import AssessmentCandidate, PersonalEvent, Profile, Syllabus
+from src.database.models import AssessmentCandidate, ClassOffering, PersonalEvent, Profile, Syllabus
 from src.modules.syllabus.extraction import TextPage, validate_candidates
 from src.modules.syllabus.preparation import minimize, text_hash
 from src.modules.syllabus.processing_config import ProcessingConfig
@@ -180,17 +180,22 @@ def test_minimization_preserves_assessment_extraction(page):
     ]
 
 
-@pytest.mark.parametrize(("discipline", "label", "provider_title", "day", "title", "page"), [
-    ("FUNDAMENTOS DE ARQUITETURA DE COMPUTADORES", "Prova 1", "Prova 1", "10", "Prova 1 - FAC", 2),
-    ("Estrutura de Dados 1", "Prova Substitutiva", "Prova 1 - Estrutura de Dados 1", "12", "Prova Substitutiva - ED1", None),
+@pytest.mark.parametrize(("discipline", "catalog_name", "label", "provider_title", "day", "title", "page"), [
+    ("Fundamentos de Arquitetura de Computadores", "FUNDAMENTOS DE ARQUITETURA DE COMPUTADORES",
+     "Prova 1", "Prova 1", "10", "Prova 1 - FAC", 2),
+    ("Estruturas de Dados e Algoritmos 1 — EDA1", "ESTRUTURAS DE DADOS 1",
+     "Prova Substitutiva", "Prova 1 - Estruturas de Dados e Algoritmos 1", "12", "Prova Substitutiva - ED1", None),
 ])
 def test_plan_schedule_and_abbreviated_title_reach_agenda(
-    api, published_offering, monkeypatch, discipline, label, provider_title, day, title, page,
+    api, published_offering, monkeypatch, discipline, catalog_name, label, provider_title, day, title, page,
 ):
     monkeypatch.setenv("SYLLABUS_PROVIDER_TERMS_READY", "true")
     client, sessions, _, _ = api
+    with sessions() as db:
+        db.get(ClassOffering, UUID(published_offering)).subject.name = catalog_name
+        db.commit()
     evidence = f"{label} — {day}/11/2026."
-    header = f"Disciplina: {discipline}\nHorário da turma: 35M34"
+    header = f"| **Disciplina** | {discipline} |\nHorário da turma: 35M34"
     if page is None:
         sid, preview = prepare(api, f"{header}\n{evidence}")
     else:

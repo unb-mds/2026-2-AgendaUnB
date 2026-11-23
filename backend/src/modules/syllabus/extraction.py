@@ -13,7 +13,7 @@ from pypdf import PdfReader
 from src.modules.syllabus.class_schedule import class_starts_in_plan
 from src.modules.syllabus.processing_config import ProcessingConfig, ProcessingError
 
-VERSION = "syllabus-v7-portuguese-evidence"
+VERSION = "syllabus-v8-catalog-titles"
 _MAX_TITLE_LENGTH = 300
 Kind = Literal["prova", "trabalho"]
 AmbiguousField = Literal["titulo", "tipo", "data", "hora"]
@@ -227,6 +227,7 @@ _SUBJECT_HEADER_RE = re.compile(
     re.IGNORECASE | re.MULTILINE,
 )
 _SUBJECT_CODE_RE = re.compile(r"^[A-Z]{2,}\d{3,}(?:[ \t]*[-–—:][ \t]*|\s+|$)")
+_SUBJECT_ALIAS_RE = re.compile(r"(?:\s+[-–—]\s+([A-Z][A-Z0-9]{1,14})|\s*\(([A-Z][A-Z0-9]{1,14})\))$")
 _SUBJECT_CONNECTORS = frozenset("a as o os à às ao aos de da das do dos e em na nas no nos para por com ou".split())
 _TITLE_SUFFIX_RE = re.compile(r"^(.+?)\s+[-–—:]\s+(.+)$")
 _UNCERTAIN_TIME_RE = re.compile(
@@ -398,8 +399,20 @@ def _discipline_from_document(sources: list[str], suggested: str | None) -> str 
     return None
 
 
+def _subject_name_and_alias(value: str) -> tuple[str, str | None]:
+    name = value.strip()
+    match = _SUBJECT_ALIAS_RE.search(name)
+    if match:
+        alias = match[1] or match[2]
+        if not re.fullmatch(r"[IVX]+", alias):
+            return name[:match.start()].rstrip(), alias
+    return name, None
+
+
 def _discipline_abbreviation(name: str) -> str:
-    name = re.sub(r"\s*\([A-Z0-9]{2,}\)\s*$", "", name)
+    name, alias = _subject_name_and_alias(name)
+    if alias:
+        return alias
     words = re.findall(r"[^\W\d_]+|\d+", name)
     initials = []
     for index, word in enumerate(words):
@@ -414,10 +427,14 @@ def _discipline_abbreviation(name: str) -> str:
 
 def _title_without_discipline(titulo: str, evidence: str, kind: Kind, subject: str, abbreviation: str) -> str:
     match = _TITLE_SUFFIX_RE.fullmatch(titulo)
-    if match and normalize(_unaccented(match[2])) in {
-        normalize(_unaccented(subject)), normalize(_unaccented(abbreviation)),
-    }:
-        titulo = match[1]
+    if match:
+        subject_name, _ = _subject_name_and_alias(subject)
+        suffix_name, _ = _subject_name_and_alias(match[2])
+        accepted_suffixes = {normalize(_unaccented(value)) for value in (
+            subject_name, _discipline_abbreviation(subject), abbreviation,
+        )}
+        if normalize(_unaccented(suffix_name)) in accepted_suffixes:
+            titulo = match[1]
     ordinal = _ORDINAL_TITLE_RE.fullmatch(normalize(titulo))
     if ordinal and ordinal[1] == kind:
         labels = {" ".join(label.split()) for label in _NAMED_LABEL_RE.findall(evidence.replace("**", ""))
@@ -501,14 +518,16 @@ def _sort_and_index_candidates(candidates: list[CandidateData]) -> list[Candidat
     return ordered
 
 
-def validate_candidates(raw: str, pages: list[TextPage], *, default_year: int | None = None) -> ExtractionResult:
+def validate_candidates(
+    raw: str, pages: list[TextPage], *, default_year: int | None = None, reference_subject: str | None = None,
+) -> ExtractionResult:
     try:
         output = ProviderExtractionData.model_validate_json(raw)
     except (ValidationError, ValueError):
         raise ProcessingError("falha_ia", reason="schema_invalid") from None
     sources = {page.pagina: page.texto for page in pages}
     subject = _discipline_from_document(list(sources.values()), output.disciplina)
-    abbreviation = _discipline_abbreviation(subject) if subject else ""
+    abbreviation = _discipline_abbreviation(reference_subject or subject) if subject else ""
     class_starts = class_starts_in_plan(sources.values())
     reference_year = default_year or extract_reference_year(pages)
     result = ExtractionResult([])
