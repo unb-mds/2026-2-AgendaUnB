@@ -5,6 +5,6 @@
 !/frontend/public/Logo-AgendaUnB1.png
 backend/
 supabase/
-.agent/
+.agents/
 .impeccable/
 /.github/

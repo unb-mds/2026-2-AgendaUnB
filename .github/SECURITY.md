@@ -32,7 +32,7 @@ Para agilizar a análise e a correção, inclua sempre que possível:
 
 1. **Confirmação de recebimento:** confirmação inicial do relato e triagem de severidade (**Alta**, **Média** ou **Baixa**).
 2. **Investigação e correção:** reprodução em ambiente local isolado, desenvolvimento do patch (código e/ou migração SQL) e adição de teste automatizado de regressão.
-3. **Implantação e divulgação:** aplicação da correção em produção e atualização da documentação de [Verificação de segurança](docs/processo/seguranca.md) após a mitigação.
+3. **Implantação e divulgação:** aplicação da correção em produção e atualização da documentação de [Verificação de segurança](../docs/processo/seguranca.md) após a mitigação.
 
 ## Práticas e salvaguardas do projeto
 
@@ -41,4 +41,4 @@ Para agilizar a análise e a correção, inclua sempre que possível:
 - **Proteção de credenciais e OAuth:** escopo mínimo (`calendar.app.created`) para o Google Calendar em projeto OAuth dedicado, validação de `state` e PKCE S256, e armazenamento de tokens cifrados com Fernet exclusivamente no servidor.
 - **Higiene do repositório:** bloqueio de variáveis sensíveis com prefixo `VITE_` no build do frontend e auditoria de dependências (`pip-audit` e `npm audit`).
 
-Para detalhes completos da matriz de acesso e dos controles verificados, consulte [`docs/processo/seguranca.md`](docs/processo/seguranca.md) e [`docs/processo/privacidade.md`](docs/processo/privacidade.md).
+Para detalhes completos da matriz de acesso e dos controles verificados, consulte [`docs/processo/seguranca.md`](../docs/processo/seguranca.md) e [`docs/processo/privacidade.md`](../docs/processo/privacidade.md).

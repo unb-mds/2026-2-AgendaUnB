@@ -7,7 +7,7 @@ assignees: []
 ---
 
 <!--
-Para falhas de segurança ou exposição de dados, NÃO abra uma issue pública — consulte SECURITY.md.
+Para falhas de segurança ou exposição de dados, NÃO abra uma issue pública — consulte .github/SECURITY.md.
 -->
 
 ## Objetivo

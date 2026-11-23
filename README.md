@@ -32,8 +32,8 @@ O **Agenda UnB** é uma plataforma web colaborativa de eventos e organização a
 - [Documentação oficial](https://agendaunb.com.br/docs)
 - [Arquitetura e modelo de dados](docs/arquitetura/visao-geral.md)
 - [Requisitos do sistema](docs/produto/requisitos.md)
-- [Diretrizes de acessibilidade](ACCESSIBILITY.md)
-- [Política de segurança](SECURITY.md)
+- [Diretrizes de acessibilidade](.github/ACCESSIBILITY.md)
+- [Política de segurança](.github/SECURITY.md)
 - [Contribuindo com o Agenda UnB](docs/processo/contribuindo.md)
 
 Acesse a aplicação em funcionamento em **[agendaunb.com.br](https://agendaunb.com.br)**, ou explore nossos protótipos e quadros de planejamento no **[Figma](https://www.figma.com/board/RlZe9FgO3Bz3gPkxevs8UJ/AGENDA-UNB?node-id=1-217)** e no **[Miro](https://miro.com/app/board/uXjVHtiWi4U=/)**. Consulte também os [arquivos de documentação no repositório](docs/).
