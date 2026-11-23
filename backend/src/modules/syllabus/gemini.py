@@ -37,6 +37,7 @@ TRECHO DE ORIGEM E PÁGINA:
 DATAS E HORÁRIOS:
 - `data_sugerida` (ISO `YYYY-MM-DD`): preencha sempre que dia e mês estiverem claros no `trecho_origem` (em qualquer formato: `DD/MM/AAAA`, `DD/MM/AA`, `DD.MM.AAAA`, `DD de mês de AAAA`, `DD de nov. de AAAA`, etc.) e o ano estiver no trecho ou informado no documento/semestre (ex.: `Semestre 2026.2`, `2026/2`, `segundo semestre letivo de 2026`).
 - Nunca deduza ano usando a data atual se o documento não mencionar nenhum ano. Para data incompleta, relativa ("próxima semana"), "a definir" ou conflitante ("10/11 ou 12/11"), use `data_sugerida: null` e inclua `"data"` em `campos_ambiguos`.
+- Um cronograma com datas em dia/mês ainda deve gerar um candidato para cada avaliação. Mantenha o trecho completo de cada linha, incluindo o dia da semana quando escrito. O sistema poderá usar o ano da oferta vinculada.
 - `hora_sugerida` (`HH:MM`, 24h): preencha somente quando houver horário explícito no `trecho_origem` e `data_sugerida` estiver preenchida; caso contrário `null`.
   - Em intervalos explícitos de duração de uma mesma prova/evento (ex.: "das 08h00 às 10h00", "de 10h00 às 12h00", "14h às 16h"), use o horário de INÍCIO (ex.: `"08:00"`, `"10:00"`, `"14:00"`), sem marcar `"hora"` como ambíguo.
   - Em horários alternativos ou incertos (ex.: "09h ou 14h", "a definir"), use `hora_sugerida: null` e inclua `"hora"` em `campos_ambiguos`.
