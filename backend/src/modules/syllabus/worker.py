@@ -87,6 +87,7 @@ class Lease:
     approved_hash: str | None = None
     version_id: UUID | None = None
     year: int | None = None
+    subject_name: str | None = None
 
 
 class SyllabusWorker:
@@ -114,6 +115,7 @@ class SyllabusWorker:
                     Syllabus.status == "concluido",
                     Syllabus.approved_hash == lease.approved_hash,
                     Syllabus.ano == lease.year,
+                    Syllabus.disciplina == lease.subject_name,
                     Syllabus.versao_processamento == VERSION,
                     Syllabus.provedor_ia == "google",
                     Syllabus.approved_version_id.is_not(None),
@@ -191,7 +193,7 @@ class SyllabusWorker:
                               cost_reserved_usd=job.cost_reserved_usd + self.config.attempt_reservation)
             lease = Lease(job.id, token, attempt, job.user_id, job.file_path, job.queued_at or job.created_at, terminal=exhausted,
                           approved_pages=job.approved_pages, approved_hash=job.approved_hash,
-                          version_id=version.id if version else None, year=job.ano)
+                          version_id=version.id if version else None, year=job.ano, subject_name=job.disciplina)
             changed = db.execute(update(Syllabus).where(*condition).values(**values),
                                  execution_options={"synchronize_session": False}).rowcount
             db.commit()
@@ -249,7 +251,8 @@ class SyllabusWorker:
                     if wait > 0:
                         self.sleep(wait)
                 self._last_provider_call_at = self.clock()
-                run_config = replace(self.config, reference_year=lease.year) if lease.year is not None else self.config
+                run_config = replace(self.config, reference_year=lease.year or self.config.reference_year,
+                                     reference_subject=lease.subject_name)
                 document = self.runner(pages, None, self.provider, run_config)
                 model_name = self.config.model
             result = document.extraction

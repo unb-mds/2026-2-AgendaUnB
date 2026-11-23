@@ -154,6 +154,19 @@ def test_discipline_from_a_different_page_grounds_abbreviation_and_ignores_inven
     assert exam.titulo == "Prova Substitutiva"
 
 
+@pytest.mark.parametrize(("reference_subject", "expected"), [
+    (None, "Prova 1 - EDA1"),
+    ("ESTRUTURAS DE DADOS 1", "Prova 1 - ED1"),
+])
+def test_printed_discipline_alias_is_only_used_once(reference_subject, expected):
+    evidence = "Prova 1 — 10/11/2026."
+    header = "| **Disciplina** | Estruturas de Dados e Algoritmos 1 — EDA1 |"
+    pages = [TextPage(1, f"{header}\n{evidence}")]
+    raw = raw_candidate(titulo="Prova 1 - EDA1", hora_sugerida=None, trecho_origem=evidence)
+    [exam] = validate_candidates(raw, pages, reference_subject=reference_subject).candidates
+    assert exam.titulo == expected
+
+
 @pytest.mark.parametrize(("schedule", "kind", "evidence", "iso_date", "expected_hour", "ambiguous"), [
     ("35M34", "prova", "Prova 1 — 10/11/2026, das 14h às 16h.", "2026-11-10", "14:00", []),
     ("35M34", "prova", "Prova 1 — 10/11/2026, às 9h ou 14h.", "2026-11-10", None, ["hora"]),
@@ -511,33 +524,46 @@ def test_ready_flags_do_not_bypass_database_verification(job, monkeypatch, capsy
         assert db.get(Syllabus,sid).status == "pendente"
 
 
-def test_identical_approved_hash_reuses_candidates_without_calling_provider(job):
+@pytest.mark.parametrize(("second_subject", "provider_calls", "expected_title"), [
+    ("Estruturas de Dados 1", 1, "Prova 1 - ED1"),
+    ("Estruturas de Dados e Algoritmos 1", 2, "Prova 1 - EDA1"),
+])
+def test_cached_candidates_respect_the_bound_discipline(job, second_subject, provider_calls, expected_title):
     worker, sessions, first_sid = job
     other_user = uuid4()
     second_sid = uuid4()
+    snapshot = approved_source(
+        "Disciplina: Estruturas de Dados e Algoritmos 1 — EDA1\nProva 1 - 10/11/2026 - 14:00."
+    )
+    second_snapshot = {**snapshot, "queued_at": snapshot["queued_at"] + timedelta(seconds=1)}
     with sessions() as db:
+        first = db.get(Syllabus, first_sid)
+        first.disciplina = "Estruturas de Dados 1"
+        for key, value in snapshot.items():
+            setattr(first, key, value)
         db.add(Profile(id=other_user, papel="student"))
         db.add(Syllabus(id=second_sid, user_id=other_user, file_name="copia.pdf",
-                        file_path=None, status="pendente",
-                        **approved_source("Prova 1 - 10/11/2026 - 14:00.")))
+                        file_path=None, status="pendente", disciplina=second_subject,
+                        **second_snapshot))
         db.commit()
 
     assert worker.run_once()
     assert worker.provider.calls == 1
     assert worker.run_once()
-    assert worker.provider.calls == 1
+    assert worker.provider.calls == provider_calls
     assert not worker.run_once()
 
     with sessions() as db:
         first_plan = db.get(Syllabus, first_sid)
         second_plan = db.get(Syllabus, second_sid)
         assert first_plan.status == "concluido" and first_plan.cost_reserved_usd > 0
-        assert second_plan.status == "concluido" and second_plan.cost_reserved_usd == Decimal("0")
+        assert second_plan.status == "concluido"
+        assert (second_plan.cost_reserved_usd == Decimal("0")) == (provider_calls == 1)
         assert second_plan.extracted_events_count == 1
         assert second_plan.approved_version_id != first_plan.approved_version_id
         cloned = db.scalars(select(AssessmentCandidate).where(AssessmentCandidate.plano_id == second_sid)).all()
         assert len(cloned) == 1
-        assert cloned[0].title == "Prova 1"
+        assert cloned[0].title == expected_title
         assert cloned[0].data_sugerida.isoformat() == "2026-11-10"
         assert cloned[0].hora_sugerida.strftime("%H:%M") == "14:00"
         assert cloned[0].status == "pendente"
