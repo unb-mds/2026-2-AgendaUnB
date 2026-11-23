@@ -119,6 +119,28 @@
             ]
           },
           {
+            "group": "Atas de reunião",
+            "pages": [
+              "processo/atas/index",
+              "processo/atas/ata-01",
+              "processo/atas/ata-02",
+              "processo/atas/ata-03",
+              "processo/atas/ata-04",
+              "processo/atas/ata-05",
+              "processo/atas/ata-06",
+              "processo/atas/ata-07",
+              "processo/atas/ata-08",
+              "processo/atas/ata-09",
+              "processo/atas/ata-10",
+              "processo/atas/ata-11",
+              "processo/atas/ata-12",
+              "processo/atas/ata-13",
+              "processo/atas/ata-14",
+              "processo/atas/ata-15",
+              "processo/atas/ata-16"
+            ]
+          },
+          {
             "group": "Release notes",
             "pages": [
               "processo/release-notes/v0-1-0",
