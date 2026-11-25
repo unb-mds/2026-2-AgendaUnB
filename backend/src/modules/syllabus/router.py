@@ -785,6 +785,9 @@ def delete_syllabus_submissions(
 
     removed_at = utcnow()
     db.execute(update(Syllabus).where(Syllabus.id.in_(plan_ids)).values(
+        # Satisfaz planos_erro_apenas_em_falha e planos_finalizado_tem_data ao limpar erro_codigo.
+        status="concluido",
+        processado_em=func.coalesce(Syllabus.processado_em, removed_at),
         submission_deleted_at=removed_at, discarded_at=removed_at,
         file_name=None, file_path=None, arquivo_url=None, file_size=None,
         prepared_pages=None, approved_pages=None, approved_version_id=None,

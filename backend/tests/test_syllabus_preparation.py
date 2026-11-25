@@ -497,3 +497,29 @@ def test_reprocessing_preserves_shared_version_and_pins_private_output(api, monk
     candidate = response["candidates"][0]
     assert candidate["suggestedDate"] == "2026-11-10" and candidate["suggestedTime"] == "14:00:00"
     assert candidate["startsAt"] is None  # Nenhum fuso ou instante é inferido.
+
+
+def test_delete_submissions_succeeds_for_failed_and_pending_plans(api):
+    from datetime import datetime, timezone
+
+    failed_sid, _ = prepare(api)
+    pending_sid, _ = prepare(api)
+    with api[1]() as db:
+        failed_plan = db.get(Syllabus, UUID(failed_sid))
+        failed_plan.status = "falha"
+        failed_plan.erro_codigo = "falha_ia"
+        failed_plan.error_message = "Não foi possível extrair as avaliações."
+        failed_plan.processado_em = datetime.now(timezone.utc)
+        db.commit()
+
+    response = api[0].delete("/api/v1/syllabus")
+    assert response.status_code == 204
+    assert api[0].get("/api/v1/syllabus").json()["total"] == 0
+    with api[1]() as db:
+        for sid in (failed_sid, pending_sid):
+            record = db.get(Syllabus, UUID(sid))
+            assert record.submission_deleted_at is not None
+            assert record.status == "concluido"
+            assert record.processado_em is not None
+            assert record.erro_codigo is None
+            assert record.error_message is None
