@@ -154,7 +154,7 @@ Consulte os detalhes de sincronização e identidade em [Catálogo de turmas](/a
 
 ### Planos de ensino: preparação, extração, versões e votos {#preparacao-e-autorizacao-de-planos}
 
-Todas as operações exigem sessão com e-mail confirmado. Envios de novos planos (`POST /upload` e `POST /text`) exigem `offering_id` de uma oferta disponível seguida pela conta (`403` sem vínculo, `409` se oferta retirada, `503` sem catálogo publicado) e aplicam cota acumulada de 10 envios em 5 dias (`429`).
+Todas as operações exigem sessão com e-mail confirmado. Envios de novos planos (`POST /upload` e `POST /text`) exigem `offering_id` de uma oferta disponível seguida pela conta (`403` sem vínculo, `409` se oferta retirada, `503` sem catálogo publicado) e aplicam cota acumulada de 10 envios em 5 dias (`429`). Contas com `app_metadata.syllabus_upload_quota_exempt` igual a `true` no Supabase Auth têm isenção dessa cota.
 
 | Operação | Entrada / Autorização | Resposta |
 | --- | --- | --- |

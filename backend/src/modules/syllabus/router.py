@@ -496,6 +496,7 @@ async def upload_syllabus(
     del content
     syllabus = await run_in_threadpool(
         process_syllabus_upload, user_id=current_user.id,
+        upload_quota_exempt=current_user.syllabus_upload_quota_exempt,
         filename=file.filename or "syllabus.pdf", file_size=file_size, pages=pages,
         preparation_duration_ms=round((time.monotonic()-started)*1000),
         db=db, offering_id=offer.id, disciplina=offer.subject.name, turma=offer.class_number, ano=offer.year, semestre=offer.semester,
@@ -511,6 +512,7 @@ def prepare_syllabus_text(payload: TextInput, current_user: CurrentUser = Depend
     started = time.monotonic()
     pages = checked_pages([{"pagina": None, "texto": payload.text}])
     plan = process_syllabus_upload(user_id=current_user.id, filename="texto-revisado.txt",
+        upload_quota_exempt=current_user.syllabus_upload_quota_exempt,
         file_size=len(pages[0]["texto"].encode("utf-8")), pages=pages, file_type="text", db=db,
         preparation_duration_ms=round((time.monotonic()-started)*1000),
         offering_id=offer.id, disciplina=offer.subject.name, turma=offer.class_number, ano=offer.year, semestre=offer.semester)

@@ -21,6 +21,7 @@ class CurrentUser:
     access_token: str | None = field(default=None, repr=False, compare=False)
     email: str | None = field(default=None, repr=False, compare=False)
     email_confirmed: bool = False
+    syllabus_upload_quota_exempt: bool = False
 
 
 def get_current_user(
@@ -73,12 +74,17 @@ def get_current_user(
     if role is None:
         raise HTTPException(status_code=403, detail="Perfil da aplicação não encontrado")
 
+    app_metadata = auth_user.get("app_metadata")
     return CurrentUser(
         id=user_id,
         role=role,
         access_token=credentials.credentials,
         email=email,
         email_confirmed=email_confirmed,
+        syllabus_upload_quota_exempt=(
+            isinstance(app_metadata, dict)
+            and app_metadata.get("syllabus_upload_quota_exempt") is True
+        ),
     )
 
 
