@@ -16,11 +16,11 @@ from pydantic import ValidationError
 from sqlalchemy import or_, select, update
 
 from src.database.connection import SessionLocal
-from src.database.models import AssessmentCandidate, Syllabus, SyllabusVersion
+from src.database.models import AssessmentCandidate, ClassOffering, Syllabus, SyllabusVersion
 from src.modules.syllabus.extraction import CandidateData, ExtractionResult, VERSION
 from src.modules.syllabus.gemini import GeminiProvider
 from src.modules.syllabus.processing_config import ERROR_MESSAGES, ProcessingConfig, ProcessingError
-from src.modules.syllabus.processing_task import DocumentResult, run_isolated
+from src.modules.syllabus.processing_task import DocumentResult, run_in_worker
 from src.modules.syllabus.privacy import privacy_checks
 from src.modules.syllabus.preparation import checked_pages, contains_personal_data, text_hash
 from src.modules.syllabus.versions import private_version
@@ -88,11 +88,12 @@ class Lease:
     version_id: UUID | None = None
     year: int | None = None
     subject_name: str | None = None
+    schedule: str | None = None
 
 
 class SyllabusWorker:
     def __init__(self, session_factory, storage, provider, config: ProcessingConfig, *,
-                 runner=run_isolated, pace: bool = False, sleep=time.sleep, clock=time.monotonic):
+                 runner=run_in_worker, pace: bool = False, sleep=time.sleep, clock=time.monotonic):
         self.sessions = session_factory
         self.storage = storage
         self.provider = provider
@@ -125,6 +126,12 @@ class SyllabusWorker:
                 .limit(1)
             )
             if source is None or not source.approved_pages or source.approved_pages != pages:
+                return None
+            source_schedule = None
+            if source.offering_id is not None:
+                source_offering = db.get(ClassOffering, source.offering_id)
+                source_schedule = source_offering.schedule if source_offering is not None else None
+            if (source_schedule or None) != (lease.schedule or None):
                 return None
             rows = db.scalars(
                 select(AssessmentCandidate)
@@ -191,9 +198,12 @@ class SyllabusWorker:
                               modelo_ia=self.config.model, versao_processamento=VERSION,
                               approved_version_id=version.id,
                               cost_reserved_usd=job.cost_reserved_usd + self.config.attempt_reservation)
+            offering = db.get(ClassOffering, job.offering_id) if job.offering_id else None
+            schedule = offering.schedule if offering is not None else None
             lease = Lease(job.id, token, attempt, job.user_id, job.file_path, job.queued_at or job.created_at, terminal=exhausted,
                           approved_pages=job.approved_pages, approved_hash=job.approved_hash,
-                          version_id=version.id if version else None, year=job.ano, subject_name=job.disciplina)
+                          version_id=version.id if version else None, year=job.ano, subject_name=job.disciplina,
+                          schedule=schedule)
             changed = db.execute(update(Syllabus).where(*condition).values(**values),
                                  execution_options={"synchronize_session": False}).rowcount
             db.commit()
@@ -211,7 +221,7 @@ class SyllabusWorker:
             delay_seconds = (
                 self.config.rate_limit_delay_seconds
                 if getattr(error, "rate_limited", False) and self.config.retry_delay_seconds > 0
-                else self.config.retry_delay_seconds
+                else min(15, self.config.retry_delay_seconds * lease.execution)
             )
             db.execute(update(Syllabus).where(Syllabus.id == lease.id, Syllabus.processing_token == lease.token,
                                              Syllabus.status == "processando").values(
@@ -251,8 +261,12 @@ class SyllabusWorker:
                     if wait > 0:
                         self.sleep(wait)
                 self._last_provider_call_at = self.clock()
-                run_config = replace(self.config, reference_year=lease.year or self.config.reference_year,
-                                     reference_subject=lease.subject_name)
+                run_config = replace(
+                    self.config,
+                    reference_year=lease.year or self.config.reference_year,
+                    reference_subject=lease.subject_name,
+                    reference_schedule=lease.schedule or self.config.reference_schedule,
+                )
                 document = self.runner(pages, None, self.provider, run_config)
                 model_name = self.config.model
             result = document.extraction
@@ -310,6 +324,49 @@ class SyllabusWorker:
         return True
 
 
+    def next_short_retry_wait(self, max_wait_seconds: float = 15.0) -> float | None:
+        """Retorna o tempo de espera até a próxima retentativa curta pendente, ou None."""
+        now = utcnow()
+        with self.sessions() as db:
+            next_at = db.scalar(
+                select(Syllabus.next_attempt_at)
+                .where(
+                    Syllabus.tipo == "particular",
+                    Syllabus.authorized_at.is_not(None),
+                    Syllabus.approved_pages.is_not(None),
+                    Syllabus.status == "pendente",
+                    Syllabus.next_attempt_at.is_not(None),
+                )
+                .order_by(Syllabus.next_attempt_at.asc())
+                .limit(1)
+            )
+        if next_at is None:
+            return None
+        if next_at.tzinfo is None:
+            next_at = next_at.replace(tzinfo=timezone.utc)
+        remaining = (next_at - now).total_seconds()
+        if remaining <= 0:
+            return 0.0
+        if remaining <= max_wait_seconds:
+            return remaining
+        return None
+
+
+def drain_queue(worker: SyllabusWorker, *, max_items: int, max_retry_wait_seconds: float = 15.0) -> int:
+    """Processa itens prontos e aguarda retentativas curtas antes de encerrar --drain."""
+    processed = 0
+    while processed < max_items:
+        if worker.run_once():
+            processed += 1
+            continue
+        wait = worker.next_short_retry_wait(max_wait_seconds=max_retry_wait_seconds)
+        if wait is None:
+            break
+        if wait > 0:
+            worker.sleep(wait)
+    return processed
+
+
 def main():
     parser = argparse.ArgumentParser(description="Worker privado de planos de ensino")
     parser.add_argument("--once", action="store_true", help="Processa no máximo um item e sai")
@@ -339,21 +396,16 @@ def main():
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("httpcore").setLevel(logging.WARNING)
-    processed = 0
     try:
-        while True:
-            worked = worker.run_once()
-            if args.once:
-                break
-            if args.drain:
+        if args.drain:
+            drain_queue(worker, max_items=args.max_items)
+        else:
+            while True:
+                worked = worker.run_once()
+                if args.once:
+                    break
                 if not worked:
-                    break
-                processed += 1
-                if processed >= args.max_items:
-                    break
-                continue
-            if not worked:
-                time.sleep(1)
+                    time.sleep(1)
     except KeyboardInterrupt:
         pass  # Lease expira; outra execução recupera o item com orçamento preservado.
 

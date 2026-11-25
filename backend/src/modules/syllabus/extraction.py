@@ -10,7 +10,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 from pypdf import PdfReader
 
-from src.modules.syllabus.class_schedule import class_starts_in_plan
+from src.modules.syllabus.class_schedule import class_starts_from_schedule, class_starts_in_plan
 from src.modules.syllabus.processing_config import ProcessingConfig, ProcessingError
 
 VERSION = "syllabus-v9-dated-exam-rows"
@@ -107,6 +107,25 @@ def _tokens(value: str) -> list[str]:
     return _TOKEN_RE.findall(normalize(value))
 
 
+_ORDINAL_TOKEN_RE = re.compile(r"^(\d{1,2})([ao])$")
+
+
+def _match_token_at(source_tokens: list[str], index: int, token: str) -> int:
+    if index >= len(source_tokens):
+        return 0
+    if source_tokens[index] == token:
+        return 1
+    ordinal = _ORDINAL_TOKEN_RE.fullmatch(token)
+    if (
+        ordinal is not None
+        and index + 1 < len(source_tokens)
+        and source_tokens[index] == ordinal[1]
+        and source_tokens[index + 1] == ordinal[2]
+    ):
+        return 2
+    return 0
+
+
 def _tokens_match_same_line(evidence_tokens: list[str], source_raw: str) -> bool:
     if not evidence_tokens:
         return False
@@ -135,15 +154,19 @@ def _evidence_in_source(evidence_raw: str, source_raw: str, *, max_gap: int = 8,
         n = len(toks)
         found_end = None
         for start in range(pos, len(source_tokens)):
-            if source_tokens[start] != toks[0]:
+            step = _match_token_at(source_tokens, start, toks[0])
+            if not step:
                 continue
-            si = start + 1
+            si = start + step
             ti = 1
             max_end = min(len(source_tokens), start + n + max_gap)
             while ti < n and si < max_end:
-                if source_tokens[si] == toks[ti]:
+                consumed = _match_token_at(source_tokens, si, toks[ti])
+                if consumed and si + consumed <= max_end:
                     ti += 1
-                si += 1
+                    si += consumed
+                else:
+                    si += 1
             if ti == n:
                 found_end = si
                 break
@@ -187,18 +210,19 @@ def extract_pages(content: bytes, config: ProcessingConfig) -> list[TextPage]:
 MONTHS = "janeiro fevereiro março abril maio junho julho agosto setembro outubro novembro dezembro".split()
 SHORT_MONTHS = "jan fev mar abr mai jun jul ago set out nov dez".split()
 
-_TIME_EXPR = r"(\d{1,2})\s*(?::\s*(\d{2})|h(?:(?:\s*(\d{2}))?(?:\s*min\b)?|s\b|rs\b|oras?\b)(?![a-z]))"
-_TIME_RE = re.compile(rf"(?<![\d:]){_TIME_EXPR}(?![\d:])", re.IGNORECASE)
+_TIME_EXPR = r"(\d{1,2})\s*(?::(\d{2})|h(?:(?:\s*(\d{2}))?(?:\s*min\b)?|s\b|rs\b|oras?\b)(?![a-z]))"
+_TIME_END_GUARD = r"(?![\d:]|\s*/\s*\d|-\d{2}-\d{2,4}|\.\d{2}\.\d{2,4})"
+_TIME_RE = re.compile(rf"(?<![\d:]){_TIME_EXPR}{_TIME_END_GUARD}", re.IGNORECASE)
 _DURATION_LENGTH_RE = re.compile(
     r"\b(?:dura[çc][ãa]o(?:\s+de)?|prazo(?:\s+de)?|em\s+at[eé]|por)\s+\d{1,2}\s*(?:h\b|hs\b|horas?\b)",
     re.IGNORECASE,
 )
 _DURATION_RANGE_RE = re.compile(
-    rf"(?<![\d:])(?:das?\s+|de\s+)?{_TIME_EXPR}\s*(?:[àa]s?|at[eé](?:\s+[àa]s?)?)\s*{_TIME_EXPR}(?![\d:])",
+    rf"(?<![\d:])(?:das?\s+|de\s+)?{_TIME_EXPR}\s*(?:[àa]s?|at[eé](?:\s+[àa]s?)?)\s*{_TIME_EXPR}{_TIME_END_GUARD}",
     re.IGNORECASE,
 )
 _BARE_START_DURATION_RE = re.compile(
-    rf"\bdas?\s+(\d{{1,2}})\s*(?:[àa]s?|at[eé](?:\s+[àa]s?)?)\s*{_TIME_EXPR}(?![\d:])",
+    rf"\bdas?\s+(\d{{1,2}})\s*(?:[àa]s?|at[eé](?:\s+[àa]s?)?)\s*{_TIME_EXPR}{_TIME_END_GUARD}",
     re.IGNORECASE,
 )
 _STRUCTURED_TITLE_RE = re.compile(
@@ -406,6 +430,14 @@ def _restore_source_excerpt(excerpt: str, source: str) -> str | None:
     for index, char in enumerate(text):
         if index in weekday_joins:
             parts.append(rf"(?:\s+|\s*{_SOURCE_DASH}\s*)")
+        elif (
+            char in ("a", "o")
+            and index > 0
+            and text[index - 1].isdigit()
+            and (index + 1 == len(text) or not text[index + 1].isalnum())
+        ):
+            ordinal_mark = "ª" if char == "a" else "º"
+            parts.append(rf"\s*[{char}{ordinal_mark}{_ACCENT_GROUPS[char]}]{_COMBINING_MARK}*")
         elif char in _ACCENT_GROUPS:
             letters = rf"[{char}{_ACCENT_GROUPS[char]}]{_COMBINING_MARK}*"
             marks = _PDF_SPACING_MARKS.get(char)
@@ -567,16 +599,26 @@ def _sort_and_index_candidates(candidates: list[CandidateData]) -> list[Candidat
 
 
 def validate_candidates(
-    raw: str, pages: list[TextPage], *, default_year: int | None = None, reference_subject: str | None = None,
+    raw: str,
+    pages: list[TextPage],
+    *,
+    default_year: int | None = None,
+    reference_subject: str | None = None,
+    reference_schedule: str | None = None,
 ) -> ExtractionResult:
     try:
         output = ProviderExtractionData.model_validate_json(raw)
     except (ValidationError, ValueError):
         raise ProcessingError("falha_ia", reason="schema_invalid") from None
     sources = {page.pagina: page.texto for page in pages}
-    subject = _discipline_from_document(list(sources.values()), output.disciplina or reference_subject)
+    subject = (
+        _discipline_from_document(list(sources.values()), output.disciplina)
+        or (reference_subject.strip() if reference_subject and any(char.isalpha() for char in reference_subject) else None)
+    )
     abbreviation = _discipline_abbreviation(reference_subject or subject) if subject else ""
     class_starts = class_starts_in_plan(sources.values())
+    if class_starts is None and reference_schedule:
+        class_starts = class_starts_from_schedule(reference_schedule)
     reference_year = default_year or extract_reference_year(pages)
     literal_rows = _dated_exam_rows(pages, reference_year)
     rows_by_key = {

@@ -6,7 +6,7 @@ from dataclasses import replace
 import pytest
 
 from src.modules.syllabus.processing_config import ProcessingConfig, ProcessingError
-from src.modules.syllabus.processing_task import run_isolated
+from src.modules.syllabus.processing_task import run_in_worker, run_isolated
 from syllabus_samples import make_pdf
 
 
@@ -75,3 +75,29 @@ def test_child_exception_does_not_expose_document(capsys):
 def test_attempt_deadline_must_expire_before_lease():
     with pytest.raises(ValueError):
         replace(ProcessingConfig(), attempt_timeout_seconds=90)
+
+
+def test_run_in_worker_enforces_deadline_and_sanitizes_errors(capsys):
+    pages = [{"pagina": 1, "texto": "Plano sintético, sem cronograma."}]
+    output = run_in_worker(pages, None, SyntheticProvider(), ProcessingConfig())
+    assert output.page_count == 1 and output.extraction.candidates == []
+
+    with pytest.raises(ProcessingError) as caught:
+        run_in_worker(pages, None, SyntheticProvider("exception"), ProcessingConfig())
+    assert caught.value.code == "erro_interno" and caught.value.retryable
+    assert "PRIVATE_CONTENT" not in str(caught.value) + str(capsys.readouterr())
+
+    started = time.monotonic()
+    fast_config = replace(ProcessingConfig(), attempt_timeout_seconds=0.2)
+
+    class SlowProvider:
+        def extract(self, _pages):
+            time.sleep(5)
+            return '{"candidatos": []}'
+
+    with pytest.raises(ProcessingError) as timed_out:
+        run_in_worker(pages, None, SlowProvider(), fast_config)
+    assert timed_out.value.code == "tempo_esgotado"
+    assert timed_out.value.retryable is True
+    assert timed_out.value.reason == "attempt_timeout"
+    assert time.monotonic() - started < 2

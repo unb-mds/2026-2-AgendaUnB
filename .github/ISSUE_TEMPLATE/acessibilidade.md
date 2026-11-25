@@ -7,7 +7,7 @@ assignees: []
 ---
 
 <!--
-Consulte ACCESSIBILITY.md para conhecer nossas prioridades e compromissos de resposta.
+Consulte .github/ACCESSIBILITY.md para conhecer nossas prioridades e compromissos de resposta.
 Você não precisa informar nenhum diagnóstico ou dado pessoal para relatar uma barreira.
 -->
 

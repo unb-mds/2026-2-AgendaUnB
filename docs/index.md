@@ -45,6 +45,7 @@ Use a navegação do site ou os links abaixo.
 * [Matriz de Rastreabilidade](/matriz-rastreabilidade) — Relação entre requisitos, módulos/contratos e critérios de verificação.
 * [Padrões de Projeto](/produto/padroes) — Glossário e convenções de código e nomenclatura.
 * [Sprints](/sprints/sprint-1) — Registro das entregas por ciclo de desenvolvimento.
+* [Atas de reunião](/processo/atas/index) — Registro oficial das 16 reuniões do Grupo G8 com versão em PDF para download.
 * [Notas de versão](/processo/release-notes/v0-2-0) — Histórico das versões publicadas do projeto.
 * [Como Contribuir](/processo/contribuindo) — Fluxo de trabalho, testes e convenções.
 

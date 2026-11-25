@@ -36,4 +36,4 @@ A separação permite escalar e atualizar SPA, API e jobs independentemente sem 
 
 ## Fontes e relações
 
-[Plano de implantação](/implantacao) · [Modelos de deploy](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/deploy/README.md) · [ADR-007](/arquitetura/adrs/adr-007-migracoes-sql) · [ADR-014](/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia) · [Índice de ADRs](/arquitetura/adrs/index)
+[Plano de implantação](/implantacao) · [Modelos de deploy](https://github.com/unb-mds/2026-2-AgendaUnB/blob/main/docs/deploy/README.md) · [ADR-007](/arquitetura/adrs/adr-007-migracoes-sql) · [ADR-014](/arquitetura/adrs/adr-014-processamento-assincrono-planos-ia) · [Índice de ADRs](/arquitetura/adrs/index)

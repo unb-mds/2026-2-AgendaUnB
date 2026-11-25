@@ -45,3 +45,17 @@ services:
         value: "true"
       - key: SYLLABUS_PROVIDER_TERMS_READY
         value: "true"
+      - key: SYLLABUS_AI_TIMEOUT_SECONDS
+        value: "25"
+      - key: SYLLABUS_ATTEMPT_TIMEOUT_SECONDS
+        value: "35"
+      - key: SYLLABUS_MAX_ATTEMPTS
+        value: "3"
+      - key: SYLLABUS_RETRY_DELAY_SECONDS
+        value: "4"
+      - key: SYLLABUS_RATE_LIMIT_DELAY_SECONDS
+        value: "65"
+      - key: SYLLABUS_MIN_INTERVAL_SECONDS
+        value: "4.0"
+      - key: SYLLABUS_MAX_FILE_COST_USD
+        value: "0.12"

@@ -2,7 +2,9 @@
 import json
 import logging
 import multiprocessing
+import queue
 import re
+import threading
 from dataclasses import dataclass
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
@@ -33,8 +35,13 @@ def process_document(path, storage, provider, config: ProcessingConfig) -> Docum
         # exclusivamente um snapshot de texto aprovado, nunca um caminho de PDF.
         content = storage.download_file(path)
         pages = extract_pages(content, config)
-    result = validate_candidates(provider.extract(pages), pages, default_year=config.reference_year,
-                                 reference_subject=config.reference_subject)
+    result = validate_candidates(
+        provider.extract(pages),
+        pages,
+        default_year=config.reference_year,
+        reference_subject=config.reference_subject,
+        reference_schedule=config.reference_schedule,
+    )
     return DocumentResult(len(pages) if pages[0].pagina is not None else None, result)
 
 
@@ -57,6 +64,43 @@ def _child(send, path, storage, provider, config):
         send.send_bytes(json.dumps(output, ensure_ascii=False).encode("utf-8"))
     finally:
         send.close()
+
+
+def run_in_worker(path, storage, provider, config: ProcessingConfig) -> DocumentResult:
+    """Executa a tentativa no próprio processo do worker com deadline real, evitando duplo spawn."""
+    outcome: queue.Queue = queue.Queue(maxsize=1)
+
+    def _target():
+        try:
+            result = process_document(path, storage, provider, config)
+            payload = dict(
+                page_count=result.page_count,
+                extraction={"candidatos": [candidate.model_dump(mode="json")
+                                            for candidate in result.extraction.candidates]},
+                unsupported_dates=result.extraction.unsupported_dates,
+            )
+            validated = TaskOutput.model_validate(payload)
+            outcome.put(("ok", DocumentResult(
+                validated.page_count,
+                ExtractionResult(validated.extraction.candidatos, validated.unsupported_dates),
+            )))
+        except ProcessingError as error:
+            reason = error.reason if re.fullmatch(r"[a-z0-9_]{1,40}", error.reason or "") else ""
+            outcome.put(("err", ProcessingError(
+                error.code, retryable=error.retryable, rate_limited=error.rate_limited, reason=reason,
+            )))
+        except Exception:
+            outcome.put(("err", ProcessingError("erro_interno", retryable=True)))
+
+    thread = threading.Thread(target=_target, daemon=True)
+    thread.start()
+    try:
+        kind, value = outcome.get(timeout=config.attempt_timeout_seconds)
+    except queue.Empty:
+        raise ProcessingError("tempo_esgotado", retryable=True, reason="attempt_timeout") from None
+    if kind == "err":
+        raise value
+    return value
 
 
 def run_isolated(path, storage, provider, config: ProcessingConfig) -> DocumentResult:

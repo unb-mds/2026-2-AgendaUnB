@@ -43,6 +43,16 @@ def _starts_by_weekday(codes: str) -> dict[int, time]:
     return starts
 
 
+def class_starts_from_schedule(schedule: str | None) -> dict[int, time] | None:
+    """Sugestões por dia a partir da coluna horarios de ofertas_turma."""
+    if not schedule:
+        return None
+    match = _SCHEDULE_LINE.fullmatch(schedule.replace("**", "").strip(" \t|"))
+    if match is None:
+        return None
+    return _starts_by_weekday(match["codes"]) or None
+
+
 def class_starts_in_plan(texts: Iterable[str]) -> dict[int, time] | None:
     """Sugestões por dia de date.weekday(), válidas em todas as grades declaradas."""
     starts = None

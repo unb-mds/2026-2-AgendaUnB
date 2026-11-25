@@ -1,4 +1,4 @@
-"""Gemini REST Interactions API, sem SDK/retries implícitos ou uploads remotos."""
+"""Gemini REST generateContent API, sem SDK/retries implícitos ou uploads remotos."""
 import json
 import re
 import time
@@ -7,6 +7,8 @@ import httpx
 
 from src.modules.syllabus.extraction import ProviderExtractionData, TextPage
 from src.modules.syllabus.processing_config import ProcessingConfig, ProcessingError
+
+_CONTROL_CHARS_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]")
 
 SYSTEM_INSTRUCTION = """Você é um extrator preciso de avaliações acadêmicas (provas e trabalhos) a partir de planos de ensino, tabelas, listas ou comunicados de calendário em qualquer estilo textual.
 
@@ -108,49 +110,69 @@ class GeminiProvider:
         if not self.config.api_key or not self.config.provider_terms_ready:
             raise ProcessingError("falha_ia", reason="missing_key_or_terms")
         payload = {
-            "model": self.config.model,
-            "system_instruction": SYSTEM_INSTRUCTION,
-            "input": json.dumps({"paginas": [vars(page) for page in pages]}, ensure_ascii=False),
-            "store": False,
-            "generation_config": {"max_output_tokens": self.config.max_output_tokens},
-            "response_format": {"type": "text", "mime_type": "application/json",
-                                "schema": generation_schema()},
+            "systemInstruction": {"parts": [{"text": SYSTEM_INSTRUCTION}]},
+            "contents": [
+                {
+                    "role": "user",
+                    "parts": [{"text": json.dumps({"paginas": [vars(page) for page in pages]}, ensure_ascii=False)}],
+                }
+            ],
+            "generationConfig": {
+                "maxOutputTokens": self.config.max_output_tokens,
+                "responseMimeType": "application/json",
+                "responseJsonSchema": generation_schema(),
+            },
         }
         # Verificar o envelope real contra a margem usada na reserva de custo.
         encoded = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         if len(encoded) > self.config.max_text_bytes + 16000:
             raise ProcessingError("limite_paginas", reason="payload_too_large")
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.config.model}:generateContent"
         started = time.monotonic()
         try:
-            with httpx.Client(timeout=self.config.timeout_seconds, follow_redirects=False,
-                              transport=self.transport) as client:
-                with client.stream("POST", "https://generativelanguage.googleapis.com/v1beta/interactions",
-                                   headers={"x-goog-api-key": self.config.api_key,
-                                            "Content-Type": "application/json", "Api-Revision": "2026-05-20"},
-                                   content=encoded) as response:
-                    if response.status_code != 200:
-                        raise ProcessingError(
-                            "falha_ia",
-                            retryable=response.status_code in (429, 500, 502, 503, 504),
-                            rate_limited=(response.status_code == 429),
-                            reason=_error_reason(response),
-                        )
-                    chunks = bytearray()
-                    for chunk in response.iter_bytes():
-                        chunks.extend(chunk)
-                        if time.monotonic() - started > self.config.timeout_seconds:
-                            raise ProcessingError("tempo_esgotado", retryable=True, reason="stream_timeout")
-                        if len(chunks) > 256000:
-                            raise ProcessingError("falha_ia", reason="response_too_large")
-            body = json.loads(chunks)
-            if body.get("status") != "completed":
-                status_tag = re.sub(r"[^a-z0-9_]", "_", str(body.get("status", "missing")).lower())[:24]
-                raise ProcessingError("falha_ia", reason=f"status_{status_tag}")
-            parts = [part["text"] for step in body.get("steps", []) if step.get("type") == "model_output"
-                     for part in step.get("content", []) if part.get("type") == "text"]
-            if not parts:
+            with httpx.Client(
+                timeout=httpx.Timeout(self.config.timeout_seconds),
+                follow_redirects=False,
+                transport=self.transport,
+            ) as client:
+                response = client.post(
+                    url,
+                    headers={"x-goog-api-key": self.config.api_key, "Content-Type": "application/json"},
+                    content=encoded,
+                )
+                if response.status_code != 200:
+                    raise ProcessingError(
+                        "falha_ia",
+                        retryable=response.status_code in (429, 500, 502, 503, 504),
+                        rate_limited=(response.status_code == 429),
+                        reason=_error_reason(response),
+                    )
+                if time.monotonic() - started > self.config.timeout_seconds:
+                    raise ProcessingError("tempo_esgotado", retryable=True, reason="http_timeout")
+                raw = response.content
+                if len(raw) > 256000:
+                    raise ProcessingError("falha_ia", reason="response_too_large")
+            body = json.loads(raw)
+            candidates = body.get("candidates")
+            if not isinstance(candidates, list) or not candidates:
+                block_reason = (body.get("promptFeedback") or {}).get("blockReason")
+                if block_reason:
+                    tag = re.sub(r"[^a-z0-9_]", "_", str(block_reason).lower())[:24]
+                    raise ProcessingError("falha_ia", reason=f"blocked_{tag}")
                 raise ProcessingError("falha_ia", reason="empty_parts")
-            return "".join(parts)
+            first = candidates[0] if isinstance(candidates[0], dict) else {}
+            parts = [
+                part["text"]
+                for part in (first.get("content") or {}).get("parts", [])
+                if isinstance(part, dict) and isinstance(part.get("text"), str)
+            ]
+            if not parts:
+                finish_reason = first.get("finishReason")
+                if finish_reason:
+                    tag = re.sub(r"[^a-z0-9_]", "_", str(finish_reason).lower())[:24]
+                    raise ProcessingError("falha_ia", reason=f"finish_{tag}")
+                raise ProcessingError("falha_ia", reason="empty_parts")
+            return _CONTROL_CHARS_RE.sub("", "".join(parts))
         except ProcessingError:
             raise
         except httpx.TimeoutException:

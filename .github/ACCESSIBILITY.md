@@ -34,7 +34,7 @@ Se você está contribuindo com código, interface ou documentação, siga estas
   - Não utilize apenas a cor para transmitir status ou significado (combine cor com texto, ícone ou rótulo explícito, como nos tipos de avaliação e status de processamento).
   - Garanta que o conteúdo se ajuste sem perda de informação ou estouro horizontal em telas estreitas (`360px`) e com zoom de até 200%.
 - **CI/CD**
-  - Pull Requests passam pela validação automatizada de acessibilidade e contraste da documentação (`npx mint a11y` no workflow [`.github/workflows/docs.yml`](.github/workflows/docs.yml)) e pelos testes de interface ([`.github/workflows/app-ci.yml`](.github/workflows/app-ci.yml)).
+  - Pull Requests passam pela validação automatizada de acessibilidade e contraste da documentação (`npx mint a11y` no workflow [`.github/workflows/docs.yml`](workflows/docs.yml)) e pelos testes de interface ([`.github/workflows/app-ci.yml`](workflows/app-ci.yml)).
   - Corrija violações apontadas antes do merge ou documente a limitação técnica na descrição do PR.
 
 ## Como relatar barreiras de acessibilidade
@@ -77,7 +77,7 @@ Esses prazos contam a partir da abertura da issue. Caso haja impedimento técnic
 
 ## Responsabilidade e manutenção
 
-A acessibilidade do projeto é mantida coletivamente pela **[Equipe G8 — Mantenedores do Agenda UnB](README.md#criadores)**, com canal direto em `unbagenda@gmail.com`.
+A acessibilidade do projeto é mantida coletivamente pela **[Equipe G8 — Mantenedores do Agenda UnB](../README.md#criadores)**, com canal direto em `unbagenda@gmail.com`.
 
 ### Responsabilidades da equipe mantenedora
 
