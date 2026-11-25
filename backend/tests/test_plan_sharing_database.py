@@ -111,9 +111,11 @@ def plan(conn, owner, offering_id=None, status='concluido'):
     plan_id = str(uuid4())
     done = 'now()' if status in ('concluido', 'falha') else 'null'
     started = 'now()' if status == 'processando' else 'null'
+    err_code = "'falha_ia'" if status == 'falha' else 'null'
+    err_msg = "'Não foi possível extrair as avaliações.'" if status == 'falha' else 'null'
     conn.execute(text(f"""insert into public.planos_ensino(id, user_id, nome_arquivo, caminho_arquivo,
-            tipo_arquivo, status, processado_em, processamento_iniciado_em, oferta_id)
-        values (:id, :owner, 'plano.pdf', :path, 'pdf', :status, {done}, {started}, :offering)"""),
+            tipo_arquivo, status, erro_codigo, erro, processado_em, processamento_iniciado_em, oferta_id)
+        values (:id, :owner, 'plano.pdf', :path, 'pdf', :status, {err_code}, {err_msg}, {done}, {started}, :offering)"""),
         {'id': plan_id, 'owner': owner, 'path': f'syllabus_files/{owner}/{plan_id}_plano.pdf',
          'status': status, 'offering': offering_id})
     version_id = str(scalar(conn, 'select id from public.versoes_plano where plano_id=:p', {'p': plan_id}))
@@ -151,6 +153,7 @@ def test_delete_submissions_removes_own_shared_content_across_classes(database):
     follow(conn, follower, first_class)
     first_plan, original, candidates = plan(conn, owner, first_class)
     second_plan, _, _ = plan(conn, owner, second_class, status='processando')
+    failed_plan, _, _ = plan(conn, owner, second_class, status='falha')
     foreign_plan, _, _ = plan(conn, follower, second_class)
     assert share(conn, owner, original) == 'compartilhada'
     revision = scalar(conn, 'select (public.criar_revisao(:a, :v)).id', {'a': follower, 'v': original})
@@ -163,7 +166,7 @@ def test_delete_submissions_removes_own_shared_content_across_classes(database):
             delete_syllabus_submissions(user, db, storage)
         assert error.value.status_code == 409
         storage.delete_objects_strict.assert_not_called()
-        assert list_syllabi(None, 20, 0, user, db).total == 2
+        assert list_syllabi(None, 20, 0, user, db).total == 3
 
     conn.execute(text("update public.planos_ensino set status='concluido', processado_em=now() where id=:p"),
                  {'p': second_plan})
@@ -189,6 +192,8 @@ def test_delete_submissions_removes_own_shared_content_across_classes(database):
     assert scalar(conn, 'select envio_excluido_em from public.planos_ensino where id=:p', {'p': foreign_plan}) is None
     assert scalar(conn, '''select texto_preparado is null and texto_aprovado is null and envio_excluido_em is not null
         from public.planos_ensino where id=:p''', {'p': second_plan})
+    assert scalar(conn, '''select status = 'concluido' and erro_codigo is null and erro is null and envio_excluido_em is not null
+        from public.planos_ensino where id=:p''', {'p': failed_plan})
     assume(conn, owner)
     assert scalar(conn, 'select count(*) from public.planos_ensino where id=:p', {'p': first_plan}) == 0
 
