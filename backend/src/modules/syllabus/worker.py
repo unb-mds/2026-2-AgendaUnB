@@ -20,7 +20,7 @@ from src.database.models import AssessmentCandidate, Syllabus, SyllabusVersion
 from src.modules.syllabus.extraction import CandidateData, ExtractionResult, VERSION
 from src.modules.syllabus.gemini import GeminiProvider
 from src.modules.syllabus.processing_config import ERROR_MESSAGES, ProcessingConfig, ProcessingError
-from src.modules.syllabus.processing_task import DocumentResult, run_isolated
+from src.modules.syllabus.processing_task import DocumentResult, run_in_worker
 from src.modules.syllabus.privacy import privacy_checks
 from src.modules.syllabus.preparation import checked_pages, contains_personal_data, text_hash
 from src.modules.syllabus.versions import private_version
@@ -92,7 +92,7 @@ class Lease:
 
 class SyllabusWorker:
     def __init__(self, session_factory, storage, provider, config: ProcessingConfig, *,
-                 runner=run_isolated, pace: bool = False, sleep=time.sleep, clock=time.monotonic):
+                 runner=run_in_worker, pace: bool = False, sleep=time.sleep, clock=time.monotonic):
         self.sessions = session_factory
         self.storage = storage
         self.provider = provider
