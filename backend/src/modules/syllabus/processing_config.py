@@ -31,25 +31,25 @@ class ProcessingConfig:
     model: str = "gemini-3.5-flash-lite"
     api_key: str = field(default="", repr=False)
     provider_terms_ready: bool = False
-    timeout_seconds: float = 12
-    attempt_timeout_seconds: float = 18
-    max_attempts: int = 2
-    retry_delay_seconds: int = 2
+    timeout_seconds: float = 25
+    attempt_timeout_seconds: float = 35
+    max_attempts: int = 3
+    retry_delay_seconds: int = 4
     rate_limit_delay_seconds: int = 65
     min_interval_seconds: float = 4.0
     lease_seconds: int = 90
     max_pages: int = 10
     max_text_bytes: int = 40000
     max_output_tokens: int = 4096
-    max_file_cost_usd: Decimal = Decimal("0.06")
+    max_file_cost_usd: Decimal = Decimal("0.12")
     input_usd_per_million: Decimal = Decimal("0.30")
     output_usd_per_million: Decimal = Decimal("2.50")
     reference_year: int | None = None
     reference_subject: str | None = None
 
     def __post_init__(self):
-        if not (math.isfinite(self.timeout_seconds) and 0 < self.timeout_seconds <= 30 and 1 <= self.max_attempts <= 3):
-            raise ValueError("Timeout deve estar em (0, 30] e tentativas entre 1 e 3.")
+        if not (math.isfinite(self.timeout_seconds) and 0 < self.timeout_seconds <= 45 and 1 <= self.max_attempts <= 5):
+            raise ValueError("Timeout deve estar em (0, 45] e tentativas entre 1 e 5.")
         if not (math.isfinite(self.attempt_timeout_seconds) and 0 < self.attempt_timeout_seconds <= 60 and
                 self.attempt_timeout_seconds + 5 < self.lease_seconds):
             raise ValueError("Prazo da tentativa deve ser de até 60s e menor que o lease.")
@@ -60,7 +60,7 @@ class ProcessingConfig:
         if not (0 <= self.rate_limit_delay_seconds <= 300 and
                 math.isfinite(self.min_interval_seconds) and 0 <= self.min_interval_seconds <= 30):
             raise ValueError("Intervalo de rate limit ou cadência inválido.")
-        if self.retry_delay_seconds < 0 or any(not x.is_finite() or x <= 0 for x in (
+        if not (0 <= self.retry_delay_seconds <= 60) or any(not x.is_finite() or x <= 0 for x in (
             self.max_file_cost_usd, self.input_usd_per_million, self.output_usd_per_million
         )):
             raise ValueError("Orçamento, preços e intervalo de tentativas inválidos.")
@@ -85,12 +85,13 @@ class ProcessingConfig:
             model=model,
             api_key=os.getenv("GEMINI_API_KEY", "").strip().strip('"').strip("'"),
             provider_terms_ready=os.getenv("SYLLABUS_PROVIDER_TERMS_READY", "false").lower() == "true",
-            timeout_seconds=float(os.getenv("SYLLABUS_AI_TIMEOUT_SECONDS", "12")),
-            attempt_timeout_seconds=float(os.getenv("SYLLABUS_ATTEMPT_TIMEOUT_SECONDS", "18")),
-            max_attempts=int(os.getenv("SYLLABUS_MAX_ATTEMPTS", "2")),
+            timeout_seconds=float(os.getenv("SYLLABUS_AI_TIMEOUT_SECONDS", "25")),
+            attempt_timeout_seconds=float(os.getenv("SYLLABUS_ATTEMPT_TIMEOUT_SECONDS", "35")),
+            max_attempts=int(os.getenv("SYLLABUS_MAX_ATTEMPTS", "3")),
+            retry_delay_seconds=int(os.getenv("SYLLABUS_RETRY_DELAY_SECONDS", "4")),
             rate_limit_delay_seconds=int(os.getenv("SYLLABUS_RATE_LIMIT_DELAY_SECONDS", "65")),
             min_interval_seconds=float(os.getenv("SYLLABUS_MIN_INTERVAL_SECONDS", "4.0")),
-            max_file_cost_usd=Decimal(os.getenv("SYLLABUS_MAX_FILE_COST_USD", "0.06")),
+            max_file_cost_usd=Decimal(os.getenv("SYLLABUS_MAX_FILE_COST_USD", "0.12")),
             input_usd_per_million=Decimal(os.getenv("GEMINI_INPUT_USD_PER_MILLION", "0.30")),
             output_usd_per_million=Decimal(os.getenv("GEMINI_OUTPUT_USD_PER_MILLION", "2.50")),
         )

@@ -371,10 +371,12 @@ def test_failure_retries_stop_and_logs_omit_document(job, caplog):
     def fail(pages):
         raise RuntimeError("TEXTO CONFIDENCIAL DO PDF")
     worker.provider.extract = fail
-    assert worker.run_once() and worker.run_once() and not worker.run_once()
+    for _ in range(worker.config.max_attempts):
+        assert worker.run_once()
+    assert not worker.run_once()
     with sessions() as db:
         record = db.get(Syllabus, sid)
-        assert record.status == "falha" and record.execucao_atual == 2
+        assert record.status == "falha" and record.execucao_atual == worker.config.max_attempts
         assert "CONFIDENCIAL" not in record.error_message
         assert record.erro_codigo == "erro_interno"
         assert db.scalar(select(func.count()).select_from(AssessmentCandidate)) == 0
@@ -494,12 +496,14 @@ def test_whole_attempt_timeout_is_persisted_and_retries_stop(job):
     def expire(*args):
         raise ProcessingError("tempo_esgotado", retryable=True)
     worker.runner = expire
-    assert worker.run_once() and worker.run_once() and not worker.run_once()
+    for _ in range(worker.config.max_attempts):
+        assert worker.run_once()
+    assert not worker.run_once()
     with sessions() as db:
         record = db.get(Syllabus, sid)
         assert record.status == "falha" and record.erro_codigo == "tempo_esgotado"
-        assert record.execucao_atual == 2
-        assert record.cost_reserved_usd == worker.config.attempt_reservation * 2
+        assert record.execucao_atual == worker.config.max_attempts
+        assert record.cost_reserved_usd == worker.config.attempt_reservation * worker.config.max_attempts
         assert db.scalar(select(func.count()).select_from(AssessmentCandidate)) == 0
 
 
@@ -547,6 +551,21 @@ def test_model_change_uses_explicit_reservation_prices(monkeypatch):
     monkeypatch.setenv("GEMINI_OUTPUT_USD_PER_MILLION", "2")
     config = ProcessingConfig.from_env()
     assert config.attempt_reservation == Decimal("0.064192")
+
+
+def test_processing_config_from_env_reads_resilience_overrides(monkeypatch):
+    monkeypatch.delenv("GEMINI_MODEL", raising=False)
+    monkeypatch.setenv("SYLLABUS_AI_TIMEOUT_SECONDS", "30")
+    monkeypatch.setenv("SYLLABUS_ATTEMPT_TIMEOUT_SECONDS", "40")
+    monkeypatch.setenv("SYLLABUS_MAX_ATTEMPTS", "4")
+    monkeypatch.setenv("SYLLABUS_RETRY_DELAY_SECONDS", "6")
+    monkeypatch.setenv("SYLLABUS_MAX_FILE_COST_USD", "0.15")
+    config = ProcessingConfig.from_env()
+    assert config.timeout_seconds == 30.0
+    assert config.attempt_timeout_seconds == 40.0
+    assert config.max_attempts == 4
+    assert config.retry_delay_seconds == 6
+    assert config.max_file_cost_usd == Decimal("0.15")
 
 
 @pytest.mark.parametrize("failure", ["missing_policies", "connection_error"])
