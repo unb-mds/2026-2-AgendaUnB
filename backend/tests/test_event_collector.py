@@ -93,6 +93,27 @@ def test_details_normalize_time_location_campus_and_external_link():
     assert item["hash"]
 
 
+def test_description_preserves_source_structure_and_inline_spacing():
+    html = _detail(link=None).replace("<p>Descrição detalhada.</p>", """
+        <p>Conheça a <a href="/agenda">agenda</a>.</p><p>&nbsp;</p>
+        <h2><strong>Programação</strong></h2>
+        <div>Oficina<br>14h no <em>campus</em> <b>Gama</b>.</div>
+        <ul><li>Debate</li><li>Encerramento</li></ul>
+        <script>ignorar()</script>""")
+    listing = ListingEvent("42", "https://noticias.unb.br/component/agenda/agenda/42", "Agenda", "Eventos")
+    assert normalize_detail(html, listing)["descricao"] == (
+        "Conheça a agenda.\n\n**Programação**\n\nOficina\n\n14h no campus Gama."
+        "\n\n- Debate\n- Encerramento"
+    )
+
+
+def test_long_source_paragraph_is_split_between_complete_sentences():
+    sentence = "A equipe apresenta " + "a programação da semana e " * 10 + "os locais."
+    html = _detail(link=None).replace("Descrição detalhada.", f"{sentence} {sentence}")
+    listing = ListingEvent("42", "https://noticias.unb.br/component/agenda/agenda/42", "Agenda", "Eventos")
+    assert normalize_detail(html, listing)["descricao"] == f"{sentence}\n\n{sentence}"
+
+
 def test_zero_midnight_is_not_invented_as_event_start_or_all_day():
     listing = ListingEvent("42", "https://noticias.unb.br/component/agenda/agenda/42", "Título", "Eventos")
 

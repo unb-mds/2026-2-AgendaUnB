@@ -108,8 +108,7 @@ class _TreeParser(HTMLParser):
                 break
 
     def handle_data(self, data: str) -> None:
-        if data.strip():
-            self.stack[-1].children.append(data)
+        self.stack[-1].children.append(data)
 
 
 def _parse_html(source: str) -> _Node:
@@ -386,6 +385,62 @@ def find_existing_duplicate(
     return None
 
 
+def _formatted_description(description: _Node) -> str:
+    """Traduz os blocos da fonte para o formato de texto da página de evento."""
+    blocks = []
+    fragments = []
+
+    def flush():
+        line = " ".join("".join(fragments).split())
+        fragments.clear()
+        if line:
+            blocks.append(line)
+
+    def visit(node):
+        if isinstance(node, str):
+            fragments.append(node)
+            return
+        if node.tag in {"script", "style", "template"}:
+            return
+        if node.tag in {"br", "hr"}:
+            flush()
+            return
+        heading = node.tag in {"h1", "h2", "h3", "h4", "h5", "h6"}
+        block = heading or node.tag in {"p", "div", "section", "ul", "ol", "li", "blockquote", "tr", "td", "th"}
+        if block:
+            flush()
+        start = len(blocks)
+        for child in node.children:
+            visit(child)
+        if block:
+            flush()
+        if heading and len(blocks) > start:
+            blocks[start:] = ["**" + " ".join(blocks[start:]) + "**"]
+        if node.tag == "li" and len(blocks) > start:
+            blocks[start] = "- " + blocks[start]
+        if node.tag in {"ul", "ol"} and len(blocks) > start:
+            blocks[start:] = ["\n".join(blocks[start:])]
+
+    visit(description)
+    flush()
+    paragraphs = []
+    for block in blocks:
+        if len(block) <= 500 or block.startswith(("**", "- ")):
+            paragraphs.append(block)
+            continue
+        # Alguns artigos usam um único <p> mesmo para várias frases longas.
+        sentences = re.split(r"(?<=[a-zà-ÿ]{4}[.!?]) (?=[A-ZÀ-Þ])", block)
+        paragraph = sentences[0]
+        for sentence in sentences[1:]:
+            if len(paragraph) >= 250:
+                paragraphs.append(paragraph)
+                paragraph = sentence
+            else:
+                paragraph += " " + sentence
+        paragraphs.append(paragraph)
+    return "\n\n".join(paragraphs)[:10000].rstrip()
+
+
 def _external_link(description: _Node) -> str | None:
     for link in description.find_all("a"):
         href = urljoin(BASE_URL, link.attrs.get("href") or "")
@@ -423,7 +478,7 @@ def normalize_detail(source: str, listing_event: ListingEvent) -> dict:
         "fonte_url": listing_event.source_url,
         "tipo": "evento" if _fold(listing_event.category) in {"eventos", "cursos", "defesas"} else "informe",
         "titulo": title[:200],
-        "descricao": description.text()[:10000],
+        "descricao": _formatted_description(description),
         "local": location or None,
         "link_externo": _external_link(description),
         "campus": _normalize_campus(location),
