@@ -46,6 +46,13 @@ jobs:
           SYLLABUS_WORKER_ENABLED: 'true'
           SYLLABUS_PRIVACY_READY: ${{ vars.SYLLABUS_PRIVACY_READY }}
           SYLLABUS_PROVIDER_TERMS_READY: ${{ vars.SYLLABUS_PROVIDER_TERMS_READY }}
+          SYLLABUS_AI_TIMEOUT_SECONDS: '25'
+          SYLLABUS_ATTEMPT_TIMEOUT_SECONDS: '35'
+          SYLLABUS_MAX_ATTEMPTS: '3'
+          SYLLABUS_RETRY_DELAY_SECONDS: '4'
+          SYLLABUS_RATE_LIMIT_DELAY_SECONDS: '65'
+          SYLLABUS_MIN_INTERVAL_SECONDS: '4.0'
+          SYLLABUS_MAX_FILE_COST_USD: '0.12'
         run: python -m src.modules.syllabus.worker --drain --max-items 25
 
   collector:
