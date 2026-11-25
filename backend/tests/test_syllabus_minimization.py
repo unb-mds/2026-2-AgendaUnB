@@ -167,3 +167,17 @@ def test_bare_cpf_requires_check_digits_and_respects_academic_identifier_context
 def test_matches_labels_observed_in_unb_monitoring_forms(source, expected):
     assert minimize(source) == expected
     assert minimize_with_count(expected) == (expected, 0)
+
+
+@pytest.mark.parametrize(("source", "expected"), [
+    ("| **Professores** | João da Silva |", "| **Professores** | [identificador removido] |"),
+    ("**Professores:** João da Silva", "**Professores:** [identificador removido]"),
+    ("**Professores**: João da Silva", "**Professores**: [identificador removido]"),
+    ("| __Professor(a)__ | Maria Souza |", "| __Professor(a)__ | [identificador removido] |"),
+    ("**Docente**\n  Ana Silva\nProva 1", "**Docente**\n  [identificador removido]\nProva 1"),
+    ("**CPF:** 00000000000", "**CPF:** [identificador removido]"),
+    ("| **Disciplina** | Estruturas de Dados 1 |", "| **Disciplina** | Estruturas de Dados 1 |"),
+])
+def test_masks_values_after_markdown_bold_labels(source, expected):
+    assert minimize(source) == expected
+    assert minimize_with_count(expected) == (expected, 0)

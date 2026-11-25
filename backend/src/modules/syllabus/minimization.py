@@ -8,10 +8,13 @@ EMAIL = "[email removido]"
 PHONE = "[telefone removido]"
 
 SPACE = r"[^\S\r\n\t]"
-FIELD = rf"{SPACE}*[:=·–—-][^\S\r\n]*"
+MD_OPT = r"(?:\*\*|__)?"
+LABEL_START = r"(?<![^\W_])"
+LABEL_END = r"(?![^\W_])"
+FIELD = rf"{SPACE}*{MD_OPT}{SPACE}*[:=·–—-]{SPACE}*{MD_OPT}[^\S\r\n]*"
 # A extração de PDF pode usar tabulação, barras de tabela ou quebra de linha.
 FIELD_SEPARATOR = (
-    rf"(?:{FIELD}(?:\r?\n{SPACE}*)?|{SPACE}*(?:\t+|\||\r?\n){SPACE}*|{SPACE}{{2,}})"
+    rf"(?:{FIELD}(?:\r?\n{SPACE}*)?|{SPACE}*{MD_OPT}{SPACE}*(?:\t+|\||\r?\n){SPACE}*|{SPACE}*{MD_OPT}{SPACE}{{2,}})"
 )
 ACADEMIC_LABEL = (
     r"disciplinas?|mat[eé]rias?|turmas?|c[oó]digo|semestre|per[ií]odo|"
@@ -84,28 +87,28 @@ RULES = (
     (re.compile(rf"(?<![\w./@]){WEB_SCHEME}{WHATSAPP_LINK}(?:{URL_END})?", re.I), PHONE),
     (re.compile(rf"(?<!\w){HOME_LABEL}\b{VALUE_SEPARATOR}(?P<value>{HOME_VALUE})", re.I), IDENTIFIER),
     (re.compile(rf"(?<!\w)endere[cç]o\b{FIELD_SEPARATOR}{STREET_WITH_NUMBER}(?P<value>{HOME_VALUE})", re.I), IDENTIFIER),
-    (re.compile(rf"(?<!\w)(?i:{FULL_ROLE}{RESPONSIBLE})(?!\w){FIELD_SEPARATOR}"
+    (re.compile(rf"{LABEL_START}(?i:{FULL_ROLE}{RESPONSIBLE}){LABEL_END}{FIELD_SEPARATOR}"
                 rf"(?:(?i:{SHORT_ROLE}){SPACE}+)*(?P<value>{LOWERCASE_NAME}|{NAME})(?!\w|@)"), IDENTIFIER),
-    (re.compile(rf"(?m)^{SPACE}*(?i:{FULL_ROLE})(?!\w)(?:{SPACE}*\r?\n{SPACE}*|{SPACE}+)"
+    (re.compile(rf"(?m)^{SPACE}*{MD_OPT}(?i:{FULL_ROLE}){LABEL_END}{MD_OPT}(?:{SPACE}*\r?\n{SPACE}*|{SPACE}+)"
                 rf"(?P<value>{NAME}){NAME_FIELD_END}"), IDENTIFIER),
-    (re.compile(rf"(?<!\w)(?i:{FULL_ROLE})(?!\w){SPACE}+(?P<value>{NAME_PART}(?:{NAME_TAIL}){{1,11}})"
+    (re.compile(rf"{LABEL_START}(?i:{FULL_ROLE}){LABEL_END}{SPACE}+(?P<value>{NAME_PART}(?:{NAME_TAIL}){{1,11}})"
                 r"(?!\w|@)"), IDENTIFIER),
-    (re.compile(rf"(?<!\w)(?i:{SHORT_ROLE})"
+    (re.compile(rf"{LABEL_START}(?i:{SHORT_ROLE})"
                 rf"(?:{FIELD}|{SPACE}+)(?P<value>{NAME})(?!\w|@)"), IDENTIFIER),
-    (re.compile(rf"(?<!\w){BIRTH_LABEL}(?!\w){VALUE_SEPARATOR}(?P<value>{BIRTH_DATE}){END_NUMBER}",
+    (re.compile(rf"{LABEL_START}{BIRTH_LABEL}{LABEL_END}{VALUE_SEPARATOR}(?P<value>{BIRTH_DATE}){END_NUMBER}",
                 re.I), IDENTIFIER),
     (re.compile(r"(?<![\w.+%-])[\w.+%'-]{1,64}@(?:[a-z\d-]{1,63}\.){1,12}[a-z]{2,63}(?![\w-])", re.I), EMAIL),
     (re.compile(rf"(?<![\w+\d(]){FORMATTED_PHONE}(?![\w\d]|[.-]\d)"), PHONE),
-    (re.compile(rf"(?<!\w)(?:{PHONE_LABEL})(?!\w){VALUE_SEPARATOR}"
+    (re.compile(rf"{LABEL_START}(?:{PHONE_LABEL}){LABEL_END}{VALUE_SEPARATOR}"
                 rf"(?P<value>{LABELED_PHONE})(?![\w\d]|[./-]\d)", re.I), PHONE),
     (re.compile(rf"(?<!\w){CPF_FORMATTED}(?!\w)"), IDENTIFIER),
-    (re.compile(rf"(?<!\w)cpf{NUMBER_LABEL}{VALUE_SEPARATOR}(?P<value>{CPF_VALUE}){END_NUMBER}", re.I), IDENTIFIER),
-    (re.compile(rf"(?<!\w)(?:r\.?g\.?|registro geral){NUMBER_LABEL}{VALUE_SEPARATOR}"
+    (re.compile(rf"{LABEL_START}cpf{NUMBER_LABEL}{LABEL_END}{VALUE_SEPARATOR}(?P<value>{CPF_VALUE}){END_NUMBER}", re.I), IDENTIFIER),
+    (re.compile(rf"{LABEL_START}(?:r\.?g\.?|registro geral){NUMBER_LABEL}{LABEL_END}{VALUE_SEPARATOR}"
                 rf"(?P<value>{RG_VALUE}){END_NUMBER}", re.I), IDENTIFIER),
     (re.compile(rf"(?<![\w/]){UNB_MATRICULA}{END_NUMBER}"), IDENTIFIER),
-    (re.compile(rf"(?<!\w){MATRICULA_LABEL}{NUMBER_LABEL}{VALUE_SEPARATOR}"
+    (re.compile(rf"{LABEL_START}{MATRICULA_LABEL}{NUMBER_LABEL}{LABEL_END}{VALUE_SEPARATOR}"
                 rf"(?P<value>{MATRICULA}){END_NUMBER}", re.I), IDENTIFIER),
-    (re.compile(rf"(?<!\w)(?:matr[ií]cula{SPACE}+)?siape{NUMBER_LABEL}{VALUE_SEPARATOR}"
+    (re.compile(rf"{LABEL_START}(?:matr[ií]cula{SPACE}+)?siape{NUMBER_LABEL}{LABEL_END}{VALUE_SEPARATOR}"
                 rf"(?P<value>\d{{6,8}}){END_NUMBER}", re.I), IDENTIFIER),
 )
 
