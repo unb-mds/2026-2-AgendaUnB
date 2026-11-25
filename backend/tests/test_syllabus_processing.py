@@ -100,6 +100,21 @@ def test_recovers_split_pdf_accents_from_an_assignment_excerpt():
     assert assignment.trecho_origem == original
 
 
+@pytest.mark.parametrize("returned_excerpt", [
+    "1a Avaliação - 17 de setembro de 2026;",
+    "1ª Avaliação - 17 de setembro de 2026;",
+])
+def test_recovers_line_broken_ordinal_in_evidence(returned_excerpt):
+    original = "1\na\n Avaliação - 17 de setembro de 2026;"
+    [exam] = validate_candidates(raw_candidate(
+        titulo="Prova 1", data_sugerida="2026-09-17", hora_sugerida=None,
+        trecho_origem=returned_excerpt,
+    ), [TextPage(1, original)]).candidates
+    assert exam.data_sugerida.isoformat() == "2026-09-17"
+    assert exam.hora_sugerida is None
+    assert exam.trecho_origem == original
+
+
 @pytest.mark.parametrize("reference_year", [None, 2026, 2027])
 def test_pasted_exam_rows_recover_missing_candidates_using_the_offering_year(reference_year):
     course = "Fundamentos de Arquitetura de Computadores"

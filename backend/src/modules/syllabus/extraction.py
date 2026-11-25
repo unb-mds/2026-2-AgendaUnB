@@ -107,6 +107,25 @@ def _tokens(value: str) -> list[str]:
     return _TOKEN_RE.findall(normalize(value))
 
 
+_ORDINAL_TOKEN_RE = re.compile(r"^(\d{1,2})([ao])$")
+
+
+def _match_token_at(source_tokens: list[str], index: int, token: str) -> int:
+    if index >= len(source_tokens):
+        return 0
+    if source_tokens[index] == token:
+        return 1
+    ordinal = _ORDINAL_TOKEN_RE.fullmatch(token)
+    if (
+        ordinal is not None
+        and index + 1 < len(source_tokens)
+        and source_tokens[index] == ordinal[1]
+        and source_tokens[index + 1] == ordinal[2]
+    ):
+        return 2
+    return 0
+
+
 def _tokens_match_same_line(evidence_tokens: list[str], source_raw: str) -> bool:
     if not evidence_tokens:
         return False
@@ -135,15 +154,19 @@ def _evidence_in_source(evidence_raw: str, source_raw: str, *, max_gap: int = 8,
         n = len(toks)
         found_end = None
         for start in range(pos, len(source_tokens)):
-            if source_tokens[start] != toks[0]:
+            step = _match_token_at(source_tokens, start, toks[0])
+            if not step:
                 continue
-            si = start + 1
+            si = start + step
             ti = 1
             max_end = min(len(source_tokens), start + n + max_gap)
             while ti < n and si < max_end:
-                if source_tokens[si] == toks[ti]:
+                consumed = _match_token_at(source_tokens, si, toks[ti])
+                if consumed and si + consumed <= max_end:
                     ti += 1
-                si += 1
+                    si += consumed
+                else:
+                    si += 1
             if ti == n:
                 found_end = si
                 break
@@ -406,6 +429,14 @@ def _restore_source_excerpt(excerpt: str, source: str) -> str | None:
     for index, char in enumerate(text):
         if index in weekday_joins:
             parts.append(rf"(?:\s+|\s*{_SOURCE_DASH}\s*)")
+        elif (
+            char in ("a", "o")
+            and index > 0
+            and text[index - 1].isdigit()
+            and (index + 1 == len(text) or not text[index + 1].isalnum())
+        ):
+            ordinal_mark = "ª" if char == "a" else "º"
+            parts.append(rf"\s*[{char}{ordinal_mark}{_ACCENT_GROUPS[char]}]{_COMBINING_MARK}*")
         elif char in _ACCENT_GROUPS:
             letters = rf"[{char}{_ACCENT_GROUPS[char]}]{_COMBINING_MARK}*"
             marks = _PDF_SPACING_MARKS.get(char)
