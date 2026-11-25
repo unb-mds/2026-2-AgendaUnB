@@ -219,6 +219,17 @@ def test_discipline_from_a_different_page_grounds_abbreviation_and_ignores_inven
     assert exam.titulo == "Prova Substitutiva"
 
 
+def test_reference_subject_fallback_applies_abbreviation_when_provider_name_not_literal():
+    evidence = "1a Avaliação - 17 de setembro de 2026;"
+    pages = [TextPage(1, f"Calendário de provas\n{evidence}")]
+    payload = json.loads(raw_candidate(
+        titulo="Prova 1", data_sugerida="2026-09-17", hora_sugerida=None, trecho_origem=evidence,
+    ))
+    payload["disciplina"] = "Física I"
+    [exam] = validate_candidates(json.dumps(payload), pages, reference_subject="FISICA 1").candidates
+    assert exam.titulo == "Prova 1 - F1"
+
+
 @pytest.mark.parametrize(("reference_subject", "expected"), [
     (None, "Prova 1 - EDA1"),
     ("ESTRUTURAS DE DADOS 1", "Prova 1 - ED1"),

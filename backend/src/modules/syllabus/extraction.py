@@ -606,7 +606,10 @@ def validate_candidates(
     except (ValidationError, ValueError):
         raise ProcessingError("falha_ia", reason="schema_invalid") from None
     sources = {page.pagina: page.texto for page in pages}
-    subject = _discipline_from_document(list(sources.values()), output.disciplina or reference_subject)
+    subject = (
+        _discipline_from_document(list(sources.values()), output.disciplina)
+        or (reference_subject.strip() if reference_subject and any(char.isalpha() for char in reference_subject) else None)
+    )
     abbreviation = _discipline_abbreviation(reference_subject or subject) if subject else ""
     class_starts = class_starts_in_plan(sources.values())
     reference_year = default_year or extract_reference_year(pages)
