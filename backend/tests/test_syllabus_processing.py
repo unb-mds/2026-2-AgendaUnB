@@ -704,6 +704,57 @@ def test_pacing_waits_only_between_external_provider_calls(job):
     assert worker.provider.calls == 2
 
 
+def test_drain_queue_waits_for_short_retry_instead_of_exiting(job):
+    from src.modules.syllabus.worker import drain_queue
+
+    worker, sessions, sid = job
+    sleeps = []
+    attempts = {"count": 0}
+
+    def flaky_extract(pages):
+        attempts["count"] += 1
+        if attempts["count"] == 1:
+            raise ProcessingError("falha_ia", retryable=True, reason="http_503")
+        return raw_candidate()
+
+    def fake_sleep(seconds):
+        sleeps.append(seconds)
+        with sessions() as db:
+            db.get(Syllabus, sid).next_attempt_at = datetime.now(timezone.utc) - timedelta(seconds=1)
+            db.commit()
+
+    worker.provider.extract = flaky_extract
+    drain_worker = SyllabusWorker(
+        sessions, None, worker.provider, replace(worker.config, retry_delay_seconds=4),
+        runner=process_document, sleep=fake_sleep,
+    )
+    processed = drain_queue(drain_worker, max_items=10)
+    assert processed == 2
+    assert len(sleeps) == 1 and 0 < sleeps[0] <= 4.5
+    with sessions() as db:
+        plan = db.get(Syllabus, sid)
+        assert plan.status == "concluido" and plan.execucao_atual == 2
+
+
+def test_drain_queue_exits_without_waiting_for_long_rate_limit_backoff(job):
+    from src.modules.syllabus.worker import drain_queue
+
+    worker, sessions, sid = job
+    sleeps = []
+    worker.provider.extract = lambda pages: (_ for _ in ()).throw(
+        ProcessingError("falha_ia", retryable=True, rate_limited=True, reason="http_429")
+    )
+    drain_worker = SyllabusWorker(
+        sessions, None, worker.provider, replace(worker.config, retry_delay_seconds=4, rate_limit_delay_seconds=65),
+        runner=process_document, sleep=sleeps.append,
+    )
+    processed = drain_queue(drain_worker, max_items=10)
+    assert processed == 1
+    assert sleeps == []
+    with sessions() as db:
+        assert db.get(Syllabus, sid).status == "pendente"
+
+
 def test_spawn_worker_drain_respects_flags_and_single_active_process(monkeypatch):
     import src.modules.syllabus.worker as module
 
