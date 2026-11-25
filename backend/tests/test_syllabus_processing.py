@@ -263,6 +263,56 @@ def test_class_schedule_only_fills_an_unambiguous_exam_start(schedule, kind, evi
     assert candidate.campos_ambiguos == ambiguous
 
 
+@pytest.mark.parametrize(("reference_schedule", "iso_date", "expected_hour"), [
+    ("35T45", "2026-09-17", "16:00"),
+    ("35M5 35T1", "2026-10-13", "12:00"),
+])
+def test_offering_schedule_fallback_fills_exam_hour_when_plan_has_no_sigaa_code(reference_schedule, iso_date, expected_hour):
+    evidence = f"Prova 1 — {iso_date[8:10]}/{iso_date[5:7]}/{iso_date[:4]}."
+    pages = [TextPage(1, evidence)]
+    raw = raw_candidate(titulo="Prova 1", data_sugerida=iso_date, hora_sugerida=None, trecho_origem=evidence)
+    [exam] = validate_candidates(raw, pages, reference_schedule=reference_schedule).candidates
+    assert exam.hora_sugerida.strftime("%H:%M") == expected_hour
+    assert exam.campos_ambiguos == []
+
+    # Código SIGAA explícito no texto do plano continua tendo prioridade sobre a oferta.
+    plan_override = [TextPage(1, f"Horário da turma: 35M34\n{evidence}")]
+    [overridden] = validate_candidates(raw, plan_override, reference_schedule=reference_schedule).candidates
+    assert overridden.hora_sugerida.strftime("%H:%M") == "10:00"
+
+
+def test_worker_loads_offering_schedule_from_database_as_fallback(job):
+    from src.database.models import ClassOffering, Subject
+
+    worker, sessions, sid = job
+    subject = Subject(code="IFD0171", name="FISICA 1")
+    offering = ClassOffering(
+        subject=subject, class_number="01", year=2026, semester=2, schedule="35T45",
+    )
+    evidence = "1a Avaliação - 17 de setembro de 2026;"
+    snapshot = approved_source(evidence)
+    with sessions() as db:
+        db.add(subject)
+        db.add(offering)
+        db.flush()
+        plan = db.get(Syllabus, sid)
+        plan.offering_id = offering.id
+        plan.disciplina = "FISICA 1"
+        for key, value in snapshot.items():
+            setattr(plan, key, value)
+        db.commit()
+
+    worker.provider.extract = lambda pages: raw_candidate(
+        titulo="Prova 1", data_sugerida="2026-09-17", hora_sugerida=None, trecho_origem=evidence,
+    )
+    assert worker.run_once()
+    with sessions() as db:
+        candidate = db.scalar(select(AssessmentCandidate).where(AssessmentCandidate.plano_id == sid))
+        assert candidate.title == "Prova 1 - F1"
+        assert candidate.data_sugerida.isoformat() == "2026-09-17"
+        assert candidate.hora_sugerida.strftime("%H:%M") == "16:00"
+
+
 @pytest.mark.parametrize("hours", ["09h ou 14h", "09:00 - 14:00", "09 h 00 ou 14 h 00"])
 def test_alternative_or_range_hours_require_review(hours):
     evidence = f"Prova 1 - 10/11/2026 - {hours}."

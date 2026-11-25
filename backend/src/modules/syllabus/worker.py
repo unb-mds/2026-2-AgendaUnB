@@ -16,7 +16,7 @@ from pydantic import ValidationError
 from sqlalchemy import or_, select, update
 
 from src.database.connection import SessionLocal
-from src.database.models import AssessmentCandidate, Syllabus, SyllabusVersion
+from src.database.models import AssessmentCandidate, ClassOffering, Syllabus, SyllabusVersion
 from src.modules.syllabus.extraction import CandidateData, ExtractionResult, VERSION
 from src.modules.syllabus.gemini import GeminiProvider
 from src.modules.syllabus.processing_config import ERROR_MESSAGES, ProcessingConfig, ProcessingError
@@ -88,6 +88,7 @@ class Lease:
     version_id: UUID | None = None
     year: int | None = None
     subject_name: str | None = None
+    schedule: str | None = None
 
 
 class SyllabusWorker:
@@ -125,6 +126,12 @@ class SyllabusWorker:
                 .limit(1)
             )
             if source is None or not source.approved_pages or source.approved_pages != pages:
+                return None
+            source_schedule = None
+            if source.offering_id is not None:
+                source_offering = db.get(ClassOffering, source.offering_id)
+                source_schedule = source_offering.schedule if source_offering is not None else None
+            if (source_schedule or None) != (lease.schedule or None):
                 return None
             rows = db.scalars(
                 select(AssessmentCandidate)
@@ -191,9 +198,12 @@ class SyllabusWorker:
                               modelo_ia=self.config.model, versao_processamento=VERSION,
                               approved_version_id=version.id,
                               cost_reserved_usd=job.cost_reserved_usd + self.config.attempt_reservation)
+            offering = db.get(ClassOffering, job.offering_id) if job.offering_id else None
+            schedule = offering.schedule if offering is not None else None
             lease = Lease(job.id, token, attempt, job.user_id, job.file_path, job.queued_at or job.created_at, terminal=exhausted,
                           approved_pages=job.approved_pages, approved_hash=job.approved_hash,
-                          version_id=version.id if version else None, year=job.ano, subject_name=job.disciplina)
+                          version_id=version.id if version else None, year=job.ano, subject_name=job.disciplina,
+                          schedule=schedule)
             changed = db.execute(update(Syllabus).where(*condition).values(**values),
                                  execution_options={"synchronize_session": False}).rowcount
             db.commit()
@@ -251,8 +261,12 @@ class SyllabusWorker:
                     if wait > 0:
                         self.sleep(wait)
                 self._last_provider_call_at = self.clock()
-                run_config = replace(self.config, reference_year=lease.year or self.config.reference_year,
-                                     reference_subject=lease.subject_name)
+                run_config = replace(
+                    self.config,
+                    reference_year=lease.year or self.config.reference_year,
+                    reference_subject=lease.subject_name,
+                    reference_schedule=lease.schedule or self.config.reference_schedule,
+                )
                 document = self.runner(pages, None, self.provider, run_config)
                 model_name = self.config.model
             result = document.extraction

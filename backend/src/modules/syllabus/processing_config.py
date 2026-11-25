@@ -46,6 +46,7 @@ class ProcessingConfig:
     output_usd_per_million: Decimal = Decimal("2.50")
     reference_year: int | None = None
     reference_subject: str | None = None
+    reference_schedule: str | None = None
 
     def __post_init__(self):
         if not (math.isfinite(self.timeout_seconds) and 0 < self.timeout_seconds <= 45 and 1 <= self.max_attempts <= 5):

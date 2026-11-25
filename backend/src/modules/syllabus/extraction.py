@@ -10,7 +10,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 from pypdf import PdfReader
 
-from src.modules.syllabus.class_schedule import class_starts_in_plan
+from src.modules.syllabus.class_schedule import class_starts_from_schedule, class_starts_in_plan
 from src.modules.syllabus.processing_config import ProcessingConfig, ProcessingError
 
 VERSION = "syllabus-v9-dated-exam-rows"
@@ -599,7 +599,12 @@ def _sort_and_index_candidates(candidates: list[CandidateData]) -> list[Candidat
 
 
 def validate_candidates(
-    raw: str, pages: list[TextPage], *, default_year: int | None = None, reference_subject: str | None = None,
+    raw: str,
+    pages: list[TextPage],
+    *,
+    default_year: int | None = None,
+    reference_subject: str | None = None,
+    reference_schedule: str | None = None,
 ) -> ExtractionResult:
     try:
         output = ProviderExtractionData.model_validate_json(raw)
@@ -612,6 +617,8 @@ def validate_candidates(
     )
     abbreviation = _discipline_abbreviation(reference_subject or subject) if subject else ""
     class_starts = class_starts_in_plan(sources.values())
+    if class_starts is None and reference_schedule:
+        class_starts = class_starts_from_schedule(reference_schedule)
     reference_year = default_year or extract_reference_year(pages)
     literal_rows = _dated_exam_rows(pages, reference_year)
     rows_by_key = {
