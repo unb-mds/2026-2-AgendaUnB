@@ -272,7 +272,7 @@ def test_private_processing_omits_masked_values_from_provider_logs_and_candidate
     assert "syllabus_completed" in caplog.text
     with api[1]() as db:
         stored = db.scalars(select(AssessmentCandidate)).one()
-        assert stored.titulo == expected["titulo"]
+        assert stored.titulo == f"{expected['titulo']} - MDS"
         assert stored.trecho_origem == TEXT
         assert all(value not in "".join(received) + caplog.text + stored.trecho_origem for value in sensitive)
 
