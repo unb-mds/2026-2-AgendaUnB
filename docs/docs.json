@@ -145,7 +145,7 @@
             "pages": [
               "processo/release-notes/v0-1-0",
               "processo/release-notes/v0-2-0-beta-1",
-              "processo/release-notes/v0-2-0"
+              "processo/release-notes/v1-0-0"
             ]
           }
         ]
@@ -172,6 +172,10 @@
     }
   },
   "redirects": [
+    {
+      "source": "/processo/release-notes/v0-2-0",
+      "destination": "/processo/release-notes/v1-0-0"
+    },
     {
       "source": "/atualizacoes",
       "destination": "/api-specs"
