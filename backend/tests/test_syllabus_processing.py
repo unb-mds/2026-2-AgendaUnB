@@ -274,6 +274,22 @@ def test_unique_literal_hour_is_preserved(written):
     assert result.candidates[0].hora_sugerida.isoformat() == "14:00:00"
 
 
+@pytest.mark.parametrize("evidence", [
+    "Prova 1: 10/09/2026",
+    "Prova 1:10/09/2026",
+    "Prova 1: 17 de setembro de 2026",
+    "Prova 1: 10.09.2026",
+])
+def test_label_colon_before_date_is_not_parsed_as_time(evidence):
+    result = validate_candidates(
+        raw_candidate(data_sugerida="2026-09-10" if "10" in evidence else "2026-09-17",
+                      hora_sugerida=None, trecho_origem=evidence),
+        [TextPage(1, evidence)],
+    )
+    assert result.candidates[0].hora_sugerida is None
+    assert result.candidates[0].campos_ambiguos == []
+
+
 def test_provider_only_sends_data_and_disables_storage():
     def handler(request):
         assert request.url.path.endswith("/v1beta/models/gemini-3.5-flash-lite:generateContent")

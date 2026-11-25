@@ -210,18 +210,19 @@ def extract_pages(content: bytes, config: ProcessingConfig) -> list[TextPage]:
 MONTHS = "janeiro fevereiro março abril maio junho julho agosto setembro outubro novembro dezembro".split()
 SHORT_MONTHS = "jan fev mar abr mai jun jul ago set out nov dez".split()
 
-_TIME_EXPR = r"(\d{1,2})\s*(?::\s*(\d{2})|h(?:(?:\s*(\d{2}))?(?:\s*min\b)?|s\b|rs\b|oras?\b)(?![a-z]))"
-_TIME_RE = re.compile(rf"(?<![\d:]){_TIME_EXPR}(?![\d:])", re.IGNORECASE)
+_TIME_EXPR = r"(\d{1,2})\s*(?::(\d{2})|h(?:(?:\s*(\d{2}))?(?:\s*min\b)?|s\b|rs\b|oras?\b)(?![a-z]))"
+_TIME_END_GUARD = r"(?![\d:]|\s*/\s*\d|-\d{2}-\d{2,4}|\.\d{2}\.\d{2,4})"
+_TIME_RE = re.compile(rf"(?<![\d:]){_TIME_EXPR}{_TIME_END_GUARD}", re.IGNORECASE)
 _DURATION_LENGTH_RE = re.compile(
     r"\b(?:dura[çc][ãa]o(?:\s+de)?|prazo(?:\s+de)?|em\s+at[eé]|por)\s+\d{1,2}\s*(?:h\b|hs\b|horas?\b)",
     re.IGNORECASE,
 )
 _DURATION_RANGE_RE = re.compile(
-    rf"(?<![\d:])(?:das?\s+|de\s+)?{_TIME_EXPR}\s*(?:[àa]s?|at[eé](?:\s+[àa]s?)?)\s*{_TIME_EXPR}(?![\d:])",
+    rf"(?<![\d:])(?:das?\s+|de\s+)?{_TIME_EXPR}\s*(?:[àa]s?|at[eé](?:\s+[àa]s?)?)\s*{_TIME_EXPR}{_TIME_END_GUARD}",
     re.IGNORECASE,
 )
 _BARE_START_DURATION_RE = re.compile(
-    rf"\bdas?\s+(\d{{1,2}})\s*(?:[àa]s?|at[eé](?:\s+[àa]s?)?)\s*{_TIME_EXPR}(?![\d:])",
+    rf"\bdas?\s+(\d{{1,2}})\s*(?:[àa]s?|at[eé](?:\s+[àa]s?)?)\s*{_TIME_EXPR}{_TIME_END_GUARD}",
     re.IGNORECASE,
 )
 _STRUCTURED_TITLE_RE = re.compile(
