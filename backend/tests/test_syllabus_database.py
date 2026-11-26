@@ -297,3 +297,53 @@ def test_worker_postgres_constraints_and_candidate_array(database):
         candidate = db.scalar(select(AssessmentCandidate).where(AssessmentCandidate.plano_id == sid))
         assert candidate.campos_ambiguos == ["data"]
         assert candidate.version_id is not None and candidate.status == "pendente"
+
+
+@pytest.mark.parametrize(
+    ("provider_name", "model_name"),
+    [
+        ("groq", "llama-3.3-70b-versatile"),
+        ("openrouter", "openrouter/free"),
+        ("mistral", "mistral-small-latest"),
+    ],
+)
+def test_fallback_provider_metadata_persisted_without_schema_migration(database, provider_name, model_name):
+    conn, users = database
+    sid = plan(conn, users["student"])
+    conn.execute(
+        text(
+            """update public.planos_ensino
+               set provedor_ia = :provider, modelo_ia = :model
+               where id = :sid"""
+        ),
+        {"provider": provider_name, "model": model_name, "sid": sid},
+    )
+    cid = str(
+        conn.execute(
+            text(
+                """insert into public.avaliacoes
+                   (plano_id, execucao, ordem, titulo, tipo, pagina_origem, trecho_origem,
+                    provedor, modelo_ia, versao_processamento)
+                   values (:plan, 1, 0, 'Prova contingencia', 'prova', 1, 'Prova contingencia: 10/11',
+                           :provider, :model, 's6d02-fallback-test')
+                   returning id"""
+            ),
+            {"plan": sid, "provider": provider_name, "model": model_name},
+        ).scalar_one()
+    )
+
+    sessions = sessionmaker(bind=conn, join_transaction_mode="create_savepoint")
+    with sessions() as db:
+        stored_plan = db.get(Syllabus, UUID(sid))
+        stored_candidate = db.get(AssessmentCandidate, UUID(cid))
+        assert stored_plan is not None
+        assert stored_plan.provedor_ia == provider_name
+        assert stored_plan.modelo_ia == model_name
+        assert stored_candidate is not None
+        assert stored_candidate.provedor_ia == provider_name
+        assert stored_candidate.modelo_ia == model_name
+
+    assume(conn, users["student"])
+    result = review(conn, sid, [selection(cid)])
+    assert result["itens"][0]["evento_pessoal_id"] is not None
+
