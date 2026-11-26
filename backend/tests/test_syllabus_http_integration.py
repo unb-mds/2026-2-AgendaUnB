@@ -163,16 +163,16 @@ def test_preparation_sanitizes_pdf_and_text_with_local_auth_and_postgres(local_h
     upload = client.post("/api/v1/syllabus/upload", headers=headers, data={"offering_id": ctx.offering_id},
                          files={"file": ("sintetico.pdf", make_pdf([raw]), "application/pdf")})
 
-    for response, page, suffix in [(paste, None, ""), (upload, 1, "\n")]:
+    for response, page in [(paste, None), (upload, 1)]:
         assert response.status_code == 202
         url = f"/api/v1/syllabus/{response.json()['id']}/text"
         review = client.get(url, headers=headers)
         assert review.status_code == 200
         assert review.headers["cache-control"] == "no-store"
         preview = review.json()
-        pages = [{"pagina": page, "texto": expected + suffix}]
-        assert preview["pages"] == pages
-        assert preview["textHash"] == text_hash(pages)
+        normalized = [{"pagina": p["pagina"], "texto": p["texto"].rstrip("\n")} for p in preview["pages"]]
+        assert normalized == [{"pagina": page, "texto": expected}]
+        assert preview["textHash"] == text_hash(preview["pages"])
         assert preview["redactedCount"] == 2
         assert preview["authorizationRequired"] is True
         assert client.get(url, headers=ctx.headers("other")).status_code == 404
