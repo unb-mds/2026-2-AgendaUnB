@@ -105,6 +105,8 @@ class GeminiProvider:
     def __init__(self, config: ProcessingConfig, *, transport=None):
         self.config = config
         self.transport = transport
+        self.provider_name = "google"
+        self.model_name = config.model
 
     def extract(self, pages: list[TextPage]) -> str:
         if not self.config.api_key or not self.config.provider_terms_ready:

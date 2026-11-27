@@ -50,6 +50,15 @@ def test_isolated_success_returns_only_validated_results():
     assert output.extraction.candidates == []
 
 
+def test_isolated_success_preserves_fallback_provider_metadata():
+    provider = SyntheticProvider()
+    provider.provider_name = "groq"
+    provider.model_name = "llama-3.3-70b-versatile"
+    output = run_isolated("sintetico.pdf", SyntheticStorage(), provider, ProcessingConfig())
+    assert output.provider_name == "groq"
+    assert output.model_name == "llama-3.3-70b-versatile"
+
+
 @pytest.mark.parametrize("stage", ["storage", "parser", "provider"])
 def test_entire_attempt_has_deadline_and_leaves_no_child(stage):
     context = multiprocessing.get_context("spawn")
@@ -101,3 +110,16 @@ def test_run_in_worker_enforces_deadline_and_sanitizes_errors(capsys):
     assert timed_out.value.retryable is True
     assert timed_out.value.reason == "attempt_timeout"
     assert time.monotonic() - started < 2
+
+
+def test_run_in_worker_preserves_fallback_provider_metadata():
+    pages = [{"pagina": 1, "texto": "Plano sintético, sem cronograma."}]
+    provider = SyntheticProvider()
+    provider.provider_name = "groq"
+    provider.model_name = "llama-3.3-70b-versatile"
+    provider.fallback_used = True
+    provider.primary_error_reason = "http_503"
+    output = run_in_worker(pages, None, provider, ProcessingConfig())
+    assert output.provider_name == "groq"
+    assert output.model_name == "llama-3.3-70b-versatile"
+    assert output.fallback_used and output.primary_error_reason == "http_503"

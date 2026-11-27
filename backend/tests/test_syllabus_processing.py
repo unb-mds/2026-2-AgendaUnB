@@ -12,6 +12,7 @@ from sqlalchemy import func, select
 from src.database.models import AssessmentCandidate, PersonalEvent, Profile, Syllabus
 from src.modules.syllabus.extraction import TextPage, extract_pages, validate_candidates
 from src.modules.syllabus.gemini import GeminiProvider
+from src.modules.syllabus.fallback_provider import FallbackRoutingProvider, OpenAICompatibleFallbackProvider
 from src.modules.syllabus.processing_config import ProcessingConfig, ProcessingError
 from src.modules.syllabus.processing_task import process_document, run_isolated
 from src.modules.syllabus.worker import SyllabusWorker
@@ -378,6 +379,84 @@ def test_provider_errors_are_sanitized(status, retry, caplog):
     assert "SEGREDO" not in str(caught.value) + caplog.text
 
 
+def test_fallback_uses_fixed_allowlist_and_openai_compatible_payload():
+    seen = {}
+    def handler(request):
+        seen["url"] = str(request.url)
+        seen["body"] = json.loads(request.content)
+        assert request.headers["Authorization"] == "Bearer fallback-secret"
+        assert "fallback-secret" not in request.content.decode()
+        return httpx.Response(200, json={"choices": [{"message": {"content": '{"candidatos": []}'}}]})
+    config = ProcessingConfig(provider_terms_ready=True, fallback_provider="groq",
+                              fallback_api_key="fallback-secret")
+    fallback = OpenAICompatibleFallbackProvider(config, transport=httpx.MockTransport(handler))
+    assert fallback.extract([TextPage(1, "texto aprovado")]) == '{"candidatos": []}'
+    assert seen["url"] == "https://api.groq.com/openai/v1/chat/completions"
+    assert seen["body"]["model"] == "llama-3.3-70b-versatile"
+    assert "store" not in seen["body"] and "tools" not in seen["body"]
+    assert seen["body"]["temperature"] == 0
+    assert json.loads(seen["body"]["messages"][1]["content"])["paginas"][0]["texto"] == "texto aprovado"
+
+
+def test_fallback_only_runs_after_gemini_remote_failure_and_empty_success_is_final():
+    class Primary:
+        calls = 0
+        def extract(self, pages):
+            self.calls += 1
+            return '{"candidatos": []}'
+    class Fallback:
+        calls = 0
+        def extract(self, pages):
+            self.calls += 1
+            return '{"candidatos": []}'
+    primary, fallback = Primary(), Fallback()
+    routed = FallbackRoutingProvider(primary, fallback)
+    assert routed.extract([TextPage(1, "texto")]) == '{"candidatos": []}'
+    assert primary.calls == 1 and fallback.calls == 0
+
+    def fail(pages):
+        raise ProcessingError("falha_ia", retryable=True, reason="http_503")
+    primary.extract = fail
+    routed = FallbackRoutingProvider(primary, fallback)
+    assert routed.extract([TextPage(1, "texto")]) == '{"candidatos": []}'
+    assert fallback.calls == 1
+    assert routed.fallback_used and routed.primary_error_reason == "http_503"
+
+
+def test_invalid_gemini_schema_uses_fallback_but_zero_candidates_does_not():
+    class Provider:
+        def __init__(self, result):
+            self.result = result
+            self.calls = 0
+        def extract(self, pages):
+            self.calls += 1
+            return self.result
+    primary = Provider('{"not_candidates": []}')
+    fallback = Provider('{"candidatos": []}')
+    assert FallbackRoutingProvider(primary, fallback).extract([TextPage(1, "ementa")]) == '{"candidatos": []}'
+    assert primary.calls == 1 and fallback.calls == 1
+
+    primary = Provider('{"candidatos": []}')
+    fallback = Provider('{"candidatos": []}')
+    FallbackRoutingProvider(primary, fallback).extract([TextPage(1, "ementa")])
+    assert primary.calls == 1 and fallback.calls == 0
+
+
+def test_fallback_is_blocked_without_terms_and_openrouter_requires_free_model():
+    fallback = OpenAICompatibleFallbackProvider(ProcessingConfig(
+        fallback_provider="mistral", fallback_api_key="key"))
+    with pytest.raises(ProcessingError) as caught:
+        FallbackRoutingProvider(type("Primary", (), {"extract": lambda self, pages: (_ for _ in ()).throw(
+            ProcessingError("falha_ia", retryable=True, reason="http_503"))})(), fallback).extract([TextPage(1, "texto")])
+    assert caught.value.reason == "fallback_missing_terms"
+    with pytest.raises(ValueError, match="gratuitos"):
+        ProcessingConfig(provider_terms_ready=True, fallback_provider="openrouter", fallback_api_key="key",
+                         fallback_model="vendor/private-model")
+    with pytest.raises(ValueError, match="inválido"):
+        ProcessingConfig(provider_terms_ready=True, fallback_provider="openrouter", fallback_api_key="key",
+                         fallback_model="vendor/model:free\nAuthorization: leaked")
+
+
 @pytest.fixture
 def job(api):
     _, sessions, auth, _ = api
@@ -496,6 +575,24 @@ def test_changed_snapshot_cannot_reach_provider(job):
     assert worker.provider.calls == 0
     with sessions() as db:
         assert db.get(Syllabus, sid).erro_codigo == "pdf_invalido"
+
+
+def test_worker_persists_fallback_provider_and_releases_gemini_reservation(job, caplog):
+    worker, sessions, sid = job
+    worker.provider.provider_name = "groq"
+    worker.provider.model_name = "llama-3.3-70b-versatile"
+    worker.provider.fallback_used = True
+    worker.provider.primary_error_reason = "http_503"
+    worker.runner = process_document
+    with caplog.at_level(logging.INFO, logger="agenda_unb.syllabus.worker"):
+        assert worker.run_once()
+    with sessions() as db:
+        plan = db.get(Syllabus, sid)
+        candidate = db.scalar(select(AssessmentCandidate).where(AssessmentCandidate.plano_id == sid))
+        assert plan.provedor_ia == "groq" and plan.modelo_ia == "llama-3.3-70b-versatile"
+        assert candidate.provedor_ia == "groq" and candidate.modelo_ia == "llama-3.3-70b-versatile"
+        assert plan.cost_reserved_usd == Decimal("0")
+    assert "fallback_used=True" in caplog.text and "primary_error_reason=http_503" in caplog.text
 
 
 def test_atomic_candidate_commit_failure_rolls_back(job, monkeypatch):
@@ -660,6 +757,19 @@ def test_processing_config_from_env_reads_resilience_overrides(monkeypatch):
     assert config.max_attempts == 4
     assert config.retry_delay_seconds == 6
     assert config.max_file_cost_usd == Decimal("0.15")
+
+
+def test_fallback_environment_is_opt_in_and_secret_is_hidden(monkeypatch):
+    monkeypatch.setenv("SYLLABUS_FALLBACK_PROVIDER", "groq")
+    monkeypatch.setenv("SYLLABUS_FALLBACK_API_KEY", "fallback-secret")
+    monkeypatch.delenv("SYLLABUS_FALLBACK_MODEL", raising=False)
+    config = ProcessingConfig.from_env()
+    assert config.fallback_model == "llama-3.3-70b-versatile"
+    assert "fallback-secret" not in repr(config)
+
+    monkeypatch.delenv("SYLLABUS_FALLBACK_API_KEY")
+    inactive = ProcessingConfig.from_env()
+    assert inactive.fallback_provider == "groq" and inactive.fallback_api_key == ""
 
 
 @pytest.mark.parametrize("failure", ["missing_policies", "connection_error"])
@@ -1028,6 +1138,20 @@ def test_local_syllabus_readiness_checks_dialect_flags_and_secrets(monkeypatch):
     assert code == 0
     assert "[OK]" in joined and "gemini-3.5-flash-lite" in joined
     assert "segredo-teste" not in joined
+
+    fallback_env = {
+        **ready_env,
+        "SYLLABUS_FALLBACK_PROVIDER": "groq",
+        "SYLLABUS_FALLBACK_MODEL": "llama-3.3-70b-versatile",
+    }
+    code, messages = privacy_module.check_local_syllabus_readiness(object(), fallback_env)
+    joined = "\n".join(messages)
+    assert code == 0 and "fallback inativo" in joined
+    fallback_env["SYLLABUS_FALLBACK_API_KEY"] = "fallback-secret"
+    code, messages = privacy_module.check_local_syllabus_readiness(object(), fallback_env)
+    joined = "\n".join(messages)
+    assert code == 0 and "[OK] Fallback explícito habilitado (provedor: groq" in joined
+    assert "fallback-secret" not in joined
 
     partial_env = {
         "GEMINI_API_KEY": "segredo-teste",
