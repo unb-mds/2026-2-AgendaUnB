@@ -48,7 +48,7 @@ test('primeira carga 503 recupera automaticamente; busca vazia informa o resulta
     ],
   } }));
   await page.clock.fastForward(15000);
-  const period = catalog(page).getByRole('button', { name: 'Ano/Período' });
+  const period = catalog(page).getByRole('button', { name: 'Semestre', exact: true });
   await expect(period).toContainText('2026.2');
   await period.press('Enter');
   await catalog(page).getByRole('button', { name: '2026.1', exact: true }).press('Enter');
@@ -72,6 +72,45 @@ test('primeira carga 503 recupera automaticamente; busca vazia informa o resulta
   expect(searchParams.get('semester')).toBe('1');
   expect(searchParams.get('unit')).toBe('gama');
   await expect(catalog(page).getByText('0 turmas encontradas')).toBeVisible();
+});
+
+test('cada etapa exibe um seletor de semestre e mantém a escolha entre as etapas', async ({ page }) => {
+  const current = makeOffer(1);
+  const previous = { ...makeOffer(2), semester: 1 };
+  const offers = [current, previous];
+  await setupSemester(page, { offers, followed: [current] });
+  await page.route('**/api/v1/class-offerings/filters', route => route.fulfill({
+    json: { periods: ['2026.2', '2026.1'], units: [] },
+  }));
+  await page.route('**/api/v1/class-offerings?*', route => {
+    const semester = Number(new URL(route.request().url()).searchParams.get('semester'));
+    const items = offers.filter(offer => offer.semester === semester);
+    return route.fulfill({ json: { items, total: items.length } });
+  });
+
+  await page.goto('/plano-de-ensino?etapa=1');
+  const selector = page.getByRole('button', { name: 'Semestre', exact: true });
+  const stepper = page.getByRole('navigation', { name: 'Etapas dos planos de ensino' });
+  const search = catalog(page).getByRole('button', { name: 'Buscar turmas' });
+  await expect(selector).toHaveCount(1);
+  await expect(selector).toHaveText(/2026\.2/);
+  await search.click();
+  await expect(catalog(page).locator('summary')).toContainText(current.subject_name);
+  await selector.click();
+  await page.getByRole('button', { name: '2026.1', exact: true }).click();
+  await expect(catalog(page).locator('summary')).toHaveCount(0);
+  await search.click();
+  await expect(catalog(page).locator('summary')).toContainText(previous.subject_name);
+
+  await stepper.getByRole('button', { name: /Organizar datas/ }).click();
+  await expect(selector).toHaveCount(1);
+  await expect(selector).toHaveText(/2026\.1/);
+  await expect(page.getByRole('tab', { name: 'Planos compartilhados da turma' })).toHaveCount(0);
+  await selector.click();
+  await page.getByRole('button', { name: '2026.2', exact: true }).click();
+  await stepper.getByRole('button', { name: /Selecionar turmas/ }).click();
+  await expect(selector).toHaveCount(1);
+  await expect(selector).toHaveText(/2026\.2/);
 });
 
 test('visitante recebe convite de login sem demonstração nem acesso a planos', async ({ page }) => {

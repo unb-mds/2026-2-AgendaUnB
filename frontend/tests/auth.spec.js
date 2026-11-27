@@ -272,6 +272,17 @@ test('filtros acompanham a largura da busca e recolhem no celular', async ({ pag
   const exportButton = page.getByRole('button', { name: 'Exportar agenda', exact: true });
   const createButton = page.getByRole('button', { name: 'Criar Evento', exact: true });
   const [filterBox, exportBox, createBox] = await Promise.all([toggle, exportButton, createButton].map(button => button.boundingBox()));
+  const mobileActions = [toggle, createButton];
+  const personalFontSizes = await Promise.all(mobileActions.map(button => button.evaluate(el => getComputedStyle(el).fontSize)));
+  await expect(exportButton).toHaveCSS('font-size', personalFontSizes[0]);
+  await page.getByRole('button', { name: 'Eventos Públicos', exact: true }).click();
+  await expect(exportButton).toBeHidden();
+  expect(await Promise.all(mobileActions.map(button => button.boundingBox()))).toEqual([filterBox, createBox]);
+  for (const [index, button] of mobileActions.entries()) {
+    await expect(button).toHaveCSS('font-size', personalFontSizes[index]);
+  }
+  await page.getByRole('button', { name: 'Meus Eventos', exact: true }).click();
+
   expect(exportBox.y).toBe(filterBox.y);
   expect(createBox.y).toBe(filterBox.y);
   expect(exportBox.x).toBeGreaterThanOrEqual(filterBox.x + filterBox.width);
@@ -305,6 +316,61 @@ test('filtros acompanham a largura da busca e recolhem no celular', async ({ pag
   expect(clearBox.x + clearBox.width).toBeLessThanOrEqual(startBox.x + startBox.width);
   await clear.click();
   await expect(toggle.locator('.events-filter-count')).toHaveCount(0);
+});
+
+test('busca de eventos combina campos, prioriza títulos e usa o destaque dos filtros', async ({ page }) => {
+  const session = calendarSession('email');
+  await authClient(page, `async getSession() { return { data: { session: ${JSON.stringify(session)} } }; },`, session);
+  const gama = 'Faculdade do Gama (FCTE)';
+  await page.route('**/api/v1/events?*', route => route.fulfill({ json: [
+    { id: 'roda', title: 'Roda de conversa', description: 'Inteligência artificial na UnB.', campus: gama, category: 'Cultura', starts_at: '2026-11-21T17:00:00Z' },
+    { id: 'ia', title: 'Inteligência Artificial', campus: gama, category: 'Extensão', starts_at: '2026-11-22T17:00:00Z' },
+    { id: 'inclusao', title: 'Inteligência Artificial e inclusão', campus: 'Faculdade de Ceilândia (FCTS)', starts_at: '2026-11-23T17:00:00Z' },
+  ] }));
+  await page.route('**/api/v1/me/events', route => route.fulfill({ json: [
+    { id: 'calculo', title: 'Prova de Cálculo', location: 'Anfiteatro 12', starts_at: '2026-11-22T17:00:00Z' },
+  ] }));
+  await page.route('**/api/v1/me/saved-events', route => route.fulfill({ json: [] }));
+  await page.route('**/api/v1/me/google-calendar/connection', route => route.fulfill({ json: { connected: false } }));
+  await page.goto('/eventos?aba=publicos');
+
+  const search = page.getByRole('searchbox', { name: 'Buscar eventos e comunicados' });
+  const area = page.getByRole('button', { name: 'Filtrar por área' });
+  const personalTab = page.getByRole('button', { name: 'Meus Eventos' });
+  const titles = page.locator('.event-card-title');
+  const neutralBorder = await search.evaluate(input => getComputedStyle(input).borderColor);
+  await expect(titles).toHaveText(['Roda de conversa', 'Inteligência Artificial', 'Inteligência Artificial e inclusão']);
+  await area.hover();
+  const selectedBorder = await area.evaluate(async button => {
+    await Promise.all(button.getAnimations().map(animation => animation.finished));
+    return getComputedStyle(button).borderColor;
+  });
+  expect(selectedBorder).not.toBe(neutralBorder);
+  await search.hover();
+  await expect(search).toHaveCSS('border-color', selectedBorder);
+  await area.hover();
+  await personalTab.focus();
+  await page.keyboard.press('Tab');
+  await expect(search).toBeFocused();
+  await expect(search).toHaveCSS('outline-color', selectedBorder);
+  await expect(search).toHaveCSS('border-color', selectedBorder);
+
+  await search.fill('inteligencia artificial');
+  await expect(titles).toHaveText(['Inteligência Artificial', 'Inteligência Artificial e inclusão', 'Roda de conversa']);
+  await search.fill('GAMA, de intelig artificial');
+  await expect(titles).toHaveText(['Inteligência Artificial', 'Roda de conversa']);
+  await area.click();
+  await page.getByRole('checkbox', { name: 'Cultura', exact: true }).click();
+  await expect(area).toHaveCSS('border-color', selectedBorder);
+  await expect(search).toHaveCSS('border-color', selectedBorder);
+  await expect(titles).toHaveText(['Roda de conversa']);
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'Limpar Filtros' }).click();
+  await expect(search).toHaveCSS('border-color', neutralBorder);
+
+  await personalTab.click();
+  await search.fill('anfiteatro calc');
+  await expect(titles).toHaveText(['Prova de Cálculo']);
 });
 
 test('Google com permissão exporta apenas os eventos selecionados', async ({ page }) => {

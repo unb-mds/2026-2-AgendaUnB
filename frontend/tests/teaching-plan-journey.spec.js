@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { confirmation, makeOffer, makePlan, setupSemester } from './fixtures/semester.js';
+import { confirmation, makeCandidate, makeOffer, makePlan, setupSemester } from './fixtures/semester.js';
 
 function makeSharedVersion(overrides = {}) {
   return {
@@ -103,36 +103,62 @@ test('mascote Nyx alterna dicas no estado vazio', async ({ page }) => {
   await expect(page.locator('.halftone-pet-speech')).not.toHaveText(initialSpeech || '');
 });
 
-test('novo seguidor importa sem reenviar arquivo, vota com divergência e autor publica, revisa e retira', async ({ page }) => {
+test('a biblioteca atualiza após a extração e respeita a retirada da versão inicial', async ({ page }) => {
   const offer = makeOffer(1);
-  const ownPlan = {
-    id: 'plan-own',
-    userId: 'student-test',
-    offeringId: offer.id,
-    fileName: 'meu-plano.pdf',
-    disciplina: offer.subject_name,
-    ano: 2026,
-    semestre: 2,
-    status: 'concluido',
-    extractedEventsCount: 1,
-    createdAt: '2026-11-16T09:00:00Z',
-    candidates: [
-      {
-        id: 'cand-own-1',
-        title: 'Prova 1 Própria',
-        type: 'prova',
-        status: 'pendente',
-        ambiguous: false,
-        ambiguousFields: [],
-        suggestedDate: '2026-11-28',
-        suggestedTime: '14:00:00',
-        sourcePage: 1,
-        sourceExcerpt: 'Prova 1 em 28/11/2026 às 14h.',
-        versionId: 'ver-own-1',
-      },
-    ],
-  };
-  await setupSemester(page, { offers: [offer], followed: [], plans: [ownPlan] });
+  const plan = makePlan(1, { status: 'processando', extractedEventsCount: 0 });
+  const sharedVersion = makeSharedVersion({ author_id: plan.userId, can_withdraw: true });
+  const candidate = makeCandidate(1, { title: sharedVersion.candidates[0].title, versionId: sharedVersion.id });
+  const { data } = await setupSemester(page, { offers: [offer], plans: [plan] });
+  let shared = false;
+  let withdrawnAt = null;
+  await page.route(`**/api/v1/syllabus/${plan.id}`, route => {
+    const current = data.get(plan.id);
+    if (current.status === 'concluido' && !withdrawnAt) shared = true;
+    return route.fulfill({ json: current });
+  });
+  await page.route(`**/api/v1/class-offerings/${offer.id}/shared-plans?*`, route => route.fulfill({
+    json: { items: shared ? [sharedVersion] : [], total: Number(shared) },
+  }));
+  const versionResponse = () => ({
+    id: sharedVersion.id, number: 1, authorId: plan.userId, withdrawnAt,
+    visibility: shared ? 'compartilhada' : 'privada', candidates: [candidate],
+  });
+  await page.route(`**/api/v1/syllabus/${plan.id}/versions`, route => route.fulfill({
+    json: { items: [versionResponse()], total: 1 },
+  }));
+  const sharingMethods = [];
+  await page.route(`**/api/v1/syllabus/${plan.id}/versions/${sharedVersion.id}/sharing`, route => {
+    sharingMethods.push(route.request().method());
+    shared = false;
+    withdrawnAt = '2026-11-16T17:00:00Z';
+    return route.fulfill({ json: versionResponse() });
+  });
+
+  await page.goto(`/plano-de-ensino?oferta=${offer.id}&plano=${plan.id}&visao=compartilhados`);
+  const library = page.getByRole('region', { name: 'Planos compartilhados da turma' });
+  const emptyLibrary = library.getByText('Ainda não há plano compartilhado nesta oferta.');
+  await expect(emptyLibrary).toBeVisible();
+
+  data.set(plan.id, { ...plan, status: 'concluido', extractedEventsCount: 1, candidates: [candidate] });
+  await expect(page.getByText('Versão 1 · Compartilhada com a turma')).toBeVisible({ timeout: 12000 });
+  await expect(library.getByText(candidate.title, { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Compartilhar com a turma', exact: true })).toHaveCount(0);
+  await expect(emptyLibrary).toBeHidden();
+
+  const details = page.getByRole('region', { name: offer.subject_name, exact: true });
+  await details.getByRole('button', { name: 'Retirar compartilhamento' }).click();
+  await details.getByRole('button', { name: 'Confirmar retirada' }).click();
+  await expect(details.getByText('Versão 1 · Privada')).toBeVisible();
+  await expect(details.getByText('O compartilhamento foi retirado.')).toBeVisible();
+  await expect(emptyLibrary).toBeVisible();
+  await expect(page.getByRole('button', { name: /Compartilhar com a turma|Publicar versão/ })).toHaveCount(0);
+  expect(sharingMethods).toEqual(['DELETE']);
+});
+
+test('novo seguidor importa sem reenviar arquivo, vota com divergência e autor publica e retira revisão', async ({ page }) => {
+  const offer = makeOffer(1);
+  const alreadyFollowed = makeOffer(2);
+  await setupSemester(page, { offers: [offer, alreadyFollowed], followed: [alreadyFollowed] });
 
   let versions = [
     makeSharedVersion({
@@ -181,9 +207,8 @@ test('novo seguidor importa sem reenviar arquivo, vota com divergência e autor 
   ];
   const confirmCalls = [];
   const revisionCalls = [];
-  let sharedOwn = false;
 
-  await page.route('**/api/v1/class-offerings/*/shared-plans?*', route => route.fulfill({
+  await page.route(`**/api/v1/class-offerings/${offer.id}/shared-plans?*`, route => route.fulfill({
     json: {
       membership_type: 'autodeclarado',
       shared_content_notice: 'Vínculo autodeclarado com a turma. Votação sinaliza divergência sem alterar datas.',
@@ -224,30 +249,6 @@ test('novo seguidor importa sem reenviar arquivo, vota com divergência e autor 
     return route.fulfill({ json: confirmation({ id: 'plan-1' }, body.candidates) });
   });
   await page.route('**/api/v1/syllabus/*/versions', route => {
-    if (route.request().method() === 'GET') {
-      return route.fulfill({
-        json: {
-          syllabusId: 'plan-own',
-          offeringId: offer.id,
-          membershipType: 'autodeclarado',
-          sharedContentNotice: 'Vínculo autodeclarado.',
-          items: [
-            {
-              id: 'ver-own-1',
-              syllabusId: 'plan-own',
-              offeringId: offer.id,
-              number: 1,
-              visibility: sharedOwn ? 'compartilhada' : 'privada',
-              authorId: 'student-test',
-              authorRole: 'student',
-              sharedContentNotice: 'Vínculo autodeclarado.',
-              candidates: [],
-            },
-          ],
-          total: 1,
-        },
-      });
-    }
     const body = route.request().postDataJSON();
     revisionCalls.push(body);
     const created = makeSharedVersion({
@@ -291,44 +292,6 @@ test('novo seguidor importa sem reenviar arquivo, vota com divergência e autor 
   });
   await page.route('**/api/v1/syllabus/*/versions/*/sharing', route => {
     const versionId = route.request().url().split('/').at(-2);
-    if (route.request().method() === 'PUT') {
-      sharedOwn = true;
-      const ownShared = makeSharedVersion({
-        id: 'ver-own-1',
-        syllabus_id: 'plan-own',
-        number: 1,
-        author_id: 'student-test',
-        author_name: 'Estudante',
-        author_role: 'student',
-        confirm_count: 4,
-        updated_at: '2026-11-16T15:00:00Z',
-        can_withdraw: true,
-        can_edit: true,
-        candidates: [
-          {
-            id: 'cand-own-1',
-            title: 'Prova 1 Própria',
-            type: 'prova',
-            starts_at: '2026-11-28T14:00:00-03:00',
-            suggested_date: '2026-11-28',
-            suggested_time: '14:00:00',
-            ambiguous: false,
-            ambiguous_fields: [],
-            source_page: 1,
-            source_excerpt: 'Prova 1 em 28/11/2026 às 14h.',
-            order: 0,
-            imported: false,
-            modified_since_import: false,
-            confirm_count: 0,
-            contest_count: 0,
-            divergent: false,
-            my_vote: null,
-          },
-        ],
-      });
-      versions = [ownShared, ...versions];
-      return route.fulfill({ json: { id: versionId, syllabusId: 'plan-own', number: 1, visibility: 'compartilhada' } });
-    }
     versions = versions.filter(v => v.id !== versionId);
     return route.fulfill({ json: { id: versionId, syllabusId: 'plan-own', number: 2, visibility: 'privada', withdrawnAt: '2026-11-16T17:00:00Z' } });
   });
@@ -350,10 +313,11 @@ test('novo seguidor importa sem reenviar arquivo, vota com divergência e autor 
   await catalog.locator('summary').filter({ hasText: 'Disciplina 1' }).click();
   await catalog.getByRole('checkbox', { name: 'Selecionar turma 01 de Disciplina 1' }).check();
   await catalog.getByRole('button', { name: 'Seguir 1 turma selecionada' }).click();
-  await page.getByRole('button', { name: 'Avançar para organizar datas' }).first().click();
-  await page.getByRole('tab', { name: 'Planos compartilhados da turma' }).click();
+  await catalog.getByRole('button', { name: 'Avançar para organizar datas' }).click();
 
   // Em empate de 1 voto entre v1 e v2, a versão mais recente (v2) aparece como padrão e diferencia perfil professor.
+  await expect(page.getByRole('tab', { name: 'Planos compartilhados da turma', selected: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Enviar PDF e extrair' })).toBeEnabled();
   const library = page.getByRole('region', { name: 'Planos compartilhados da turma' });
   await expect(library).toBeVisible();
   const card = library.locator('.shared-version-card');
@@ -395,10 +359,38 @@ test('novo seguidor importa sem reenviar arquivo, vota com divergência e autor 
   await card.locator('.shared-version-toolbar').getByRole('button', { name: 'Confirmar retirada' }).click();
   await expect(library.getByText(/Versão 2 retirada da turma/)).toBeVisible();
 
-  // Autora compartilha voluntariamente o próprio plano privado após listagem vazia/restante.
-  await library.getByRole('button', { name: 'Compartilhar com a turma' }).click();
-  await library.getByRole('button', { name: 'Confirmar publicação' }).click();
-  await expect(card).toContainText('Prova 1 Própria');
+});
+
+test('seleciona a aba por turma e mantém disponível o envio de um novo plano', async ({ page }) => {
+  await setupSemester(page, { offers: [makeOffer(1), makeOffer(2)] });
+  await page.route('**/api/v1/class-offerings/class-1/shared-plans?*', route => route.fulfill({
+    json: { items: [makeSharedVersion()], total: 1 },
+  }));
+  const text = 'Prova da turma em 25 de novembro.';
+  await page.route('**/api/v1/syllabus/text', route => {
+    expect(route.request().postDataJSON()).toEqual({ text, offering_id: 'class-1' });
+    return route.fulfill({ status: 202, json: makePlan(1, { fileName: 'Texto colado', status: 'processando' }) });
+  });
+
+  await page.goto('/plano-de-ensino?oferta=class-2');
+  await expect(page.getByRole('tab', { name: 'Minhas avaliações', selected: true })).toBeVisible();
+  const queue = page.getByRole('complementary', { name: 'Seus planos' });
+  await queue.getByRole('button', { name: 'Turma dos planos' }).click();
+  await queue.getByRole('button', { name: 'Disciplina 1', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Importar 1 avaliação para a agenda' })).toBeVisible();
+  const reviews = page.getByRole('tab', { name: 'Minhas avaliações' });
+  const shared = page.getByRole('tab', { name: 'Planos compartilhados da turma' });
+  await reviews.click();
+  await expect(reviews).toHaveAttribute('aria-selected', 'true');
+  await shared.click();
+
+  await queue.getByRole('tab', { name: 'Colar texto' }).click();
+  const input = queue.getByRole('textbox', { name: 'Texto do plano' });
+  await page.getByRole('button', { name: 'Enviar plano para esta turma' }).click();
+  await expect(input).toBeFocused();
+  await input.fill(text);
+  await queue.getByRole('button', { name: 'Enviar texto e extrair' }).click();
+  await expect(queue.getByRole('button', { name: 'Processando: Texto colado' })).toBeVisible();
 });
 
 for (const width of [360, 768, 1365]) for (const theme of ['dark', 'light']) {
@@ -427,6 +419,8 @@ for (const width of [360, 768, 1365]) for (const theme of ['dark', 'light']) {
     }));
     await page.goto('/plano-de-ensino');
     if (theme === 'light') await page.getByRole('button', { name: /tema/i }).click();
+    await expect(page.getByRole('heading', { name: 'Planos compartilhados da turma' })).toBeVisible();
+    await page.getByRole('tab', { name: 'Minhas avaliações' }).click();
     const upload = page.getByRole('button', { name: 'Ir para envio de plano', exact: true });
     const openShared = page.getByRole('button', { name: 'Ver planos compartilhados', exact: true });
     await expect(openShared).toBeVisible();

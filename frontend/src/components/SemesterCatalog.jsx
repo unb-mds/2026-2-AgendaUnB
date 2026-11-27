@@ -36,15 +36,15 @@ export default function SemesterCatalog({
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState({});
   const [message, setMessage] = useState('');
-  const [justFollowed, setJustFollowed] = useState(false);
+  const [justFollowed, setJustFollowed] = useState([]);
   const request = useRef(null);
   const { data: filters, error: filtersError, retry: retryFilters } = useSyllabusResource(userId, catalogApi.filters);
-  const load = useCallback(async signal => validateResults(await catalogApi.search({ ...search, limit: PAGE_SIZE, offset }, signal)), [search, offset]);
-  const catalog = useSyllabusResource(search ? JSON.stringify([userId, search, offset]) : null, load);
-  const [catalogPeriod, setCatalogPeriod] = useState('');
   const choices = [...new Set([...(filters?.periods || []), ...periods])].sort().reverse();
-  const selectedPeriod = catalogPeriod || period || choices[0] || '';
+  const selectedPeriod = period || choices[0] || '';
   const periodOptions = choices.includes(selectedPeriod) || !selectedPeriod ? choices : [selectedPeriod, ...choices];
+  const activeSearch = search && `${search.year}.${search.semester}` === selectedPeriod ? search : null;
+  const load = useCallback(async signal => validateResults(await catalogApi.search({ ...activeSearch, limit: PAGE_SIZE, offset }, signal)), [activeSearch, offset]);
+  const catalog = useSyllabusResource(activeSearch ? JSON.stringify([userId, activeSearch, offset]) : null, load);
 
   useEffect(() => () => request.current?.abort(), []);
   useEffect(() => {
@@ -59,8 +59,8 @@ export default function SemesterCatalog({
     setBusy(true);
     setErrors({});
     setMessage('');
-    setJustFollowed(false);
-    let saved = 0;
+    setJustFollowed([]);
+    const saved = [];
     try {
       for (const offer of offers) {
         if (controller.signal.aborted) break;
@@ -73,15 +73,15 @@ export default function SemesterCatalog({
             delete next[offer.id];
             return next;
           });
-          saved++;
+          saved.push(offer.id);
         } catch (error) {
           if (!controller.signal.aborted) setErrors(current => ({ ...current, [offer.id]: error.message || 'Tente novamente.' }));
         }
       }
-      if (!controller.signal.aborted && saved) {
-        setJustFollowed(following);
+      if (!controller.signal.aborted && saved.length) {
+        if (following) setJustFollowed(saved);
         setMessage(following
-          ? `${saved} ${saved === 1 ? 'turma adicionada' : 'turmas adicionadas'} à sua lista.`
+          ? `${saved.length} ${saved.length === 1 ? 'turma adicionada' : 'turmas adicionadas'} à sua lista.`
           : 'Turma removida da sua lista. Seus compromissos foram preservados.');
       }
     } finally {
@@ -104,11 +104,8 @@ export default function SemesterCatalog({
         catalog.retry();
       }}>
         <div className="semester-field semester-catalog-filter">
-          <span>Ano/Período</span>
-          <CustomSelect ariaLabel="Ano/Período" value={selectedPeriod} onChange={value => {
-            setCatalogPeriod(value);
-            onPeriodChange?.(value);
-          }} placeholder="Selecione"
+          <span>Semestre</span>
+          <CustomSelect ariaLabel="Semestre" value={selectedPeriod} onChange={onPeriodChange} placeholder="Selecione"
             allowClear={false} disabled={!periodOptions.length} options={periodOptions.map(value => ({ value, label: value }))} />
         </div>
         <div className="semester-field semester-catalog-filter semester-unit-filter">
@@ -128,7 +125,7 @@ export default function SemesterCatalog({
       <Feedback error={catalog.error?.message} onRetry={catalog.retry} />
       <p role="status">{catalog.loading ? 'Buscando turmas…' : catalog.data ? `${catalog.data.total} ${catalog.data.total === 1 ? 'turma encontrada' : 'turmas encontradas'}` : ''}</p>
       {catalog.data?.stale && <p>Catálogo desatualizado. A busca usa os últimos dados disponíveis.</p>}
-      {!search && <p className="semester-muted">Busque pelo nome da matéria, código ou professor. Use a unidade para refinar os resultados.</p>}
+      {!activeSearch && <p className="semester-muted">Busque pelo nome da matéria, código ou professor. Use a unidade para refinar os resultados.</p>}
       {catalog.data?.total === 0 && <p className="semester-muted">Tente outro nome ou código, ou busque em todas as unidades.</p>}
       <div className="semester-catalog-results" aria-busy={catalog.loading}>
         {groupOffers(catalog.data?.items || []).map(unitGroup => <section className="semester-catalog-unit" key={unitGroup.key} aria-label={unitGroup.name}>
@@ -185,8 +182,9 @@ export default function SemesterCatalog({
           {message && (
             <div className="semester-catalog-status-row">
               <p role="status">{message}</p>
-              {justFollowed && followed.length > 0 && onContinue && (
-                <button type="button" className="manage-button primary" onClick={onContinue}>
+              {justFollowed.length > 0 && followed.length > 0 && onContinue && (
+                <button type="button" className="manage-button primary"
+                  onClick={() => onContinue(justFollowed.length === 1 ? justFollowed[0] : undefined)}>
                   Avançar para organizar datas<Icon>arrow_forward</Icon>
                 </button>
               )}
@@ -206,7 +204,7 @@ export default function SemesterCatalog({
           <p className="semester-muted">Turmas em que você declarou vínculo para enviar planos ou importar datas compartilhadas.</p>
         </div>
         {followed.length > 0 && onContinue && (
-          <button type="button" className="manage-button primary" onClick={onContinue}>
+          <button type="button" className="manage-button primary" onClick={() => onContinue()}>
             Avançar para organizar datas<Icon>arrow_forward</Icon>
           </button>
         )}
