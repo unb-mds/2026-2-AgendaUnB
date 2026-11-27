@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 from unittest.mock import create_autospec
 from uuid import UUID, uuid4
 
+import httpx
 import pypdf
 import pytest
 
@@ -192,6 +193,48 @@ def test_upload_syllabus_quota_is_ten_in_five_days(api, storage_mock):
     })
     assert response.status_code == 429
     storage_mock.upload_file.assert_not_called()
+
+
+@pytest.mark.parametrize(("app_metadata", "expected_status"), [
+    ({"syllabus_upload_quota_exempt": True}, 202),
+    ({"syllabus_upload_quota_exempt": "true"}, 429),
+    ({}, 429),
+])
+def test_syllabus_quota_exemption_requires_admin_metadata(
+    api, published_offering, monkeypatch, app_metadata, expected_status,
+):
+    client, sessions, authenticated_user, _ = api
+    user_id = authenticated_user["value"].id
+    with sessions() as db:
+        db.add(Profile(id=user_id, papel="student"))
+        db.add_all([
+            Syllabus(user_id=user_id, file_name="plano.pdf", status="pendente",
+                     created_at=datetime.now(timezone.utc))
+            for _ in range(10)
+        ])
+        db.commit()
+
+    monkeypatch.delitem(app.dependency_overrides, get_current_user)
+    monkeypatch.setenv("SUPABASE_URL", "http://supabase.test")
+    monkeypatch.setenv("SUPABASE_ANON_KEY", "test-key")
+    monkeypatch.setattr("src.middlewares.auth.httpx.get", lambda *args, **kwargs: httpx.Response(200, json={
+        "id": str(user_id),
+        "email": "aluno@example.com",
+        "email_confirmed_at": "2026-11-01T00:00:00Z",
+        "app_metadata": app_metadata,
+        "user_metadata": {"syllabus_upload_quota_exempt": True},
+    }))
+
+    headers = {"Authorization": "Bearer test-token"}
+    pdf = client.post("/api/v1/syllabus/upload", headers=headers,
+                      data={"offering_id": published_offering},
+                      files={"file": ("plano.pdf", make_valid_pdf_bytes(), "application/pdf")})
+    plain_text = client.post("/api/v1/syllabus/text", headers=headers, json={
+        "offering_id": published_offering,
+        "text": "Plano de ensino com cronograma. Prova escrita em 25/11/2026 às 14:00.",
+    })
+    assert pdf.status_code == plain_text.status_code == expected_status
+
 
 def test_upload_syllabus_unauthenticated(api):
     client, _, _, _ = api

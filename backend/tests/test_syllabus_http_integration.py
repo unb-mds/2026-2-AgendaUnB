@@ -68,7 +68,8 @@ def local_http(monkeypatch):
         # Admin create + email_confirm não envia mensagens/e-mails.
         for role in ("owner","other","professor","admin"):
             email = f"e2e-{uuid4()}@unb.br"
-            password = secrets.token_urlsafe(24)
+            # O Auth local exige letras e dígitos mesmo para contas criadas pelo admin.
+            password = "Aa1" + secrets.token_urlsafe(24)
             response = httpx.post(ctx.url+"/auth/v1/admin/users",headers=ctx.headers(service=True),
                 json={"email":email,"password":password,"email_confirm":True,
                       "user_metadata":{"nome_completo":"Usuario sintetico HTTP"}},timeout=15)

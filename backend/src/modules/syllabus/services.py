@@ -112,6 +112,8 @@ def process_syllabus_upload(
     ano: int | None = None,
     semestre: int | None = None,
     offering_id: UUID | None = None,
+    *,
+    upload_quota_exempt: bool = False,
 ) -> Syllabus:
     """
     Registra somente texto minimizado privado, aguardando autorização.
@@ -119,22 +121,22 @@ def process_syllabus_upload(
     """
     pages, redacted_count = prepare_pages(pages)
 
-    # Serialize uploads for this user across API workers before counting the
-    # rolling window. The lock lasts until the prepared text is committed.
     if offering_id is not None:
         # Recheck after extraction; serialize persistence with removal of the follow.
         followed_available_offering(db, offering_id, user_id, lock=True)
-    if db.bind.dialect.name == "postgresql":
-        db.execute(sql_text("SELECT pg_advisory_xact_lock(hashtextextended(:user_id, 0))"),
-                   {"user_id": str(user_id)})
-    cutoff = datetime.now(timezone.utc) - timedelta(days=5)
-    recent_uploads = db.scalar(
-        select(func.count()).select_from(Syllabus).where(
-            Syllabus.user_id == user_id, Syllabus.created_at >= cutoff
+    if not upload_quota_exempt:
+        # Serialize the quota check and insert across API workers.
+        if db.bind.dialect.name == "postgresql":
+            db.execute(sql_text("SELECT pg_advisory_xact_lock(hashtextextended(:user_id, 0))"),
+                       {"user_id": str(user_id)})
+        cutoff = datetime.now(timezone.utc) - timedelta(days=5)
+        recent_uploads = db.scalar(
+            select(func.count()).select_from(Syllabus).where(
+                Syllabus.user_id == user_id, Syllabus.created_at >= cutoff
+            )
         )
-    )
-    if recent_uploads >= 10:
-        raise HTTPException(status_code=429, detail="Limite de 10 planos enviados em 5 dias. Tente novamente mais tarde.")
+        if recent_uploads >= 10:
+            raise HTTPException(status_code=429, detail="Limite de 10 planos enviados em 5 dias. Tente novamente mais tarde.")
 
     syllabus_id = uuid4()
     syllabus_record = Syllabus(

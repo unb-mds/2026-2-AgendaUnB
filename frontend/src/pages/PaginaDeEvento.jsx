@@ -177,7 +177,12 @@ export default function PaginaDeEvento() {
   };
 
   const renderDescricao = () => {
-    return evento.descricao.split('\n\n').map((para, idx) => {
+    const blocks = evento.descricao.split('\n\n').flatMap(block =>
+      dataEvento.fonte === 'agenda_unb_noticias' && !block.startsWith('- ')
+        ? block.split('\n')
+        : [block]
+    );
+    return blocks.map((para, idx) => {
       if (para.startsWith('**')) {
         return <h2 key={idx} style={{
           marginTop: '1.75rem',
@@ -312,6 +317,7 @@ export default function PaginaDeEvento() {
                 className="event-provenance-box"
                 style={{
                   marginTop: '1rem',
+                  marginBottom: '1rem',
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '8px',
