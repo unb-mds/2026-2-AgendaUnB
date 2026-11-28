@@ -5,6 +5,7 @@ import multiprocessing
 import queue
 import re
 import threading
+import time
 from dataclasses import dataclass
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
@@ -17,6 +18,10 @@ from src.modules.syllabus.processing_config import ERROR_MESSAGES, ProcessingCon
 class DocumentResult:
     page_count: int | None
     extraction: ExtractionResult
+    provider_name: str = "google"
+    model_name: str | None = None
+    fallback_used: bool = False
+    primary_error_reason: str = ""
 
 
 class TaskOutput(BaseModel):
@@ -24,6 +29,10 @@ class TaskOutput(BaseModel):
     page_count: int | None = Field(default=None, ge=1, le=10, strict=True)
     extraction: ExtractionData
     unsupported_dates: int = Field(ge=0, le=100, strict=True)
+    provider_name: str = Field(default="google", pattern="^(google|groq|openrouter|mistral)$")
+    model_name: str | None = Field(default=None, max_length=100)
+    fallback_used: bool = Field(default=False, strict=True)
+    primary_error_reason: str = Field(default="", pattern="^$|^[a-z0-9_]{1,40}$")
 
 
 def process_document(path, storage, provider, config: ProcessingConfig) -> DocumentResult:
@@ -35,6 +44,12 @@ def process_document(path, storage, provider, config: ProcessingConfig) -> Docum
         # exclusivamente um snapshot de texto aprovado, nunca um caminho de PDF.
         content = storage.download_file(path)
         pages = extract_pages(content, config)
+    if hasattr(provider, "set_validation_context"):
+        provider.set_validation_context(
+            default_year=config.reference_year,
+            reference_subject=config.reference_subject,
+            reference_schedule=config.reference_schedule,
+        )
     result = validate_candidates(
         provider.extract(pages),
         pages,
@@ -42,19 +57,27 @@ def process_document(path, storage, provider, config: ProcessingConfig) -> Docum
         reference_subject=config.reference_subject,
         reference_schedule=config.reference_schedule,
     )
-    return DocumentResult(len(pages) if pages[0].pagina is not None else None, result)
+    return DocumentResult(len(pages) if pages[0].pagina is not None else None, result,
+                          getattr(provider, "provider_name", "google"),
+                          getattr(provider, "model_name", config.model),
+                          getattr(provider, "fallback_used", False),
+                          getattr(provider, "primary_error_reason", ""))
 
 
 def _child(send, path, storage, provider, config):
     # Bibliotecas que tratam entrada não confiável também não escrevem dados no
     # stderr do processo. Só JSON sanitizado cruza o pipe; nunca pickle na volta.
     logging.disable(logging.CRITICAL)
+    if hasattr(provider, "set_deadline"):
+        provider.set_deadline(time.monotonic() + config.attempt_timeout_seconds - 1)
     try:
         result = process_document(path, storage, provider, config)
         output = dict(page_count=result.page_count,
                       extraction={"candidatos": [candidate.model_dump(mode="json")
                                                   for candidate in result.extraction.candidates]},
-                      unsupported_dates=result.extraction.unsupported_dates)
+                      unsupported_dates=result.extraction.unsupported_dates,
+                      provider_name=result.provider_name, model_name=result.model_name,
+                      fallback_used=result.fallback_used, primary_error_reason=result.primary_error_reason)
     except ProcessingError as error:
         reason = error.reason if re.fullmatch(r"[a-z0-9_]{1,40}", error.reason or "") else ""
         output = {"error": error.code, "retryable": error.retryable, "rate_limited": error.rate_limited, "reason": reason}
@@ -72,17 +95,23 @@ def run_in_worker(path, storage, provider, config: ProcessingConfig) -> Document
 
     def _target():
         try:
+            if hasattr(provider, "set_deadline"):
+                provider.set_deadline(time.monotonic() + config.attempt_timeout_seconds - 1)
             result = process_document(path, storage, provider, config)
             payload = dict(
                 page_count=result.page_count,
                 extraction={"candidatos": [candidate.model_dump(mode="json")
                                             for candidate in result.extraction.candidates]},
                 unsupported_dates=result.extraction.unsupported_dates,
+                provider_name=result.provider_name, model_name=result.model_name,
+                fallback_used=result.fallback_used, primary_error_reason=result.primary_error_reason,
             )
             validated = TaskOutput.model_validate(payload)
             outcome.put(("ok", DocumentResult(
                 validated.page_count,
                 ExtractionResult(validated.extraction.candidatos, validated.unsupported_dates),
+                validated.provider_name, validated.model_name, validated.fallback_used,
+                validated.primary_error_reason,
             )))
         except ProcessingError as error:
             reason = error.reason if re.fullmatch(r"[a-z0-9_]{1,40}", error.reason or "") else ""
@@ -126,7 +155,9 @@ def run_isolated(path, storage, provider, config: ProcessingConfig) -> DocumentR
             raise ProcessingError(code, retryable=output["retryable"], rate_limited=rate_limited, reason=reason)
         validated = TaskOutput.model_validate(output)
         return DocumentResult(validated.page_count,
-                              ExtractionResult(validated.extraction.candidatos, validated.unsupported_dates))
+                              ExtractionResult(validated.extraction.candidatos, validated.unsupported_dates),
+                              validated.provider_name, validated.model_name, validated.fallback_used,
+                              validated.primary_error_reason)
     except ProcessingError:
         raise
     except (EOFError, OSError, ValueError, TypeError, ValidationError):

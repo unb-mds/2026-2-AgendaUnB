@@ -18,6 +18,7 @@ from sqlalchemy import or_, select, update
 from src.database.connection import SessionLocal
 from src.database.models import AssessmentCandidate, ClassOffering, Syllabus, SyllabusVersion
 from src.modules.syllabus.extraction import CandidateData, ExtractionResult, VERSION
+from src.modules.syllabus.fallback_provider import FallbackRoutingProvider, OpenAICompatibleFallbackProvider
 from src.modules.syllabus.gemini import GeminiProvider
 from src.modules.syllabus.processing_config import ERROR_MESSAGES, ProcessingConfig, ProcessingError
 from src.modules.syllabus.processing_task import DocumentResult, run_in_worker
@@ -104,7 +105,7 @@ class SyllabusWorker:
         self.clock = clock
         self._last_provider_call_at: float | None = None
 
-    def _find_cached_extraction(self, lease: Lease, pages: list[dict]) -> tuple[DocumentResult, str] | None:
+    def _find_cached_extraction(self, lease: Lease, pages: list[dict]) -> tuple[DocumentResult, str, str] | None:
         """Reaproveita candidatos validados de snapshot idêntico (mesmo SHA-256 canônico)."""
         if not lease.approved_hash:
             return None
@@ -163,7 +164,7 @@ class SyllabusWorker:
                 return None
             page_count = len(pages) if pages[0]["pagina"] is not None else None
             model_name = source.modelo_ia or self.config.model
-            return DocumentResult(page_count, ExtractionResult(candidates)), model_name
+            return DocumentResult(page_count, ExtractionResult(candidates), "google", model_name), "google", model_name
 
     def claim(self) -> Lease | None:
         now = utcnow()
@@ -254,7 +255,7 @@ class SyllabusWorker:
             cached = self._find_cached_extraction(lease, pages)
             from_cache = cached is not None
             if cached is not None:
-                document, model_name = cached
+                document, provider_name, model_name = cached
             else:
                 if self.pace and self.config.min_interval_seconds > 0 and self._last_provider_call_at is not None:
                     wait = self.config.min_interval_seconds - (self.clock() - self._last_provider_call_at)
@@ -268,7 +269,10 @@ class SyllabusWorker:
                     reference_schedule=lease.schedule or self.config.reference_schedule,
                 )
                 document = self.runner(pages, None, self.provider, run_config)
-                model_name = self.config.model
+                provider_name = document.provider_name or "google"
+                model_name = document.model_name or self.config.model
+            fallback_used = document.fallback_used
+            primary_error_reason = document.primary_error_reason
             result = document.extraction
             with self.sessions() as db:
                 duration = round((time.monotonic() - started) * 1000)
@@ -293,8 +297,9 @@ class SyllabusWorker:
                     extracted_events_count=len(result.candidates),
                     processing_duration_ms=duration,
                     modelo_ia=model_name,
+                    provedor_ia=provider_name,
                 )
-                if from_cache:
+                if from_cache or provider_name != "google":
                     values["cost_reserved_usd"] = max(
                         Decimal("0"), active_job.cost_reserved_usd - self.config.attempt_reservation
                     )
@@ -307,14 +312,15 @@ class SyllabusWorker:
                 for order, candidate in enumerate(result.candidates):
                     db.add(AssessmentCandidate(
                         plano_id=lease.id, version_id=lease.version_id, execucao=lease.execution, ordem=order,
-                        **candidate.model_dump(), provedor_ia="google", modelo_ia=model_name,
+                        **candidate.model_dump(), provedor_ia=provider_name, modelo_ia=model_name,
                         versao_processamento=VERSION, status="pendente", ambiguous=bool(candidate.campos_ambiguos),
                     ))
                 db.commit()  # Candidatos + estado final são uma única transação.
             total = elapsed_ms(lease.created_at, utcnow())
             event_name = "syllabus_completed_cached" if from_cache else "syllabus_completed"
-            logger.info("%s candidates=%d unsupported_dates=%d duration_ms=%d total_duration_ms=%d over_target=%s",
-                        event_name, len(result.candidates), result.unsupported_dates, duration, total, total >= 20000)
+            logger.info("%s provider=%s model=%s fallback_used=%s primary_error_reason=%s candidates=%d unsupported_dates=%d duration_ms=%d total_duration_ms=%d over_target=%s",
+                        event_name, provider_name, model_name, fallback_used, primary_error_reason or "none",
+                        len(result.candidates), result.unsupported_dates, duration, total, total >= 20000)
         except ProcessingError as error:
             self.fail(lease, error, round((time.monotonic() - started) * 1000))
         except Exception:
@@ -392,7 +398,9 @@ def main():
         parser.exit(2, "Pré-requisitos de privacidade ausentes: " + ", ".join(missing) + ".\n")
     if not config.provider_terms_ready:
         parser.exit(2, "Gemini aguarda validação de termos e elegibilidade S7-B02.\n")
-    worker = SyllabusWorker(SessionLocal, None, GeminiProvider(config), config, pace=True)
+    fallback = OpenAICompatibleFallbackProvider(config) if config.fallback_provider and config.fallback_api_key else None
+    provider = FallbackRoutingProvider(GeminiProvider(config), fallback)
+    worker = SyllabusWorker(SessionLocal, None, provider, config, pace=True)
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("httpcore").setLevel(logging.WARNING)

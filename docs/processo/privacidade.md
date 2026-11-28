@@ -53,6 +53,7 @@ Base legal: referência aos incisos do art. 7º da LGPD. O projeto tem finalidad
 | Vercel | SPA e `@vercel/analytics/react` | Logs de acesso e métricas agregadas do Vercel Web Analytics (sem cookies publicitários) | Rede global |
 | Google Identity | Login OAuth | Nome, e-mail e foto | EUA e outros |
 | Google Gemini | Extração de datas | Texto sanitizado autorizado em **Plano de Ensino**, até 40.000 bytes UTF-8, com `store: false` em `gemini.py`. A [minimização automática](/arquitetura/minimizacao-planos) cobre padrões detectáveis, incluindo e-mails, telefones, documentos e campos rotulados. | EUA e outros |
+| Groq, OpenRouter ou Mistral (contingência opcional) | Extração de datas se o Gemini falhar | Mesmo snapshot de texto aprovado e mesmas regras de minimização; REST OpenAI-compatible, sem `store`/`tools`, somente endpoint HTTPS fixo e chave de servidor. Desativado por padrão e sujeito ao gate de termos/elegibilidade do provedor (`SYLLABUS_PROVIDER_TERMS_READY`). | Conforme provedor selecionado |
 | Google Calendar | Exportação | Escopos `openid`, `email` e `https://www.googleapis.com/auth/calendar.app.created` (restrito à agenda secundária `"Agenda UnB"`). `export.py` envia até 20 eventos selecionados (com filtragem opcional por período e inclusão opcional de descrição) com `id` (SHA-256), `summary`, `start` e `end` (`America/Sao_Paulo`, +1h padrão). | EUA e outros |
 | Google Fonts | Fontes e ícones | Endereço IP ao baixar fontes (`index.html`) | Rede global (ver D5) |
 

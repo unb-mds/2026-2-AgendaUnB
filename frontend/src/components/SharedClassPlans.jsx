@@ -312,8 +312,8 @@ export default function SharedClassPlans({
   offeringId,
   offer,
   offers = [],
-  shareablePlan = null,
   refreshKey = 0,
+  onInitialResult,
   onSelectOffer,
   onUploadForOffer,
   onSharedChanged,
@@ -325,7 +325,6 @@ export default function SharedClassPlans({
   const [opened, setOpened] = useState({});
   const [editingRevision, setEditingRevision] = useState(false);
   const [confirmWithdrawVersion, setConfirmWithdrawVersion] = useState(false);
-  const [confirmSharePrivate, setConfirmSharePrivate] = useState(false);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState('');
   const [actionSuccess, setActionSuccess] = useState('');
@@ -335,6 +334,13 @@ export default function SharedClassPlans({
   const plans = useSyllabusResource(`${offeringId}:${offset}`, load);
   const { retry: reloadPlans } = plans;
   const previousRefreshKey = useRef(refreshKey);
+  const reportedInitialResult = useRef(false);
+
+  useEffect(() => {
+    if (reportedInitialResult.current || plans.loading) return;
+    reportedInitialResult.current = true;
+    onInitialResult({ offeringId, hasVersions: Boolean(plans.data?.items?.length) });
+  }, [offeringId, onInitialResult, plans.data, plans.loading]);
 
   useEffect(() => {
     if (previousRefreshKey.current !== refreshKey) {
@@ -347,9 +353,6 @@ export default function SharedClassPlans({
   const activePlan = versions.find(v => v.id === selectedVersionId) || versions[0] || null;
   const updatedPlan = versions.find(v => v.has_imported_update) || null;
   const classSchedule = offer?.schedule || null;
-  const showSharePrompt = Boolean(
-    shareablePlan?.versionId && !versions.some(version => version.id === shareablePlan.versionId),
-  );
 
   useEffect(() => {
     setSelectedVersionId(null);
@@ -357,7 +360,6 @@ export default function SharedClassPlans({
     setOpened({});
     setEditingRevision(false);
     setConfirmWithdrawVersion(false);
-    setConfirmSharePrivate(false);
     setActionError('');
     setActionSuccess('');
     importKeyRef.current = null;
@@ -468,25 +470,6 @@ export default function SharedClassPlans({
     }
   };
 
-  const handleShareOwnPlan = async () => {
-    if (!shareablePlan?.versionId || busy) return;
-    setBusy(true);
-    setActionError('');
-    setActionSuccess('');
-    try {
-      const shared = await syllabusApi.shareVersion(shareablePlan.id, shareablePlan.versionId);
-      setConfirmSharePrivate(false);
-      setSelectedVersionId(shared.id || shareablePlan.versionId);
-      setActionSuccess(`Versão ${shared.number || 1} compartilhada voluntariamente com os seguidores da turma.`);
-      reloadPlans();
-      onSharedChanged?.();
-    } catch (error) {
-      setActionError(syllabusError(error));
-    } finally {
-      setBusy(false);
-    }
-  };
-
   const handleWithdrawVersion = async () => {
     if (!activePlan || busy) return;
     setBusy(true);
@@ -550,38 +533,6 @@ export default function SharedClassPlans({
     <Feedback error={plans.error?.message} onRetry={reloadPlans} />
     <Feedback error={actionError} success={actionSuccess} />
 
-    {showSharePrompt && (
-      <div className="shared-publish-box">
-        <div>
-          <strong>Seu plano ({shareablePlan.fileName}) está privado</strong>
-          <p>
-            Compartilhe voluntariamente apenas as avaliações extraídas para que colegas que seguem esta turma possam consultá-las.
-            O PDF original já foi descartado.
-          </p>
-        </div>
-        {!confirmSharePrivate ? (
-          <button
-            type="button"
-            className="manage-button primary"
-            disabled={busy}
-            onClick={() => setConfirmSharePrivate(true)}
-          >
-            <Icon>share</Icon>Compartilhar com a turma
-          </button>
-        ) : (
-          <span className="shared-inline-confirm">
-            <span>Publicar estas avaliações para seguidores da turma?</span>
-            <button type="button" className="manage-button primary" disabled={busy} onClick={handleShareOwnPlan}>
-              Confirmar publicação
-            </button>
-            <button type="button" className="management-text-button" disabled={busy} onClick={() => setConfirmSharePrivate(false)}>
-              Cancelar
-            </button>
-          </span>
-        )}
-      </div>
-    )}
-
     {updatedPlan && (
       <div className="shared-update-alert" role="status">
         <Icon>notifications_active</Icon>
@@ -606,19 +557,17 @@ export default function SharedClassPlans({
 
     {plans.loading && <p role="status">Consultando planos compartilhados…</p>}
     {!plans.loading && !plans.error && versions.length === 0 && (
+      <p className="semester-muted">Ainda não há plano compartilhado nesta oferta.</p>
+    )}
+    {onUploadForOffer && (
       <div className="shared-empty-actions">
-        <p className="semester-muted">
-          Ainda não há plano compartilhado nesta oferta. Ao concluir a extração de um plano vinculado à turma, a versão inicial é compartilhada com os seguidores e pode ser retirada pelo autor a qualquer momento.
-        </p>
-        {onUploadForOffer && (
-          <button
-            type="button"
-            className="manage-button"
-            onClick={() => onUploadForOffer(offeringId)}
-          >
-            <Icon>upload_file</Icon>Enviar plano para esta turma
-          </button>
-        )}
+        <button
+          type="button"
+          className="manage-button"
+          onClick={() => onUploadForOffer(offeringId)}
+        >
+          <Icon>upload_file</Icon>Enviar plano para esta turma
+        </button>
       </div>
     )}
 

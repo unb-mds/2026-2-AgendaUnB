@@ -67,6 +67,7 @@ def main():
     frontend_env = base_env.copy()
     for secret_key in (
         'GEMINI_API_KEY',
+        'SYLLABUS_FALLBACK_API_KEY',
         'DATABASE_URL',
         'SUPABASE_SERVICE_ROLE_KEY',
         'GOOGLE_TOKEN_ENCRYPTION_KEY',

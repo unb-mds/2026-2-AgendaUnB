@@ -82,6 +82,7 @@ def check_local_syllabus_readiness(
     privacy_ready = env.get("SYLLABUS_PRIVACY_READY", "false").lower() == "true"
     terms_ready = env.get("SYLLABUS_PROVIDER_TERMS_READY", "false").lower() == "true"
     has_api_key = bool(env.get("GEMINI_API_KEY", "").strip().strip('"').strip("'"))
+    has_fallback_key = bool(env.get("SYLLABUS_FALLBACK_API_KEY", "").strip().strip('"').strip("'"))
 
     checks = privacy_checks(connection)
     if checks.get("postgresql") is False:
@@ -107,6 +108,10 @@ def check_local_syllabus_readiness(
             model=model,
             api_key=env.get("GEMINI_API_KEY", "").strip().strip('"').strip("'"),
             provider_terms_ready=terms_ready,
+            fallback_provider=env.get("SYLLABUS_FALLBACK_PROVIDER", "").strip().lower(),
+            fallback_api_key=env.get("SYLLABUS_FALLBACK_API_KEY", "").strip().strip('"').strip("'"),
+            fallback_model=env.get("SYLLABUS_FALLBACK_MODEL", "").strip(),
+            fallback_timeout_seconds=float(env.get("SYLLABUS_FALLBACK_TIMEOUT_SECONDS", "8")),
             timeout_seconds=float(env.get("SYLLABUS_AI_TIMEOUT_SECONDS", "12")),
             attempt_timeout_seconds=float(env.get("SYLLABUS_ATTEMPT_TIMEOUT_SECONDS", "18")),
             max_attempts=int(env.get("SYLLABUS_MAX_ATTEMPTS", "2")),
@@ -141,6 +146,13 @@ def check_local_syllabus_readiness(
         )
     else:
         messages.append("[INFO] Worker Gemini desativado no .env (modo manual/sem chave).")
+    if config.fallback_provider:
+        if worker_enabled and privacy_ready and terms_ready and has_api_key and has_fallback_key:
+            messages.append(f"[OK] Fallback explícito habilitado (provedor: {config.fallback_provider}, modelo: {config.fallback_model}).")
+        elif not has_fallback_key:
+            messages.append(f"[INFO] {config.fallback_provider} configurado, mas sem SYLLABUS_FALLBACK_API_KEY; fallback inativo.")
+        else:
+            messages.append(f"[AVISO] Fallback {config.fallback_provider} aguarda as flags e a chave Gemini do worker.")
     return 0, messages
 
 

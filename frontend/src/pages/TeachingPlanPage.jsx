@@ -206,8 +206,9 @@ function PlanQueue({ options, followed, initialOffer, onOffer, plans, selectedId
   </aside>;
 }
 
-function PlanDetails({ plan, onClose, onOpenExtraction, onSharedChanged }) {
+function PlanDetails({ plan, refreshKey, onClose, onOpenExtraction, onSharedChanged }) {
   const workspace = useSemesterPlans();
+  const { user, isAdmin } = useAuth();
   const [confirmAction, setConfirmAction] = useState(null);
   const [busy, setBusy] = useState(false);
   const [shareError, setShareError] = useState('');
@@ -217,8 +218,7 @@ function PlanDetails({ plan, onClose, onOpenExtraction, onSharedChanged }) {
     signal => (canQueryVersions ? syllabusApi.listVersions(plan.id, signal) : Promise.resolve({ items: [], total: 0 })),
     [canQueryVersions, plan.id],
   );
-  const versions = useSyllabusResource(canQueryVersions ? `plan-versions:${plan.id}` : null, loadVersions);
-  const { retry: reloadVersions } = versions;
+  const versions = useSyllabusResource(canQueryVersions ? `plan-versions:${plan.id}:${refreshKey}` : null, loadVersions);
   const versionItems = versions.data?.items || [];
 
   const handleToggleSharing = async (version, share) => {
@@ -235,8 +235,7 @@ function PlanDetails({ plan, onClose, onOpenExtraction, onSharedChanged }) {
         setShareSuccess(`Compartilhamento da versão ${version.number} retirado.`);
       }
       setConfirmAction(null);
-      reloadVersions();
-      onSharedChanged?.();
+      onSharedChanged();
     } catch (error) {
       setShareError(syllabusError(error));
     } finally {
@@ -264,17 +263,20 @@ function PlanDetails({ plan, onClose, onOpenExtraction, onSharedChanged }) {
           <ul className="shared-version-history-list">
             {versionItems.map(version => {
               const isShared = version.visibility === 'compartilhada';
+              const isAuthor = version.authorId === user.id;
+              const canWithdraw = isShared && (isAuthor || isAdmin);
+              const canPublish = !isShared && isAuthor && version.number > 1 && version.candidates?.length > 0;
               const actionKey = `${version.id}:${isShared ? 'withdraw' : 'share'}`;
               return <li key={version.id}>
                 <div className="shared-history-info">
                   <strong>Versão {version.number} · {isShared ? 'Compartilhada com a turma' : 'Privada'}</strong>
                   <small>
                     {isShared
-                      ? 'Visível apenas para seguidores autenticados desta turma. O PDF original não é compartilhado.'
-                      : 'Somente você vê esta versão até decidir compartilhá-la voluntariamente.'}
+                      ? 'As avaliações desta versão estão disponíveis para seguidores autenticados da turma.'
+                      : version.withdrawnAt ? 'O compartilhamento foi retirado.' : 'Somente você pode ver esta versão.'}
                   </small>
                 </div>
-                {confirmAction === actionKey ? (
+                {(canWithdraw || canPublish) && (confirmAction === actionKey ? (
                   <span className="shared-inline-confirm">
                     <button
                       type="button"
@@ -282,7 +284,7 @@ function PlanDetails({ plan, onClose, onOpenExtraction, onSharedChanged }) {
                       disabled={busy}
                       onClick={() => handleToggleSharing(version, !isShared)}
                     >
-                      {isShared ? 'Confirmar retirada' : 'Confirmar compartilhamento'}
+                      {isShared ? 'Confirmar retirada' : 'Confirmar publicação'}
                     </button>
                     <button type="button" className="management-text-button" disabled={busy} onClick={() => setConfirmAction(null)}>
                       Cancelar
@@ -296,9 +298,9 @@ function PlanDetails({ plan, onClose, onOpenExtraction, onSharedChanged }) {
                     onClick={() => { setConfirmAction(actionKey); setShareError(''); setShareSuccess(''); }}
                   >
                     <Icon>{isShared ? 'visibility_off' : 'share'}</Icon>
-                    {isShared ? 'Retirar compartilhamento' : 'Compartilhar com a turma'}
+                    {isShared ? 'Retirar compartilhamento' : 'Publicar versão'}
                   </button>
-                )}
+                ))}
               </li>;
             })}
           </ul>
@@ -317,6 +319,7 @@ function SemesterPanel({ userId }) {
   const [offerCache, setOfferCache] = useState({});
   const [waitingFor, setWaitingFor] = useState(null);
   const [libraryRefresh, setLibraryRefresh] = useState(0);
+  const [initialLibraryResult, setInitialLibraryResult] = useState(null);
   const legacyFocus = useRef(false);
   const contentRef = useRef(null);
   const seenPreparations = useRef(new Set(workspace.recent.map(plan => plan.id)));
@@ -410,6 +413,7 @@ function SemesterPanel({ userId }) {
       const search = new URLSearchParams(previous);
       search.set('plano', next.id);
       search.set('etapa', '2');
+      search.set('visao', 'avaliacoes');
       return search;
     });
   }, [activeStep, initialOffer, selectedId, setParams, workspace.recent]);
@@ -430,27 +434,35 @@ function SemesterPanel({ userId }) {
     update(next);
     return next;
   });
-  const goToStep = (stepNumber, options = {}) => {
+  const changePeriod = value => updateParams(next => {
+    next.set('periodo', value);
+    for (const key of ['oferta', 'plano', 'pagina', 'visao']) next.delete(key);
+    if (activeStep) next.set('etapa', String(activeStep));
+  });
+  const goToStep = (stepNumber, offerId) => {
     setAutoStep(stepNumber);
     updateParams(next => {
       next.set('etapa', String(stepNumber));
-      if (options.offerId) {
-        next.set('oferta', options.offerId);
+      if (offerId) {
+        next.set('oferta', offerId);
         next.delete('periodo');
         next.delete('plano');
         next.delete('pagina');
       }
-      if (options.view === 'shared') next.set('visao', 'compartilhados');
-      else if (options.view === 'reviews' || stepNumber === 1) next.delete('visao');
+      if (offerId || stepNumber === 1) next.delete('visao');
     });
     requestAnimationFrame(() => {
-      const targetId = stepNumber === 1 ? 'semester-catalog-title' : 'semester-review-title';
-      document.getElementById(targetId)?.focus({ preventScroll: true });
+      const target = stepNumber === 1
+        ? document.getElementById('semester-catalog-title')
+        : contentRef.current?.querySelector('[role="tab"][aria-selected="true"]')
+          || document.getElementById('workspace-tab-shared')
+          || document.getElementById('semester-review-title');
+      target?.focus({ preventScroll: true });
     });
   };
   const closePlan = () => {
     setAutoStep(2);
-    updateParams(next => { next.delete('plano'); next.delete('visao'); next.set('etapa', '2'); });
+    updateParams(next => { next.delete('plano'); next.set('visao', 'avaliacoes'); next.set('etapa', '2'); });
     setExtractionId(null);
     requestAnimationFrame(() => document.getElementById('semester-review-title')?.focus());
   };
@@ -458,7 +470,7 @@ function SemesterPanel({ userId }) {
     setExtractionId(null);
     setWaitingFor(id);
     setAutoStep(2);
-    updateParams(next => { next.set('plano', id); next.set('etapa', '2'); next.delete('visao'); });
+    updateParams(next => { next.set('plano', id); next.set('etapa', '2'); next.set('visao', 'avaliacoes'); });
   };
   const selectOffer = (id, view) => {
     setExtractionId(null);
@@ -469,35 +481,29 @@ function SemesterPanel({ userId }) {
         next.delete('periodo');
       } else next.delete('oferta');
       next.set('etapa', '2');
-      if (view === 'reviews') next.delete('visao');
-      else if (view === 'shared') next.set('visao', 'compartilhados');
+      if (view === 'reviews') next.set('visao', 'avaliacoes');
+      else next.delete('visao');
       for (const key of ['plano', 'pagina']) next.delete(key);
     });
   };
   const onFollowed = (offer, value) => {
-    if (value && periodOf(offer) && !initialOffer && period !== periodOf(offer)) {
-      updateParams(next => { next.set('periodo', periodOf(offer)); next.delete('oferta'); next.delete('plano'); next.delete('pagina'); });
+    const offerPeriod = periodOf(offer);
+    if (value && offerPeriod && !initialOffer && !period) {
+      changePeriod(offerPeriod);
     }
     setFollowChanges(current => ({ ...current, [offer.id]: value ? offer : null }));
     setOfferCache(current => ({ ...current, [offer.id]: offer }));
     followed.retry();
   };
 
-  const libraryOffers = followedOffers.filter(offer => !period || periodOf(offer) === period);
-  const libraryPool = libraryOffers.length ? libraryOffers : followedOffers;
+  const libraryPool = followedOffers.filter(offer => !period || periodOf(offer) === period);
   const libraryOfferId = (openOfferId && followedOffers.some(offer => offer.id === openOfferId))
     ? openOfferId
     : (libraryPool[0]?.id || null);
-  const ownOfferPlan = libraryOfferId
-    ? allowedPlans.find(plan => plan.offeringId === libraryOfferId && plan.candidates?.some(candidate => candidate.versionId))
-    : null;
-  const shareablePlan = ownOfferPlan
-    ? {
-        id: ownOfferPlan.id,
-        fileName: ownOfferPlan.fileName,
-        versionId: ownOfferPlan.candidates.find(candidate => candidate.versionId).versionId,
-      }
-    : null;
+  // The detail request auto-shares eligible v1 plans before returning the extraction result.
+  const completedPlanIds = Object.values(workspace.plans)
+    .filter(plan => plan.offeringId === libraryOfferId && plan.status === 'concluido' && plan.candidates?.length > 0)
+    .map(plan => plan.id).sort().join(',');
   const refreshLibrary = () => setLibraryRefresh(count => count + 1);
   const onSubmissionsDeleted = () => {
     setExtractionId(null);
@@ -511,7 +517,9 @@ function SemesterPanel({ userId }) {
   };
   const uploadForOffer = offerId => {
     selectOffer(offerId, 'reviews');
-    requestAnimationFrame(() => document.getElementById('semester-add-pdfs')?.focus());
+    requestAnimationFrame(() => {
+      document.querySelector('#queue-panel-pdf:not([hidden]) button, #queue-panel-text:not([hidden]) textarea')?.focus();
+    });
   };
 
   const processingCount = scoped.filter(isProcessing).length;
@@ -528,11 +536,19 @@ function SemesterPanel({ userId }) {
           ? `${processingCount} em análise`
           : 'Enviar planos e importar datas';
   const showSharedTab = Boolean(libraryOfferId && !wrongOffer);
-  const datesTab = showSharedTab && params.get('visao') === 'compartilhados' ? 'shared' : 'reviews';
+  const requestedView = params.get('visao');
+  const autoOpenShared = showSharedTab && !selectedId && !['3', '4'].includes(rawStep)
+    && (!initialOffer || initialOffer === libraryOfferId);
+  let datesTab = 'reviews';
+  if (showSharedTab && requestedView === 'compartilhados') {
+    datesTab = 'shared';
+  } else if (autoOpenShared && requestedView !== 'avaliacoes') {
+    if (initialLibraryResult?.offeringId !== libraryOfferId) datesTab = null;
+    else if (initialLibraryResult.hasVersions) datesTab = 'shared';
+  }
   const setDatesTab = tab => updateParams(next => {
     next.set('etapa', '2');
-    if (tab === 'shared') next.set('visao', 'compartilhados');
-    else next.delete('visao');
+    next.set('visao', tab === 'shared' ? 'compartilhados' : 'avaliacoes');
   });
 
   return <div className="semester-panel">
@@ -544,7 +560,7 @@ function SemesterPanel({ userId }) {
           aria-current={activeStep === 1 ? 'step' : undefined}
           onClick={() => goToStep(1)}
         >
-          <span className="semester-step-icon"><Icon>school</Icon></span>
+          <span className="semester-step-number" aria-hidden="true">1</span>
           <span className="semester-step-copy">
             <strong>Selecionar turmas</strong>
             <small>{followedOffers.length} {followedOffers.length === 1 ? 'turma seguida' : 'turmas seguidas'}</small>
@@ -556,22 +572,13 @@ function SemesterPanel({ userId }) {
           aria-current={activeStep === 2 ? 'step' : undefined}
           onClick={() => goToStep(2)}
         >
-          <span className="semester-step-icon"><Icon>event_available</Icon></span>
+          <span className="semester-step-number" aria-hidden="true">2</span>
           <span className="semester-step-copy">
             <strong>Organizar datas</strong>
             <small>{step2Summary}</small>
           </span>
         </button>
       </nav>
-      <div className="semester-period-wrap">
-        <CustomSelect className="custom-input semester-toolbar-period" wrapperWidth="fit-content" ariaLabel="Semestre"
-          placeholder="Selecione um semestre" value={period}
-          options={(period && !periods.includes(period) ? [period, ...periods] : periods).map(value => ({ value, label: value }))}
-          onChange={value => updateParams(next => {
-            next.set('periodo', value); next.delete('oferta'); next.delete('plano'); next.delete('pagina');
-            if (activeStep) next.set('etapa', String(activeStep));
-          })} />
-      </div>
     </div>
     <Feedback error={followed.error && 'Não foi possível carregar suas turmas.'} onRetry={followed.retry} />
     {activeStep === null && (
@@ -584,21 +591,23 @@ function SemesterPanel({ userId }) {
         periods={periods}
         followed={followedOffers}
         onFollowed={onFollowed}
-        onContinue={() => goToStep(2)}
-        onPeriodChange={value => {
-          if (periods.includes(value)) {
-            updateParams(next => { next.set('periodo', value); });
-          }
-        }}
+        onContinue={offerId => goToStep(2, offerId)}
+        onPeriodChange={changePeriod}
       />
     </div>
     <div id="semester-step-dates" hidden={activeStep !== 2}>
-      <ul className="semester-metrics" aria-label="Resumo do semestre" aria-live="polite">
-        <li className="is-processing"><Icon>autorenew</Icon><strong>{processingCount}</strong> em análise</li>
-        <li className="is-auth"><Icon>article</Icon><strong>{pendingAuthCount}</strong> a extrair</li>
-        <li className="is-attention"><Icon>edit_calendar</Icon><strong>{attentionCount}</strong> a revisar</li>
-        <li className="is-added"><Icon>event_available</Icon><strong>{addedCount}</strong> adicionadas</li>
-      </ul>
+      <div className="semester-summary">
+        <ul className="semester-metrics" aria-label="Resumo do semestre" aria-live="polite">
+          <li className="is-processing"><Icon>autorenew</Icon><strong>{processingCount}</strong> em análise</li>
+          <li className="is-auth"><Icon>article</Icon><strong>{pendingAuthCount}</strong> a extrair</li>
+          <li className="is-attention"><Icon>edit_calendar</Icon><strong>{attentionCount}</strong> a revisar</li>
+          <li className="is-added"><Icon>event_available</Icon><strong>{addedCount}</strong> adicionadas</li>
+        </ul>
+        <CustomSelect className="custom-input semester-summary-period" ariaLabel="Semestre"
+          placeholder="Todos os semestres" value={period}
+          options={(period && !periods.includes(period) ? [period, ...periods] : periods).map(value => ({ value, label: value }))}
+          onChange={changePeriod} />
+      </div>
       {initialOffer && <div className="semester-offer-context">
         <strong>{offers[initialOffer] ? offerLabel(offers[initialOffer]) : 'Planos da turma'}</strong>
         <button className="management-text-button" onClick={() => selectOffer('')}>Ver todos os planos</button>
@@ -615,7 +624,8 @@ function SemesterPanel({ userId }) {
             extractionPlan && workspace.authorizations[extractionPlan.id]?.automatic
               ? <section className="semester-section"><h2 tabIndex={-1}>Iniciando extração</h2><p role="status">Enviando o texto sanitizado para análise…</p></section> :
             extractionPlan ? <SemesterExtraction key={extractionPlan.id} plan={extractionPlan} onClose={closePlan} /> :
-            selectedPlan ? <PlanDetails plan={selectedPlan} onClose={closePlan} onOpenExtraction={() => setExtractionId(selectedId)} onSharedChanged={refreshLibrary} /> :
+            selectedPlan ? <PlanDetails key={selectedPlan.id} plan={selectedPlan} refreshKey={libraryRefresh}
+              onClose={closePlan} onOpenExtraction={() => setExtractionId(selectedId)} onSharedChanged={refreshLibrary} /> :
             selectedId ? <div className="semester-section">{workspace.planErrors[selectedId] ?
               <Feedback error={workspace.planErrors[selectedId]} onRetry={() => loadPlan(selectedId, true)} /> : <p role="status">Consultando plano…</p>}</div> : null}
           {selectedPlan && !selectedPlan.authorizationRequired && pendingAuth && <button className="manage-button" onClick={() => selectPlan(pendingAuth.id)}>Abrir próximo plano <Icon>arrow_forward</Icon></button>}
@@ -647,6 +657,9 @@ function SemesterPanel({ userId }) {
               </button>
             </div>
           )}
+          {datesTab === null && (
+            <div className="semester-section"><p role="status">Consultando planos compartilhados…</p></div>
+          )}
           <div
             id="workspace-panel-reviews"
             role={showSharedTab ? 'tabpanel' : undefined}
@@ -675,10 +688,10 @@ function SemesterPanel({ userId }) {
                 offeringId={libraryOfferId}
                 offer={offers[libraryOfferId]}
                 offers={libraryPool}
-                shareablePlan={shareablePlan}
-                refreshKey={libraryRefresh}
+                refreshKey={`${libraryRefresh}:${completedPlanIds}`}
+                onInitialResult={setInitialLibraryResult}
                 onSelectOffer={selectOffer}
-                onUploadForOffer={uploadForOffer}
+                onUploadForOffer={offers[libraryOfferId]?.available === true ? uploadForOffer : undefined}
                 onSharedChanged={refreshLibrary}
                 onImported={() => { if (selectedId) loadPlan(selectedId, true); }}
               />

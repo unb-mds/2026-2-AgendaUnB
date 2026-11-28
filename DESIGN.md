@@ -83,7 +83,7 @@ A paleta é contida e focada, usando o azul como grande protagonista em ambos os
 - **Azul Deep** (`rgba(0, 95, 210, 1)` / `#005fd2`): Versão ligeiramente mais fechada, usada em botões primários e destaques de contraste.
 - **Preenchimento azul** (`--accent-fill`, `#0273ec`): Use em seleções ativas, marcas de seleção, destaques do calendário e ações como **Criar Evento**, com texto e ícones brancos (`--on-accent-fill`, `#ffffff`) nos dois temas. O tom é a cor sRGB de 8 bits mais próxima de `#008bff` pela distância euclidiana em OKLab entre as que atingem WCAG AA para texto comum em branco. O par sólido atinge **4,500546:1**. [WCAG 2.1 AA — contraste mínimo](https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum.html)
 - **Ações de gestão e Planos de ensino:** Os botões primários, incluindo **Seguir turmas**, usam `--accent-fill` por meio de `--manage-action`.
-- **Ícones de cards no tema escuro:** Na página inicial, os ícones são pretos sobre fundo azul. Em **Selecionar turmas** e **Organizar datas**, os ícones são brancos. O fundo do ícone da etapa ativa é `#0273ec` e o da etapa inativa é `#30659e1e`, um azul com cerca de 12% de opacidade sobre o card.
+- **Ícones e marcadores no tema escuro:** Na página inicial, os ícones são pretos sobre fundo azul. Os marcadores de **Selecionar turmas** e **Organizar datas** exibem, respectivamente, os números 1 e 2 em Orbitron e na cor branca. O fundo do marcador da etapa ativa é `#0273ec` e o da etapa inativa é `#30659e1e`, um azul com cerca de 12% de opacidade sobre o card.
 
 ### Dark Mode
 - **App Background** (`#080c16`): Fundo das páginas internas (agenda, planos, moderação, administração e configurações).

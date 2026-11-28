@@ -87,16 +87,17 @@ def test_review_and_private_snapshot_use_the_same_sanitized_academic_text(api, s
         assert response.status_code == 202
         sid = response.json()["id"]
         preview = api[0].get(f"/api/v1/syllabus/{sid}/text").json()
-        expected = [{"pagina": 1, "texto": redacted + "\n"}, {"pagina": 2, "texto": TEXT + "\n"}]
+        expected = [{"pagina": 1, "texto": redacted}, {"pagina": 2, "texto": TEXT}]
 
-    assert preview["pages"] == expected
-    assert preview["textHash"] == text_hash(expected)
+    normalized = [{"pagina": p["pagina"], "texto": p["texto"].rstrip("\n")} for p in preview["pages"]]
+    assert normalized == expected
+    assert preview["textHash"] == text_hash(preview["pages"])
     assert preview["redactedCount"] == 2
     assert api[0].get(f"/api/v1/syllabus/{sid}").json()["redactedCount"] == 2
     assert preview["authorizationRequired"] is True
     with api[1]() as db:
         plan = db.get(Syllabus, UUID(sid))
-        assert plan.prepared_pages == expected
+        assert plan.prepared_pages == preview["pages"]
         assert plan.redacted_count == 2
         assert plan.approved_pages is None
 

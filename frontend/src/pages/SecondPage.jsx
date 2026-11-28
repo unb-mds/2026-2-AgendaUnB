@@ -5,6 +5,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { eventsApi, toApiEvent, toUiEvent } from '../lib/api';
 import { formatEventSchedule } from '../lib/calendar';
+import { buildEventSearchIndex, normalizeEventSearch, searchIndexedEvents } from '../lib/eventSearch';
 import {
   clearStoredEventFilters,
   getStoredEventFilters,
@@ -850,14 +851,13 @@ export default function SegundaPagina() {
   };
 
   const filterCount = [filtroArea.length, filtroCampus.length, filtroTurno.length, filtroDataInicio, filtroDataFim].filter(Boolean).length;
-  const hasActiveFilters = Boolean(searchQuery || filterCount);
+  const normalizedQuery = normalizeEventSearch(searchQuery);
+  const hasActiveFilters = Boolean(normalizedQuery || filterCount);
 
   // --- LÓGICA DE FILTRAGEM ---
-  const eventosFiltrados = useMemo(() => {
-    const queryLower = searchQuery.trim().toLowerCase();
+  const eventosElegiveis = useMemo(() => {
     return eventos.filter(evento => {
       const matchVisao = visaoEventos === 'Públicos' ? evento.visibilidade === 'Público' : evento.criadoPorMim || evento.salvoNaAgenda;
-      const matchBusca = !queryLower || `${evento.titulo} ${evento.descricao || ''} ${evento.local || ''}`.toLowerCase().includes(queryLower);
       const matchArea = filtroArea.length ? filtroArea.includes(evento.area) : true;
       const matchCampus = filtroCampus.length ? filtroCampus.includes(evento.campus) : true;
       const matchTurno = filtroTurno.length ? filtroTurno.includes(getTurnoByEvento(evento)) : true;
@@ -866,9 +866,14 @@ export default function SegundaPagina() {
       const matchDataInicio = filtroDataInicio ? (evFim ? evFim >= filtroDataInicio : false) : true;
       const matchDataFim = filtroDataFim ? (evInicio ? evInicio <= filtroDataFim : false) : true;
 
-      return matchVisao && matchBusca && matchArea && matchCampus && matchTurno && matchDataInicio && matchDataFim;
+      return matchVisao && matchArea && matchCampus && matchTurno && matchDataInicio && matchDataFim;
     });
-  }, [eventos, visaoEventos, searchQuery, filtroArea, filtroCampus, filtroTurno, filtroDataInicio, filtroDataFim]);
+  }, [eventos, visaoEventos, filtroArea, filtroCampus, filtroTurno, filtroDataInicio, filtroDataFim]);
+  const eventSearchIndex = useMemo(() => buildEventSearchIndex(eventosElegiveis), [eventosElegiveis]);
+  const eventosFiltrados = useMemo(
+    () => normalizedQuery ? searchIndexedEvents(eventSearchIndex, normalizedQuery) : eventosElegiveis,
+    [eventSearchIndex, eventosElegiveis, normalizedQuery],
+  );
 
   // --- ESTILIZAÇÃO DINÂMICA ---
   const bgColor = isDark ? '#080c16' : '#f0f4f8';
@@ -905,11 +910,16 @@ export default function SegundaPagina() {
           </div>
         </div>
 
-        <div className={`events-find${user && visaoEventos === 'MEUS' ? ' events-find--with-export' : ''}`}>
+        <div className="events-find">
             <div className="events-search-field">
               <Icon>search</Icon>
               <input
-                type="search" aria-label="Buscar eventos e comunicados" placeholder="Buscar eventos e comunicados" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                type="search"
+                aria-label="Buscar eventos e comunicados"
+                placeholder="Buscar eventos e comunicados"
+                className={normalizedQuery ? 'has-selection' : undefined}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
             <button type="button" className="manage-button events-filters-toggle" aria-expanded={filtersOpen}

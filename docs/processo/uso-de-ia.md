@@ -33,6 +33,14 @@ O campo **verificado** é o mais importante. Sem ele, a entrada declara o uso ma
 
 ## Entradas
 
+### 26/11/2026 — S8-B05: banco de dados e configuração para contingência de IA (fallback)
+- **Quem:** Luis Davi
+- **Ferramenta:** Google Antigravity (Gemini) e Pytest
+- **O que foi pedido:** Preparar na branch `S8-B05` a parte de banco de dados e a configuração de variáveis/chaves para o roteamento de contingência OpenAI-compatível a custo zero (Groq/OpenRouter/Mistral), mantendo o Gemini como provedor primário, em commits atômicos.
+- **O que entrou no repositório:** `docs/arquitetura/banco-de-dados.md` (documentação de `provedor_ia`, `provedor` e `modelo_ia` como `TEXT` livres), `backend/tests/test_syllabus_database.py` (teste parametrizado de persistência dos metadados de fallback no PostgreSQL), `.env.example` e `docs/deploy/render.env.example` (variáveis `SYLLABUS_FALLBACK_*`), `.github/workflows/production-jobs.yml` (repasse de secrets/vars de fallback ao job `worker`), `scripts/dev.py` (remoção de `SYLLABUS_FALLBACK_API_KEY` do ambiente do Vite) e esta entrada em `docs/processo/uso-de-ia.md`.
+- **O que foi verificado:** Auditoria das migrações SQL e de `backend/src/database/models.py` confirmando zero migrações necessárias; `python -m pytest tests/test_schema_preflight.py -q` (`3 passed`), coleta de `tests/test_syllabus_database.py` (`23 tests collected`), validação de sintaxe Python (`py_compile`) em `scripts/dev.py` e YAML em `.github/workflows/production-jobs.yml`; configuração das variáveis no serviço `agenda-unb-api-homolog` no Render com deploy `live` confirmado.
+- **O que foi rejeitado ou corrigido:** Nenhuma migração DDL foi criada e nenhum código de aplicação do backend ou frontend foi alterado nesta frente. A execução completa de `test_syllabus_database.py` no Supabase local foi interrompida por falta de espaço em disco no Docker local, ficando a execução no PostgreSQL isolado para validação no PR/CI.
+
 ### 24/11/2026 — Correção das falhas de extração, resiliência do worker e minimização de planos de ensino
 - **Quem:** Luis Davi
 - **Ferramenta:** Google Antigravity (Gemini) e Pytest

@@ -1,6 +1,7 @@
 """Configuração exclusiva do servidor; nada disto é enviado ao Vite."""
 import math
 import os
+import re
 from dataclasses import dataclass, field
 from decimal import Decimal
 
@@ -14,6 +15,11 @@ ERROR_MESSAGES = {
     "tempo_esgotado": "O processamento excedeu o tempo disponível.",
     "texto_com_dados_pessoais": "Envie o plano novamente para aplicar a preparação atual.",
     "erro_interno": "Não foi possível concluir o processamento. Use o cadastro manual.",
+}
+FALLBACK_PROVIDER_DEFAULTS = {
+    "groq": "llama-3.3-70b-versatile",
+    "openrouter": "openrouter/free",
+    "mistral": "mistral-small-latest",
 }
 
 
@@ -30,6 +36,10 @@ class ProcessingError(Exception):
 class ProcessingConfig:
     model: str = "gemini-3.5-flash-lite"
     api_key: str = field(default="", repr=False)
+    fallback_provider: str = ""
+    fallback_api_key: str = field(default="", repr=False)
+    fallback_model: str = ""
+    fallback_timeout_seconds: float = 8.0
     provider_terms_ready: bool = False
     timeout_seconds: float = 25
     attempt_timeout_seconds: float = 35
@@ -65,6 +75,18 @@ class ProcessingConfig:
             self.max_file_cost_usd, self.input_usd_per_million, self.output_usd_per_million
         )):
             raise ValueError("Orçamento, preços e intervalo de tentativas inválidos.")
+        if not math.isfinite(self.fallback_timeout_seconds) or not 0 < self.fallback_timeout_seconds <= 30:
+            raise ValueError("Timeout do provedor de contingência deve estar em (0, 30].")
+        if self.fallback_provider not in ("", "groq", "openrouter", "mistral"):
+            raise ValueError("Provedor de contingência não permitido.")
+        if self.fallback_provider and not self.fallback_model:
+            object.__setattr__(self, "fallback_model", FALLBACK_PROVIDER_DEFAULTS[self.fallback_provider])
+        if self.fallback_model and not re.fullmatch(r"[A-Za-z0-9_.:/-]{1,100}", self.fallback_model):
+            raise ValueError("Nome do modelo de contingência inválido.")
+        if self.fallback_provider == "openrouter" and self.fallback_model != "openrouter/free" and not self.fallback_model.endswith(":free"):
+            raise ValueError("OpenRouter só permite modelos gratuitos :free.")
+        if self.fallback_provider in ("groq", "mistral") and self.fallback_model != FALLBACK_PROVIDER_DEFAULTS[self.fallback_provider]:
+            raise ValueError("O modelo configurado não pertence à allowlist gratuita do provedor.")
 
     @property
     def attempt_reservation(self) -> Decimal:
@@ -86,6 +108,10 @@ class ProcessingConfig:
             model=model,
             api_key=os.getenv("GEMINI_API_KEY", "").strip().strip('"').strip("'"),
             provider_terms_ready=os.getenv("SYLLABUS_PROVIDER_TERMS_READY", "false").lower() == "true",
+            fallback_provider=os.getenv("SYLLABUS_FALLBACK_PROVIDER", "").strip().lower(),
+            fallback_api_key=os.getenv("SYLLABUS_FALLBACK_API_KEY", "").strip().strip('"').strip("'"),
+            fallback_model=os.getenv("SYLLABUS_FALLBACK_MODEL", "").strip(),
+            fallback_timeout_seconds=float(os.getenv("SYLLABUS_FALLBACK_TIMEOUT_SECONDS", "8")),
             timeout_seconds=float(os.getenv("SYLLABUS_AI_TIMEOUT_SECONDS", "25")),
             attempt_timeout_seconds=float(os.getenv("SYLLABUS_ATTEMPT_TIMEOUT_SECONDS", "35")),
             max_attempts=int(os.getenv("SYLLABUS_MAX_ATTEMPTS", "3")),

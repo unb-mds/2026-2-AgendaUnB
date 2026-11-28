@@ -119,7 +119,7 @@ body.light .semester-panel .manage-button.primary:disabled {
   border-color: var(--semester-line);
   opacity: 1;
 }
-body.light .semester-panel :is(.semester-metrics, .semester-section) {
+body.light .semester-panel :is(.semester-summary, .semester-section) {
   backdrop-filter: none;
 }
 .semester-panel h2 {
@@ -134,16 +134,11 @@ body.light .semester-panel :is(.semester-metrics, .semester-section) {
 .semester-panel :is(.semester-muted, small) { color: var(--semester-muted); }
 .semester-panel .semester-error { color: var(--semester-error); }
 
-/* 2-Step Header & Period Bar */
+/* Step navigation */
 .semester-header-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: stretch;
-  justify-content: space-between;
-  gap: 12px 16px;
+  min-width: 0;
 }
 .semester-stepper {
-  flex: 1 1 520px;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
@@ -171,7 +166,7 @@ body.light .semester-panel :is(.semester-metrics, .semester-section) {
   background: var(--semester-selector-active);
   border-color: var(--semester-brand);
 }
-.semester-step-icon {
+.semester-step-number {
   display: grid;
   place-items: center;
   flex: 0 0 38px;
@@ -179,14 +174,14 @@ body.light .semester-panel :is(.semester-metrics, .semester-section) {
   border-radius: 10px;
   background: var(--semester-selector-active);
   color: var(--semester-accent);
+  font: 700 1.125rem/1 'Orbitron', sans-serif;
 }
-.semester-step-icon .material-symbols-outlined { font-size: 21px; }
-.semester-step-btn.is-active .semester-step-icon {
+.semester-step-btn.is-active .semester-step-number {
   background: var(--accent-fill);
   color: var(--on-accent-fill);
 }
-body:not(.light) .semester-step-btn .semester-step-icon { color: #ffffff; }
-body:not(.light) .semester-step-btn:not(.is-active) .semester-step-icon { background: #30659e1e; }
+body:not(.light) .semester-step-btn .semester-step-number { color: #ffffff; }
+body:not(.light) .semester-step-btn:not(.is-active) .semester-step-number { background: #30659e1e; }
 .semester-step-copy {
   min-width: 0;
   display: grid;
@@ -201,26 +196,6 @@ body:not(.light) .semester-step-btn:not(.is-active) .semester-step-icon { backgr
 .semester-step-copy small {
   font-size: .8rem;
   font-variant-numeric: tabular-nums;
-}
-.semester-period-wrap {
-  display: flex;
-  align-items: stretch;
-  flex: 0 0 auto;
-}
-.semester-period-wrap .custom-select {
-  display: flex;
-  align-items: stretch;
-}
-.semester-panel .semester-toolbar-period.custom-select-trigger {
-  min-inline-size: min(220px, 100%);
-  min-height: 62px;
-  height: 100%;
-  padding: 10px 14px;
-  border-radius: 14px;
-  border: 1px solid var(--semester-line);
-}
-.semester-panel .semester-toolbar-period.custom-select-trigger:is(:hover:not(:disabled), [aria-expanded="true"]) {
-  border-color: var(--semester-line-accent);
 }
 
 /* Step 1: Class Selection & Followed List */
@@ -245,17 +220,36 @@ body:not(.light) .semester-step-btn:not(.is-active) .semester-step-icon { backgr
   align-items: center;
   gap: 10px 14px;
 }
-.semester-metrics {
-  list-style: none;
-  padding: 12px 14px;
-  margin: 0;
+.semester-summary {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px 24px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  padding: 8px 14px;
   border: 1px solid var(--semester-line);
   border-radius: 12px;
   background: var(--semester-surface);
   backdrop-filter: blur(8px);
+}
+.semester-summary > .custom-select {
+  max-inline-size: 12rem;
+  margin-inline-start: auto;
+}
+.semester-panel .semester-summary-period.custom-select-trigger {
+  min-height: 44px;
+  border: 1px solid var(--semester-line);
+  font-size: .875rem;
+}
+.semester-panel .semester-summary-period.custom-select-trigger:is(:hover:not(:disabled), [aria-expanded="true"]) {
+  border-color: var(--semester-line-accent);
+}
+.semester-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  margin: 0;
+  list-style: none;
   color: var(--semester-muted);
   font-size: .87rem;
   font-variant-numeric: tabular-nums;
@@ -399,7 +393,7 @@ body:not(.light) .semester-step-btn:not(.is-active) .semester-step-icon { backgr
   border-color: var(--semester-line-accent);
   box-shadow: var(--shadow-strong), var(--semester-glow);
 }
-.semester-header-bar:has(.custom-select[data-open="true"]),
+.semester-summary:has(.custom-select[data-open="true"]),
 .semester-section:has(.custom-select[data-open="true"]) {
   position: relative;
   z-index: 30;
@@ -739,14 +733,7 @@ body.light .pixel-cat-eye-glow { fill: #6ee6ff; }
 }
 @media (max-width: 600px) {
   .semester-stepper { grid-template-columns: minmax(0, 1fr); }
-  .semester-period-wrap,
-  .semester-period-wrap .custom-select,
-  .semester-panel .semester-toolbar-period.custom-select-trigger {
-    min-width: 100%;
-    width: 100%;
-    min-height: 48px;
-    height: auto;
-  }
+  .semester-summary > .custom-select { max-inline-size: none; }
 }
 @media (max-width: 520px) {
   .semester-candidate-summary { grid-template-columns: 20px minmax(0, 1fr) 42px; }
@@ -1002,26 +989,11 @@ body.light .pixel-cat-eye-glow { fill: #6ee6ff; }
 .shared-badge.is-divergent::before { background: var(--semester-warn); }
 .shared-badge.is-community::before { background: var(--semester-muted); }
 
-.shared-publish-box {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px 14px;
-  padding: 10px 12px;
-  border: 1px solid var(--semester-line);
-  border-radius: 10px;
-  background: var(--semester-field);
-}
-.shared-publish-box p,
 .shared-divergence-note {
   margin: 0;
   font-size: .85rem;
-  color: var(--semester-muted);
-  flex: 1 1 240px;
-}
-.shared-divergence-note {
   color: var(--semester-warn);
+  flex: 1 1 240px;
 }
 .shared-empty-actions,
 .shared-plan-details-sharing {

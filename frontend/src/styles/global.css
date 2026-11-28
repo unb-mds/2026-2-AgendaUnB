@@ -576,7 +576,8 @@ body.light .event-tag--saved { background: #1e293b; color: #ffffff; }
   color: var(--text-color);
 }
 .event-card:hover { transform: translateY(-3px); border-color: var(--accent-color); }
-.event-card:focus-visible, .event-card-delete:focus-visible, .filter-pill:focus-visible {
+.event-card:focus-visible, .event-card-delete:focus-visible, .filter-pill:focus-visible,
+.events-search-field input:focus-visible {
   outline: 2px solid var(--accent-color);
   outline-offset: 2px;
 }
@@ -896,7 +897,6 @@ input[type="checkbox"]:focus-visible { outline: 2px solid var(--manage-link); ou
 }
 body.light .events-search-field input { color-scheme: light; }
 .events-search-field input::placeholder { color: var(--text-muted); }
-.events-search-field input:focus-visible { outline: 2px solid var(--manage-link); outline-offset: 2px; }
 .events-find .events-filters-toggle { display: none; }
 .events-export-mobile { display: none; }
 .events-find .events-create-button { grid-column: 2; border-radius: 999px; padding-inline: 20px; }
@@ -913,27 +913,29 @@ body.light .events-search-field input { color-scheme: light; }
 .filter-pill {
   width: 100%; min-height: 44px; padding: 8px 12px; border-radius: 24px; border: 1px solid var(--border-color);
   background: var(--card-bg); color: var(--text-color); font-size: 0.9rem;
-  font-family: inherit; transition: border-color 0.2s;
+  font-family: inherit;
 }
 .filter-pill > span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.filter-pill,
+.events-search-field input {
+  transition: border-color 0.2s;
+}
 .filter-pill:hover,
-.filter-pill.has-selection {
+.filter-pill.has-selection,
+.events-search-field input:is(:hover, :focus, .has-selection) {
   border-color: var(--accent-color);
 }
 .events-filters-bar .custom-select-popup > button { min-height: 44px; }
 .events-filters-bar .custom-date-picker .custom-picker-popup { left: auto; right: 0; }
 @media (max-width: 940px) {
-  .events-find { gap: 8px; }
-  .events-find--with-export { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .events-find { grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; }
   .events-search-field, .events-filters-bar { grid-column: 1 / -1; }
   .events-find .events-filters-toggle {
-    display: inline-flex; justify-self: start; min-height: 44px; border-radius: 999px;
+    display: inline-flex; grid-column: 1; justify-self: start; min-height: 44px; border-radius: 999px;
     background: var(--card-bg);
   }
-  .events-find--with-export .events-filters-toggle { padding-inline: 20px; }
   .events-filter-count { color: var(--manage-link); font-variant-numeric: tabular-nums; }
-  .events-find .events-create-button { justify-self: end; min-height: 44px; padding-inline: 14px; }
-  .events-find--with-export .events-create-button { grid-column: 3; }
+  .events-find .events-create-button { grid-column: 3; justify-self: end; min-height: 44px; padding-inline: 14px; }
   .events-export-mobile {
     --events-control-height: 44px;
     display: grid;
@@ -942,7 +944,7 @@ body.light .events-search-field input { color-scheme: light; }
     justify-items: center;
     min-width: 0;
   }
-  .events-find--with-export .events-export-mobile .google-calendar-action { padding-inline: 14px; }
+  .events-find .events-export-mobile .google-calendar-action { padding-inline: 14px; }
   .events-section-actions > .google-calendar-action { display: none; }
   .events-filters-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .events-filters-bar .events-clear-filters { grid-column: 2; justify-self: start; margin-inline-start: 12px; }
@@ -951,27 +953,27 @@ body.light .events-search-field input { color-scheme: light; }
   .events-filters-bar .custom-date-picker:nth-child(odd) .custom-picker-popup { left: 0; right: auto; }
 }
 @media (max-width: 520px) {
-  .events-find--with-export { grid-template-columns: minmax(0, .85fr) minmax(0, 1.08fr) minmax(0, 1fr); gap: 8px 6px; }
-  .events-find--with-export .manage-button:is(.events-filters-toggle, .events-create-button, .google-calendar-action) {
+  .events-find { grid-template-columns: minmax(0, 27fr) minmax(0, 38fr) minmax(0, 35fr); gap: 8px 6px; }
+  .events-find .manage-button:is(.events-filters-toggle, .events-create-button, .google-calendar-action) {
     width: 100%;
     min-width: 0;
     gap: 3px;
     padding: 6px 5px;
-    font-size: .78rem;
+    font-size: .8125rem;
     text-align: center;
   }
-  .events-find--with-export .events-export-mobile .google-calendar-action {
+  .events-find .events-export-mobile .google-calendar-action {
     padding-inline: 2px;
     gap: 2px;
     letter-spacing: -.02em;
   }
-  .events-find--with-export .manage-button .material-symbols-outlined {
+  .events-find .manage-button .material-symbols-outlined {
     flex: 0 0 1em;
     inline-size: 1em;
     overflow: hidden;
     font-size: 15px;
   }
-  .events-find--with-export .events-export-mobile .google-calendar-action > .material-symbols-outlined { font-size: 13px; }
+  .events-find .events-export-mobile .google-calendar-action > .material-symbols-outlined { font-size: 13px; }
 }
 
 /* Time Picker Items */
